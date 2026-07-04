@@ -21,7 +21,14 @@
       "Bash(git ls-remote *)",
       "Bash(git fetch *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(mkdir -p characters/hikaru characters/banagher characters/kuwagata characters/winton)",
+      "Bash(mv avatars/hikaru_ginga.jpg avatars/ginga.jpg characters/hikaru/)",
+      "Bash(mv skill_song/ginga/ginga_final.mp4 skill_song/ginga/ginga_song.mp3 characters/hikaru/)",
+      "Bash(mv avatars/Banagher_Links.png avatars/unicorn_ntdfinal.jpg avatars/unicron_ntd.jpg characters/banagher/)",
+      "Bash(mv skill_song/banagher/Unicorn_final.mp4 skill_song/banagher/NTD_passive.mp4 skill_song/banagher/unicorn_song.mp3 characters/banagher/)",
+      "Bash(grep -rn \"/avatars/\\\\|/skill_song/\" client/src)",
+      "Bash(grep -n \"/avatars/\\\\|/skill_song/\" server.js characters.js)"
     ]
   }
 }

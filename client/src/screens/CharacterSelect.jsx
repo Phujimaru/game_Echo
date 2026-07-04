@@ -12,7 +12,7 @@ function CharImage({ c, className, emojiSize = "3.5rem", rounded = "" }) {
     <div className={`relative overflow-hidden ${rounded} ${className}`} style={{ background: PURPLE }}>
       {c.img && !broken ? (
         <img
-          src={`/avatars/${c.img}`}
+          src={c.img}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           onError={() => setBroken(true)}

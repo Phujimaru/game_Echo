@@ -150,6 +150,15 @@ body {
 }
 .cut-glow { animation: cutGlow 1.4s ease-in-out infinite; }
 
+/* ---------- อนิเมชันเปลี่ยนเฟส (สุ่มการ์ด/เปิดการ์ด/โจมตี) ---------- */
+@keyframes phaseIntro {
+  0% { opacity: 0; transform: translate(-50%, -24px) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  70% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -8px) scale(1); }
+}
+.phase-intro { animation: phaseIntro 1.6s ease forwards; }
+
 /* ---------- สั่น (เป้าหมายโดนตี) ---------- */
 @keyframes shake {
   0%, 100% { transform: translateX(0) rotate(3deg); }

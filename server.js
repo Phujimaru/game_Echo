@@ -39,9 +39,9 @@ const MAX_SKILL = 6;
 // การแปลงร่าง/cutscene ต่อสถานะ
 //  afterReveal = เล่นหลังเปิดไพ่ (ท่าไม้ตาย) | ntd เล่นตอนโดนโจมตี
 const TRANSFORMS = {
-  ginga:    { img: "ginga.jpg",            video: "/skill_song/ginga/ginga_final.mp4",      title: "ULTLIVE ULTRAMAN GINGA", label: "ปล่อยท่าไม้ตาย",   seconds: 21, music: "ginga",   afterReveal: true },
-  paradise: { img: "unicorn_ntdfinal.jpg", video: "/skill_song/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",       label: "ปล่อยท่าไม้ตาย",   seconds: 10, music: "unicorn", afterReveal: true },
-  ntd:      { img: "unicron_ntd.jpg",      video: "/skill_song/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           label: "สกิลติดตัวทำงาน", seconds: 9,  music: null,     afterReveal: false },
+  ginga:    { img: "/characters/hikaru/ginga.jpg",           video: "/characters/hikaru/ginga_final.mp4",     title: "ULTLIVE ULTRAMAN GINGA", label: "ปล่อยท่าไม้ตาย",   seconds: 21, music: "ginga",   afterReveal: true },
+  paradise: { img: "/characters/banagher/unicorn_ntdfinal.jpg", video: "/characters/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",    label: "ปล่อยท่าไม้ตาย",   seconds: 10, music: "unicorn", afterReveal: true },
+  ntd:      { img: "/characters/banagher/unicron_ntd.jpg",   video: "/characters/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           label: "สกิลติดตัวทำงาน", seconds: 9,  music: null,     afterReveal: false },
 };
 
 
@@ -60,6 +60,7 @@ let cutsceneInfo = null;
 let cutsceneSeq = 0;      // id ต่อ cutscene (ให้ client remount วีดีโอ กันจอดำ)
 let transformCounter = 0; // ลำดับการเปิดร่าง (ใช้เลือกเพลงตอนสวนท่ากัน)
 let lastAttack = null;    // ข้อมูลการโจมตีล่าสุด (อนิเมชันใครตีใคร)
+let roundSkills = [];     // สกิลที่ใช้ในรอบ (โชว์แบนเนอร์ก่อนโจมตี)
 
 function clearPhaseTimer() {
   if (phaseTimerId) clearInterval(phaseTimerId);
@@ -222,7 +223,7 @@ function buildStateFor(viewerId) {
       const mine = p.id === viewerId;
       const show = mine || revealAll;
       const ch = CHAR_BY_ID[p.characterId] || {};
-      const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost } : null);
+      const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost, img: s.img } : null);
       return {
         id: p.id,
         name: p.name,
@@ -293,6 +294,18 @@ function queueBanner(p, key) {
     },
   });
 }
+// แบนเนอร์สกิล (รูปสกิล + ชื่อสกิล + ชื่อผู้ใช้) — โชว์ก่อนโจมตี
+function queueSkillBanner(s) {
+  const p = players[s.playerId];
+  cutsceneQueue.push({
+    seconds: 1.5,
+    info: {
+      playerId: s.playerId, name: p ? p.name : "",
+      img: s.img || null, color: p ? (POSITION_COLORS[p.position] || "#9B4F96") : "#9B4F96",
+      title: s.name, label: "ใช้สกิล", brief: true, skill: true,
+    },
+  });
+}
 function runCutsceneQueue(onDone) {
   if (cutsceneQueue.length === 0) { cutsceneInfo = null; onDone(); return; }
   const c = cutsceneQueue.shift();
@@ -321,6 +334,7 @@ function dealRound() {
   cutsceneQueue = [];
   cutsceneInfo = null;
   lastAttack = null;
+  roundSkills = [];
 
   for (const p of Object.values(players)) {
     resetRoundDisplay(p);
@@ -371,6 +385,10 @@ function useSkill(id, tier) {
 
   p.skillPoints -= skill.cost;
   applyEffect(p, skill.effect);
+
+  // จำสกิลที่ใช้ (ไว้โชว์แบนเนอร์ตอนเปิดไพ่)
+  const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
+  roundSkills.push({ playerId: id, name: skill.name, img: skill.img || null, status: st });
 
   p.busted = bustedOf(p);
   if (p.busted) p.locked = true;
@@ -431,6 +449,12 @@ function resolveRound() {
 
 // เปิดร่างท่าไม้ตาย (หลังเปิดไพ่) -> cutscene ก่อนสรุปผล
 function afterResolve() {
+  // แบนเนอร์สกิลที่ใช้ (ที่ไม่ใช่ร่างแปลง — ร่างแปลงมี cutscene ของตัวเอง)
+  for (const s of roundSkills) {
+    const isTransform = s.status && TRANSFORMS[s.status] && TRANSFORMS[s.status].afterReveal;
+    if (!isTransform) queueSkillBanner(s);
+  }
+
   const activated = [];
   for (const p of alivePlayers()) {
     for (const key of Object.keys(TRANSFORMS)) {
@@ -500,8 +524,7 @@ function doAttack(byId, targetId) {
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
 
   const hpBefore = target.hp;
-  if (isRevenge) dealMixed(target, dmg); // นับเกราะ (เกราะก่อนแล้วเลือด)
-  else dealDirect(target, dmg);          // ปกติเข้าเลือดจริง
+  dealMixed(target, dmg); // กฎ: โจมตีต้องลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
   target.wasAttacked = true;
   addSkill(target, 2);
   if ((target.statuses.absorb || 0) > 0 && target.hp < hpBefore) {
@@ -511,9 +534,9 @@ function doAttack(byId, targetId) {
   if (isRevenge) {
     attacker.ntdTarget = null;
     delete attacker.seen.ntd;
-    lastLog.push(`⚡ ${attacker.name} แก้แค้น ${target.name} ด้วย NT-D +2 (นับเกราะ) -${dmg} — NT-D สงบลง`);
+    lastLog.push(`⚡ ${attacker.name} แก้แค้น ${target.name} ด้วย NT-D +2 -${dmg} (ลดเกราะก่อน) — NT-D สงบลง`);
   } else {
-    lastLog.push(`${attacker.name} โจมตี ${target.name} -${dmg}`);
+    lastLog.push(`${attacker.name} โจมตี ${target.name} -${dmg} (ลดเกราะก่อน)`);
   }
 
   // Ginga: ตีหมู่

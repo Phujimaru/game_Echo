@@ -22,9 +22,13 @@ function Cutscene({ cs }) {
       <div className="fixed inset-0 z-50 grid place-items-center bg-black/75">
         <div className="text-center cut-title flex flex-col items-center gap-3 px-4">
           <div className="glitch text-3xl sm:text-5xl font-black" data-text={cs.title}>{cs.title}</div>
-          <div className="cut-portrait rounded-2xl overflow-hidden w-24 h-24 border-4" style={{ borderColor: cs.color }}>
-            <img src={`/avatars/${cs.img}`} alt="" className="w-full h-full object-cover" />
-          </div>
+          {cs.img ? (
+            <div className={`cut-portrait rounded-2xl overflow-hidden border-4 ${cs.skill ? "w-44 h-28" : "w-24 h-24"}`} style={{ borderColor: cs.color }}>
+              <img src={cs.img} alt="" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="cut-portrait w-24 h-24 rounded-2xl border-4 grid place-items-center text-4xl" style={{ borderColor: cs.color }}>✦</div>
+          )}
           <div className="text-2xl font-black">
             <span style={{ color: cs.color }}>{cs.name}</span> {cs.label}!
           </div>
@@ -43,7 +47,7 @@ function Cutscene({ cs }) {
       </div>
       <div className="absolute bottom-[9%] inset-x-0 flex flex-col items-center gap-3">
         <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4" style={{ borderColor: cs.color, "--cut-color": cs.color }}>
-          <img src={`/avatars/${cs.img}`} alt="" className="w-full h-full object-cover" />
+          <img src={cs.img} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="text-2xl sm:text-3xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
           <span style={{ color: cs.color }}>{cs.name}</span> {cs.label || "ปล่อยท่าไม้ตาย"}!
@@ -60,7 +64,7 @@ function AttackFx({ a }) {
       <div className="flex items-center gap-4 sm:gap-8 cut-title">
         <div className="flex flex-col items-center gap-1">
           <div className="rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 -rotate-3" style={{ borderColor: a.byColor }}>
-            <img src={`/avatars/${a.byImg}`} alt="" className="w-full h-full object-cover" />
+            <img src={a.byImg} alt="" className="w-full h-full object-cover" />
           </div>
           <span className="font-bold" style={{ color: a.byColor }}>{a.byName}</span>
         </div>
@@ -72,7 +76,7 @@ function AttackFx({ a }) {
         </div>
         <div className="flex flex-col items-center gap-1">
           <div className="shake rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 rotate-3" style={{ borderColor: a.targetColor }}>
-            <img src={`/avatars/${a.targetImg}`} alt="" className="w-full h-full object-cover" />
+            <img src={a.targetImg} alt="" className="w-full h-full object-cover" />
           </div>
           <span className="font-bold" style={{ color: a.targetColor }}>{a.targetName}</span>
         </div>
@@ -80,6 +84,9 @@ function AttackFx({ a }) {
     </div>
   );
 }
+
+// ชื่อเฟส (โชว์อนิเมชันตอนเปลี่ยนเฟส)
+const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
 // ตำแหน่งผู้เล่นคนอื่น (นอกจากตัวเรา) รอบโต๊ะ — [top%, left%] จัดตามจำนวน ไม่เรียงแถว
 const SLOTS = {
@@ -97,7 +104,7 @@ function Portrait({ p, className, rounded = "rounded-2xl" }) {
   return (
     <div className={`relative overflow-hidden ${rounded} ${className}`} style={{ background: "linear-gradient(135deg,#9b4f96,#7d3a78)" }}>
       {p.img && !broken ? (
-        <img src={`/avatars/${p.img}`} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
+        <img src={p.img} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
       ) : (
         <span className="absolute inset-0 grid place-items-center text-3xl">🙂</span>
       )}
@@ -175,7 +182,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
             <span className="absolute -bottom-1 -right-1 bg-emerald-600 rounded-full w-5 h-5 grid place-items-center text-xs">✓</span>
           )}
         </div>
-        <div className="text-sm font-bold text-left drop-shadow">{p.name}</div>
+        <div className="text-base sm:text-lg font-black px-2 py-0.5 rounded-lg bg-black/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ borderBottom: `3px solid ${p.color}` }}>{p.name}</div>
       </div>
       <Stats p={p} center />
       {summary && p.score !== null && (
@@ -184,6 +191,33 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
         </div>
       )}
       <StatusChips statuses={p.statuses} />
+    </div>
+  );
+}
+
+// ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่)
+function SkillSlot({ label, tier, skill, points, disabled, onUse }) {
+  const [broken, setBroken] = useState(false);
+  const afford = skill && points >= skill.cost;
+  const usable = skill && !disabled && afford;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <button
+        disabled={!usable}
+        onClick={() => usable && onUse(tier)}
+        title={skill ? `${skill.name} — ${skill.desc}` : ""}
+        className={`relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-gray-300 shadow-lg transition ${
+          usable ? "hover:scale-105 ring-2 ring-echo-gold" : "opacity-70 cursor-not-allowed grayscale"
+        }`}
+      >
+        {skill && skill.img && !broken ? (
+          <img src={skill.img} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center text-gray-500 text-3xl">✦</div>
+        )}
+        {skill && <span className="absolute top-1 right-1 text-xs font-bold bg-black/60 text-white rounded px-1.5">{skill.cost}</span>}
+      </button>
+      <div className="text-xs sm:text-sm font-bold text-center leading-tight">{label}</div>
     </div>
   );
 }
@@ -198,6 +232,7 @@ export default function Game({ state }) {
   const iAmAttacker = phase === "ATTACK" && state.attackerId === state.youId;
   const attacker = state.players.find((p) => p.id === state.attackerId);
   const winner = state.players.find((p) => p.id === state.winnerId);
+  const loser = state.players.find((p) => p.isLoser);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
 
@@ -234,89 +269,136 @@ export default function Game({ state }) {
 
       {/* ---------- แผงตัวเรา (ล่างกลาง) ---------- */}
       {me && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[min(96vw,640px)]">
-          <div className="relative rounded-3xl p-4 pl-24 shadow-2xl" style={{ background: "linear-gradient(135deg,#7a2230,#a3283a)" }}>
-            {/* รูปตัวเรา */}
-            <div className="absolute -left-3 -top-3">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[min(98vw,820px)]">
+          <div className="relative rounded-3xl p-4 pl-28 shadow-2xl" style={{ background: "linear-gradient(135deg,#7a2230,#a3283a)" }}>
+            {/* รูป + ชื่อ + รายละเอียด (ซ้าย) */}
+            <div className="absolute left-[-6px] top-6 w-28 flex flex-col items-center text-center">
               <div className="relative">
-                <Portrait p={me} className="w-24 h-28 -rotate-3 border-4" />
-                <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: me.color }} />
+                <Portrait p={me} className="w-24 h-28 border-4" />
+                <div className="absolute inset-0 rounded-2xl border-4 pointer-events-none" style={{ borderColor: me.color }} />
               </div>
+              <div className="font-bold text-base mt-1 leading-tight">{me.character.name}</div>
+              <button onClick={() => { clickSound(); setShowChar(true); }} className="text-xs underline opacity-80">รายละเอียดตัวละคร</button>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="font-bold text-lg">คุณ <span className="opacity-70 text-sm">({me.character.name})</span></div>
-              <div className="text-sm font-bold">แต้มสกิล {me.skillPoints}/{me.maxSkill}</div>
-            </div>
-
-            <div className="mt-1"><Stats p={me} /></div>
-
-            {/* ไพ่ของเรา (เห็นเฉพาะเรา) */}
-            <div className="min-h-[68px] flex flex-wrap items-center mt-1">
-              {phase === "SUMMARY" ? (
-                <div className="text-3xl font-black">
-                  {me.busted ? <span className="text-echo-hp">แตก!</span> : <>แต้มคุณ: <span className="text-echo-gold">{me.score}</span></>}
+            <div className="flex gap-3">
+              {/* เนื้อหาหลัก */}
+              <div className="flex-1 min-w-0">
+                {/* บน: การ์ด/แต้ม + กล่องแต้มรวม */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 min-h-[64px]">
+                      {phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" ? (
+                        <div className="text-3xl font-black">
+                          {me.busted ? <span className="text-echo-hp">แตก!</span> : <>แต้ม <span className="text-echo-gold">{me.score}</span></>}
+                        </div>
+                      ) : (
+                        me.cards && me.cards.map((c, i) => <Card key={i} value={c.value} />)
+                      )}
+                    </div>
+                    <div className="h-2 rounded-full bg-black/30 overflow-hidden mt-1">
+                      <div className="h-full transition-all" style={{ width: `${Math.min(100, ((me.score || 0) / 21) * 100)}%`, background: me.busted ? "#c0392b" : "#fff" }} />
+                    </div>
+                  </div>
+                  <div className="rounded-2xl bg-echo-gold text-gray-900 px-4 py-1.5 text-center font-black shadow-lg shrink-0">
+                    <div className="text-xs leading-none">แต้มรวม</div>
+                    <div className="text-3xl leading-tight">{me.score != null ? me.score : "?"}</div>
+                  </div>
                 </div>
-              ) : (
-                me.cards && me.cards.map((c, i) => <Card key={i} value={c.value} />)
-              )}
-              {phase !== "SUMMARY" && me.score != null && (
-                <span className="ml-2 font-bold">= {me.score}{me.busted ? " (แตก)" : ""}</span>
-              )}
-            </div>
 
-            {/* ปุ่มตามเฟส */}
-            {phase === "PLAYING" && me.alive && (
-              done ? (
-                <div className="mt-1 text-center font-bold text-white/90">
-                  {me.busted ? "แตก! 😢 " : "พร้อมแล้ว ✅ "}รอผู้เล่นอื่นเปิดไพ่...
+                {/* พลังชีวิต + เกราะ */}
+                <div className="flex items-center gap-2 mt-2 flex-wrap text-sm">
+                  <span className="font-bold opacity-90">พลังชีวิต</span>
+                  <span className="flex">{Array.from({ length: me.maxHp }, (_, i) => <span key={i} className="text-lg leading-none">{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
+                  <span className="flex gap-0.5 ml-1">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
+                  {me.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{me.shield}</span>}
+                  <span className="font-bold opacity-90">เกราะ</span>
+                  <StatusChips statuses={me.statuses} />
                 </div>
-              ) : (
-                <div className="mt-2 flex flex-wrap gap-2 items-center">
-                  <Button variant="cyan" onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
-                  <Button variant="gold" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
-                  <Button variant="ghost" onClick={() => { clickSound(); setSkillOpen((v) => !v); }}>เลือกสกิล ▾</Button>
-                  <button onClick={() => { clickSound(); setShowChar(true); }} className="text-sm underline opacity-80">รายละเอียดตัวละคร</button>
-                </div>
-              )
-            )}
 
-            {phase === "PLAYING" && me.alive && skillOpen && !done && ch && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {[["basic", ch.basic], ["secondary", ch.secondary], ["ultimate", ch.ultimate]].map(([tier, s]) =>
-                  s ? (
-                    <button key={tier} disabled={me.skillPoints < s.cost} onClick={() => skill(tier)}
-                      title={s.desc}
-                      className="rounded-lg bg-black/30 hover:bg-black/50 border border-white/20 px-3 py-1.5 text-sm font-bold disabled:opacity-40">
-                      {s.name} <span className="opacity-70">({s.cost})</span>
-                    </button>
-                  ) : null
-                )}
+                {/* ช่องสกิล 3 อัน */}
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
+                </div>
+
+                {/* หลอดแต้มสกิล (จัดกลาง + สวยขึ้น) */}
+                <div className="flex items-center justify-center gap-3 mt-3">
+                  <div className="flex gap-1.5 p-1 rounded-xl bg-black/25">
+                    {Array.from({ length: me.maxSkill }, (_, i) => (
+                      <span
+                        key={i}
+                        className={`w-8 h-7 rounded-md transition ${
+                          i < me.skillPoints
+                            ? "bg-gradient-to-b from-yellow-200 to-echo-gold border border-yellow-100 shadow-[0_0_8px] shadow-echo-gold"
+                            : "bg-white/10 border border-white/25"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="font-black text-base whitespace-nowrap">แต้มสกิล {me.skillPoints}/{me.maxSkill}</div>
+                </div>
               </div>
-            )}
 
-            {phase === "PLAYING" && !me.alive && <div className="mt-1 text-center opacity-80">คุณตกรอบแล้ว — ดูต่อจนจบเกม</div>}
-
-            {phase === "ATTACK" && (
-              <div className="mt-1 text-center font-bold">
-                {iAmAttacker ? "⚔️ คุณชนะ! เลือกเป้าหมายโจมตี (คลิกที่ผู้เล่น)" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"} โจมตี...`}
+              {/* ปุ่มจั่ว/เปิดไพ่ (คอลัมน์ขวา) */}
+              <div className="flex flex-col gap-3 justify-center shrink-0 w-28">
+                {phase === "PLAYING" && me.alive && !done ? (
+                  <>
+                    <Button variant="cyan" className="px-3 py-3" onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
+                    <Button variant="gold" className="px-3 py-3" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
+                  </>
+                ) : phase === "PLAYING" && me.alive && done ? (
+                  <div className="text-center text-sm font-bold text-white/90">{me.busted ? "แตก! 😢" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
+                ) : phase === "ATTACK" ? (
+                  <div className="text-center text-sm font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
+                ) : !me.alive ? (
+                  <div className="text-center text-sm opacity-80">ตกรอบแล้ว</div>
+                ) : null}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ---------- เฟสสรุปผล: ป้ายผู้ชนะ ---------- */}
+      {/* ---------- เฟสสรุปผล: อนิเมชันผู้ชนะ + ผู้แต้มน้อยสุด (กลางจอ) ---------- */}
       {phase === "SUMMARY" && (
-        <div className="absolute top-[30%] left-1/2 -translate-x-1/2 text-center">
-          <div className="text-2xl sm:text-3xl font-black bg-black/50 rounded-2xl px-6 py-2">
-            {winner ? <>🏆 ผู้ชนะรอบนี้: <span className="text-echo-gold">{winner.name}</span></> : "ไม่มีผู้ชนะ"}
+        <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 pointer-events-none">
+          <div className="cut-title glitch text-2xl sm:text-3xl font-black bg-black/40 rounded-full px-6 py-1" data-text="🃏 เปิดการ์ด!">🃏 เปิดการ์ด!</div>
+          <div className="cut-title flex items-start gap-6 sm:gap-12">
+            {winner && (
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-echo-gold text-xl sm:text-2xl font-black">🏆 ผู้ชนะ</div>
+                <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4" style={{ borderColor: winner.color, "--cut-color": winner.color }}>
+                  <img src={winner.img} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="font-black text-lg" style={{ color: winner.color }}>{winner.name}</div>
+                <div className="text-echo-gold font-black">{winner.busted ? "แตก!" : `${winner.score} แต้ม`}</div>
+              </div>
+            )}
+            {loser && (
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-echo-hp text-lg sm:text-xl font-black">💔 แต้มน้อยสุด −1</div>
+                <div className="shake rounded-2xl overflow-hidden w-20 h-20 sm:w-24 sm:h-24 border-4 grayscale" style={{ borderColor: loser.color }}>
+                  <img src={loser.img} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="font-bold" style={{ color: loser.color }}>{loser.name}</div>
+                <div className="text-echo-hp text-sm">{loser.busted ? "แตก!" : `${loser.score} แต้ม`}</div>
+              </div>
+            )}
           </div>
           {state.log?.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1 items-center">
-              {state.log.map((t, i) => <div key={i} className="text-sm bg-black/40 rounded px-3 py-1">{t}</div>)}
+            <div className="flex flex-col gap-1 items-center max-w-lg">
+              {state.log.map((t, i) => <div key={i} className="text-sm bg-black/50 rounded px-3 py-1">{t}</div>)}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ---------- อนิเมชันเปลี่ยนเฟส (กลางจอ) ---------- */}
+      {PHASE_NAMES[phase] && (
+        <div key={`${phase}-${state.roundNumber}`} className="phase-intro absolute top-[38%] left-1/2 z-40 pointer-events-none">
+          <div className="glitch text-4xl sm:text-5xl font-black bg-black/50 rounded-full px-8 py-3 whitespace-nowrap" data-text={PHASE_NAMES[phase]}>{PHASE_NAMES[phase]}</div>
         </div>
       )}
 
