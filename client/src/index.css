@@ -112,9 +112,9 @@ body {
 
 /* ---------- แบนเนอร์ "รอบที่ N" ---------- */
 @keyframes bannerPop {
-  0% { opacity: 0; transform: scale(0.6) translateY(24px); letter-spacing: 0.5em; }
+  0% { opacity: 0; transform: scale(0.6) translateY(24px); }
   20% { opacity: 1; transform: scale(1.08) translateY(0); }
-  80% { opacity: 1; transform: scale(1); letter-spacing: 0.15em; }
+  80% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.15); }
 }
 .round-banner { animation: bannerPop 3s ease forwards; }
@@ -149,6 +149,17 @@ body {
   50% { box-shadow: 0 0 48px 12px var(--cut-color, #9b4f96); }
 }
 .cut-glow { animation: cutGlow 1.4s ease-in-out infinite; }
+
+/* ---------- pop-in สะอาดๆ (ไม่ยืดตัวอักษร อ่านง่าย) ---------- */
+@keyframes popIn {
+  0% { opacity: 0; transform: translateY(-16px) scale(0.85); }
+  60% { opacity: 1; transform: translateY(0) scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.pop-in { animation: popIn 0.5s ease both; }
+
+/* เงาตัวอักษรให้อ่านง่ายบนพื้นวุ่นๆ */
+.text-hard { text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 3px rgba(0,0,0,0.9); }
 
 /* ---------- อนิเมชันเปลี่ยนเฟส (สุ่มการ์ด/เปิดการ์ด/โจมตี) ---------- */
 @keyframes phaseIntro {

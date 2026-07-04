@@ -20,8 +20,8 @@ function Cutscene({ cs }) {
   if (cs.brief) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-black/75">
-        <div className="text-center cut-title flex flex-col items-center gap-3 px-4">
-          <div className="glitch text-3xl sm:text-5xl font-black" data-text={cs.title}>{cs.title}</div>
+        <div className="text-center pop-in flex flex-col items-center gap-3 px-4 text-hard">
+          <div className="text-3xl sm:text-5xl font-black text-white">{cs.title}</div>
           {cs.img ? (
             <div className={`cut-portrait rounded-2xl overflow-hidden border-4 ${cs.skill ? "w-44 h-28" : "w-24 h-24"}`} style={{ borderColor: cs.color }}>
               <img src={cs.img} alt="" className="w-full h-full object-cover" />
@@ -61,7 +61,7 @@ function Cutscene({ cs }) {
 function AttackFx({ a }) {
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/55">
-      <div className="flex items-center gap-4 sm:gap-8 cut-title">
+      <div className="flex items-center gap-4 sm:gap-8 pop-in text-hard">
         <div className="flex flex-col items-center gap-1">
           <div className="rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 -rotate-3" style={{ borderColor: a.byColor }}>
             <img src={a.byImg} alt="" className="w-full h-full object-cover" />
@@ -364,8 +364,8 @@ export default function Game({ state }) {
       {/* ---------- เฟสสรุปผล: อนิเมชันผู้ชนะ + ผู้แต้มน้อยสุด (กลางจอ) ---------- */}
       {phase === "SUMMARY" && (
         <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 pointer-events-none">
-          <div className="cut-title glitch text-2xl sm:text-3xl font-black bg-black/40 rounded-full px-6 py-1" data-text="🃏 เปิดการ์ด!">🃏 เปิดการ์ด!</div>
-          <div className="cut-title flex items-start gap-6 sm:gap-12">
+          <div className="pop-in text-2xl sm:text-3xl font-black bg-black/60 rounded-full px-6 py-1 text-white text-hard">🃏 เปิดการ์ด!</div>
+          <div className="pop-in flex items-start gap-6 sm:gap-12 text-hard">
             {winner && (
               <div className="flex flex-col items-center gap-1">
                 <div className="text-echo-gold text-xl sm:text-2xl font-black">🏆 ผู้ชนะ</div>
@@ -398,7 +398,7 @@ export default function Game({ state }) {
       {/* ---------- อนิเมชันเปลี่ยนเฟส (กลางจอ) ---------- */}
       {PHASE_NAMES[phase] && (
         <div key={`${phase}-${state.roundNumber}`} className="phase-intro absolute top-[38%] left-1/2 z-40 pointer-events-none">
-          <div className="glitch text-4xl sm:text-5xl font-black bg-black/50 rounded-full px-8 py-3 whitespace-nowrap" data-text={PHASE_NAMES[phase]}>{PHASE_NAMES[phase]}</div>
+          <div className="text-4xl sm:text-5xl font-black bg-black/70 rounded-full px-8 py-3 whitespace-nowrap text-white text-hard border-2 border-white/20">{PHASE_NAMES[phase]}</div>
         </div>
       )}
 
@@ -408,7 +408,7 @@ export default function Game({ state }) {
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (
         <div className="absolute inset-0 grid place-items-center bg-black/40 z-30">
-          <div className="round-banner text-6xl sm:text-8xl font-black glitch" data-text={`รอบที่ ${state.roundNumber + 1}`}>
+          <div className="round-banner text-6xl sm:text-8xl font-black text-white text-hard">
             รอบที่ {state.roundNumber + 1}
           </div>
         </div>
