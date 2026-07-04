@@ -9,6 +9,7 @@ const FILES = {
   unicorn: "/skill_song/banagher/unicorn_song.mp3",
   action_button: "/effect_sound/action_button.wav",
   trun_change: "/effect_sound/trun_change.wav",
+  attack: "/effect_sound/attack.wav",
 };
 
 const MUSIC_BASE = 0.45; // ระดับเพลงพื้นฐาน (ก่อนคูณ master)

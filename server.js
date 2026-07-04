@@ -29,6 +29,8 @@ const CARD_TIME = 60;
 const SUMMARY_TIME = 5;
 const ATTACK_TIME = 15;
 const TRANSITION_TIME = 3;
+const ATTACKFX_TIME = 3;  // อนิเมชันบอกว่าใครตีใคร
+const BANNER_TIME = 2;    // แบนเนอร์สั้น (แปลงร่างซ้ำ ไม่เล่นวีดีโอ)
 
 const MAX_HP = 5;       // เลือดจริงพื้นฐาน
 const MAX_ARMOR = 2;
@@ -55,7 +57,9 @@ let lastLog = [];
 let reservations = {};
 let cutsceneQueue = [];
 let cutsceneInfo = null;
+let cutsceneSeq = 0;      // id ต่อ cutscene (ให้ client remount วีดีโอ กันจอดำ)
 let transformCounter = 0; // ลำดับการเปิดร่าง (ใช้เลือกเพลงตอนสวนท่ากัน)
+let lastAttack = null;    // ข้อมูลการโจมตีล่าสุด (อนิเมชันใครตีใคร)
 
 function clearPhaseTimer() {
   if (phaseTimerId) clearInterval(phaseTimerId);
@@ -193,6 +197,7 @@ function resetRoundDisplay(p) {
 function resetCombat(p) {
   p.hp = MAX_HP; p.armor = MAX_ARMOR; p.skillPoints = 0; p.alive = true; p.shield = 0;
   p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0;
+  p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
 
@@ -211,6 +216,7 @@ function buildStateFor(viewerId) {
     winnerId: (gameState === "SUMMARY" || gameState === "ATTACK") ? roundWinnerId : null,
     skillMusic: activeSkillMusic(),
     cutscene: gameState === "CUTSCENE" ? cutsceneInfo : null,
+    attack: gameState === "ATTACKING" ? lastAttack : null,
     log: (gameState === "SUMMARY" || gameState === "TRANSITION" || gameState === "GAMEOVER") ? lastLog : [],
     players: Object.values(players).map((p) => {
       const mine = p.id === viewerId;
@@ -258,6 +264,11 @@ function broadcastPositions() {
 // ============================================================
 //  cutscene
 // ============================================================
+// ครั้งแรกต่อเกม/ต่อคน = เล่นวีดีโอเต็ม, ครั้งต่อไป = แบนเนอร์สั้น (บอกแค่ใครใช้อะไร)
+function triggerCutscene(p, key) {
+  if (p.cutsceneShown[key]) queueBanner(p, key);
+  else { p.cutsceneShown[key] = true; queueCutscene(p, key); }
+}
 function queueCutscene(p, key) {
   const t = TRANSFORMS[key];
   if (!t) return;
@@ -270,10 +281,22 @@ function queueCutscene(p, key) {
     },
   });
 }
+function queueBanner(p, key) {
+  const t = TRANSFORMS[key];
+  if (!t) return;
+  cutsceneQueue.push({
+    seconds: BANNER_TIME,
+    info: {
+      playerId: p.id, name: p.name,
+      img: t.img, color: POSITION_COLORS[p.position] || "#9B4F96",
+      title: t.title, label: t.label, brief: true, // ไม่มี video -> แสดงแค่แบนเนอร์
+    },
+  });
+}
 function runCutsceneQueue(onDone) {
   if (cutsceneQueue.length === 0) { cutsceneInfo = null; onDone(); return; }
   const c = cutsceneQueue.shift();
-  cutsceneInfo = c.info;
+  cutsceneInfo = { ...c.info, id: ++cutsceneSeq }; // id ใหม่ทุกครั้ง -> client remount วีดีโอ
   gameState = "CUTSCENE";
   startPhaseTimer(c.seconds, () => runCutsceneQueue(onDone));
   broadcastState();
@@ -297,6 +320,7 @@ function dealRound() {
   roundWinnerId = null;
   cutsceneQueue = [];
   cutsceneInfo = null;
+  lastAttack = null;
 
   for (const p of Object.values(players)) {
     resetRoundDisplay(p);
@@ -414,7 +438,7 @@ function afterResolve() {
       if ((p.statuses[key] || 0) > 0 && !p.seen[key]) {
         p.seen[key] = true;
         p.transformAt = ++transformCounter;
-        queueCutscene(p, key);
+        triggerCutscene(p, key);
         lastLog.push(`✨ ${p.name} ${TRANSFORMS[key].label} ${TRANSFORMS[key].title}!`);
         activated.push(p);
       }
@@ -468,21 +492,29 @@ function doAttack(byId, targetId) {
   const ginga = (attacker.statuses.ginga || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
-  let base = 1 + (ginga ? 1 : 0) + (beam ? 1 : 0);
-  if (paradiseAtk) base = 0; // NewType Paradise: โจมตีได้แต่ยังไม่สร้างความเสียหายจริง
+  // NT-D System (บัฟ): ตีคนที่ตีเราล่าสุด แรงขึ้น +2 (นับเกราะ)
+  const isRevenge = attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id;
 
-  // เป้าหมายหลัก
-  let dmg = base;
+  let base = paradiseAtk ? 0 : (1 + (ginga ? 1 : 0) + (beam ? 1 : 0)); // NewType Paradise: โจมตีได้แต่ยังไม่สร้างความเสียหายจริง
+  let dmg = base + (isRevenge ? 2 : 0);
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
+
   const hpBefore = target.hp;
-  dealDirect(target, dmg);
+  if (isRevenge) dealMixed(target, dmg); // นับเกราะ (เกราะก่อนแล้วเลือด)
+  else dealDirect(target, dmg);          // ปกติเข้าเลือดจริง
   target.wasAttacked = true;
   addSkill(target, 2);
   if ((target.statuses.absorb || 0) > 0 && target.hp < hpBefore) {
     target.hp = Math.min(MAX_HP, target.hp + 1);
     lastLog.push(`🛡️ ${target.name} Absorb shield ฟื้นเลือด +1`);
   }
-  lastLog.push(`${attacker.name} โจมตี ${target.name} เสียเลือดจริง -${dmg}`);
+  if (isRevenge) {
+    attacker.ntdTarget = null;
+    delete attacker.seen.ntd;
+    lastLog.push(`⚡ ${attacker.name} แก้แค้น ${target.name} ด้วย NT-D +2 (นับเกราะ) -${dmg} — NT-D สงบลง`);
+  } else {
+    lastLog.push(`${attacker.name} โจมตี ${target.name} -${dmg}`);
+  }
 
   // Ginga: ตีหมู่
   if (ginga) {
@@ -496,23 +528,23 @@ function doAttack(byId, targetId) {
     lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -${base}`);
   }
 
-  // NT-D System (บานาจเป็นเป้า): สวนกลับ 2 (นับเกราะ) + เปิด/อัปเดตเป้าแก้แค้น (cutscene ครั้งเดียว)
+  // NT-D (บานาจเป็นเป้า): ตั้งบัฟแก้แค้น "คนล่าสุด" — แสดงฉากเมื่อเปลี่ยนเป้าเท่านั้น
   if (target.characterId === "banagher" && attacker.alive) {
-    dealMixed(attacker, 2);
-    lastLog.push(`⚡ NT-D System! ${target.name} สวนกลับ ${attacker.name} -2 (นับเกราะ)`);
-    const firstTime = !target.ntdTarget;
+    const changed = target.ntdTarget !== attacker.id;
     target.ntdTarget = attacker.id;
-    if (firstTime) { target.seen.ntd = true; queueCutscene(target, "ntd"); }
+    target.seen.ntd = true;
+    if (changed) triggerCutscene(target, "ntd");
   }
 
-  // แก้แค้นสำเร็จ: บานาจตีโดนเป้าแก้แค้น -> NT-D สงบลง
-  if (attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id) {
-    attacker.ntdTarget = null;
-    delete attacker.seen.ntd;
-    lastLog.push(`${attacker.name} แก้แค้น ${target.name} สำเร็จ — NT-D สงบลง`);
-  }
-
-  runCutsceneQueue(endTurn);
+  // อนิเมชันบอกว่าใครตีใคร
+  lastAttack = {
+    byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
+    targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
+    dmg, aoe: ginga, revenge: isRevenge,
+  };
+  gameState = "ATTACKING";
+  startPhaseTimer(ATTACKFX_TIME, () => runCutsceneQueue(endTurn));
+  broadcastState();
 }
 
 // ---- ปิดรอบ ----
@@ -612,7 +644,7 @@ io.on("connection", (socket) => {
       position: pos, characterId: ch.id, avatar: ch.avatar, img: ch.img,
       cards: [], locked: false, busted: false, result: null,
       hp: MAX_HP, armor: MAX_ARMOR, skillPoints: 0, alive: true, shield: 0,
-      statuses: {}, seen: {}, ntdTarget: null, transformAt: 0,
+      statuses: {}, seen: {}, ntdTarget: null, transformAt: 0, cutsceneShown: {},
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };

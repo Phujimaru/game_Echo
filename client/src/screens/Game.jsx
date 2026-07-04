@@ -4,38 +4,77 @@ import Button from "../components/Button";
 import { socket } from "../socket";
 import { clickSound, getMasterVolume } from "../audio";
 
-// ---------- cutscene แปลงร่าง (วีดีโอเต็มจอ + โชว์ว่าใครใช้) ----------
+// ---------- cutscene แปลงร่าง ----------
+//  เต็ม = วีดีโอเต็มจอ (ครั้งแรกต่อเกม) | brief = แบนเนอร์สั้นบอกแค่ใครใช้อะไร
 function Cutscene({ cs }) {
   const ref = useRef(null);
   useEffect(() => {
+    if (cs.brief) return;
     const v = ref.current;
     if (!v) return;
     v.volume = getMasterVolume();
+    v.currentTime = 0;
     v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); // กัน autoplay block
-  }, []);
+  }, [cs.id]); // remount ต่อ cutscene -> เล่นวีดีโอใหม่เสมอ (กันจอดำตอนท่าเดียวกันต่อกัน)
+
+  if (cs.brief) {
+    return (
+      <div className="fixed inset-0 z-50 grid place-items-center bg-black/75">
+        <div className="text-center cut-title flex flex-col items-center gap-3 px-4">
+          <div className="glitch text-3xl sm:text-5xl font-black" data-text={cs.title}>{cs.title}</div>
+          <div className="cut-portrait rounded-2xl overflow-hidden w-24 h-24 border-4" style={{ borderColor: cs.color }}>
+            <img src={`/avatars/${cs.img}`} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="text-2xl font-black">
+            <span style={{ color: cs.color }}>{cs.name}</span> {cs.label}!
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black overflow-hidden">
       <video ref={ref} src={cs.video} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
-      {/* แฟลชขาวตอนเริ่ม */}
       <div className="absolute inset-0 bg-white cut-flash pointer-events-none" />
-      {/* vignette ให้ตัวหนังสืออ่านง่าย */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%)" }} />
-
-      {/* ชื่อท่า */}
       <div className="absolute top-[8%] inset-x-0 text-center px-4">
         <div className="cut-title glitch text-4xl sm:text-6xl font-black" data-text={cs.title}>{cs.title}</div>
       </div>
-
-      {/* ใครเป็นคนใช้ */}
       <div className="absolute bottom-[9%] inset-x-0 flex flex-col items-center gap-3">
-        <div
-          className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4"
-          style={{ borderColor: cs.color, "--cut-color": cs.color }}
-        >
+        <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4" style={{ borderColor: cs.color, "--cut-color": cs.color }}>
           <img src={`/avatars/${cs.img}`} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="text-2xl sm:text-3xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
           <span style={{ color: cs.color }}>{cs.name}</span> {cs.label || "ปล่อยท่าไม้ตาย"}!
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- อนิเมชันบอกว่าใครตีใคร ----------
+function AttackFx({ a }) {
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-black/55">
+      <div className="flex items-center gap-4 sm:gap-8 cut-title">
+        <div className="flex flex-col items-center gap-1">
+          <div className="rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 -rotate-3" style={{ borderColor: a.byColor }}>
+            <img src={`/avatars/${a.byImg}`} alt="" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-bold" style={{ color: a.byColor }}>{a.byName}</span>
+        </div>
+        <div className="text-center">
+          <div className="text-4xl sm:text-5xl">⚔️</div>
+          <div className="text-4xl sm:text-5xl font-black text-echo-hp drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">-{a.dmg}</div>
+          {a.revenge && <div className="text-xs text-echo-gold font-bold">NT-D แก้แค้น!</div>}
+          {a.aoe && <div className="text-xs">ตีหมู่!</div>}
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <div className="shake rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 rotate-3" style={{ borderColor: a.targetColor }}>
+            <img src={`/avatars/${a.targetImg}`} alt="" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-bold" style={{ color: a.targetColor }}>{a.targetName}</span>
         </div>
       </div>
     </div>
@@ -164,8 +203,8 @@ export default function Game({ state }) {
 
   const skill = (tier) => { clickSound(); socket.emit("useSkill", { tier }); setSkillOpen(false); };
 
-  // เฟส CUTSCENE: วีดีโอท่าไม้ตายเต็มจอ (เห็นทุกคน + ใครใช้)
-  if (phase === "CUTSCENE" && state.cutscene) return <Cutscene cs={state.cutscene} />;
+  // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
+  if (phase === "CUTSCENE" && state.cutscene) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -280,6 +319,9 @@ export default function Game({ state }) {
           )}
         </div>
       )}
+
+      {/* ---------- อนิเมชันใครตีใคร ---------- */}
+      {phase === "ATTACKING" && state.attack && <AttackFx a={state.attack} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (

@@ -53,7 +53,7 @@ export default function App() {
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: card_prepare_turn | อื่นๆ: main_home
-    const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "TRANSITION";
+    const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" || phase === "TRANSITION";
     if (phase === "CUTSCENE") stopMusic();
     else if (skillMusic) playMusic(skillMusic);
     else playMusic(battle ? "card_prepare_turn" : "main_home");
@@ -62,6 +62,8 @@ export default function App() {
     if (prevPhase.current === "PLAYING" && phase && phase !== "PLAYING" && phase !== "CUTSCENE") {
       playSfx("trun_change");
     }
+    // เข้าเฟสโจมตี -> เสียง attack
+    if (prevPhase.current !== "ATTACKING" && phase === "ATTACKING") playSfx("attack");
     prevPhase.current = phase;
   }, [stage, phase, skillMusic]);
 
