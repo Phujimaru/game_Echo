@@ -19,7 +19,11 @@ const io = new Server(server);
 
 const clientDist = path.join(__dirname, "client", "dist");
 const useReact = fs.existsSync(path.join(clientDist, "index.html"));
-const staticDir = useReact ? clientDist : path.join(__dirname, "public");
+if (!useReact && process.env.NODE_ENV === 'production') {
+  console.error("!!! React build not found in client/dist. Make sure 'npm run build' was successful.");
+  process.exit(1);
+}
+const staticDir = useReact ? clientDist : path.join(__dirname, "public"); // Fallback for local dev
 app.use(express.static(staticDir));
 app.get(/^\/(?!socket\.io).*/, (req, res) => res.sendFile(path.join(staticDir, "index.html")));
 
