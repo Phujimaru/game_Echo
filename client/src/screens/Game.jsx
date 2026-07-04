@@ -102,6 +102,10 @@ function StatusChips({ statuses }) {
   if (statuses.upg) items.push(["UPG", "bg-echo-cyan text-gray-900"]);
   if (statuses.monster) items.push([`🦖${statuses.monster}`, "bg-echo-hp"]);
   if (statuses.ginga) items.push([`✨G${statuses.ginga}`, "bg-echo-gold text-gray-900"]);
+  if (statuses.absorb) items.push(["Absorb", "bg-echo-armor"]);
+  if (statuses.beam) items.push(["Beam", "bg-echo-magenta"]);
+  if (statuses.paradise) items.push([`Paradise${statuses.paradise}`, "bg-echo-gold text-gray-900"]);
+  if (statuses.ntd) items.push(["NT-D", "bg-echo-hp"]);
   if (!items.length) return null;
   return (
     <div className="flex flex-wrap gap-1 justify-center mt-1">

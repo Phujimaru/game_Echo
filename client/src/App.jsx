@@ -48,13 +48,13 @@ export default function App() {
   // ---------- เพลงพื้นหลัง + เสียงเปลี่ยนเทิร์น ----------
   const prevPhase = useRef(null);
   const phase = stage === "connected" && state ? state.gameState : null;
-  const ginga = stage === "connected" && state ? state.gingaActive : false;
+  const skillMusic = stage === "connected" && state ? state.skillMusic : null;
   useEffect(() => {
-    // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลง Ginga มาหลังวีดีโอ)
-    // ร่าง Ginga: เพลงสกิลทับ | ช่วงต่อสู้: card_prepare_turn | อื่นๆ: main_home
+    // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
+    // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: card_prepare_turn | อื่นๆ: main_home
     const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "TRANSITION";
     if (phase === "CUTSCENE") stopMusic();
-    else if (ginga) playMusic("ginga");
+    else if (skillMusic) playMusic(skillMusic);
     else playMusic(battle ? "card_prepare_turn" : "main_home");
 
     // เปลี่ยนจาก "เลือกการ์ด" ไปสรุปผล -> เสียง trun_change (ยกเว้นเข้า cutscene)
@@ -62,7 +62,7 @@ export default function App() {
       playSfx("trun_change");
     }
     prevPhase.current = phase;
-  }, [stage, phase, ginga]);
+  }, [stage, phase, skillMusic]);
 
   const goCharacter = (n, pos) => {
     setName(n);

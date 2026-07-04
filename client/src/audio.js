@@ -9,6 +9,7 @@ const FILES = {
   main_home: "/theme_song/main_home.mp3",
   card_prepare_turn: "/theme_song/card_prepare_turn.mp3",
   ginga: "/skill_song/ginga/ginga_song.mp3",
+  unicorn: "/skill_song/banagher/unicorn_song.mp3",
   action_button: "/effect_sound/action_button.wav",
   trun_change: "/effect_sound/trun_change.wav",
 };

@@ -1,9 +1,9 @@
 // ============================================================
 //  ECHO — Blackjack Skill Battle : เซิร์ฟเวอร์ + เอนจินเกม
-//  - การ์ดสุ่มเลข 1-10 (ไม่ใช่ไพ่ blackjack) รวมแต้มให้ใกล้ 21 สุดโดยไม่เกิน
-//  - 1 รอบมี 3 เฟส: ไพ่ (PLAYING) -> สรุปผล (SUMMARY) -> โจมตี (ATTACK)
-//    แล้วขึ้นแบนเนอร์ "รอบที่ N" (TRANSITION) ไปต่อเอง
+//  - การ์ดสุ่มเลข 1-10 รวมแต้มให้ใกล้ 21 สุดโดยไม่เกิน
+//  - 1 รอบ: ไพ่ (PLAYING) -> [CUTSCENE ท่าไม้ตาย] -> สรุปผล (SUMMARY) -> โจมตี (ATTACK) -> แบนเนอร์ (TRANSITION)
 //  - เปิดไพ่ = พร้อม แต่ไพ่/แต้ม/สกิลของคนอื่นถูกซ่อนจนถึงเฟสสรุปผล
+//  - ระบบแปลงร่าง/cutscene/เพลงสกิลแบบ generic (Ginga / NewType Paradise / NT-D)
 // ============================================================
 
 const express = require("express");
@@ -19,39 +19,44 @@ const io = new Server(server);
 
 const clientDist = path.join(__dirname, "client", "dist");
 const useReact = fs.existsSync(path.join(clientDist, "index.html"));
-if (!useReact && process.env.NODE_ENV === 'production') {
-  console.error("!!! React build not found in client/dist. Make sure 'npm run build' was successful.");
-  process.exit(1);
-}
-const staticDir = useReact ? clientDist : path.join(__dirname, "public"); // Fallback for local dev
+const staticDir = useReact ? clientDist : path.join(__dirname, "public");
 app.use(express.static(staticDir));
 app.get(/^\/(?!socket\.io).*/, (req, res) => res.sendFile(path.join(staticDir, "index.html")));
 
 
 // ---------- ค่าคงที่ ----------
 const MAX_PLAYERS = 6;
-const CARD_TIME = 60;       // เฟสไพ่ (เลือก/จั่ว) 1 นาที
-const SUMMARY_TIME = 5;     // เฟสสรุปผล
-const ATTACK_TIME = 15;     // เฟสโจมตี (ผู้ชนะเลือกเป้า)
-const TRANSITION_TIME = 3;  // แบนเนอร์ "รอบที่ N"
-const CUTSCENE_TIME = 21;   // วีดีโอท่าไม้ตาย Ginga (ยาว ~20 วิ)
+const CARD_TIME = 60;
+const SUMMARY_TIME = 5;
+const ATTACK_TIME = 15;
+const TRANSITION_TIME = 3;
 
 const MAX_HP = 3;
 const MAX_ARMOR = 2;
 const MAX_SKILL = 6;
 
+// การแปลงร่าง/cutscene ต่อสถานะ (รูปที่สลับ + วีดีโอ + เพลง + จังหวะที่เล่น)
+//  afterReveal = เล่นหลังเปิดไพ่ (ท่าไม้ตาย) | ntd เล่นตอนโดนโจมตี (ในเฟสโจมตี)
+const TRANSFORMS = {
+  ginga:    { img: "ginga.jpg",            video: "/skill_song/ginga/ginga_final.mp4",      title: "ULTLIVE ULTRAMAN GINGA", seconds: 21, music: "ginga",   afterReveal: true },
+  paradise: { img: "unicorn_ntdfinal.jpg", video: "/skill_song/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",       seconds: 10, music: "unicorn", afterReveal: true },
+  ntd:      { img: "unicron_ntd.jpg",      video: "/skill_song/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           seconds: 9,  music: null,     afterReveal: false },
+};
+const TRANSFORM_PRIORITY = ["ntd", "paradise", "ginga"]; // รูปไหนสำคัญกว่าโชว์ก่อน
+
 
 // ---------- สถานะเกมส่วนกลาง ----------
 let players = {};
-let gameState = "LOBBY"; // LOBBY | PLAYING | SUMMARY | ATTACK | TRANSITION | GAMEOVER
+let gameState = "LOBBY"; // LOBBY | PLAYING | CUTSCENE | SUMMARY | ATTACK | TRANSITION | GAMEOVER
 let timeLeft = 0;
 let phaseTimerId = null;
 let attackerId = null;
 let roundWinnerId = null;
-let cutscenePlayerId = null;
 let roundNumber = 0;
 let lastLog = [];
 let reservations = {};
+let cutsceneQueue = [];   // คิว cutscene ที่รอเล่น
+let cutsceneInfo = null;  // cutscene ที่กำลังเล่น
 
 function clearPhaseTimer() {
   if (phaseTimerId) clearInterval(phaseTimerId);
@@ -69,15 +74,10 @@ function startPhaseTimer(seconds, onExpire) {
 
 
 // ============================================================
-//  การ์ด (สุ่มเลข 1-10) + แต้ม
+//  การ์ด + แต้ม
 // ============================================================
-function drawCard() {
-  return { value: 1 + Math.floor(Math.random() * 10) };
-}
-function calculateScore(cards) {
-  return cards.reduce((s, c) => s + c.value, 0);
-}
-// แต้มที่ใช้จริง (UPG: จำกัด 16 และไม่แตก)
+function drawCard() { return { value: 1 + Math.floor(Math.random() * 10) }; }
+function calculateScore(cards) { return cards.reduce((s, c) => s + c.value, 0); }
 function scoreOf(p) {
   const raw = calculateScore(p.cards);
   if (p.statuses && p.statuses.upg) return Math.min(raw, 16);
@@ -92,18 +92,8 @@ function bustedOf(p) {
 // ============================================================
 //  ต่อสู้ + เอฟเฟกต์สกิล
 // ============================================================
-function alivePlayers() {
-  return Object.values(players).filter((p) => p.alive);
-}
-// รูปที่แสดงในเกม: สลับเป็นร่างแปลง (Ginga) ระหว่างอยู่ในผลท่าไม้ตาย
-function displayImg(p) {
-  const ch = CHAR_BY_ID[p.characterId];
-  if (ch && ch.transformImg && p.gingaSeen && (p.statuses.ginga || 0) > 0) return ch.transformImg;
-  return p.img;
-}
-function joinedPositions() {
-  return Object.values(players).map((p) => p.position);
-}
+function alivePlayers() { return Object.values(players).filter((p) => p.alive); }
+function joinedPositions() { return Object.values(players).map((p) => p.position); }
 function positionsFor(sid) {
   const joined = joinedPositions();
   const reserved = Object.entries(reservations).filter(([id]) => id !== sid).map(([, p]) => p);
@@ -114,7 +104,24 @@ function positionUsedByOther(pos, sid) {
     Object.entries(reservations).some(([id, p]) => id !== sid && p === pos);
 }
 
-function damageSoft(p) { // แต้มน้อยสุด: โดนเกราะก่อน (โล่กันก่อน)
+// รูปที่แสดงในเกม: สลับเป็นร่างแปลง (ถ้าเปิดร่างแล้ว)
+function displayImg(p) {
+  for (const key of TRANSFORM_PRIORITY) {
+    if (TRANSFORMS[key] && p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
+  }
+  return p.img;
+}
+// เพลงสกิลที่ควรเล่นทับ (ถ้ามีคนอยู่ในร่างแปลง)
+function activeSkillMusic() {
+  const alive = alivePlayers();
+  for (const key of ["ginga", "paradise"]) {
+    const t = TRANSFORMS[key];
+    if (t && t.music && alive.some((p) => p.seen && p.seen[key] && (p.statuses[key] || 0) > 0)) return t.music;
+  }
+  return null;
+}
+
+function damageSoft(p) { // เกราะก่อน แล้วเลือด (1 หน่วย)
   if (!p.alive) return;
   if (p.shield > 0) { p.shield--; return; }
   if (p.armor > 0) { p.armor--; p.dmgArmor++; }
@@ -127,10 +134,18 @@ function dealDirect(p, n) { // เข้าเลือดจริง n (โล
     p.hp--; p.dmgHp++;
   }
 }
-function dealArmorOnly(p, n) { // ลดเฉพาะเกราะ n (ไม่แตะเลือด)
+function dealArmorOnly(p, n) { // ลดเฉพาะเกราะ n
   for (let i = 0; i < n; i++) {
     if (p.shield > 0) { p.shield--; continue; }
     if (p.armor > 0) { p.armor--; p.dmgArmor++; }
+  }
+}
+function dealMixed(p, n) { // นับเกราะก่อนแล้วเลือด n (สำหรับ NT-D)
+  for (let i = 0; i < n; i++) {
+    if (!p.alive) return;
+    if (p.shield > 0) { p.shield--; continue; }
+    if (p.armor > 0) { p.armor--; p.dmgArmor++; }
+    else { p.hp--; p.dmgHp++; }
   }
 }
 function addSkill(p, n) {
@@ -166,15 +181,15 @@ function resetRoundDisplay(p) {
 }
 function resetCombat(p) {
   p.hp = MAX_HP; p.armor = MAX_ARMOR; p.skillPoints = 0; p.alive = true; p.shield = 0;
-  p.statuses = {}; p.gingaSeen = false;
+  p.statuses = {}; p.seen = {};
 }
 
 
 // ============================================================
-//  ส่งสถานะ (ซ่อนไพ่/แต้ม/สกิลของคนอื่นระหว่างเฟสไพ่)
+//  ส่งสถานะ
 // ============================================================
 function buildStateFor(viewerId) {
-  const revealAll = gameState !== "PLAYING" && gameState !== "LOBBY"; // เปิดข้อมูลตั้งแต่เฟสสรุปผล
+  const revealAll = gameState !== "PLAYING" && gameState !== "LOBBY";
   return {
     gameState,
     timeLeft,
@@ -183,15 +198,8 @@ function buildStateFor(viewerId) {
     youId: viewerId,
     attackerId: gameState === "ATTACK" ? attackerId : null,
     winnerId: (gameState === "SUMMARY" || gameState === "ATTACK") ? roundWinnerId : null,
-    gingaActive: Object.values(players).some((p) => p.alive && p.gingaSeen && (p.statuses.ginga || 0) > 0),
-    cutscene: (gameState === "CUTSCENE" && players[cutscenePlayerId]) ? {
-      playerId: cutscenePlayerId,
-      name: players[cutscenePlayerId].name,
-      img: displayImg(players[cutscenePlayerId]),
-      color: POSITION_COLORS[players[cutscenePlayerId].position] || "#9B4F96",
-      video: "/skill_song/ginga/ginga_final.mp4",
-      title: "ULTLIVE ULTRAMAN GINGA",
-    } : null,
+    skillMusic: activeSkillMusic(),
+    cutscene: gameState === "CUTSCENE" ? cutsceneInfo : null,
     log: (gameState === "SUMMARY" || gameState === "TRANSITION" || gameState === "GAMEOVER") ? lastLog : [],
     players: Object.values(players).map((p) => {
       const mine = p.id === viewerId;
@@ -205,18 +213,18 @@ function buildStateFor(viewerId) {
         img: displayImg(p),
         position: p.position,
         color: POSITION_COLORS[p.position] || "#888",
-        locked: p.locked,                       // "พร้อมแล้ว" โชว์ได้ (ไม่บอกไพ่)
+        locked: p.locked,
         busted: show ? bustedOf(p) : false,
         result: p.result,
         cardCount: p.cards.length,
-        cards: mine ? p.cards : null,           // เห็นเฉพาะไพ่ตัวเอง
-        score: show ? scoreOf(p) : null,        // แต้มโชว์เฉพาะตัวเอง/ตอนสรุปผล
+        cards: mine ? p.cards : null,
+        score: show ? scoreOf(p) : null,
         hp: p.hp, maxHp: MAX_HP,
         armor: p.armor, maxArmor: MAX_ARMOR,
         shield: p.shield,
         skillPoints: p.skillPoints, maxSkill: MAX_SKILL,
         alive: p.alive,
-        statuses: show ? { ...p.statuses } : {},  // ซ่อนสกิลของคนอื่นระหว่างเฟสไพ่
+        statuses: show ? { ...p.statuses } : {},
         character: {
           id: ch.id, name: ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
@@ -237,7 +245,32 @@ function broadcastPositions() {
 
 
 // ============================================================
-//  วงจรรอบ: PLAYING -> SUMMARY -> ATTACK -> TRANSITION -> (รอบใหม่)
+//  cutscene (เล่นวีดีโอแปลงร่าง แล้วค่อยไปต่อ)
+// ============================================================
+function queueCutscene(p, key) {
+  const t = TRANSFORMS[key];
+  if (!t) return;
+  cutsceneQueue.push({
+    seconds: t.seconds,
+    info: {
+      playerId: p.id, name: p.name,
+      img: t.img, color: POSITION_COLORS[p.position] || "#9B4F96",
+      video: t.video, title: t.title,
+    },
+  });
+}
+function runCutsceneQueue(onDone) {
+  if (cutsceneQueue.length === 0) { cutsceneInfo = null; onDone(); return; }
+  const c = cutsceneQueue.shift();
+  cutsceneInfo = c.info;
+  gameState = "CUTSCENE";
+  startPhaseTimer(c.seconds, () => runCutsceneQueue(onDone));
+  broadcastState();
+}
+
+
+// ============================================================
+//  วงจรรอบ
 // ============================================================
 function startMatch() {
   for (const p of Object.values(players)) resetCombat(p);
@@ -251,7 +284,8 @@ function dealRound() {
   lastLog = [];
   attackerId = null;
   roundWinnerId = null;
-  cutscenePlayerId = null;
+  cutsceneQueue = [];
+  cutsceneInfo = null;
 
   for (const p of Object.values(players)) {
     resetRoundDisplay(p);
@@ -273,7 +307,6 @@ function dealRound() {
   checkAllLocked();
 }
 
-// จั่วการ์ด
 function hit(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
@@ -284,8 +317,6 @@ function hit(id) {
   broadcastState();
   checkAllLocked();
 }
-
-// เปิดไพ่ = พร้อม (ยังไม่โชว์จนครบทุกคน)
 function lock(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
@@ -293,8 +324,6 @@ function lock(id) {
   broadcastState();
   checkAllLocked();
 }
-
-// ใช้สกิล (เงียบๆ ไม่โชว์คนอื่น)
 function useSkill(id, tier) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
@@ -313,14 +342,13 @@ function useSkill(id, tier) {
   broadcastState();
   checkAllLocked();
 }
-
 function checkAllLocked() {
   if (gameState !== "PLAYING") return;
   const c = alivePlayers();
   if (c.length > 0 && c.every((p) => p.locked)) resolveRound();
 }
 
-// ---- เฟส 2: สรุปผล (เปิดแต้ม + หาผู้ชนะ) ----
+// ---- สรุปผล ----
 function resolveRound() {
   clearPhaseTimer();
   for (const p of alivePlayers()) p.locked = true;
@@ -338,7 +366,6 @@ function resolveRound() {
   const best = Math.max(...combatants.map(val));
   const worst = Math.min(...combatants.map(val));
 
-  // ผู้ชนะ: แต้มสูงสุดที่ไม่แตก — เสมอกันสุ่ม 1 คน
   if (best >= 0) {
     const tied = combatants.filter((p) => val(p) === best);
     const w = tied[Math.floor(Math.random() * tied.length)];
@@ -350,7 +377,6 @@ function resolveRound() {
     if (tied.length > 1) lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name}`);
   }
 
-  // ผู้แพ้: แต้มน้อยสุด (เว้นผู้ชนะ)
   if (best !== worst) {
     for (const l of combatants.filter((p) => val(p) === worst && p.id !== roundWinnerId)) {
       l.isLoser = true;
@@ -366,24 +392,19 @@ function resolveRound() {
   afterResolve();
 }
 
-// เปิดร่าง Ginga ของคนที่เพิ่งกดท่าไม้ตาย (หลังเปิดไพ่) -> เล่นวีดีโอ cutscene ก่อนสรุปผล
+// เปิดร่างท่าไม้ตายของคนที่เพิ่งกด (หลังเปิดไพ่) -> เล่น cutscene ก่อนสรุปผล
 function afterResolve() {
-  let newGinga = null;
   for (const p of alivePlayers()) {
-    if ((p.statuses.ginga || 0) > 0 && !p.gingaSeen) {
-      p.gingaSeen = true;
-      if (!newGinga) newGinga = p;
+    for (const key of Object.keys(TRANSFORMS)) {
+      if (!TRANSFORMS[key].afterReveal) continue;
+      if ((p.statuses[key] || 0) > 0 && !p.seen[key]) {
+        p.seen[key] = true;
+        queueCutscene(p, key);
+        lastLog.push(`✨ ${p.name} เปิดร่าง ${TRANSFORMS[key].title}!`);
+      }
     }
   }
-  if (newGinga) {
-    cutscenePlayerId = newGinga.id;
-    lastLog.push(`✨ ${newGinga.name} แปลงร่างเป็น Ultraman Ginga!`);
-    gameState = "CUTSCENE";
-    startPhaseTimer(CUTSCENE_TIME, goSummary);
-    broadcastState();
-  } else {
-    goSummary();
-  }
+  runCutsceneQueue(goSummary);
 }
 
 function goSummary() {
@@ -392,16 +413,19 @@ function goSummary() {
   broadcastState();
 }
 
-// ---- เฟส 3: โจมตี ----
+// ---- โจมตี ----
+function attackableTargets(attackerId) {
+  return alivePlayers().filter((p) => p.id !== attackerId && (p.statuses.paradise || 0) === 0); // NewType Paradise = เลือกโจมตีไม่ได้
+}
 function afterSummary() {
   const winner = players[roundWinnerId];
   if (winner && winner.alive) {
-    const targets = alivePlayers().filter((p) => p.id !== winner.id);
+    const targets = attackableTargets(winner.id);
     if (targets.length > 0) {
       attackerId = winner.id;
       gameState = "ATTACK";
       startPhaseTimer(ATTACK_TIME, () => {
-        const t = alivePlayers().filter((p) => p.id !== attackerId);
+        const t = attackableTargets(attackerId);
         if (t.length) doAttack(attackerId, t[Math.floor(Math.random() * t.length)].id);
         else endTurn();
       });
@@ -417,19 +441,30 @@ function doAttack(byId, targetId) {
   const attacker = players[byId];
   const target = players[targetId];
   if (!attacker || !target || !target.alive || target.id === attacker.id) return;
+  if ((target.statuses.paradise || 0) > 0) return; // เลือกโจมตีคนที่ใช้ Paradise ไม่ได้
   clearPhaseTimer();
 
   const ginga = (attacker.statuses.ginga || 0) > 0;
-  const base = 1 + (ginga ? 1 : 0); // Ginga no Uta (ติดตัว): ระหว่างร่าง Ginga +1
+  const beam = (attacker.statuses.beam || 0) > 0;         // Beam Magnum: ผู้ชนะโจมตี +1
+  const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
+  let base = 1 + (ginga ? 1 : 0) + (beam ? 1 : 0);
+  if (paradiseAtk) base = 0; // NewType Paradise: โจมตีได้แต่ยังไม่สร้างความเสียหายจริง
 
+  // เป้าหมายหลัก (เข้าเลือดจริง)
   let dmg = base;
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1); // MonsterLive
+  const hpBefore = target.hp;
   dealDirect(target, dmg);
   target.wasAttacked = true;
   addSkill(target, 2);
-  firePassive(target, "attacked");
+  // Absorb shield: ถ้าโดนเข้าเลือดจริง -> ฟื้น +1 (โดนแค่เกราะไม่มีผล)
+  if ((target.statuses.absorb || 0) > 0 && target.hp < hpBefore) {
+    target.hp = Math.min(MAX_HP, target.hp + 1);
+    lastLog.push(`🛡️ ${target.name} Absorb shield ฟื้นเลือด +1`);
+  }
   lastLog.push(`${attacker.name} โจมตี ${target.name} เสียเลือดจริง -${dmg}`);
 
+  // Ginga: ตีหมู่ — คนอื่นเสียเฉพาะเกราะ
   if (ginga) {
     for (const o of alivePlayers()) {
       if (o.id === attacker.id || o.id === target.id) continue;
@@ -441,10 +476,18 @@ function doAttack(byId, targetId) {
     lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -${base}`);
   }
 
-  endTurn();
+  // NT-D System (สกิลติดตัวบานาจ): ถูกเลือกโจมตี -> สวนกลับผู้โจมตี 2 (นับเกราะ) + เปิดร่าง NT-D
+  if (target.characterId === "banagher" && attacker.alive) {
+    dealMixed(attacker, 2);
+    lastLog.push(`⚡ NT-D System! ${target.name} สวนกลับ ${attacker.name} -2 (นับเกราะ)`);
+    target.statuses.ntd = 1;
+    if (!target.seen.ntd) { target.seen.ntd = true; queueCutscene(target, "ntd"); }
+  }
+
+  runCutsceneQueue(endTurn);
 }
 
-// ---- ปิดรอบ: ลดสถานะ, แต้มจบเทิร์น, เช็คตกรอบ/จบเกม, แบนเนอร์รอบถัดไป ----
+// ---- ปิดรอบ ----
 function endTurn() {
   clearPhaseTimer();
   attackerId = null;
@@ -454,7 +497,8 @@ function endTurn() {
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
-    if (!(p.statuses.ginga > 0)) p.gingaSeen = false;
+    // ล้างร่างแปลงที่หมดอายุ
+    for (const k of Object.keys(p.seen || {})) if (!(p.statuses[k] > 0)) delete p.seen[k];
   }
 
   for (const p of alivePlayers()) addSkill(p, 1);
@@ -477,7 +521,7 @@ function endTurn() {
     broadcastState();
   } else {
     gameState = "TRANSITION";
-    startPhaseTimer(TRANSITION_TIME, dealRound); // ขึ้น "รอบที่ N+1" แล้วไปต่อเอง
+    startPhaseTimer(TRANSITION_TIME, dealRound);
     broadcastState();
   }
 }
@@ -488,9 +532,10 @@ function backToLobby() {
   timeLeft = 0;
   attackerId = null;
   roundWinnerId = null;
-  cutscenePlayerId = null;
   roundNumber = 0;
   lastLog = [];
+  cutsceneQueue = [];
+  cutsceneInfo = null;
   for (const p of Object.values(players)) {
     p.cards = []; p.locked = false; p.busted = false; p.result = null;
     resetRoundDisplay(p);
@@ -530,7 +575,7 @@ io.on("connection", (socket) => {
       position: pos, characterId: ch.id, avatar: ch.avatar, img: ch.img,
       cards: [], locked: false, busted: false, result: null,
       hp: MAX_HP, armor: MAX_ARMOR, skillPoints: 0, alive: true, shield: 0,
-      statuses: {}, gingaSeen: false,
+      statuses: {}, seen: {},
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
@@ -549,7 +594,6 @@ io.on("connection", (socket) => {
   socket.on("attack", ({ targetId } = {}) => doAttack(socket.id, targetId));
   socket.on("backToLobby", () => { if (gameState === "GAMEOVER") backToLobby(); });
 
-  // ออกจากห้องรอ (กดย้อนกลับ) — คืนผู้เล่นออก แต่จองตำแหน่งเดิมไว้ให้ระหว่างเลือกใหม่
   socket.on("leave", () => {
     if (gameState !== "LOBBY") return;
     const p = players[socket.id];
