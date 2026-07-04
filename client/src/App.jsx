@@ -6,6 +6,7 @@ import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
 import Game from "./screens/Game";
+import VolumeControl from "./components/VolumeControl";
 
 export default function App() {
   const [stage, setStage] = useState("splash"); // splash | setup | character | connected
@@ -72,11 +73,12 @@ export default function App() {
   const confirmCharacter = (characterId) =>
     socket.emit("join", { name, position, characterId });
 
-  if (stage === "splash") return <Splash onEnter={() => setStage("setup")} />;
-  if (stage === "setup")
-    return <Setup taken={taken} initialName={name} initialPos={position} onNext={goCharacter} />;
-  if (stage === "character")
-    return (
+  let screen;
+  if (stage === "splash") screen = <Splash onEnter={() => setStage("setup")} />;
+  else if (stage === "setup")
+    screen = <Setup taken={taken} initialName={name} initialPos={position} onNext={goCharacter} />;
+  else if (stage === "character")
+    screen = (
       <CharacterSelect
         roster={roster}
         position={position}
@@ -85,15 +87,16 @@ export default function App() {
         onBack={() => setStage("setup")}
       />
     );
+  else if (!state)
+    screen = <div className="min-h-screen grid place-items-center text-lg opacity-70">กำลังเชื่อมต่อ...</div>;
+  else if (state.gameState === "LOBBY")
+    screen = <Lobby state={state} onBack={() => { socket.emit("leave"); setStage("character"); }} />;
+  else screen = <Game state={state} />;
 
-  // connected
-  if (!state)
-    return (
-      <div className="min-h-screen grid place-items-center text-lg opacity-70">
-        กำลังเชื่อมต่อ...
-      </div>
-    );
-  if (state.gameState === "LOBBY")
-    return <Lobby state={state} onBack={() => { socket.emit("leave"); setStage("character"); }} />;
-  return <Game state={state} />;
+  return (
+    <>
+      <VolumeControl />
+      {screen}
+    </>
+  );
 }

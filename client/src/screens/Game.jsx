@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { socket } from "../socket";
-import { clickSound } from "../audio";
+import { clickSound, getMasterVolume } from "../audio";
 
-// ---------- cutscene ท่าไม้ตาย (วีดีโอเต็มจอ + โชว์ว่าใครใช้) ----------
+// ---------- cutscene แปลงร่าง (วีดีโอเต็มจอ + โชว์ว่าใครใช้) ----------
 function Cutscene({ cs }) {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    v.volume = getMasterVolume();
     v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); // กัน autoplay block
   }, []);
   return (
@@ -34,7 +35,7 @@ function Cutscene({ cs }) {
           <img src={`/avatars/${cs.img}`} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="text-2xl sm:text-3xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-          <span style={{ color: cs.color }}>{cs.name}</span> ปล่อยท่าไม้ตาย!
+          <span style={{ color: cs.color }}>{cs.name}</span> {cs.label || "ปล่อยท่าไม้ตาย"}!
         </div>
       </div>
     </div>

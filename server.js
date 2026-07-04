@@ -1,8 +1,7 @@
 // ============================================================
 //  ECHO — Blackjack Skill Battle : เซิร์ฟเวอร์ + เอนจินเกม
-//  - การ์ดสุ่มเลข 1-10 รวมแต้มให้ใกล้ 21 สุดโดยไม่เกิน
-//  - 1 รอบ: ไพ่ (PLAYING) -> [CUTSCENE ท่าไม้ตาย] -> สรุปผล (SUMMARY) -> โจมตี (ATTACK) -> แบนเนอร์ (TRANSITION)
-//  - เปิดไพ่ = พร้อม แต่ไพ่/แต้ม/สกิลของคนอื่นถูกซ่อนจนถึงเฟสสรุปผล
+//  - การ์ดสุ่มเลข 1-10 (ไม่ซ้ำในมือเดียวกัน) รวมแต้มใกล้ 21 สุดโดยไม่เกิน
+//  - 1 รอบ: ไพ่ -> [CUTSCENE] -> สรุปผล -> โจมตี -> แบนเนอร์รอบ
 //  - ระบบแปลงร่าง/cutscene/เพลงสกิลแบบ generic (Ginga / NewType Paradise / NT-D)
 // ============================================================
 
@@ -31,18 +30,17 @@ const SUMMARY_TIME = 5;
 const ATTACK_TIME = 15;
 const TRANSITION_TIME = 3;
 
-const MAX_HP = 3;
+const MAX_HP = 5;       // เลือดจริงพื้นฐาน
 const MAX_ARMOR = 2;
 const MAX_SKILL = 6;
 
-// การแปลงร่าง/cutscene ต่อสถานะ (รูปที่สลับ + วีดีโอ + เพลง + จังหวะที่เล่น)
-//  afterReveal = เล่นหลังเปิดไพ่ (ท่าไม้ตาย) | ntd เล่นตอนโดนโจมตี (ในเฟสโจมตี)
+// การแปลงร่าง/cutscene ต่อสถานะ
+//  afterReveal = เล่นหลังเปิดไพ่ (ท่าไม้ตาย) | ntd เล่นตอนโดนโจมตี
 const TRANSFORMS = {
-  ginga:    { img: "ginga.jpg",            video: "/skill_song/ginga/ginga_final.mp4",      title: "ULTLIVE ULTRAMAN GINGA", seconds: 21, music: "ginga",   afterReveal: true },
-  paradise: { img: "unicorn_ntdfinal.jpg", video: "/skill_song/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",       seconds: 10, music: "unicorn", afterReveal: true },
-  ntd:      { img: "unicron_ntd.jpg",      video: "/skill_song/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           seconds: 9,  music: null,     afterReveal: false },
+  ginga:    { img: "ginga.jpg",            video: "/skill_song/ginga/ginga_final.mp4",      title: "ULTLIVE ULTRAMAN GINGA", label: "ปล่อยท่าไม้ตาย",   seconds: 21, music: "ginga",   afterReveal: true },
+  paradise: { img: "unicorn_ntdfinal.jpg", video: "/skill_song/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",       label: "ปล่อยท่าไม้ตาย",   seconds: 10, music: "unicorn", afterReveal: true },
+  ntd:      { img: "unicron_ntd.jpg",      video: "/skill_song/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           label: "สกิลติดตัวทำงาน", seconds: 9,  music: null,     afterReveal: false },
 };
-const TRANSFORM_PRIORITY = ["ntd", "paradise", "ginga"]; // รูปไหนสำคัญกว่าโชว์ก่อน
 
 
 // ---------- สถานะเกมส่วนกลาง ----------
@@ -55,8 +53,9 @@ let roundWinnerId = null;
 let roundNumber = 0;
 let lastLog = [];
 let reservations = {};
-let cutsceneQueue = [];   // คิว cutscene ที่รอเล่น
-let cutsceneInfo = null;  // cutscene ที่กำลังเล่น
+let cutsceneQueue = [];
+let cutsceneInfo = null;
+let transformCounter = 0; // ลำดับการเปิดร่าง (ใช้เลือกเพลงตอนสวนท่ากัน)
 
 function clearPhaseTimer() {
   if (phaseTimerId) clearInterval(phaseTimerId);
@@ -74,9 +73,15 @@ function startPhaseTimer(seconds, onExpire) {
 
 
 // ============================================================
-//  การ์ด + แต้ม
+//  การ์ด (สุ่มเลข 1-10 ไม่ซ้ำในมือเดียวกัน) + แต้ม
 // ============================================================
-function drawCard() { return { value: 1 + Math.floor(Math.random() * 10) }; }
+function drawCardFor(p) {
+  const used = new Set(p.cards.map((c) => c.value));
+  const avail = [];
+  for (let v = 1; v <= 10; v++) if (!used.has(v)) avail.push(v);
+  const v = avail.length ? avail[Math.floor(Math.random() * avail.length)] : 1 + Math.floor(Math.random() * 10);
+  return { value: v };
+}
 function calculateScore(cards) { return cards.reduce((s, c) => s + c.value, 0); }
 function scoreOf(p) {
   const raw = calculateScore(p.cards);
@@ -104,43 +109,49 @@ function positionUsedByOther(pos, sid) {
     Object.entries(reservations).some(([id, p]) => id !== sid && p === pos);
 }
 
-// รูปที่แสดงในเกม: สลับเป็นร่างแปลง (ถ้าเปิดร่างแล้ว)
+// รูปที่แสดง: NT-D คงอยู่จนแก้แค้น (ntdTarget) > Paradise > Ginga
 function displayImg(p) {
-  for (const key of TRANSFORM_PRIORITY) {
-    if (TRANSFORMS[key] && p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
+  if (p.ntdTarget && p.seen && p.seen.ntd) return TRANSFORMS.ntd.img;
+  for (const key of ["paradise", "ginga"]) {
+    if (p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
   }
   return p.img;
 }
-// เพลงสกิลที่ควรเล่นทับ (ถ้ามีคนอยู่ในร่างแปลง)
+// เพลงสกิล: คนที่เปิดร่างล่าสุด (afterResolve ดันของผู้ชนะให้เด่นตอนสวนท่ากัน)
 function activeSkillMusic() {
-  const alive = alivePlayers();
+  let best = null;
   for (const key of ["ginga", "paradise"]) {
     const t = TRANSFORMS[key];
-    if (t && t.music && alive.some((p) => p.seen && p.seen[key] && (p.statuses[key] || 0) > 0)) return t.music;
+    if (!t.music) continue;
+    for (const p of alivePlayers()) {
+      if (p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) {
+        if (!best || (p.transformAt || 0) > best.at) best = { music: t.music, at: p.transformAt || 0 };
+      }
+    }
   }
-  return null;
+  return best ? best.music : null;
 }
 
-function damageSoft(p) { // เกราะก่อน แล้วเลือด (1 หน่วย)
+function damageSoft(p) {
   if (!p.alive) return;
   if (p.shield > 0) { p.shield--; return; }
   if (p.armor > 0) { p.armor--; p.dmgArmor++; }
   else { p.hp--; p.dmgHp++; }
 }
-function dealDirect(p, n) { // เข้าเลือดจริง n (โล่กันก่อน)
+function dealDirect(p, n) {
   for (let i = 0; i < n; i++) {
     if (!p.alive) return;
     if (p.shield > 0) { p.shield--; continue; }
     p.hp--; p.dmgHp++;
   }
 }
-function dealArmorOnly(p, n) { // ลดเฉพาะเกราะ n
+function dealArmorOnly(p, n) {
   for (let i = 0; i < n; i++) {
     if (p.shield > 0) { p.shield--; continue; }
     if (p.armor > 0) { p.armor--; p.dmgArmor++; }
   }
 }
-function dealMixed(p, n) { // นับเกราะก่อนแล้วเลือด n (สำหรับ NT-D)
+function dealMixed(p, n) { // เกราะก่อนแล้วเลือด (สำหรับ NT-D)
   for (let i = 0; i < n; i++) {
     if (!p.alive) return;
     if (p.shield > 0) { p.shield--; continue; }
@@ -165,8 +176,8 @@ function applyOne(p, e) {
     case "armor": p.armor = Math.min(MAX_ARMOR, p.armor + e.amount); break;
     case "points": addSkill(p, e.amount); break;
     case "shield": p.shield += e.amount || 1; break;
-    case "draw": for (let i = 0; i < (e.amount || 1); i++) p.cards.push(drawCard()); break;
-    case "redraw": p.cards = [drawCard(), drawCard()]; break;
+    case "draw": for (let i = 0; i < (e.amount || 1); i++) p.cards.push(drawCardFor(p)); break;
+    case "redraw": p.cards = []; p.cards.push(drawCardFor(p)); p.cards.push(drawCardFor(p)); break;
     case "status": p.statuses[e.status] = e.turns || 1; break;
   }
 }
@@ -181,7 +192,7 @@ function resetRoundDisplay(p) {
 }
 function resetCombat(p) {
   p.hp = MAX_HP; p.armor = MAX_ARMOR; p.skillPoints = 0; p.alive = true; p.shield = 0;
-  p.statuses = {}; p.seen = {};
+  p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0;
 }
 
 
@@ -224,7 +235,7 @@ function buildStateFor(viewerId) {
         shield: p.shield,
         skillPoints: p.skillPoints, maxSkill: MAX_SKILL,
         alive: p.alive,
-        statuses: show ? { ...p.statuses } : {},
+        statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : {},
         character: {
           id: ch.id, name: ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
@@ -245,7 +256,7 @@ function broadcastPositions() {
 
 
 // ============================================================
-//  cutscene (เล่นวีดีโอแปลงร่าง แล้วค่อยไปต่อ)
+//  cutscene
 // ============================================================
 function queueCutscene(p, key) {
   const t = TRANSFORMS[key];
@@ -255,7 +266,7 @@ function queueCutscene(p, key) {
     info: {
       playerId: p.id, name: p.name,
       img: t.img, color: POSITION_COLORS[p.position] || "#9B4F96",
-      video: t.video, title: t.title,
+      video: t.video, title: t.title, label: t.label,
     },
   });
 }
@@ -295,7 +306,9 @@ function dealRound() {
     p.armor = Math.min(MAX_ARMOR, p.armor + 1);
     firePassive(p, "roundStart");
 
-    p.cards = [drawCard(), drawCard()];
+    p.cards = [];
+    p.cards.push(drawCardFor(p));
+    p.cards.push(drawCardFor(p));
     p.locked = false;
     p.busted = false;
     p.result = null;
@@ -310,7 +323,7 @@ function dealRound() {
 function hit(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
-  p.cards.push(drawCard());
+  p.cards.push(drawCardFor(p));
   p.busted = bustedOf(p);
   if (p.busted) p.locked = true;
   else if (scoreOf(p) === 21) p.locked = true;
@@ -392,17 +405,25 @@ function resolveRound() {
   afterResolve();
 }
 
-// เปิดร่างท่าไม้ตายของคนที่เพิ่งกด (หลังเปิดไพ่) -> เล่น cutscene ก่อนสรุปผล
+// เปิดร่างท่าไม้ตาย (หลังเปิดไพ่) -> cutscene ก่อนสรุปผล
 function afterResolve() {
+  const activated = [];
   for (const p of alivePlayers()) {
     for (const key of Object.keys(TRANSFORMS)) {
       if (!TRANSFORMS[key].afterReveal) continue;
       if ((p.statuses[key] || 0) > 0 && !p.seen[key]) {
         p.seen[key] = true;
+        p.transformAt = ++transformCounter;
         queueCutscene(p, key);
-        lastLog.push(`✨ ${p.name} เปิดร่าง ${TRANSFORMS[key].title}!`);
+        lastLog.push(`✨ ${p.name} ${TRANSFORMS[key].label} ${TRANSFORMS[key].title}!`);
+        activated.push(p);
       }
     }
+  }
+  // สวนท่าไม้ตายกัน: เอาเพลงของผู้ชนะ (ถ้าไม่มีผู้ชนะ = คนที่เปิดหลังสุด ซึ่ง transformAt สูงสุดอยู่แล้ว)
+  if (activated.length > 1) {
+    const winner = activated.find((p) => p.id === roundWinnerId);
+    if (winner) winner.transformAt = ++transformCounter;
   }
   runCutsceneQueue(goSummary);
 }
@@ -414,8 +435,8 @@ function goSummary() {
 }
 
 // ---- โจมตี ----
-function attackableTargets(attackerId) {
-  return alivePlayers().filter((p) => p.id !== attackerId && (p.statuses.paradise || 0) === 0); // NewType Paradise = เลือกโจมตีไม่ได้
+function attackableTargets(atkId) {
+  return alivePlayers().filter((p) => p.id !== atkId && (p.statuses.paradise || 0) === 0);
 }
 function afterSummary() {
   const winner = players[roundWinnerId];
@@ -441,30 +462,29 @@ function doAttack(byId, targetId) {
   const attacker = players[byId];
   const target = players[targetId];
   if (!attacker || !target || !target.alive || target.id === attacker.id) return;
-  if ((target.statuses.paradise || 0) > 0) return; // เลือกโจมตีคนที่ใช้ Paradise ไม่ได้
+  if ((target.statuses.paradise || 0) > 0) return; // Paradise = เลือกโจมตีไม่ได้
   clearPhaseTimer();
 
   const ginga = (attacker.statuses.ginga || 0) > 0;
-  const beam = (attacker.statuses.beam || 0) > 0;         // Beam Magnum: ผู้ชนะโจมตี +1
+  const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
   let base = 1 + (ginga ? 1 : 0) + (beam ? 1 : 0);
   if (paradiseAtk) base = 0; // NewType Paradise: โจมตีได้แต่ยังไม่สร้างความเสียหายจริง
 
-  // เป้าหมายหลัก (เข้าเลือดจริง)
+  // เป้าหมายหลัก
   let dmg = base;
-  if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1); // MonsterLive
+  if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
   const hpBefore = target.hp;
   dealDirect(target, dmg);
   target.wasAttacked = true;
   addSkill(target, 2);
-  // Absorb shield: ถ้าโดนเข้าเลือดจริง -> ฟื้น +1 (โดนแค่เกราะไม่มีผล)
   if ((target.statuses.absorb || 0) > 0 && target.hp < hpBefore) {
     target.hp = Math.min(MAX_HP, target.hp + 1);
     lastLog.push(`🛡️ ${target.name} Absorb shield ฟื้นเลือด +1`);
   }
   lastLog.push(`${attacker.name} โจมตี ${target.name} เสียเลือดจริง -${dmg}`);
 
-  // Ginga: ตีหมู่ — คนอื่นเสียเฉพาะเกราะ
+  // Ginga: ตีหมู่
   if (ginga) {
     for (const o of alivePlayers()) {
       if (o.id === attacker.id || o.id === target.id) continue;
@@ -476,12 +496,20 @@ function doAttack(byId, targetId) {
     lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -${base}`);
   }
 
-  // NT-D System (สกิลติดตัวบานาจ): ถูกเลือกโจมตี -> สวนกลับผู้โจมตี 2 (นับเกราะ) + เปิดร่าง NT-D
+  // NT-D System (บานาจเป็นเป้า): สวนกลับ 2 (นับเกราะ) + เปิด/อัปเดตเป้าแก้แค้น (cutscene ครั้งเดียว)
   if (target.characterId === "banagher" && attacker.alive) {
     dealMixed(attacker, 2);
     lastLog.push(`⚡ NT-D System! ${target.name} สวนกลับ ${attacker.name} -2 (นับเกราะ)`);
-    target.statuses.ntd = 1;
-    if (!target.seen.ntd) { target.seen.ntd = true; queueCutscene(target, "ntd"); }
+    const firstTime = !target.ntdTarget;
+    target.ntdTarget = attacker.id;
+    if (firstTime) { target.seen.ntd = true; queueCutscene(target, "ntd"); }
+  }
+
+  // แก้แค้นสำเร็จ: บานาจตีโดนเป้าแก้แค้น -> NT-D สงบลง
+  if (attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id) {
+    attacker.ntdTarget = null;
+    delete attacker.seen.ntd;
+    lastLog.push(`${attacker.name} แก้แค้น ${target.name} สำเร็จ — NT-D สงบลง`);
   }
 
   runCutsceneQueue(endTurn);
@@ -497,8 +525,10 @@ function endTurn() {
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
-    // ล้างร่างแปลงที่หมดอายุ
-    for (const k of Object.keys(p.seen || {})) if (!(p.statuses[k] > 0)) delete p.seen[k];
+    for (const k of Object.keys(p.seen || {})) {
+      if (k === "ntd") continue; // NT-D คงอยู่จนแก้แค้น
+      if (!(p.statuses[k] > 0)) delete p.seen[k];
+    }
   }
 
   for (const p of alivePlayers()) addSkill(p, 1);
@@ -507,6 +537,13 @@ function endTurn() {
     if (p.alive && p.hp <= 0) {
       p.hp = 0; p.alive = false; p.result = "dead";
       lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+    }
+  }
+  // ถ้าเป้าแก้แค้นตาย/หายไป -> NT-D สงบ
+  for (const p of Object.values(players)) {
+    if (p.ntdTarget && (!players[p.ntdTarget] || !players[p.ntdTarget].alive)) {
+      p.ntdTarget = null;
+      delete p.seen.ntd;
     }
   }
 
@@ -575,7 +612,7 @@ io.on("connection", (socket) => {
       position: pos, characterId: ch.id, avatar: ch.avatar, img: ch.img,
       cards: [], locked: false, busted: false, result: null,
       hp: MAX_HP, armor: MAX_ARMOR, skillPoints: 0, alive: true, shield: 0,
-      statuses: {}, seen: {},
+      statuses: {}, seen: {}, ntdTarget: null, transformAt: 0,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };

@@ -1,8 +1,5 @@
 // ============================================================
-//  ระบบเสียง ECHO
-//  - เพลงพื้นหลัง (loop): main_home / card_prepare_turn
-//  - เอฟเฟกต์ (one-shot): action_button, trun_change
-//  จัดการ autoplay policy ให้เอง (เบราว์เซอร์บล็อกเสียงจนกว่าจะมี user gesture)
+//  ระบบเสียง ECHO + master volume
 // ============================================================
 
 const FILES = {
@@ -14,22 +11,37 @@ const FILES = {
   trun_change: "/effect_sound/trun_change.wav",
 };
 
-const MUSIC_VOLUME = 0.45;
+const MUSIC_BASE = 0.45; // ระดับเพลงพื้นฐาน (ก่อนคูณ master)
 
-let currentMusic = null; // ชื่อเพลงพื้นหลังที่กำลังเล่น
+// ---------- master volume (จำค่าไว้ใน localStorage) ----------
+let masterVolume = 0.8;
+try {
+  const saved = parseFloat(localStorage.getItem("echo_vol"));
+  if (!Number.isNaN(saved)) masterVolume = Math.max(0, Math.min(1, saved));
+} catch {}
+const volListeners = new Set();
+
+export function getMasterVolume() { return masterVolume; }
+export function onVolumeChange(fn) { volListeners.add(fn); return () => volListeners.delete(fn); }
+export function setMasterVolume(v) {
+  masterVolume = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem("echo_vol", String(masterVolume)); } catch {}
+  if (currentMusic) getMusic(currentMusic).volume = MUSIC_BASE * masterVolume;
+  volListeners.forEach((fn) => fn(masterVolume));
+}
+
+let currentMusic = null;
 const musicCache = {};
-
 function getMusic(name) {
   if (!musicCache[name]) {
     const a = new Audio(FILES[name]);
     a.loop = true;
-    a.volume = MUSIC_VOLUME;
     musicCache[name] = a;
   }
+  musicCache[name].volume = MUSIC_BASE * masterVolume;
   return musicCache[name];
 }
 
-// เปลี่ยนเพลงพื้นหลัง (ถ้าเป็นเพลงเดิมอยู่แล้ว ไม่ทำอะไร -> ไม่รีสตาร์ท)
 export function playMusic(name) {
   if (!FILES[name] || currentMusic === name) return;
   if (currentMusic) {
@@ -38,9 +50,8 @@ export function playMusic(name) {
     prev.currentTime = 0;
   }
   currentMusic = name;
-  getMusic(name).play().catch(() => {}); // ถ้าโดนบล็อก จะถูกปลุกตอน user คลิกครั้งแรก
+  getMusic(name).play().catch(() => {});
 }
-
 export function stopMusic() {
   if (!currentMusic) return;
   const a = getMusic(currentMusic);
@@ -48,26 +59,18 @@ export function stopMusic() {
   a.currentTime = 0;
   currentMusic = null;
 }
-
-// เอฟเฟกต์เสียงสั้นๆ (สร้างใหม่ทุกครั้งเพื่อให้ซ้อนกันได้)
 export function playSfx(name) {
   if (!FILES[name]) return;
   const a = new Audio(FILES[name]);
-  a.volume = name === "action_button" ? 0.6 : 0.85;
+  a.volume = (name === "action_button" ? 0.6 : 0.85) * masterVolume;
   a.play().catch(() => {});
 }
+export function clickSound() { playSfx("action_button"); }
 
-export function clickSound() {
-  playSfx("action_button");
-}
-
-// ปลุกเพลงพื้นหลังให้เล่นต่อ ถ้าโดน autoplay บล็อกไว้ (เรียกตอนมี user gesture)
 function resumeCurrent() {
   if (currentMusic) {
     const a = getMusic(currentMusic);
     if (a.paused) a.play().catch(() => {});
   }
 }
-if (typeof window !== "undefined") {
-  window.addEventListener("pointerdown", resumeCurrent);
-}
+if (typeof window !== "undefined") window.addEventListener("pointerdown", resumeCurrent);

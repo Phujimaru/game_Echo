@@ -16,7 +16,12 @@
       "Bash(xargs echo \"ไฟล์ใน node_modules ที่ track:\")",
       "Bash(xargs echo \"assets tracked:\")",
       "Bash(xargs echo \"จำนวน locked:true \\(ควรเป็น 2 = kuwagata+winton\\):\")",
-      "Bash(xargs echo \"dist tracked files:\")"
+      "Bash(xargs echo \"dist tracked files:\")",
+      "Bash(git push *)",
+      "Bash(git ls-remote *)",
+      "Bash(git fetch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
