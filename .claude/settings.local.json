@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install 2>&1)",
+      "Bash(node -c server.js)",
+      "Bash(node -c public/client.js)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/Microsoft/Edge/Application/msedge.exe\" \"/c/Program Files/Microsoft/Edge/Application/msedge.exe\" 2>/dev/null; echo \"---\"; which chrome msedge 2>/dev/null; echo \"done\")",
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Bash(mkdir -p client/public/image)",
+      "Bash(cp public/image/background.png client/public/image/)",
+      "Bash(find . -path ./node_modules -prune -o -path ./client/node_modules -prune -o -type f \\\\\\( -iname \"*.mp4\" -o -iname \"ginga*\" \\\\\\) -print)",
+      "Bash(which ffprobe *)",
+      "Bash(ffprobe -v error -show_entries format=duration -of csv=p=0 public/skill_song/ginga/ginga_final.mp4)"
+    ]
+  }
+}

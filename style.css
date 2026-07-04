@@ -1,0 +1,187 @@
+/* ============================================
+   สไตล์ทั้งหมดของเกม Blackjack
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: radial-gradient(circle at center, #0f8a2f, #064016);
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+h1 { margin-bottom: 10px; }
+
+
+/* ============================================
+   หน้าเมนูเริ่มต้น
+   ============================================ */
+#menu-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
+  animation: fadeIn 0.8s ease;
+}
+
+.menu-title {
+  font-size: 60px;
+  margin: 0;
+  text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+}
+
+.menu-subtitle {
+  font-size: 20px;
+  opacity: 0.85;
+  margin: 10px 0 40px;
+}
+
+/* ไพ่ตกแต่งลอยเด้งบนหน้าเมนู */
+.menu-cards {
+  font-size: 70px;
+  margin-bottom: 30px;
+}
+.menu-cards span {
+  display: inline-block;
+  animation: bounce 2s ease-in-out infinite;
+}
+.menu-cards span:nth-child(2) { animation-delay: 0.2s; }
+.menu-cards span:nth-child(3) { animation-delay: 0.4s; }
+.menu-cards span:nth-child(4) { animation-delay: 0.6s; }
+
+/* กล่องอธิบายกติกาบนเมนู */
+.menu-rules {
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  padding: 20px 30px;
+  max-width: 420px;
+  text-align: left;
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+.menu-rules h3 { margin-top: 0; text-align: center; }
+
+
+/* ============================================
+   หน้าจอเล่นเกม
+   ============================================ */
+#game-screen {
+  display: none;              /* ซ่อนไว้ก่อน จะโชว์ตอนกดเริ่ม */
+  animation: fadeIn 0.6s ease;
+}
+
+/* กล่องของผู้เล่นและเจ้ามือ */
+.hand-box {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 15px auto;
+  max-width: 600px;
+}
+
+
+/* ============================================
+   ไพ่
+   ============================================ */
+.card {
+  display: inline-block;
+  background: white;
+  color: black;
+  width: 55px;
+  height: 80px;
+  line-height: 80px;
+  margin: 5px;
+  border-radius: 8px;
+  font-size: 22px;
+  font-weight: bold;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+
+  /* อนิเมชันตอนไพ่ถูกจั่วออกมา */
+  animation: dealCard 0.5s ease;
+}
+
+/* ไพ่สีแดง (โพแดง / ข้าวหลามตัด) */
+.red { color: #d40000; }
+
+/* ไพ่คว่ำของเจ้ามือ */
+.hidden-card {
+  background: linear-gradient(135deg, #555, #333);
+  color: #888;
+}
+
+
+/* ============================================
+   ปุ่มกด
+   ============================================ */
+button {
+  font-size: 18px;
+  padding: 12px 26px;
+  margin: 6px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ffcc00;
+  color: #333;
+  font-weight: bold;
+  transition: transform 0.1s, background 0.2s;
+}
+button:hover { background: #ffd633; transform: scale(1.05); }
+button:active { transform: scale(0.97); }
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ปุ่มใหญ่บนหน้าเมนู */
+.big-button {
+  font-size: 26px;
+  padding: 16px 50px;
+}
+
+
+/* ============================================
+   ข้อความแจ้งผล
+   ============================================ */
+#message {
+  font-size: 22px;
+  font-weight: bold;
+  margin: 15px;
+  min-height: 30px;
+}
+
+
+/* ============================================
+   คีย์เฟรมอนิเมชัน
+   ============================================ */
+
+/* ไพ่จั่ว: เลื่อนลงมาจากด้านบน + จางเข้ามา */
+@keyframes dealCard {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-12deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+
+/* หน้าจอค่อยๆ ปรากฏ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ไพ่ตกแต่งเด้งขึ้นลง */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}

@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/* ---------- ธีมสี ECHO (spec 7.1) ---------- */
+@theme {
+  --color-echo-purple: #9b4f96;
+  --color-echo-purpledark: #6e2c7a;
+  --color-echo-navy: #0b2d4a;
+  --color-echo-bg: #3a3a3c;
+  --color-echo-hp: #c0392b;
+  --color-echo-armor: #3b82c4;
+  --color-echo-gold: #e5b33b;
+  --color-echo-cyan: #22d3ee;
+  --color-echo-magenta: #e83e8c;
+
+  --font-display: "Kanit", "Segoe UI", Tahoma, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: "Kanit", "Segoe UI", Tahoma, sans-serif;
+  color: #eef2f8;
+  /* พื้นหลังภาพจริง + เคลือบสีแบรนด์จางๆ */
+  background:
+    radial-gradient(circle at 18% 12%, rgba(155, 79, 150, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 88%, rgba(11, 45, 74, 0.35), transparent 45%),
+    url("/image/background.png") center / cover no-repeat,
+    #3a3a3c;
+  background-attachment: fixed;
+}
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- โลโก้ ECHO แบบ glitch ---------- */
+.glitch {
+  position: relative;
+  color: #fff;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 26px rgba(155, 79, 150, 0.7);
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.glitch::before {
+  color: var(--color-echo-cyan);
+  clip-path: inset(0 0 55% 0);
+  animation: glitchTop 2.4s infinite linear alternate;
+}
+.glitch::after {
+  color: var(--color-echo-magenta);
+  clip-path: inset(55% 0 0 0);
+  animation: glitchBot 2.4s infinite linear alternate;
+}
+@keyframes glitchTop {
+  0% { transform: translate(-2px, 0); }
+  50% { transform: translate(2px, -1px); }
+  100% { transform: translate(-1px, 1px); }
+}
+@keyframes glitchBot {
+  0% { transform: translate(2px, 0); }
+  50% { transform: translate(-2px, 1px); }
+  100% { transform: translate(1px, -1px); }
+}
+
+/* ---------- แถบหัว (header) แบบ diagonal cut ---------- */
+.echo-header {
+  background: linear-gradient(120deg, var(--color-echo-navy), var(--color-echo-purpledark));
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 0 100%);
+}
+
+/* ---------- watermark ECHO บนโต๊ะ ---------- */
+.echo-watermark::after {
+  content: "ECHO";
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 28vw;
+  color: rgba(255, 255, 255, 0.03);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---------- อนิเมชันจั่วไพ่ ---------- */
+@keyframes dealCard {
+  from { opacity: 0; transform: translateY(-28px) scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+.card-deal { animation: dealCard 0.4s ease; }
+
+/* ---------- เป้าหมายที่เลือกโจมตีได้ ---------- */
+@keyframes targetPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(232, 62, 140, 0.6); }
+  50% { box-shadow: 0 0 22px rgba(232, 62, 140, 1); }
+}
+.targetable { animation: targetPulse 1s ease-in-out infinite; }
+
+/* ---------- แบนเนอร์ "รอบที่ N" ---------- */
+@keyframes bannerPop {
+  0% { opacity: 0; transform: scale(0.6) translateY(24px); letter-spacing: 0.5em; }
+  20% { opacity: 1; transform: scale(1.08) translateY(0); }
+  80% { opacity: 1; transform: scale(1); letter-spacing: 0.15em; }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+.round-banner { animation: bannerPop 3s ease forwards; }
+
+/* ---------- ป้ายแต้มตอนสรุปผล ---------- */
+@keyframes scorePop {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+.score-pop { animation: scorePop 0.35s ease; }
+
+/* ---------- cutscene ท่าไม้ตาย ---------- */
+@keyframes cutFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.cut-flash { animation: cutFlash 0.7s ease forwards; }
+
+@keyframes cutTitle {
+  0% { opacity: 0; transform: translateY(-40px) scale(0.7); letter-spacing: 0.6em; }
+  60% { opacity: 1; transform: translateY(0) scale(1.06); }
+  100% { opacity: 1; transform: scale(1); letter-spacing: 0.18em; }
+}
+.cut-title { animation: cutTitle 1s ease both; }
+
+@keyframes cutPortrait {
+  0% { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+  70% { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: rotate(0); }
+}
+.cut-portrait { animation: cutPortrait 0.9s ease both; }
+
+@keyframes cutGlow {
+  0%, 100% { box-shadow: 0 0 24px 4px var(--cut-color, #9b4f96); }
+  50% { box-shadow: 0 0 48px 12px var(--cut-color, #9b4f96); }
+}
+.cut-glow { animation: cutGlow 1.4s ease-in-out infinite; }
