@@ -31,25 +31,25 @@ const CHARACTERS = [
     // (ทำงานในตรรกะการโจมตีของ engine โดยตรง ไม่ผูกกับ trigger)
     passive: {
       name: "Ginga no Uta",
-      desc: "ระหว่างอยู่ในผลของท่าไม้ตาย Ultlive Ultraman Ginga การโจมตีจะ +1 หน่วย",
+      desc: "ระหว่างอยู่ในผลของท่าไม้ตาย Ultlive Ultraman Ginga การโจมตีจะ +1 หน่วย และหากเป็นคนกำจัดเป้าหมายได้ ผลของท่าไม้ตายจะ +1 เทิร์น",
     },
     basic: {
       name: "UPG!",
-      desc: "เทิร์นนี้ไพ่จะไม่มีทางแตก แต่แต้มสูงสุดได้เพียง 16 (จั่วเท่าไหร่ก็ไม่เกิน)",
+      desc: "ช่วงจั่วการ์ดเทิร์นนี้ไพ่จะไม่มีทางแตก แต่จั่วเท่าไหร่ก็ได้แต้มสูงสุดเพียง 16 — ถ้ายังอยู่ในร่าง Ginga (ท่าไม้ตาย) เพดานจะเพิ่มเป็น 19",
       cost: 2,
       img: "/characters/hikaru/ginga_skill1.jpg",
       effect: { type: "status", status: "upg", turns: 1 },
     },
     secondary: {
       name: "MonsterLive",
-      desc: "แปลงร่างไคจู 1 เทิร์น: ถ้าถูกผู้ชนะเลือกโจมตี รับความเสียหายน้อยลง 1 หน่วย (ทำงานหลังเปิดไพ่)",
+      desc: "แปลงร่างไคจู 2 เทิร์น: ถ้าถูกผู้เล่นที่มีแต้มสูงสุด (ผู้ชนะ) เลือกโจมตี รับความเสียหายน้อยลง 1 หน่วย (ทำงานหลังเปิดไพ่)",
       cost: 4,
       img: "/characters/hikaru/ginga_skill2.jpg",
-      effect: { type: "status", status: "monster", turns: 1 },
+      effect: { type: "status", status: "monster", turns: 2 },
     },
     ultimate: {
       name: "Ultlive Ultraman Ginga",
-      desc: "แปลงร่าง Ginga 3 เทิร์น + เพลงขึ้น: การโจมตีกลายเป็นตีหมู่ — เป้าหมายที่เลือกเข้าเลือดจริง คนอื่นเสียเฉพาะเกราะ",
+      desc: "แปลงร่าง Ginga 3 เทิร์น + เพลงขึ้น: การโจมตีกลายเป็นตีหมู่ — เป้าหมายที่เลือกเข้าเลือดจริง คนอื่นรับความเสียหายเพียง 1 หน่วย (Ginga no Uta ไม่มีผลกับการตีหมู่) แต่หากเหลือฝ่ายตรงข้ามเพียงคนเดียว พลังโจมตี +1 หน่วย",
       cost: 6,
       img: "/characters/hikaru/ginga_skill3.jpg",
       effect: { type: "status", status: "ginga", turns: 3 },
@@ -60,16 +60,32 @@ const CHARACTERS = [
     name: "คุวากาตะโอเจอร์",
     avatar: 1,
     img: "/characters/kuwagata/Kuwakata_Ohger.webp",
-    locked: true,
+    // สกิลติดตัว Beat Mode: พลังชีวิต < 3 -> ประกายเขี้ยวปฏิปักษ์ (จัดการในตรรกะ engine โดยตรง)
     passive: {
-      name: "สายมานา",
-      desc: "ต้นรอบ รับแต้มสกิล +1",
-      trigger: "roundStart",
-      effect: { type: "points", amount: 1 },
+      name: "Beat Mode",
+      desc: "เมื่อพลังชีวิตต่ำกว่า 3 หน่วย จะเข้าสู่ประกายเขี้ยวปฏิปักษ์อัตโนมัติ: ทุกการโจมตีของผู้ใช้เป็นความเสียหายจริง (ไม่สนเกราะ), สกิลพื้นฐานใช้ไม่ได้ และจะกันตายจากการโจมตีที่ถึงตายทันทีได้ 1 ครั้ง (ค้างที่ 1 หน่วย) — หลังกันตายทำงาน เกราะจะไม่ฟื้นคืนและความเสียหายจากการแพ้ตอนจั่วการ์ดจะไม่มีผล แต่การโจมตีถึงตายครั้งต่อไปจะตายตามปกติ",
     },
-    basic: { name: "อ่านเกม", desc: "จั่วไพ่เพิ่ม 1 ใบ", cost: 2, effect: { type: "draw", amount: 1 } },
-    secondary: { name: "แปรธาตุ", desc: "ทิ้งมือ แล้วจั่วใหม่ 2 ใบ", cost: 4, effect: { type: "redraw" } },
-    ultimate: { name: "เกราะเวทย์", desc: "รับเกราะเต็ม +2", cost: 6, effect: { type: "armor", amount: 2 } },
+    basic: {
+      name: "Rainbow Pudding",
+      desc: "ฟื้นพลังชีวิต 1 หน่วยทันที (มีผลทันที ไม่ต้องรอเปิดไพ่) — ใช้ไม่ได้ระหว่างอยู่ในโหมด Beat Mode",
+      cost: 2,
+      img: "/characters/kuwagata/kuwagata_skill1.png",
+      effect: { type: "heal", amount: 1 },
+    },
+    secondary: {
+      name: "Ohger Finish",
+      desc: "ฟาดด้วยโอเจอร์คาลิเบอร์ สร้างความเสียหายเพิ่ม +1 หน่วย (ทำงานหลังเปิดไพ่) — หากท่าไม้ตายสวมเกราะราชันยังมีผลอยู่ จะเป็น +2 หน่วยแทน (ไม่ซ้อนกับเงื่อนไขปกติ)",
+      cost: 4,
+      img: "/characters/kuwagata/kuwagata_skill2.webp",
+      effect: { type: "status", status: "ohger", turns: 1 },
+    },
+    ultimate: {
+      name: "สวมเกราะราชัน",
+      desc: "สวมเกราะราชัน 5 เทิร์น: เพิ่มปริมาณเกราะที่สะสมได้ +3 หน่วย และสวมเกราะเต็มทันที (ทำงานหลังเปิดไพ่) เมื่อครบเทิร์นจะกลับเป็นค่าเดิม",
+      cost: 6,
+      img: "/characters/kuwagata/kuwagata_skill3.webp",
+      effect: { type: "status", status: "rachan", turns: 5 },
+    },
   },
   {
     id: "winton",
@@ -101,28 +117,29 @@ const CHARACTERS = [
     // (จัดการในตรรกะ engine โดยตรง ไม่ผูก trigger)
     passive: {
       name: "NT-D System",
-      desc: "เมื่อถูกเลือกโจมตี NT-D จะทำงาน สวนกลับผู้โจมตีนั้น 2 หน่วย (นับเกราะที่มีอยู่ด้วย)",
+      desc: "หากถูกเลือกโจมตี NT-D System จะทำงาน ทำให้การโจมตีของบานาจสร้างความเสียหาย +1 หน่วยแก่คนที่โจมตีเราคนล่าสุด และจะหยุดทำงานเมื่อโจมตีคืนสำเร็จ",
     },
     basic: {
       name: "Absorb shield",
-      desc: "เทิร์นนี้ ถ้าถูกโจมตีเข้าเลือดจริง จะฟื้นพลังชีวิต +1 (ถ้าโดนแค่เกราะ ไม่มีผล)",
+      desc: "เทิร์นนี้ ถ้าถูกโจมตีหรือเป็นผู้แพ้ แล้วยังมีเกราะอยู่ เกราะที่เสียไปจะถูกแปลงกลับมาเป็นพลังชีวิต",
       cost: 2,
       img: "/characters/banagher/unicorn_skill1.jpg",
       effect: { type: "status", status: "absorb", turns: 1 },
     },
     secondary: {
       name: "Beam Magnum",
-      desc: "ถ้าเป็นผู้ที่แต้มใกล้ 21 สุด (ผู้ชนะ) การโจมตีจะแรงขึ้น +1 หน่วย",
+      desc: "สร้างความเสียหายเพิ่ม +2 หน่วย ทำงานหลังทุกคนเปิดไพ่ และซ้อนกับ NT-D System ได้ — มีกระสุน 3 นัดต่อเกม (ไม่นับถ้าเลือกแล้วไม่ได้โจมตีหรือแตกในเทิร์นนั้น)",
       cost: 4,
       img: "/characters/banagher/unicorn_skill2.jpg",
+      ammo: 3,
       effect: { type: "status", status: "beam", turns: 1 },
     },
     ultimate: {
       name: "NewType Paradise",
-      desc: "เปิด NT-D พิเศษ 2 เทิร์น: ถูกเลือกโจมตีไม่ได้ (อยู่ยงคงกระพัน) — โจมตีได้แต่ยังไม่สร้างความเสียหายจริง",
+      desc: "เปิด NT-D แบบพิเศษ 3 เทิร์น: ลบข้อเสียของ NT-D System ให้โจมตีผู้เล่นอื่นได้ด้วยพลัง NT-D (+1) และเติมกระสุน Beam Magnum +1 (ทำงานหลังเปิดไพ่)",
       cost: 6,
       img: "/characters/banagher/unicorn_skill3.jpg",
-      effect: { type: "status", status: "paradise", turns: 2 },
+      effect: { type: "status", status: "paradise", turns: 3 },
     },
   },
 ];
@@ -141,7 +158,7 @@ const POSITION_COLORS = {
 
 // เวอร์ชัน "สาธารณะ" ส่งให้ client (ตัด effect ภายในออก เหลือชื่อ/คำอธิบาย/ค่าใช้)
 function publicRoster() {
-  const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost, img: s.img } : null);
+  const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost, img: s.img, ammo: s.ammo } : null);
   return CHARACTERS.map((c) => ({
     id: c.id,
     name: c.name,

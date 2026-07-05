@@ -7,6 +7,10 @@ const FILES = {
   card_prepare_turn: "/theme_song/card_prepare_turn.mp3",
   ginga: "/characters/hikaru/ginga_song.mp3",
   unicorn: "/characters/banagher/unicorn_song.mp3",
+  final_normal: "/characters/kuwagata/final_normal.mp3", // เพลงระหว่างสวมเกราะราชัน
+  ex_guts: "/characters/kuwagata/ex_guts.mp3",           // เพลง Beat Mode (ทับทุกเพลงจนตาย)
+  normal_k: "/characters/kuwagata/normal_k.mp3",         // เสียงพากย์หลังวีดีโอสวมเกราะราชัน
+  ex_k: "/characters/kuwagata/ex_k.mp3",                 // เสียงพากย์หลังวีดีโอ Beat Mode
   action_button: "/effect_sound/action_button.wav",
   trun_change: "/effect_sound/trun_change.wav",
   attack: "/effect_sound/attack.wav",

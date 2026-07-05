@@ -28,7 +28,16 @@
       "Bash(mv avatars/Banagher_Links.png avatars/unicorn_ntdfinal.jpg avatars/unicron_ntd.jpg characters/banagher/)",
       "Bash(mv skill_song/banagher/Unicorn_final.mp4 skill_song/banagher/NTD_passive.mp4 skill_song/banagher/unicorn_song.mp3 characters/banagher/)",
       "Bash(grep -rn \"/avatars/\\\\|/skill_song/\" client/src)",
-      "Bash(grep -n \"/avatars/\\\\|/skill_song/\" server.js characters.js)"
+      "Bash(grep -n \"/avatars/\\\\|/skill_song/\" server.js characters.js)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"try{require.resolve\\('playwright'\\);console.log\\('pw global-ish'\\)}catch\\(e\\){console.log\\('no pw'\\)}\")",
+      "Bash(where chrome *)",
+      "Bash(ls \"/c/Program Files/Google/Chrome/Application/chrome.exe\")",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npm init *)",
+      "Bash(PORT=3123 node server.js)",
+      "Bash(curl -s -o /dev/null -w \"server HTTP %{http_code}\\\\n\" http://localhost:3123/)",
+      "Bash(node drive.js)"
     ]
   }
 }

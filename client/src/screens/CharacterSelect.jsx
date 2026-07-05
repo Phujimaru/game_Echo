@@ -128,9 +128,9 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
       ) : (
         /* ================= โหมดรายละเอียด (เลือกแล้ว) ================= */
         <>
-          <div className="flex-1 flex items-center gap-4 p-4 sm:p-6 overflow-hidden">
-            {/* คอลัมน์ตัวละครให้สลับ */}
-            <div className="flex flex-col gap-3 shrink-0">
+          <div className="flex-1 flex flex-col lg:flex-row items-center lg:items-start gap-4 p-4 sm:p-6 overflow-y-auto pb-32 lg:pb-6">
+            {/* คอลัมน์ตัวละครให้สลับ (แนวนอนบนมือถือ / แนวตั้งบนจอกว้าง) */}
+            <div className="flex flex-row lg:flex-col flex-wrap justify-center gap-3 shrink-0">
               {roster.map((c) => (
                 <button
                   key={c.id}
@@ -154,13 +154,13 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
             {/* รูปตัวใหญ่ */}
             <CharImage
               c={sel}
-              className="w-44 h-60 sm:w-56 sm:h-72 shrink-0 -rotate-2 shadow-2xl"
+              className="w-40 h-52 sm:w-56 sm:h-72 shrink-0 -rotate-2 shadow-2xl"
               rounded="rounded-2xl"
               emojiSize="5rem"
             />
 
             {/* แผงสกิล */}
-            <div className="flex-1 self-stretch max-h-[70vh] bg-echo-navy/85 rounded-3xl p-4 sm:p-5 flex flex-col gap-3">
+            <div className="w-full lg:flex-1 lg:self-stretch lg:max-h-[70vh] bg-echo-navy/85 rounded-3xl p-4 sm:p-5 flex flex-col gap-3">
               <div
                 className="rounded-xl bg-white/5 border-2 px-4 py-2 text-2xl sm:text-3xl font-bold text-white text-center"
                 style={{ borderColor: color }}

@@ -2,7 +2,31 @@ import { useEffect, useRef, useState } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { socket } from "../socket";
-import { clickSound, getMasterVolume } from "../audio";
+import { clickSound, getMasterVolume, playSfx } from "../audio";
+
+// ขนาดจอ (อัปเดตเมื่อหมุน/ย่อขยาย) — ใช้ย่อทั้งกระดานให้พอดีจอ รองรับมือถือแนวตั้ง
+function useViewport() {
+  const [vp, setVp] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 1280,
+    h: typeof window !== "undefined" ? window.innerHeight : 720,
+  }));
+  useEffect(() => {
+    const onResize = () => {
+      const vv = window.visualViewport;
+      setVp({ w: vv ? vv.width : window.innerWidth, h: vv ? vv.height : window.innerHeight });
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      if (window.visualViewport) window.visualViewport.removeEventListener("resize", onResize);
+    };
+  }, []);
+  return vp;
+}
 
 // ---------- cutscene แปลงร่าง ----------
 //  เต็ม = วีดีโอเต็มจอ (ครั้งแรกต่อเกม) | brief = แบนเนอร์สั้นบอกแค่ใครใช้อะไร
@@ -85,6 +109,28 @@ function AttackFx({ a }) {
   );
 }
 
+// ---------- เอฟเฟกต์ระเบิดตอนเปลี่ยนร่าง (บนจอปกติ หลังวีดีโอจบ) ----------
+//  แดง = สวมเกราะราชัน | เขียว = Beat Mode — พร้อมแจ้งว่าใครเปลี่ยนร่าง
+function TransformFx({ fx }) {
+  const red = fx.kind === "rachan";
+  const label = red ? "สวมเกราะราชัน" : "ประกายเขี้ยวปฏิปักษ์";
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center pointer-events-none overflow-hidden">
+      <div className={`absolute inset-0 ${red ? "xfx-flash-red" : "xfx-flash-green"}`} />
+      <div className={`xfx-burst ${red ? "xfx-burst-red" : "xfx-burst-green"}`} />
+      <div className="relative flex flex-col items-center gap-2 pop-in text-hard">
+        <div className={`rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 ${red ? "aura-rachan" : "aura-beat"}`} style={{ borderColor: fx.color }}>
+          <img src={fx.img} alt="" className="w-full h-full object-cover" />
+        </div>
+        <div className="text-3xl sm:text-4xl font-black" style={{ color: red ? "#ff5747" : "#4ade80" }}>
+          {fx.name} เปลี่ยนร่าง!
+        </div>
+        <div className="text-lg sm:text-xl font-bold bg-black/55 rounded-full px-4 py-0.5">{label}</div>
+      </div>
+    </div>
+  );
+}
+
 // ชื่อเฟส (โชว์อนิเมชันตอนเปลี่ยนเฟส)
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
@@ -98,11 +144,18 @@ const SLOTS = {
   5: [[9, 17], [6, 50], [9, 83], [50, 8], [50, 92]],
 };
 
+// เอฟเฟครอบการ์ด: Beat Mode = สายฟ้าเขียว (ถาวร) / สวมเกราะราชัน = โกลว์แดง
+function auraClass(p) {
+  if (p.beat) return "aura-beat";
+  if (p.rachan) return "aura-rachan";
+  return "";
+}
+
 // รูปตัวละคร (เต็มกรอบ + fallback)
 function Portrait({ p, className, rounded = "rounded-2xl" }) {
   const [broken, setBroken] = useState(false);
   return (
-    <div className={`relative overflow-hidden ${rounded} ${className}`} style={{ background: "linear-gradient(135deg,#9b4f96,#7d3a78)" }}>
+    <div className={`relative overflow-hidden ${rounded} ${auraClass(p)} ${className}`} style={{ background: "linear-gradient(135deg,#9b4f96,#7d3a78)" }}>
       {p.img && !broken ? (
         <img src={p.img} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
       ) : (
@@ -153,6 +206,8 @@ function StatusChips({ statuses }) {
   if (statuses.beam) items.push(["Beam", "bg-echo-magenta"]);
   if (statuses.paradise) items.push([`Paradise${statuses.paradise}`, "bg-echo-gold text-gray-900"]);
   if (statuses.ntd) items.push(["NT-D", "bg-echo-hp"]);
+  if (statuses.ohger) items.push(["Ohger", "bg-echo-gold text-gray-900"]);
+  if (statuses.rachan) items.push([`ราชัน${statuses.rachan}`, "bg-echo-armor"]);
   if (!items.length) return null;
   return (
     <div className="flex flex-wrap gap-1 justify-center mt-1">
@@ -166,24 +221,22 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
   const summary = phase === "SUMMARY";
   return (
     <div
-      className="absolute -translate-x-1/2 flex flex-col items-center gap-1 w-40"
+      className="absolute -translate-x-1/2 flex flex-col items-center gap-1 w-28"
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%` }}
     >
-      <div className="flex items-center gap-2">
-        <div
-          onClick={targetable ? () => { clickSound(); onAttack(p.id); } : undefined}
-          className={`relative ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair targetable rounded-2xl" : ""}`}
-        >
-          <Portrait p={p} className="w-16 h-16 sm:w-20 sm:h-20 -rotate-3 border-4" />
-          <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: p.color }} />
-          {!p.alive && <span className="absolute inset-0 grid place-items-center text-3xl">💀</span>}
-          {p.isWinner && summary && <span className="absolute -top-2 -right-2 text-xl">👑</span>}
-          {phase === "PLAYING" && p.locked && p.alive && (
-            <span className="absolute -bottom-1 -right-1 bg-emerald-600 rounded-full w-5 h-5 grid place-items-center text-xs">✓</span>
-          )}
-        </div>
-        <div className="text-base sm:text-lg font-black px-2 py-0.5 rounded-lg bg-black/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ borderBottom: `3px solid ${p.color}` }}>{p.name}</div>
+      <div
+        onClick={targetable ? () => { clickSound(); onAttack(p.id); } : undefined}
+        className={`relative ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair targetable rounded-2xl" : ""}`}
+      >
+        <Portrait p={p} className="w-16 h-16 sm:w-20 sm:h-20 -rotate-3 border-4" />
+        <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: p.color }} />
+        {!p.alive && <span className="absolute inset-0 grid place-items-center text-3xl">💀</span>}
+        {p.isWinner && summary && <span className="absolute -top-2 -right-2 text-xl">👑</span>}
+        {phase === "PLAYING" && p.locked && p.alive && (
+          <span className="absolute -bottom-1 -right-1 bg-emerald-600 rounded-full w-5 h-5 grid place-items-center text-xs">✓</span>
+        )}
       </div>
+      <div className="max-w-full truncate text-sm sm:text-base font-black px-2 py-0.5 rounded-lg bg-black/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ borderBottom: `3px solid ${p.color}` }}>{p.name}</div>
       <Stats p={p} center />
       {summary && p.score !== null && (
         <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : "text-white"}`}>
@@ -196,10 +249,13 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
 }
 
 // ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่)
-function SkillSlot({ label, tier, skill, points, disabled, onUse }) {
+function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo }) {
   const [broken, setBroken] = useState(false);
+  const hasAmmo = skill && skill.ammo != null;
+  const ammoLeft = hasAmmo ? (ammo ?? skill.ammo) : null;
+  const outOfAmmo = hasAmmo && ammoLeft <= 0;
   const afford = skill && points >= skill.cost;
-  const usable = skill && !disabled && afford;
+  const usable = skill && !disabled && afford && !outOfAmmo;
   return (
     <div className="flex flex-col items-center gap-1">
       <button
@@ -216,16 +272,54 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse }) {
           <div className="absolute inset-0 grid place-items-center text-gray-500 text-3xl">✦</div>
         )}
         {skill && <span className="absolute top-1 right-1 text-xs font-bold bg-black/60 text-white rounded px-1.5">{skill.cost}</span>}
+        {hasAmmo && (
+          <span className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 bg-black/55 rounded px-1 py-0.5">
+            {Array.from({ length: skill.ammo }, (_, i) => (
+              <span key={i} className={`w-2 h-2.5 rounded-[2px] ${i < ammoLeft ? "bg-echo-cyan shadow-[0_0_4px] shadow-echo-cyan" : "bg-white/25"}`} />
+            ))}
+          </span>
+        )}
       </button>
-      <div className="text-xs sm:text-sm font-bold text-center leading-tight">{label}</div>
+      <div className="text-xs sm:text-sm font-bold text-center leading-tight">
+        {label}{hasAmmo && <span className="text-echo-cyan"> · {ammoLeft}/{skill.ammo}</span>}
+      </div>
     </div>
   );
 }
 
+const XFORM_VOICE = { rachan: "normal_k", beat: "ex_k" };
+
 export default function Game({ state }) {
   const [skillOpen, setSkillOpen] = useState(false);
   const [showChar, setShowChar] = useState(false);
+  const [xform, setXform] = useState(null); // เอฟเฟกต์เปลี่ยนร่างบนจอปกติ (หลังวีดีโอ)
+  const vp = useViewport();
   const phase = state.gameState;
+
+  // เมื่อวีดีโอเปลี่ยนร่างจบ (ออกจากเฟส CUTSCENE) -> เล่นเสียงพากย์ + ระเบิด + แจ้งเตือน บนจอปกติ
+  const prevPhase = useRef(null);
+  const announced = useRef(new Set());
+  useEffect(() => {
+    const leftCutscene = prevPhase.current === "CUTSCENE" && phase !== "CUTSCENE";
+    prevPhase.current = phase;
+    if (!leftCutscene) return;
+    for (const p of state.players) {
+      for (const kind of ["rachan", "beat"]) {
+        if (!p[kind]) continue;
+        const key = p.id + ":" + kind;
+        if (announced.current.has(key)) continue;
+        announced.current.add(key);
+        playSfx(XFORM_VOICE[kind]);
+        setXform({ id: p.id, name: p.name, color: p.color, img: p.img, kind });
+        return;
+      }
+    }
+  }, [phase, state]);
+  useEffect(() => {
+    if (!xform) return;
+    const t = setTimeout(() => setXform(null), 2800);
+    return () => clearTimeout(t);
+  }, [xform]);
   const me = state.players.find((p) => p.id === state.youId);
   const others = state.players.filter((p) => p.id !== state.youId);
   const slots = SLOTS[Math.min(others.length, 5)] || [];
@@ -235,14 +329,26 @@ export default function Game({ state }) {
   const loser = state.players.find((p) => p.isLoser);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
+  // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐานใช้ไม่ได้
+  const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
 
   const skill = (tier) => { clickSound(); socket.emit("useSkill", { tier }); setSkillOpen(false); };
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
   if (phase === "CUTSCENE" && state.cutscene) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
 
+  // ---- ย่อ/ขยายทั้งกระดานให้พอดีจอ (auto-fit) ----
+  // กว้างจริง >= 900 : แสดงเต็มจอเหมือนเดิม (สเกล 1). แคบกว่านั้น (มือถือแนวตั้ง) : ออกแบบที่ 900px แล้วย่อลงพอดีจอ
+  const DESIGN_W = Math.max(900, vp.w);
+  const scale = vp.w / DESIGN_W;
+  const designH = vp.h / scale;
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden">
+      <div
+        className="relative overflow-hidden"
+        style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
+      >
       {/* โลโก้กลางโต๊ะ */}
       <div className="absolute inset-x-0 top-[32%] flex justify-center pointer-events-none">
         <h1 className="glitch text-5xl sm:text-6xl font-black opacity-60" data-text="ECHO">ECHO</h1>
@@ -269,7 +375,7 @@ export default function Game({ state }) {
 
       {/* ---------- แผงตัวเรา (ล่างกลาง) ---------- */}
       {me && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[min(98vw,820px)]">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[min(96%,860px)]">
           <div className="relative rounded-3xl p-4 pl-28 shadow-2xl" style={{ background: "linear-gradient(135deg,#7a2230,#a3283a)" }}>
             {/* รูป + ชื่อ + รายละเอียด (ซ้าย) */}
             <div className="absolute left-[-6px] top-6 w-28 flex flex-col items-center text-center">
@@ -318,8 +424,8 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe} onUse={skill} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} ammo={me.beamAmmo} />
                   <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
                 </div>
 
@@ -363,35 +469,37 @@ export default function Game({ state }) {
 
       {/* ---------- เฟสสรุปผล: อนิเมชันผู้ชนะ + ผู้แต้มน้อยสุด (กลางจอ) ---------- */}
       {phase === "SUMMARY" && (
-        <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 pointer-events-none">
-          <div className="pop-in text-2xl sm:text-3xl font-black bg-black/60 rounded-full px-6 py-1 text-white text-hard">🃏 เปิดการ์ด!</div>
-          <div className="pop-in flex items-start gap-6 sm:gap-12 text-hard">
-            {winner && (
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-echo-gold text-xl sm:text-2xl font-black">🏆 ผู้ชนะ</div>
-                <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4" style={{ borderColor: winner.color, "--cut-color": winner.color }}>
-                  <img src={winner.img} alt="" className="w-full h-full object-cover" />
+        <div className="absolute top-[14%] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 pointer-events-none">
+          <div className="pop-in text-2xl sm:text-3xl font-black bg-black/70 rounded-full px-6 py-1 text-white text-hard border border-white/20">🃏 เปิดการ์ด!</div>
+          <div className="pop-in flex flex-col items-center gap-3 rounded-3xl px-6 sm:px-10 py-5 bg-gradient-to-b from-slate-900/95 to-black/95 border-2 border-echo-gold/40 shadow-2xl backdrop-blur-md ring-1 ring-white/10">
+            <div className="flex items-start gap-6 sm:gap-12 text-hard">
+              {winner && (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="text-echo-gold text-xl sm:text-2xl font-black">🏆 ผู้ชนะ</div>
+                  <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4" style={{ borderColor: winner.color, "--cut-color": winner.color }}>
+                    <img src={winner.img} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="font-black text-lg" style={{ color: winner.color }}>{winner.name}</div>
+                  <div className="text-echo-gold font-black">{winner.busted ? "แตก!" : `${winner.score} แต้ม`}</div>
                 </div>
-                <div className="font-black text-lg" style={{ color: winner.color }}>{winner.name}</div>
-                <div className="text-echo-gold font-black">{winner.busted ? "แตก!" : `${winner.score} แต้ม`}</div>
-              </div>
-            )}
-            {loser && (
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-echo-hp text-lg sm:text-xl font-black">💔 แต้มน้อยสุด −1</div>
-                <div className="shake rounded-2xl overflow-hidden w-20 h-20 sm:w-24 sm:h-24 border-4 grayscale" style={{ borderColor: loser.color }}>
-                  <img src={loser.img} alt="" className="w-full h-full object-cover" />
+              )}
+              {loser && (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="text-echo-hp text-lg sm:text-xl font-black">💔 แต้มน้อยสุด −1</div>
+                  <div className="shake rounded-2xl overflow-hidden w-20 h-20 sm:w-24 sm:h-24 border-4 grayscale" style={{ borderColor: loser.color }}>
+                    <img src={loser.img} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="font-bold" style={{ color: loser.color }}>{loser.name}</div>
+                  <div className="text-echo-hp text-sm">{loser.busted ? "แตก!" : `${loser.score} แต้ม`}</div>
                 </div>
-                <div className="font-bold" style={{ color: loser.color }}>{loser.name}</div>
-                <div className="text-echo-hp text-sm">{loser.busted ? "แตก!" : `${loser.score} แต้ม`}</div>
+              )}
+            </div>
+            {state.log?.length > 0 && (
+              <div className="flex flex-col gap-1 items-center max-w-lg w-full border-t border-white/10 pt-3">
+                {state.log.map((t, i) => <div key={i} className="text-sm bg-black/40 rounded px-3 py-1 w-full text-center">{t}</div>)}
               </div>
             )}
           </div>
-          {state.log?.length > 0 && (
-            <div className="flex flex-col gap-1 items-center max-w-lg">
-              {state.log.map((t, i) => <div key={i} className="text-sm bg-black/50 rounded px-3 py-1">{t}</div>)}
-            </div>
-          )}
         </div>
       )}
 
@@ -404,6 +512,9 @@ export default function Game({ state }) {
 
       {/* ---------- อนิเมชันใครตีใคร ---------- */}
       {phase === "ATTACKING" && state.attack && <AttackFx a={state.attack} />}
+
+      {/* ---------- เอฟเฟกต์เปลี่ยนร่าง (ระเบิด + แจ้งเตือน) บนจอปกติหลังวีดีโอ ---------- */}
+      {xform && <TransformFx fx={xform} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (
@@ -443,6 +554,7 @@ export default function Game({ state }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
