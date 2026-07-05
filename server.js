@@ -138,6 +138,7 @@ function maybeBeatMode(p) {
   if (p.seen && p.seen.beat) return;       // เข้าแล้วครั้งเดียวพอ (ถาวรจนตาย)
   p.seen.beat = true;
   p.transformAt = ++transformCounter;
+  p.beatAt = p.transformAt; // ล็อกลำดับตอนเข้า Beat (ให้เพลง ex_guts ไม่รีสตาร์ทตอนแปลงร่างอื่นทีหลัง)
   const firstTime = !p.cutsceneShown.beat;
   triggerCutscene(p, "beat");
   if (firstTime) queueTransformAnnounce(p, "beat"); // วีดีโอ -> ประกาศเปลี่ยนร่าง (ระเบิดเขียว + เสียงพากย์)
@@ -164,8 +165,16 @@ function displayImg(p) {
   return p.img;
 }
 // เพลงสกิล: Beat Mode (ex_guts) ทับทุกเพลงจนผู้ใช้ตาย > คนที่เปิดร่างล่าสุด
+//  คืน { music, at } — at = ลำดับการเปิดร่าง ให้ client รู้ว่าเป็น "การเปิดครั้งใหม่"
+//  (เปิดท่าซ้ำ / คนอื่นเปิดท่าเพลงเดียวกันทับ) -> เพลงต้องเริ่มใหม่จากต้น
 function activeSkillMusic() {
-  for (const p of alivePlayers()) if (p.seen && p.seen.beat) return "ex_guts";
+  let bestBeat = null;
+  for (const p of alivePlayers()) {
+    if (p.seen && p.seen.beat) {
+      if (!bestBeat || (p.beatAt || 0) > bestBeat.at) bestBeat = { music: "ex_guts", at: p.beatAt || 0 };
+    }
+  }
+  if (bestBeat) return bestBeat;
   let best = null;
   for (const key of ["ginga", "paradise", "rachan"]) {
     const t = TRANSFORMS[key];
@@ -176,7 +185,7 @@ function activeSkillMusic() {
       }
     }
   }
-  return best ? best.music : null;
+  return best;
 }
 
 function damageSoft(p) {
@@ -261,7 +270,7 @@ function resetRoundDisplay(p) {
 }
 function resetCombat(p) {
   p.hp = MAX_HP; p.armor = MAX_ARMOR; p.skillPoints = 0; p.alive = true; p.shield = 0;
-  p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0;
+  p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0; p.beatAt = 0;
   p.armorLocked = false; // Beat Mode: กันตายแล้วเกราะจะไม่ฟื้นคืน
   p.beatSaved = false;   // Beat Mode: กันตายได้ครั้งเดียวต่อเกม (คล้าย Focus Sash)
   p.skillUsedRound = false; // ใช้สกิลได้ 1 อันต่อเทิร์น
@@ -276,6 +285,7 @@ function resetCombat(p) {
 // ============================================================
 function buildStateFor(viewerId) {
   const revealAll = gameState !== "PLAYING" && gameState !== "LOBBY";
+  const sm = activeSkillMusic();
   return {
     gameState,
     timeLeft,
@@ -284,7 +294,8 @@ function buildStateFor(viewerId) {
     youId: viewerId,
     attackerId: gameState === "ATTACK" ? attackerId : null,
     winnerId: (gameState === "SUMMARY" || gameState === "ATTACK") ? roundWinnerId : null,
-    skillMusic: activeSkillMusic(),
+    skillMusic: sm ? sm.music : null,
+    skillMusicSeq: sm ? sm.at : 0, // เปลี่ยน = การเปิดร่างครั้งใหม่ -> client เริ่มเพลงใหม่
     cutscene: gameState === "CUTSCENE" ? cutsceneInfo : null,
     attack: gameState === "ATTACKING" ? lastAttack : null,
     log: (gameState === "SUMMARY" || gameState === "TRANSITION" || gameState === "GAMEOVER") ? lastLog : [],
@@ -467,6 +478,8 @@ function useSkill(id, tier) {
   if (p.skillUsedRound) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
   // Beat Mode (ประกายเขี้ยว): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้ (ใช้ได้แค่สกิลรอง)
   if ((tier === "basic" || tier === "ultimate") && beatActive(p)) return;
+  // สวมเกราะราชัน: ผลถาวร -> กดซ้ำไม่ได้อีกตลอดเกม
+  if (tier === "ultimate" && p.characterId === "kuwagata" && (p.statuses.rachan || 0) > 0) return;
   // Rainbow Pudding (คุวากาตะ): ใช้ได้แค่ 2 ครั้งต่อเกม
   const isPudding = p.characterId === "kuwagata" && tier === "basic";
   if (isPudding && (p.puddingUses || 0) <= 0) return;
@@ -631,9 +644,11 @@ function doAttack(byId, targetId) {
   const ginga = (attacker.statuses.ginga || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
-  // Ohger Finish: +1 หน่วยหลังเปิดไพ่ — ถ้ายังสวมเกราะราชันอยู่จะเป็น +2 (ไม่ซ้อนกับเงื่อนไขปกติ)
+  // Ohger Finish: +1 หน่วยหลังเปิดไพ่ — ต้องมีทั้ง สวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์
+  // พร้อมกันถึงจะเป็น +2 แทน (ไม่ซ้อนทับเงื่อนไขปกติ)
   const ohger = (attacker.statuses.ohger || 0) > 0;
-  const ohgerBonus = ohger ? ((attacker.statuses.rachan || 0) > 0 ? 2 : 1) : 0;
+  const ohgerEmpowered = (attacker.statuses.rachan || 0) > 0 && beatActive(attacker);
+  const ohgerBonus = ohger ? (ohgerEmpowered ? 2 : 1) : 0;
   // NT-D System: สวนกลับคนที่ตีเราล่าสุด +1 — NewType Paradise = NT-D แบบพิเศษ ใช้ +1 กับเป้าหมายใดก็ได้
   const isRevenge = attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id;
   const ntdBonus = (isRevenge || paradiseAtk) ? 1 : 0;
@@ -743,6 +758,7 @@ function endTurn() {
 
   for (const p of Object.values(players)) {
     for (const k of Object.keys(p.statuses || {})) {
+      if (k === "rachan") continue; // สวมเกราะราชัน: ผลคงอยู่ถาวร ไม่ลดเทิร์น
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
@@ -750,8 +766,7 @@ function endTurn() {
       if (k === "ntd" || k === "beat") continue; // NT-D คงอยู่จนแก้แค้น / Beat Mode ถาวรจนตาย
       if (!(p.statuses[k] > 0)) delete p.seen[k];
     }
-    // สวมเกราะราชันหมดเวลา: เพดานเกราะกลับเป็นค่าเดิม เกราะส่วนเกินหายไป
-    p.armor = Math.min(p.armor, maxArmorOf(p));
+    p.armor = Math.min(p.armor, maxArmorOf(p)); // กันเกราะเกินเพดาน
   }
 
   for (const p of alivePlayers()) addSkill(p, 1);

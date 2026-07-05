@@ -1,5 +1,10 @@
 // ============================================================
 //  ระบบเสียง ECHO + master volume
+//  - master volume คุมทุกเสียง (เพลง / เอฟเฟกต์ / เสียงพากย์ / วีดีโอ) ด้วย curve ยกกำลังสอง
+//    ให้หลอดปรับเสียงมีผลชัดเจน (linear เดิมฟังแทบไม่ต่าง)
+//  - เพลงเล่นต่อจากจุดเดิมเฉพาะ "ในแมตช์เดียวกัน" — เริ่มเกมใหม่รีเซ็ตทั้งหมด (resetMusicPositions)
+//  - เพลงสกิล/ท่าไม้ตาย: ส่ง seq มาด้วย ถ้า seq เปลี่ยน (เปิดท่าใหม่ / ถูกทับด้วยเพลงเดียวกัน
+//    ของอีกคน) เพลงจะเริ่มใหม่จากต้น
 // ============================================================
 
 const FILES = {
@@ -16,7 +21,11 @@ const FILES = {
   attack: "/effect_sound/attack.wav",
 };
 
-const MUSIC_BASE = 0.45; // ระดับเพลงพื้นฐาน (ก่อนคูณ master)
+// ระดับเสียงพื้นฐานต่อชนิด (ก่อนคูณ master) — บาลานซ์ให้ดังใกล้เคียงกัน
+const MUSIC_BASE = 0.55;
+const SFX_BASE = 0.85;
+const CLICK_BASE = 0.55;
+const VIDEO_BASE = 0.8;
 
 // ---------- master volume (จำค่าไว้ใน localStorage) ----------
 let masterVolume = 0.8;
@@ -26,16 +35,21 @@ try {
 } catch {}
 const volListeners = new Set();
 
+// curve ยกกำลังสอง: หูคนรับรู้ความดังแบบ log — ทำให้เลื่อนหลอดแล้วรู้สึกเปลี่ยนจริง
+const vcurve = () => masterVolume * masterVolume;
+
 export function getMasterVolume() { return masterVolume; }
+export function videoVolume() { return VIDEO_BASE * vcurve(); } // ให้ <video> ใช้ (ผ่าน curve เดียวกัน)
 export function onVolumeChange(fn) { volListeners.add(fn); return () => volListeners.delete(fn); }
 export function setMasterVolume(v) {
   masterVolume = Math.max(0, Math.min(1, v));
   try { localStorage.setItem("echo_vol", String(masterVolume)); } catch {}
-  if (currentMusic) getMusic(currentMusic).volume = MUSIC_BASE * masterVolume;
+  if (currentMusic) getMusic(currentMusic).volume = MUSIC_BASE * vcurve();
   volListeners.forEach((fn) => fn(masterVolume));
 }
 
 let currentMusic = null;
+let currentSeq = null; // seq ของเพลงสกิลปัจจุบัน (เปลี่ยน = เริ่มเพลงใหม่)
 const musicCache = {};
 function getMusic(name) {
   if (!musicCache[name]) {
@@ -43,31 +57,50 @@ function getMusic(name) {
     a.loop = true;
     musicCache[name] = a;
   }
-  musicCache[name].volume = MUSIC_BASE * masterVolume;
+  musicCache[name].volume = MUSIC_BASE * vcurve();
   return musicCache[name];
 }
 
-// เพลงเล่นต่อจากจุดเดิมเสมอ (ไม่รีเซ็ตตำแหน่ง) — โดน cutscene/สรุปผลแทรกแล้วกลับมา เพลงต่อจากเดิม
-export function playMusic(name) {
+// seq: identity ของการเปิดเพลงสกิล — เปิดท่าใหม่/คนใหม่ทับเพลงเดิม = seq ใหม่ -> เริ่มจากต้น
+// เพลงทั่วไป (main_home / card_prepare_turn) ไม่ส่ง seq -> เล่นต่อจากจุดเดิม (เฉพาะในแมตช์)
+export function playMusic(name, seq) {
   if (!FILES[name]) return;
+  const a = getMusic(name);
   if (currentMusic === name) {
-    const a = getMusic(name);
-    if (a.paused) a.play().catch(() => {}); // เพลงเดิมถูกพักไว้ -> เล่นต่อจากตำแหน่งเดิม
+    if (seq != null && seq !== currentSeq) {
+      currentSeq = seq;
+      a.currentTime = 0; // เพลงเดิมแต่คนละการเปิด (โดนทับ/กดใหม่) -> เริ่มใหม่
+      a.play().catch(() => {});
+    } else if (a.paused) {
+      a.play().catch(() => {}); // ถูกพักไว้ -> เล่นต่อจากตำแหน่งเดิม
+    }
     return;
   }
-  if (currentMusic) getMusic(currentMusic).pause(); // พักไว้เฉยๆ เก็บตำแหน่ง ไว้กลับมาเล่นต่อ
+  if (currentMusic) getMusic(currentMusic).pause(); // พักเพลงเดิม เก็บตำแหน่งไว้ (ในแมตช์)
   currentMusic = name;
-  getMusic(name).play().catch(() => {});
+  currentSeq = seq != null ? seq : null;
+  if (seq != null) a.currentTime = 0; // เพลงสกิลเพิ่งเปิด -> เริ่มจากต้นเสมอ
+  a.play().catch(() => {});
 }
 export function stopMusic() {
   if (!currentMusic) return;
-  getMusic(currentMusic).pause(); // พักไว้ ไม่รีเซ็ต -> กลับมาเล่นต่อจากจุดเดิม
+  getMusic(currentMusic).pause(); // พักไว้ ไม่รีเซ็ต -> กลับมาเล่นต่อจากจุดเดิม (ในแมตช์)
   currentMusic = null;
+  currentSeq = null;
+}
+// เริ่มเกมใหม่ / จบแมตช์: รีเซ็ตตำแหน่งเพลงทุกเพลง -> ครั้งถัดไปเริ่มจากต้นทั้งหมด
+export function resetMusicPositions() {
+  for (const a of Object.values(musicCache)) {
+    a.pause();
+    a.currentTime = 0;
+  }
+  currentMusic = null;
+  currentSeq = null;
 }
 export function playSfx(name) {
   if (!FILES[name]) return;
   const a = new Audio(FILES[name]);
-  a.volume = (name === "action_button" ? 0.6 : 0.85) * masterVolume;
+  a.volume = (name === "action_button" ? CLICK_BASE : SFX_BASE) * vcurve();
   a.play().catch(() => {});
 }
 export function clickSound() { playSfx("action_button"); }

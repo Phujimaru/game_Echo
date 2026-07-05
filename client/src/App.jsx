@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "./socket";
-import { playMusic, playSfx, stopMusic } from "./audio";
+import { playMusic, playSfx, stopMusic, resetMusicPositions } from "./audio";
 import Splash from "./screens/Splash";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
@@ -48,14 +48,23 @@ export default function App() {
 
   // ---------- เพลงพื้นหลัง + เสียงเปลี่ยนเทิร์น ----------
   const prevPhase = useRef(null);
+  const prevInMatch = useRef(false);
   const phase = stage === "connected" && state ? state.gameState : null;
   const skillMusic = stage === "connected" && state ? state.skillMusic : null;
+  const skillMusicSeq = stage === "connected" && state ? state.skillMusicSeq : 0;
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: card_prepare_turn | อื่นๆ: main_home
     const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" || phase === "TRANSITION";
+    const inMatch = battle || phase === "CUTSCENE";
+
+    // ขอบเขตแมตช์: เริ่มเกมใหม่ / จบเกม -> รีเซ็ตตำแหน่งเพลงทั้งหมด เริ่มเพลงใหม่จากต้น
+    // (การเล่นต่อจากจุดเดิมนับเฉพาะภายในแมตช์เดียวกันเท่านั้น)
+    if (inMatch !== prevInMatch.current) resetMusicPositions();
+    prevInMatch.current = inMatch;
+
     if (phase === "CUTSCENE") stopMusic();
-    else if (skillMusic) playMusic(skillMusic);
+    else if (skillMusic) playMusic(skillMusic, skillMusicSeq); // seq เปลี่ยน = การเปิดร่างใหม่ -> เริ่มเพลงใหม่
     else playMusic(battle ? "card_prepare_turn" : "main_home");
 
     // เปลี่ยนจาก "เลือกการ์ด" ไปสรุปผล -> เสียง trun_change (ยกเว้นเข้า cutscene)
@@ -65,7 +74,7 @@ export default function App() {
     // เข้าเฟสโจมตี -> เสียง attack
     if (prevPhase.current !== "ATTACKING" && phase === "ATTACKING") playSfx("attack");
     prevPhase.current = phase;
-  }, [stage, phase, skillMusic]);
+  }, [stage, phase, skillMusic, skillMusicSeq]);
 
   const goCharacter = (n, pos) => {
     setName(n);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { socket } from "../socket";
-import { clickSound, getMasterVolume, playSfx } from "../audio";
+import { clickSound, playSfx, videoVolume, onVolumeChange } from "../audio";
 
 // ขนาดจอ (อัปเดตเมื่อหมุน/ย่อขยาย) — ใช้ย่อทั้งกระดานให้พอดีจอ รองรับมือถือแนวตั้ง
 function useViewport() {
@@ -36,9 +36,11 @@ function Cutscene({ cs }) {
     if (cs.brief) return;
     const v = ref.current;
     if (!v) return;
-    v.volume = getMasterVolume();
+    v.volume = videoVolume(); // ผ่าน master volume curve เดียวกับเสียงอื่น
     v.currentTime = 0;
     v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); // กัน autoplay block
+    // เลื่อนหลอดเสียงระหว่างวีดีโอ -> อัปเดตทันที
+    return onVolumeChange(() => { if (ref.current) ref.current.volume = videoVolume(); });
   }, [cs.id]); // remount ต่อ cutscene -> เล่นวีดีโอใหม่เสมอ (กันจอดำตอนท่าเดียวกันต่อกัน)
 
   if (cs.brief) {
@@ -204,8 +206,8 @@ const SLOTS = {
   1: [[8, 50]],
   2: [[9, 22], [9, 78]],
   3: [[9, 17], [6, 50], [9, 83]],
-  4: [[9, 18], [9, 82], [44, 7], [44, 93]],
-  5: [[9, 17], [6, 50], [9, 83], [50, 8], [50, 92]],
+  4: [[9, 18], [9, 82], [44, 11], [44, 89]],
+  5: [[9, 17], [6, 50], [9, 83], [50, 11], [50, 89]],
 };
 
 // เอฟเฟครอบการ์ด: Beat Mode = สายฟ้าเขียว (ถาวร) / สวมเกราะราชัน = โกลว์แดง
@@ -243,17 +245,17 @@ function Stats({ p, center }) {
   return (
     <div className={center ? "flex flex-col items-center gap-1" : ""}>
       <div className="flex items-center gap-1.5">
-        <span className="text-base leading-none">
+        <span className="text-lg leading-none">
           {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
         </span>
         <span className="flex gap-0.5">
           {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
         </span>
-        {p.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{p.shield}</span>}
+        {p.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{p.shield}</span>}
       </div>
       <div className="flex gap-0.5 mt-1">
         {Array.from({ length: p.maxSkill }, (_, i) => (
-          <span key={i} className={`w-3 h-3 rounded-[3px] ${i < p.skillPoints ? "bg-echo-gold" : "bg-white/15 border border-white/20"}`} />
+          <span key={i} className={`w-3.5 h-3.5 rounded-[3px] ${i < p.skillPoints ? "bg-echo-gold" : "bg-white/15 border border-white/20"}`} />
         ))}
       </div>
     </div>
@@ -271,11 +273,11 @@ function StatusChips({ statuses }) {
   if (statuses.paradise) items.push([`Paradise${statuses.paradise}`, "bg-echo-gold text-gray-900"]);
   if (statuses.ntd) items.push(["NT-D", "bg-echo-hp"]);
   if (statuses.ohger) items.push(["Ohger", "bg-echo-gold text-gray-900"]);
-  if (statuses.rachan) items.push([`ราชัน${statuses.rachan}`, "bg-echo-armor"]);
+  if (statuses.rachan) items.push(["ราชัน", "bg-echo-armor"]); // ถาวร ไม่นับเทิร์น
   if (!items.length) return null;
   return (
     <div className="flex flex-wrap gap-1 justify-center mt-1">
-      {items.map(([t, c], i) => <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${c}`}>{t}</span>)}
+      {items.map(([t, c], i) => <span key={i} className={`text-xs px-1.5 py-0.5 rounded font-bold ${c}`}>{t}</span>)}
     </div>
   );
 }
@@ -285,14 +287,14 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
   const summary = phase === "SUMMARY";
   return (
     <div
-      className="absolute -translate-x-1/2 flex flex-col items-center gap-1 w-28"
+      className="absolute -translate-x-1/2 flex flex-col items-center gap-1 w-32"
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%` }}
     >
       <div
         onClick={targetable ? () => { clickSound(); onAttack(p.id); } : undefined}
         className={`relative ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair targetable rounded-2xl" : ""}`}
       >
-        <Portrait p={p} className="w-16 h-16 sm:w-20 sm:h-20 -rotate-3 border-4" />
+        <Portrait p={p} className="w-20 h-20 -rotate-3 border-4" />
         <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: p.color }} />
         {!p.alive && <span className="absolute inset-0 grid place-items-center text-3xl">💀</span>}
         {p.isWinner && summary && <span className="absolute -top-2 -right-2 text-xl">👑</span>}
@@ -300,7 +302,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
           <span className="absolute -bottom-1 -right-1 bg-emerald-600 rounded-full w-5 h-5 grid place-items-center text-xs">✓</span>
         )}
       </div>
-      <div className="max-w-full truncate text-sm sm:text-base font-black px-2 py-0.5 rounded-lg bg-black/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ borderBottom: `3px solid ${p.color}` }}>{p.name}</div>
+      <div className="max-w-full truncate text-base sm:text-lg font-black px-2 py-0.5 rounded-lg bg-black/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ borderBottom: `3px solid ${p.color}` }}>{p.name}</div>
       <Stats p={p} center />
       {summary && p.score !== null && (
         <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : "text-white"}`}>
@@ -368,6 +370,8 @@ export default function Game({ state }) {
   const ch = me?.character;
   // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
   const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
+  // สวมเกราะราชันแล้ว (ถาวร): กดท่าไม้ตายซ้ำไม่ได้อีก
+  const rachanUsed = !!(me && ch?.id === "kuwagata" && me.statuses?.rachan);
 
   // สกิลช่วงจั่วการ์ด: server แจ้งมา -> เด้งทันที (ไม่ตัดเข้าจอดำ) แล้วหายเอง
   useEffect(() => {
@@ -389,8 +393,9 @@ export default function Game({ state }) {
   if (phase === "CUTSCENE" && state.cutscene && !csAnnounce) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
 
   // ---- ย่อ/ขยายทั้งกระดานให้พอดีจอ (auto-fit) ----
-  // กว้างจริง >= 820 : แสดงเต็มจอเหมือนเดิม (สเกล 1). แคบกว่านั้น (มือถือแนวตั้ง) : ออกแบบที่ 820px แล้วย่อลงพอดีจอ
-  const DESIGN_W = Math.max(820, vp.w);
+  // จอกว้าง >= 768 : ออกแบบที่ 900px (สเกล 1 บนเดสก์ท็อป)
+  // มือถือแนวตั้ง (< 768) : ออกแบบที่ 640px แล้วย่อพอดีจอ -> ทุกอย่างใหญ่ขึ้นมาก อ่านง่าย
+  const DESIGN_W = vp.w < 768 ? 640 : Math.max(900, vp.w);
   const scale = vp.w / DESIGN_W;
   const designH = vp.h / scale;
 
@@ -408,7 +413,7 @@ export default function Game({ state }) {
       {/* ตัวจับเวลา + รอบ */}
       {(phase === "PLAYING" || phase === "ATTACK") && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 text-lg font-bold bg-black/40 px-4 py-1.5 rounded-full">
-          รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ
+          <span className="text-xl">รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ</span>
         </div>
       )}
 
@@ -477,7 +482,7 @@ export default function Game({ state }) {
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
                   <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed} onUse={skill} ammo={me.beamAmmo} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || rachanUsed} onUse={skill} />
                 </div>
                 {me.skillUsed && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
