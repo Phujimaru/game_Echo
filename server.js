@@ -36,6 +36,7 @@ const MAX_HP = 5;       // เลือดจริงพื้นฐาน
 const MAX_ARMOR = 2;
 const MAX_SKILL = 6;
 const BEAM_AMMO = 3;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
+const PUDDING_USES = 2; // Rainbow Pudding ใช้ได้ต่อเกม (คุวากาตะ)
 
 // รูปร่างโอเจอร์ (ใช้ทั้งท่าไม้ตายสวมเกราะราชัน และ Beat Mode)
 const OHGER_FORM = "/characters/kuwagata/kuwakata_ohger_form.jpg";
@@ -70,7 +71,7 @@ let cutsceneInfo = null;
 let cutsceneSeq = 0;      // id ต่อ cutscene (ให้ client remount วีดีโอ กันจอดำ)
 let transformCounter = 0; // ลำดับการเปิดร่าง (ใช้เลือกเพลงตอนสวนท่ากัน)
 let lastAttack = null;    // ข้อมูลการโจมตีล่าสุด (อนิเมชันใครตีใคร)
-let roundSkills = [];     // สกิลที่ใช้ในรอบ (โชว์แบนเนอร์ก่อนโจมตี)
+let roundSkills = [];     // สกิลที่ใช้ในรอบ (เก็บประวัติ — instant เด้งตอนใช้ / หลังเปิดไพ่โชว์ตอนโจมตี)
 
 function clearPhaseTimer() {
   if (phaseTimerId) clearInterval(phaseTimerId);
@@ -137,7 +138,9 @@ function maybeBeatMode(p) {
   if (p.seen && p.seen.beat) return;       // เข้าแล้วครั้งเดียวพอ (ถาวรจนตาย)
   p.seen.beat = true;
   p.transformAt = ++transformCounter;
+  const firstTime = !p.cutsceneShown.beat;
   triggerCutscene(p, "beat");
+  if (firstTime) queueTransformAnnounce(p, "beat"); // วีดีโอ -> ประกาศเปลี่ยนร่าง (ระเบิดเขียว + เสียงพากย์)
   lastLog.push(`⚡ ${p.name} เข้าสู่ประกายเขี้ยวปฏิปักษ์ (Beat Mode)!`);
 }
 function joinedPositions() { return Object.values(players).map((p) => p.position); }
@@ -229,6 +232,18 @@ function firePassive(p, trigger) {
   const ch = CHAR_BY_ID[p.characterId];
   if (ch && ch.passive && ch.passive.trigger === trigger) applyEffect(p, ch.passive.effect);
 }
+// หาข้อมูลสกิล (ชื่อ+รูป) จาก status ที่กำลังมีผล — ใช้โชว์ตอนอนิเมชันโจมตี ว่าดาเมจ/การป้องกันมาจากสกิลไหนของใคร
+function skillByStatus(p, status) {
+  const ch = CHAR_BY_ID[p.characterId];
+  if (!ch) return null;
+  for (const tier of ["basic", "secondary", "ultimate"]) {
+    const s = ch[tier];
+    if (s && s.effect && !Array.isArray(s.effect) && s.effect.type === "status" && s.effect.status === status) {
+      return { name: s.name, img: s.img || null, by: p.name, color: POSITION_COLORS[p.position] || "#888" };
+    }
+  }
+  return null;
+}
 // ไพ่แตกก่อนเปิดไพ่ = ท่าไม้ตายที่เพิ่งกดในเทิร์นนี้ใช้งานไม่ได้ (แต้มสกิลที่จ่ายไปเสียฟรี)
 function voidUltimateOnBust(p) {
   for (const key of Object.keys(TRANSFORMS)) {
@@ -249,7 +264,9 @@ function resetCombat(p) {
   p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0;
   p.armorLocked = false; // Beat Mode: กันตายแล้วเกราะจะไม่ฟื้นคืน
   p.beatSaved = false;   // Beat Mode: กันตายได้ครั้งเดียวต่อเกม (คล้าย Focus Sash)
+  p.skillUsedRound = false; // ใช้สกิลได้ 1 อันต่อเทิร์น
   p.beamAmmo = BEAM_AMMO; // กระสุน Beam Magnum รีเซ็ตต้นเกม
+  p.puddingUses = PUDDING_USES; // Rainbow Pudding รีเซ็ตต้นเกม
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -297,6 +314,9 @@ function buildStateFor(viewerId) {
         rachan: !!(p.seen && p.seen.rachan) && (p.statuses.rachan || 0) > 0,
         skillPoints: p.skillPoints, maxSkill: MAX_SKILL,
         beamAmmo: p.beamAmmo,
+        puddingUses: p.puddingUses,
+        atCap: scoreOf(p) >= scoreCap(p), // แต้มเต็มเพดาน (21/UPG) -> ปิดปุ่มจั่ว รอเปิดไพ่เอง
+        skillUsed: !!p.skillUsedRound,    // ใช้สกิลไปแล้วในเทิร์นนี้ (1 อันต่อเทิร์น)
         alive: p.alive,
         statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : {},
         character: {
@@ -350,15 +370,17 @@ function queueBanner(p, key) {
     },
   });
 }
-// แบนเนอร์สกิล (รูปสกิล + ชื่อสกิล + ชื่อผู้ใช้) — โชว์ก่อนโจมตี
-function queueSkillBanner(s) {
-  const p = players[s.playerId];
+// ประกาศเปลี่ยนร่าง (เอฟเฟกต์ระเบิด + ชื่อ + เสียงพากย์) — ต่อจากวีดีโอ ก่อนขึ้นสรุปผล/คนอื่น
+//  seconds ≈ ความยาวเสียงพากย์ เพื่อให้เสียงเล่นจบก่อนขึ้นฉากถัดไป (ไม่ทับวีดีโอคนอื่น)
+function queueTransformAnnounce(p, kind) {
+  const t = TRANSFORMS[kind];
+  if (!t) return;
   cutsceneQueue.push({
-    seconds: 1.5,
+    seconds: kind === "beat" ? 9 : 7,
     info: {
-      playerId: s.playerId, name: p ? p.name : "",
-      img: s.img || null, color: p ? (POSITION_COLORS[p.position] || "#9B4F96") : "#9B4F96",
-      title: s.name, label: "ใช้สกิล", brief: true, skill: true,
+      playerId: p.id, name: p.name,
+      img: OHGER_FORM, color: POSITION_COLORS[p.position] || "#9B4F96",
+      title: t.title, voice: t.voice || null, kind, announce: true,
     },
   });
 }
@@ -395,6 +417,7 @@ function dealRound() {
   for (const p of Object.values(players)) {
     resetRoundDisplay(p);
     p.shield = 0;
+    p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืนต้นรอบ
@@ -418,10 +441,11 @@ function dealRound() {
 function hit(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
+  if (scoreOf(p) >= scoreCap(p)) return; // แต้มเต็มเพดาน (เช่น 21 พอดี) = จั่วไม่ได้ รอผู้ใช้ใช้สกิล/เปิดไพ่เอง
   p.cards.push(drawCardFor(p));
   p.busted = bustedOf(p);
   if (p.busted) { p.locked = true; voidUltimateOnBust(p); }
-  else if (scoreOf(p) >= scoreCap(p)) p.locked = true; // ถึงเพดานแล้ว = ล็อกไพ่ (กัน UPG! จั่วรัวไม่จบ)
+  // ถึงเพดานพอดี: ไม่ล็อกอัตโนมัติ — ปิดปุ่มจั่ว (atCap) แล้วรอผู้ใช้เลือกสกิลก่อนเปิดไพ่เอง
   broadcastState();
   checkAllLocked();
 }
@@ -440,23 +464,34 @@ function useSkill(id, tier) {
   const skill = ch && ch[tier];
   if (!skill || p.skillPoints < skill.cost) return;
 
-  if (tier === "basic" && beatActive(p)) return; // Beat Mode: สกิลพื้นฐานใช้ไม่ได้
+  if (p.skillUsedRound) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  // Beat Mode (ประกายเขี้ยว): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้ (ใช้ได้แค่สกิลรอง)
+  if ((tier === "basic" || tier === "ultimate") && beatActive(p)) return;
+  // Rainbow Pudding (คุวากาตะ): ใช้ได้แค่ 2 ครั้งต่อเกม
+  const isPudding = p.characterId === "kuwagata" && tier === "basic";
+  if (isPudding && (p.puddingUses || 0) <= 0) return;
 
   const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
 
   p.skillPoints -= skill.cost;
+  p.skillUsedRound = true;
+  if (isPudding) p.puddingUses--; // นับใช้ Rainbow Pudding
   applyEffect(p, skill.effect);
 
   // NewType Paradise: เติมกระสุน Beam Magnum +1
   if (st === "paradise") p.beamAmmo = Math.min(BEAM_AMMO, (p.beamAmmo || 0) + 1);
 
-  // จำสกิลที่ใช้ (ไว้โชว์แบนเนอร์ตอนเปิดไพ่)
+  // สกิลช่วงจั่วการ์ด (instant): เด้งโชว์ทันทีบนกระดานของทุกคน ไม่ต้องรอเปิดไพ่/ไม่ตัดจอดำ
+  if (skill.instant) {
+    io.emit("skillFlash", { name: skill.name, img: skill.img || null, by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96" });
+  }
+  // จำสกิลที่ใช้ในรอบ (ท่าไม้ตายมี cutscene ของตัวเอง / สกิลหลังเปิดไพ่ไปโชว์ตอนโจมตี)
   roundSkills.push({ playerId: id, name: skill.name, img: skill.img || null, status: st });
 
   p.busted = bustedOf(p);
   if (p.busted) { p.locked = true; voidUltimateOnBust(p); }
-  else if (scoreOf(p) >= scoreCap(p)) p.locked = true;
+  // ถึงเพดานพอดี (เช่น 21): ไม่ล็อกอัตโนมัติ — รอผู้ใช้เปิดไพ่เอง
 
   broadcastState();
   checkAllLocked();
@@ -525,14 +560,9 @@ function resolveRound() {
   afterResolve();
 }
 
-// เปิดร่างท่าไม้ตาย (หลังเปิดไพ่) -> cutscene ก่อนสรุปผล
+// เปิดร่างท่าไม้ตาย (หลังเปิดไพ่) -> cutscene ก่อนสรุปผล (สรุปผลไว้ท้ายสุดเสมอ)
+//  หมายเหตุ: สกิลทั่วไปไม่มีแบนเนอร์ก่อนสรุปผลแล้ว — instant เด้งตอนใช้ / หลังเปิดไพ่ไปโชว์ตอนโจมตี
 function afterResolve() {
-  // แบนเนอร์สกิลที่ใช้ (ที่ไม่ใช่ร่างแปลง — ร่างแปลงมี cutscene ของตัวเอง)
-  for (const s of roundSkills) {
-    const isTransform = s.status && TRANSFORMS[s.status] && TRANSFORMS[s.status].afterReveal;
-    if (!isTransform) queueSkillBanner(s);
-  }
-
   const activated = [];
   for (const p of alivePlayers()) {
     if (bustedOf(p)) continue; // ไพ่แตก = ท่าไม้ตายไม่ทำงาน (กันหลุดกรณีเพิ่งกดแล้วแตก)
@@ -543,7 +573,10 @@ function afterResolve() {
         p.transformAt = ++transformCounter;
         // สวมเกราะราชัน: สวมเกราะเต็มทันที (เพดานเพิ่มเป็น 5)
         if (key === "rachan") p.armor = maxArmorOf(p);
+        const firstTime = !p.cutsceneShown[key];
         triggerCutscene(p, key);
+        // ครั้งแรก (เล่นวีดีโอ): ต่อด้วยฉากประกาศเปลี่ยนร่าง (ระเบิด + เสียงพากย์) ก่อนขึ้นคนอื่น/สรุปผล
+        if (firstTime && key === "rachan") queueTransformAnnounce(p, "rachan");
         lastLog.push(`✨ ${p.name} ${TRANSFORMS[key].label} ${TRANSFORMS[key].title}!`);
         activated.push(p);
       }
@@ -618,14 +651,17 @@ function doAttack(byId, targetId) {
   const targetBeat = beatActive(target);     // Beat Mode: จะไม่ตายจากการโจมตีที่ถึงตายทันที
   const hpBefore = target.hp;
   const armorBefore = target.armor;
+  const shieldBefore = target.shield;
   if (attackerBeat) dealDirect(target, dmg); // ประกายเขี้ยวปฏิปักษ์: ทะลุเกราะเข้าเลือดจริง
   else dealMixed(target, dmg);               // กฎปกติ: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
   // Beat Mode กันตาย (ครั้งเดียวต่อเกม): การโจมตีถึงตายครั้งแรกจะค้างที่ 1 หน่วย
   //  หลังกันตายทำงาน -> เกราะจะไม่ฟื้นคืน + ภูมิดาเมจจากการแพ้ (แต่ครั้งต่อไปจะตายปกติ)
+  let beatSaveFired = false;
   if (targetBeat && !target.beatSaved && target.hp < 1) {
     target.hp = 1;
     target.beatSaved = true;
     target.armorLocked = true;
+    beatSaveFired = true;
     lastLog.push(`🛡️⚡ ${target.name} ประกายเขี้ยวปฏิปักษ์ — รอดจากการโจมตีถึงตาย! (กันตายได้ครั้งเดียว)`);
   }
   target.wasAttacked = true;
@@ -674,14 +710,29 @@ function doAttack(byId, targetId) {
     if (changed) triggerCutscene(target, "ntd");
   }
 
+  // สกิลที่มีผลกับการโจมตีครั้งนี้ (โชว์ใต้อนิเมชัน แยกฝั่งชัดเจน: atk = ฝั่งโจมตี | def = ฝั่งป้องกัน)
+  const fxSkills = [];
+  const addFx = (x, side) => { if (x) fxSkills.push({ ...x, side }); };
+  if (beam) addFx(skillByStatus(attacker, "beam"), "atk");
+  if (ohger) addFx(skillByStatus(attacker, "ohger"), "atk");
+  if (ginga) addFx(skillByStatus(attacker, "ginga"), "atk");
+  if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
+  if (isRevenge) addFx({ name: "NT-D System แก้แค้น +1", img: TRANSFORMS.ntd.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (attackerBeat) addFx({ name: "ประกายเขี้ยวปฏิปักษ์ (ทะลุเกราะ)", img: OHGER_FORM, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if ((target.statuses.monster || 0) > 0) addFx(skillByStatus(target, "monster"), "def");
+  if (shieldBefore > target.shield) addFx({ name: "โล่ป้องกัน (กันความเสียหาย)", img: null, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
+  if ((target.statuses.absorb || 0) > 0 && armorLost > 0) addFx(skillByStatus(target, "absorb"), "def");
+  if (beatSaveFired) addFx({ name: "ประกายเขี้ยวปฏิปักษ์ (กันตาย)", img: OHGER_FORM, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
+
   // อนิเมชันบอกว่าใครตีใคร
   lastAttack = {
     byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
     targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
-    dmg, aoe: ginga, revenge: isRevenge,
+    dmg, aoe: ginga, revenge: isRevenge, skills: fxSkills,
   };
   gameState = "ATTACKING";
-  startPhaseTimer(ATTACKFX_TIME, () => runCutsceneQueue(endTurn));
+  // มีข้อมูลสกิลให้อ่าน -> ยืดเวลาอนิเมชันให้อ่านทัน
+  startPhaseTimer(fxSkills.length ? ATTACKFX_TIME + 2 : ATTACKFX_TIME, () => runCutsceneQueue(endTurn));
   broadcastState();
 }
 
@@ -785,7 +836,8 @@ io.on("connection", (socket) => {
       cards: [], locked: false, busted: false, result: null,
       hp: MAX_HP, armor: MAX_ARMOR, skillPoints: 0, alive: true, shield: 0,
       statuses: {}, seen: {}, ntdTarget: null, transformAt: 0, cutsceneShown: {},
-      beamAmmo: BEAM_AMMO,
+      armorLocked: false, beatSaved: false, skillUsedRound: false,
+      beamAmmo: BEAM_AMMO, puddingUses: PUDDING_USES,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };

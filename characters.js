@@ -18,6 +18,9 @@
 //    หรือใส่เป็น array ของ effect เพื่อรวมหลายอย่าง
 //
 //  passive.trigger: "roundStart" | "win" | "lose" | "attacked"
+//
+//  instant: true = สกิลทำงานในช่วงจั่วการ์ด -> เด้งโชว์บนกระดานทันทีตอนใช้
+//  (สกิลที่ทำงานหลังเปิดไพ่ จะไปโชว์ตอนอนิเมชันโจมตีแทน ว่าใครใช้อะไร)
 // ============================================================
 
 const CHARACTERS = [
@@ -38,6 +41,7 @@ const CHARACTERS = [
       desc: "ช่วงจั่วการ์ดเทิร์นนี้ไพ่จะไม่มีทางแตก แต่จั่วเท่าไหร่ก็ได้แต้มสูงสุดเพียง 16 — ถ้ายังอยู่ในร่าง Ginga (ท่าไม้ตาย) เพดานจะเพิ่มเป็น 19",
       cost: 2,
       img: "/characters/hikaru/ginga_skill1.jpg",
+      instant: true, // มีผลช่วงจั่วการ์ด
       effect: { type: "status", status: "upg", turns: 1 },
     },
     secondary: {
@@ -67,9 +71,11 @@ const CHARACTERS = [
     },
     basic: {
       name: "Rainbow Pudding",
-      desc: "ฟื้นพลังชีวิต 1 หน่วยทันที (มีผลทันที ไม่ต้องรอเปิดไพ่) — ใช้ไม่ได้ระหว่างอยู่ในโหมด Beat Mode",
+      desc: "ฟื้นพลังชีวิต 1 หน่วยทันที (มีผลทันที ไม่ต้องรอเปิดไพ่) — ใช้ได้ 2 ครั้งต่อเกม และใช้ไม่ได้ระหว่างอยู่ในโหมด Beat Mode",
       cost: 2,
       img: "/characters/kuwagata/kuwagata_skill1.png",
+      ammo: 2,
+      instant: true, // ฟื้นเลือดทันที ไม่ต้องรอเปิดไพ่
       effect: { type: "heal", amount: 1 },
     },
     secondary: {
@@ -99,7 +105,7 @@ const CHARACTERS = [
       trigger: "win",
       effect: { type: "points", amount: 1 },
     },
-    basic: { name: "เสี่ยงดวง", desc: "จั่วไพ่เพิ่ม 1 ใบ", cost: 2, effect: { type: "draw", amount: 1 } },
+    basic: { name: "เสี่ยงดวง", desc: "จั่วไพ่เพิ่ม 1 ใบ", cost: 2, instant: true, effect: { type: "draw", amount: 1 } },
     secondary: { name: "เงาปกป้อง", desc: "กันความเสียหายครั้งถัดไป 1 ครั้ง", cost: 4, effect: { type: "shield", amount: 1 } },
     ultimate: {
       name: "ลอบสังหาร",

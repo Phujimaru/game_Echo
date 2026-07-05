@@ -47,21 +47,21 @@ function getMusic(name) {
   return musicCache[name];
 }
 
+// เพลงเล่นต่อจากจุดเดิมเสมอ (ไม่รีเซ็ตตำแหน่ง) — โดน cutscene/สรุปผลแทรกแล้วกลับมา เพลงต่อจากเดิม
 export function playMusic(name) {
-  if (!FILES[name] || currentMusic === name) return;
-  if (currentMusic) {
-    const prev = getMusic(currentMusic);
-    prev.pause();
-    prev.currentTime = 0;
+  if (!FILES[name]) return;
+  if (currentMusic === name) {
+    const a = getMusic(name);
+    if (a.paused) a.play().catch(() => {}); // เพลงเดิมถูกพักไว้ -> เล่นต่อจากตำแหน่งเดิม
+    return;
   }
+  if (currentMusic) getMusic(currentMusic).pause(); // พักไว้เฉยๆ เก็บตำแหน่ง ไว้กลับมาเล่นต่อ
   currentMusic = name;
   getMusic(name).play().catch(() => {});
 }
 export function stopMusic() {
   if (!currentMusic) return;
-  const a = getMusic(currentMusic);
-  a.pause();
-  a.currentTime = 0;
+  getMusic(currentMusic).pause(); // พักไว้ ไม่รีเซ็ต -> กลับมาเล่นต่อจากจุดเดิม
   currentMusic = null;
 }
 export function playSfx(name) {

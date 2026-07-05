@@ -81,51 +81,115 @@ function Cutscene({ cs }) {
   );
 }
 
-// ---------- อนิเมชันบอกว่าใครตีใคร ----------
+// ---------- อนิเมชันบอกว่าใครตีใคร + สกิลที่มีผลกับการโจมตีครั้งนี้ ----------
+//  แถวสกิลข้างใต้บอกว่า "ทำไมความเสียหายถึงเป็นเท่านี้ / ทำไมป้องกันได้"
 function AttackFx({ a }) {
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/55">
-      <div className="flex items-center gap-4 sm:gap-8 pop-in text-hard">
-        <div className="flex flex-col items-center gap-1">
-          <div className="rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 -rotate-3" style={{ borderColor: a.byColor }}>
-            <img src={a.byImg} alt="" className="w-full h-full object-cover" />
+      <div className="flex flex-col items-center gap-3 pop-in text-hard px-3">
+        <div className="flex items-center gap-4 sm:gap-8">
+          <div className="flex flex-col items-center gap-1">
+            <div className="rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 -rotate-3" style={{ borderColor: a.byColor }}>
+              <img src={a.byImg} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-bold text-base sm:text-lg" style={{ color: a.byColor }}>{a.byName}</span>
           </div>
-          <span className="font-bold" style={{ color: a.byColor }}>{a.byName}</span>
-        </div>
-        <div className="text-center">
-          <div className="text-4xl sm:text-5xl">⚔️</div>
-          <div className="text-4xl sm:text-5xl font-black text-echo-hp drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">-{a.dmg}</div>
-          {a.revenge && <div className="text-xs text-echo-gold font-bold">NT-D แก้แค้น!</div>}
-          {a.aoe && <div className="text-xs">ตีหมู่!</div>}
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <div className="shake rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 rotate-3" style={{ borderColor: a.targetColor }}>
-            <img src={a.targetImg} alt="" className="w-full h-full object-cover" />
+          <div className="text-center">
+            <div className="text-4xl sm:text-5xl">⚔️</div>
+            <div className="text-4xl sm:text-5xl font-black text-echo-hp drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">-{a.dmg}</div>
+            {a.revenge && <div className="text-xs text-echo-gold font-bold">NT-D แก้แค้น!</div>}
+            {a.aoe && <div className="text-xs">ตีหมู่!</div>}
           </div>
-          <span className="font-bold" style={{ color: a.targetColor }}>{a.targetName}</span>
+          <div className="flex flex-col items-center gap-1">
+            <div className="shake rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 rotate-3" style={{ borderColor: a.targetColor }}>
+              <img src={a.targetImg} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-bold text-base sm:text-lg" style={{ color: a.targetColor }}>{a.targetName}</span>
+          </div>
         </div>
+        {a.skills && a.skills.length > 0 && (() => {
+          // แยกฝั่งชัดเจน: ซ้าย = สกิลฝั่งโจมตี | ขวา = สกิลฝั่งป้องกัน (ไม่ปนกันตรงกลาง)
+          const atk = a.skills.filter((s) => (s.side ? s.side === "atk" : s.by === a.byName));
+          const def = a.skills.filter((s) => (s.side ? s.side === "def" : s.by !== a.byName));
+          const SkillCard = ({ s }) => (
+            <div className="flex items-center gap-2 bg-black/70 rounded-xl px-2.5 py-1.5 border border-white/15 w-full max-w-[15rem]">
+              {s.img ? (
+                <img src={s.img} alt="" className="w-14 h-10 object-cover rounded-lg shrink-0" />
+              ) : (
+                <span className="w-10 h-10 grid place-items-center text-xl shrink-0">✦</span>
+              )}
+              <div className="text-left leading-tight min-w-0">
+                <div className="text-sm sm:text-base font-bold text-echo-gold">{s.name}</div>
+                <div className="text-xs sm:text-sm font-bold truncate" style={{ color: s.color }}>{s.by}</div>
+              </div>
+            </div>
+          );
+          const both = atk.length > 0 && def.length > 0;
+          return (
+            <div className="grid grid-cols-2 gap-x-4 w-full max-w-2xl items-start">
+              <div className={`flex flex-col items-center gap-1.5 ${both ? "border-r-2 border-white/25 pr-4" : ""}`}>
+                {atk.length > 0 && (
+                  <div className="text-sm sm:text-base font-black bg-black/60 rounded-full px-4 py-0.5 border" style={{ color: a.byColor, borderColor: a.byColor }}>
+                    ⚔️ ฝั่งโจมตี
+                  </div>
+                )}
+                {atk.map((s, i) => <SkillCard key={i} s={s} />)}
+              </div>
+              <div className="flex flex-col items-center gap-1.5 pl-1">
+                {def.length > 0 && (
+                  <div className="text-sm sm:text-base font-black bg-black/60 rounded-full px-4 py-0.5 border" style={{ color: a.targetColor, borderColor: a.targetColor }}>
+                    🛡️ ฝั่งป้องกัน
+                  </div>
+                )}
+                {def.map((s, i) => <SkillCard key={i} s={s} />)}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
 }
 
-// ---------- เอฟเฟกต์ระเบิดตอนเปลี่ยนร่าง (บนจอปกติ หลังวีดีโอจบ) ----------
-//  แดง = สวมเกราะราชัน | เขียว = Beat Mode — พร้อมแจ้งว่าใครเปลี่ยนร่าง
-function TransformFx({ fx }) {
-  const red = fx.kind === "rachan";
-  const label = red ? "สวมเกราะราชัน" : "ประกายเขี้ยวปฏิปักษ์";
+// ---------- ประกาศเปลี่ยนร่าง (บนกระดานเกม หลังวีดีโอจบ) ----------
+//  วีดีโอจบ -> กลับมากระดาน -> เอฟเฟกต์ระเบิด + เสียงพากย์เล่นให้จบ (ไม่มีเพลงแทรก) แล้วค่อยไปต่อ
+//  แดง = สวมเกราะราชัน | เขียว = Beat Mode
+function TransformAnnounce({ cs }) {
+  useEffect(() => {
+    if (cs.voice) playSfx(cs.voice); // เสียงแปลงร่าง เล่นต่อจากวีดีโอบนกระดาน
+  }, [cs.id]);
+  const red = cs.kind === "rachan";
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 z-50 grid place-items-center pointer-events-none overflow-hidden">
       <div className={`absolute inset-0 ${red ? "xfx-flash-red" : "xfx-flash-green"}`} />
       <div className={`xfx-burst ${red ? "xfx-burst-red" : "xfx-burst-green"}`} />
-      <div className="relative flex flex-col items-center gap-2 pop-in text-hard">
-        <div className={`rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 border-4 ${red ? "aura-rachan" : "aura-beat"}`} style={{ borderColor: fx.color }}>
-          <img src={fx.img} alt="" className="w-full h-full object-cover" />
+      <div className="relative flex flex-col items-center gap-3 pop-in text-hard px-4 text-center">
+        <div className={`rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4 ${red ? "aura-rachan" : "aura-beat"}`} style={{ borderColor: cs.color }}>
+          <img src={cs.img} alt="" className="w-full h-full object-cover" />
         </div>
-        <div className="text-3xl sm:text-4xl font-black" style={{ color: red ? "#ff5747" : "#4ade80" }}>
-          {fx.name} เปลี่ยนร่าง!
+        <div className="text-3xl sm:text-5xl font-black" style={{ color: red ? "#ff5747" : "#4ade80" }}>
+          <span style={{ color: cs.color }}>{cs.name}</span> เปลี่ยนร่าง!
         </div>
-        <div className="text-lg sm:text-xl font-bold bg-black/55 rounded-full px-4 py-0.5">{label}</div>
+        <div className="text-xl sm:text-2xl font-bold bg-black/55 rounded-full px-5 py-1">{cs.title}</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- สกิลช่วงจั่วการ์ด: เด้งขึ้นทันทีบนกระดาน (ไม่ตัดเข้าจอดำ) ----------
+function SkillFlash({ f }) {
+  return (
+    <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+      <div className="pop-in flex items-center gap-3 bg-black/75 rounded-2xl px-4 py-2 border-2 text-hard" style={{ borderColor: f.color }}>
+        {f.img ? (
+          <img src={f.img} alt="" className="w-16 h-11 object-cover rounded-lg" />
+        ) : (
+          <span className="text-2xl">✦</span>
+        )}
+        <div className="text-left leading-tight">
+          <div className="text-lg font-black text-echo-gold">{f.name}</div>
+          <div className="text-sm font-bold" style={{ color: f.color }}>{f.by} ใช้สกิล</div>
+        </div>
       </div>
     </div>
   );
@@ -280,46 +344,19 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo }) {
           </span>
         )}
       </button>
-      <div className="text-xs sm:text-sm font-bold text-center leading-tight">
+      <div className="text-sm sm:text-base font-bold text-center leading-tight">
         {label}{hasAmmo && <span className="text-echo-cyan"> · {ammoLeft}/{skill.ammo}</span>}
       </div>
     </div>
   );
 }
 
-const XFORM_VOICE = { rachan: "normal_k", beat: "ex_k" };
-
 export default function Game({ state }) {
   const [skillOpen, setSkillOpen] = useState(false);
   const [showChar, setShowChar] = useState(false);
-  const [xform, setXform] = useState(null); // เอฟเฟกต์เปลี่ยนร่างบนจอปกติ (หลังวีดีโอ)
+  const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
   const vp = useViewport();
   const phase = state.gameState;
-
-  // เมื่อวีดีโอเปลี่ยนร่างจบ (ออกจากเฟส CUTSCENE) -> เล่นเสียงพากย์ + ระเบิด + แจ้งเตือน บนจอปกติ
-  const prevPhase = useRef(null);
-  const announced = useRef(new Set());
-  useEffect(() => {
-    const leftCutscene = prevPhase.current === "CUTSCENE" && phase !== "CUTSCENE";
-    prevPhase.current = phase;
-    if (!leftCutscene) return;
-    for (const p of state.players) {
-      for (const kind of ["rachan", "beat"]) {
-        if (!p[kind]) continue;
-        const key = p.id + ":" + kind;
-        if (announced.current.has(key)) continue;
-        announced.current.add(key);
-        playSfx(XFORM_VOICE[kind]);
-        setXform({ id: p.id, name: p.name, color: p.color, img: p.img, kind });
-        return;
-      }
-    }
-  }, [phase, state]);
-  useEffect(() => {
-    if (!xform) return;
-    const t = setTimeout(() => setXform(null), 2800);
-    return () => clearTimeout(t);
-  }, [xform]);
   const me = state.players.find((p) => p.id === state.youId);
   const others = state.players.filter((p) => p.id !== state.youId);
   const slots = SLOTS[Math.min(others.length, 5)] || [];
@@ -329,17 +366,31 @@ export default function Game({ state }) {
   const loser = state.players.find((p) => p.isLoser);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
-  // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐานใช้ไม่ได้
+  // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
   const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
+
+  // สกิลช่วงจั่วการ์ด: server แจ้งมา -> เด้งทันที (ไม่ตัดเข้าจอดำ) แล้วหายเอง
+  useEffect(() => {
+    const onFlash = (f) => setFlash({ ...f, id: Date.now() });
+    socket.on("skillFlash", onFlash);
+    return () => socket.off("skillFlash", onFlash);
+  }, []);
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 2500);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   const skill = (tier) => { clickSound(); socket.emit("useSkill", { tier }); setSkillOpen(false); };
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
-  if (phase === "CUTSCENE" && state.cutscene) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
+  //  ยกเว้นฉากประกาศเปลี่ยนร่าง (announce) -> แสดงกระดานเกมตามปกติ + เอฟเฟกต์ทับ (ไม่ตัดจอดำ)
+  const csAnnounce = phase === "CUTSCENE" && state.cutscene && state.cutscene.announce ? state.cutscene : null;
+  if (phase === "CUTSCENE" && state.cutscene && !csAnnounce) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
 
   // ---- ย่อ/ขยายทั้งกระดานให้พอดีจอ (auto-fit) ----
-  // กว้างจริง >= 900 : แสดงเต็มจอเหมือนเดิม (สเกล 1). แคบกว่านั้น (มือถือแนวตั้ง) : ออกแบบที่ 900px แล้วย่อลงพอดีจอ
-  const DESIGN_W = Math.max(900, vp.w);
+  // กว้างจริง >= 820 : แสดงเต็มจอเหมือนเดิม (สเกล 1). แคบกว่านั้น (มือถือแนวตั้ง) : ออกแบบที่ 820px แล้วย่อลงพอดีจอ
+  const DESIGN_W = Math.max(820, vp.w);
   const scale = vp.w / DESIGN_W;
   const designH = vp.h / scale;
 
@@ -422,12 +473,15 @@ export default function Game({ state }) {
                   <StatusChips statuses={me.statuses} />
                 </div>
 
-                {/* ช่องสกิล 3 อัน */}
+                {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe} onUse={skill} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} ammo={me.beamAmmo} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING"} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed} onUse={skill} ammo={me.beamAmmo} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} />
                 </div>
+                {me.skillUsed && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
+                )}
 
                 {/* หลอดแต้มสกิล (จัดกลาง + สวยขึ้น) */}
                 <div className="flex items-center justify-center gap-3 mt-3">
@@ -448,18 +502,20 @@ export default function Game({ state }) {
               </div>
 
               {/* ปุ่มจั่ว/เปิดไพ่ (คอลัมน์ขวา) */}
-              <div className="flex flex-col gap-3 justify-center shrink-0 w-28">
+              <div className="flex flex-col gap-3 justify-center shrink-0 w-32">
                 {phase === "PLAYING" && me.alive && !done ? (
                   <>
-                    <Button variant="cyan" className="px-3 py-3" onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
-                    <Button variant="gold" className="px-3 py-3" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
+                    {/* แต้มถึงเพดาน (เช่น 21 พอดี) = ปิดปุ่มจั่ว รอผู้ใช้เลือกสกิล/เปิดไพ่เอง */}
+                    <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
+                    <Button variant="gold" className="px-3 py-4 text-lg" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
+                    {me.atCap && <div className="text-center text-xs font-bold text-echo-gold">แต้มเต็มแล้ว!<br />ใช้สกิล/เปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
-                  <div className="text-center text-sm font-bold text-white/90">{me.busted ? "แตก! 😢" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
+                  <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
-                  <div className="text-center text-sm font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
+                  <div className="text-center text-base font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
                 ) : !me.alive ? (
-                  <div className="text-center text-sm opacity-80">ตกรอบแล้ว</div>
+                  <div className="text-center text-base opacity-80">ตกรอบแล้ว</div>
                 ) : null}
               </div>
             </div>
@@ -513,8 +569,11 @@ export default function Game({ state }) {
       {/* ---------- อนิเมชันใครตีใคร ---------- */}
       {phase === "ATTACKING" && state.attack && <AttackFx a={state.attack} />}
 
-      {/* ---------- เอฟเฟกต์เปลี่ยนร่าง (ระเบิด + แจ้งเตือน) บนจอปกติหลังวีดีโอ ---------- */}
-      {xform && <TransformFx fx={xform} />}
+      {/* ---------- ประกาศเปลี่ยนร่าง: กระดานยังโชว์อยู่ + ระเบิด/เสียงแปลงร่างเล่นให้จบ ---------- */}
+      {csAnnounce && <TransformAnnounce key={csAnnounce.id} cs={csAnnounce} />}
+
+      {/* ---------- สกิลช่วงจั่วการ์ด เด้งทันที ---------- */}
+      {flash && <SkillFlash key={flash.id} f={flash} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (
