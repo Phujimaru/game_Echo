@@ -198,7 +198,7 @@ function TransformNotice({ n }) {
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
 // สถานะที่ผูกกับท่าไม้ตายของแต่ละตัวละคร — ใช้เช็คว่ากำลังมีผลอยู่ไหม (กดซ้ำไม่ได้จนกว่าจะหมดเวลา)
-const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity" };
+const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity", gambler: "golden", eva13: "fourth" };
 
 // ตำแหน่งผู้เล่นคนอื่น (นอกจากตัวเรา) รอบโต๊ะ — [top%, left%] จัดตามจำนวน ไม่เรียงแถว
 const SLOTS = {
@@ -248,6 +248,7 @@ function Stats({ p, center }) {
         <span className="text-lg leading-none">
           {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
         </span>
+        {p.tempHp > 0 && <span className="text-sm text-echo-gold font-bold">💛{p.tempHp}</span>}
         <span className="flex gap-0.5">
           {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
         </span>
@@ -262,8 +263,8 @@ function Stats({ p, center }) {
   );
 }
 
-function StatusChips({ statuses, left, tonkatsu }) {
-  if (!statuses && !tonkatsu) return null;
+function StatusChips({ statuses, left, tonkatsu, profit }) {
+  if (!statuses && !tonkatsu && !profit) return null;
   const s = statuses || {};
   const items = [];
   if (s.upg) items.push(["UPG", "bg-echo-cyan text-gray-900"]);
@@ -280,8 +281,12 @@ function StatusChips({ statuses, left, tonkatsu }) {
   if (s.mage) items.push([`🪄จอมเวทย์x${s.mage}`, "bg-echo-cyan text-gray-900"]); // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก
   if (s.humanity) items.push([`✨EFH${s.humanity}`, "bg-echo-gold text-gray-900"]); // Everything For Humanity
   if (s.seal) items.push(["📜อมตะ", "bg-echo-hp"]); // เรจูอาคมบัญชา คำสั่ง 1
-  if (s.nodraw) items.push(["🍜อิ่มจัด ห้ามจั่ว", "bg-echo-hp"]);
+  if (s.nodraw) items.push([`🚫ห้ามจั่ว${s.nodraw > 1 ? s.nodraw : ""}`, "bg-echo-hp"]);
   if (tonkatsu > 0) items.push([`🍜x${tonkatsu}`, "bg-echo-cyan text-gray-900"]); // UI สะสมชามทงคัสสึ (เทมาริ)
+  if (s.golden) items.push([`🎰777 x${s.golden}`, "bg-echo-gold text-gray-900"]); // เวลาทอง (แกมเบลอร์)
+  if (profit > 0) items.push([`💰+${profit}`, "bg-echo-gold text-gray-900"]); // กำไรเท่าตัวโว้ย สะสมจนได้ตี
+  if (s.spear) items.push(["🗡️หอกลองกินัส", "bg-echo-magenta"]); // เอวา 13: +1 โจมตี 1 เทิร์น
+  if (s.fourth) items.push([`☄️Impact${s.fourth}`, "bg-echo-hp"]); // Fourth Impact (เอวา 13)
   if (!items.length) return null;
   return (
     <div className={`flex flex-wrap gap-1 ${left ? "justify-start" : "justify-center"} mt-1`}>
@@ -318,7 +323,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked }) {
           {p.busted ? "แตก!" : `${p.score} แต้ม`}
         </div>
       )}
-      <StatusChips statuses={p.statuses} tonkatsu={p.tonkatsu} />
+      <StatusChips statuses={p.statuses} tonkatsu={p.tonkatsu} profit={p.profit} />
     </div>
   );
 }
@@ -344,12 +349,13 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked }) {
         <div className="truncate text-base font-black" style={{ color: p.color }}>{p.name}</div>
         <div className="text-sm leading-none whitespace-nowrap">
           {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
+          {p.tempHp > 0 && <span className="text-xs text-echo-gold font-bold"> 💛{p.tempHp}</span>}
         </div>
         <div className="flex items-center gap-0.5 mt-0.5">
           {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
           {p.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{p.shield}</span>}
         </div>
-        <StatusChips statuses={p.statuses} left tonkatsu={p.tonkatsu} />
+        <StatusChips statuses={p.statuses} left tonkatsu={p.tonkatsu} profit={p.profit} />
       </div>
       {summary && p.score !== null && (
         <div className={`score-pop shrink-0 text-xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : "text-white"}`}>
@@ -443,13 +449,14 @@ function ReijuModal({ me, onUse, onClose }) {
   );
 }
 
-// ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่)
-function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo }) {
+// ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่) — cost = แต้มที่ใช้จริง (เวลาทองแกมเบลอร์ลดครึ่ง)
+function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo, cost }) {
   const [broken, setBroken] = useState(false);
   const hasAmmo = skill && skill.ammo != null;
   const ammoLeft = hasAmmo ? (ammo ?? skill.ammo) : null;
   const outOfAmmo = hasAmmo && ammoLeft <= 0;
-  const afford = skill && points >= skill.cost;
+  const useCost = skill ? (cost ?? skill.cost) : 0;
+  const afford = skill && points >= useCost;
   const usable = skill && !disabled && afford && !outOfAmmo;
   return (
     <div className="flex flex-col items-center gap-1">
@@ -466,7 +473,11 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo }) {
         ) : (
           <div className="absolute inset-0 grid place-items-center text-gray-500 text-3xl">✦</div>
         )}
-        {skill && <span className="absolute top-1 right-1 text-xs font-bold bg-black/60 text-white rounded px-1.5">{skill.cost}</span>}
+        {skill && (
+          <span className={`absolute top-1 right-1 text-xs font-bold rounded px-1.5 ${useCost < skill.cost ? "bg-echo-gold text-gray-900" : "bg-black/60 text-white"}`}>
+            {useCost}
+          </span>
+        )}
         {hasAmmo && (
           <span className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 bg-black/55 rounded px-1 py-0.5">
             {Array.from({ length: skill.ammo }, (_, i) => (
@@ -506,10 +517,22 @@ export default function Game({ state }) {
   const ultimateActive = !!(me && me.statuses && me.statuses[ULTIMATE_STATUS[ch?.id]]);
   // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
-  // Ohger Finish (คุวากาตะ): ใช้ได้เมื่อมีประกายเขี้ยวปฏิปักษ์ (สวมเกราะราชันด้วยหรือไม่ก็ได้ — 2 กรณี)
-  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.beat || beatMe));
-  // ทงคัสสึเกิน 2 ชาม: เทิร์นนี้จั่วการ์ดเพิ่มไม่ได้
+  // Ohger Finish (คุวากาตะ): ต้องสวมเกราะราชันเป็นอย่างน้อย (ราชัน+เขี้ยว = +2 / ราชันอย่างเดียว = +1)
+  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !me.statuses?.rachan);
+  // ห้ามจั่วการ์ดเพิ่มเทิร์นนี้ (ทงคัสสึ / กำไรเท่าตัวโว้ย / หอกลองกินัส)
   const noDraw = !!(me && me.statuses?.nodraw);
+  // ---------- แกมเบลอร์ ----------
+  const isGambler = ch?.id === "gambler";
+  const goldenOn = !!(me && me.statuses?.golden); // บัฟเวลาทอง 777 กำลังมีผล
+  // เวลาทอง: กดสกิลพื้นฐานซ้ำได้ในเทิร์นเดียว จนกว่าจำนวนใช้/แต้มจะหมด + คอสพื้นฐาน/รองลดครึ่ง
+  const gambleRepeat = isGambler && goldenOn && (me?.gamblerUses || 0) > 0;
+  const halfCost = (s) => (s ? Math.ceil(s.cost / 2) : 0);
+  // ---------- เอวา 13 ----------
+  const isEva = ch?.id === "eva13";
+  // หอกแห่งแคสเซียส: ต้องมีเกราะเหลือให้หัก
+  const cassiusLocked = isEva && (me?.armor || 0) < 1;
+  // Fourth Impact: ใช้ได้เมื่อสกิลติดตัว 3 ทำงาน (เลือด <= 3) เท่านั้น
+  const fourthLocked = isEva && (me?.hp || 0) > 3;
   // ---------- ฟุจิมารุ ----------
   const isFuji = ch?.id === "fujimaru";
   const humanityOn = !!(me && me.statuses?.humanity); // Everything For Humanity กำลังมีผล
@@ -659,9 +682,10 @@ export default function Game({ state }) {
               {/* พลังชีวิต + เกราะ + สถานะ + หลอดสกิล */}
               <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2">
                 <span className="flex text-lg leading-none">{Array.from({ length: me.maxHp }, (_, i) => <span key={i}>{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
+                {me.tempHp > 0 && <span className="text-sm text-echo-gold font-bold">💛{me.tempHp}</span>}
                 <span className="flex gap-0.5">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                 {me.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{me.shield}</span>}
-                <StatusChips statuses={me.statuses} left tonkatsu={me.tonkatsu} />
+                <StatusChips statuses={me.statuses} left tonkatsu={me.tonkatsu} profit={me.profit} />
                 <span className="ml-auto flex items-center gap-1.5">
                   <span className="flex gap-1 p-1 rounded-lg bg-black/25">
                     {Array.from({ length: me.maxSkill }, (_, i) => (
@@ -674,15 +698,18 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat) || mageLocked} onUse={skill} ammo={me.puddingUses} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked} onUse={skill} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
               </div>
-              {me.skillUsed && !mageRepeat && phase === "PLAYING" && !done && (
+              {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
               )}
               {mageRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-cyan mt-1">🪄 จอมเวทย์ฝึกหัด กดได้อีก {3 - (me.mageUses || 0)} ครั้งในเทิร์นนี้</div>
+              )}
+              {me.skillUsed && gambleRepeat && phase === "PLAYING" && !done && (
+                <div className="text-center text-sm font-bold text-echo-gold mt-1">🎰 เวลาทอง! กดสกิลพื้นฐานต่อได้ (เหลือ {me.gamblerUses} ครั้ง)</div>
               )}
 
               {/* ปุ่มแอคชันใหญ่ (ล่างสุด เต็มความกว้าง) */}
@@ -693,7 +720,7 @@ export default function Game({ state }) {
                       <Button variant="cyan" className="flex-1 py-4 text-xl" disabled={me.atCap || noDraw} onClick={() => { clickSound(); socket.emit("hit"); }}>🎴 จั่วการ์ด</Button>
                       <Button variant="gold" className="flex-1 py-4 text-xl" onClick={() => { clickSound(); socket.emit("lock"); }}>✅ เปิดไพ่</Button>
                     </div>
-                    {noDraw && <div className="text-center text-sm font-bold text-echo-hp mt-1">🍜 อิ่มทงคัสสึเกินไป! เทิร์นนี้จั่วเพิ่มไม่ได้</div>}
+                    {noDraw && <div className="text-center text-sm font-bold text-echo-hp mt-1">🚫 เทิร์นนี้จั่วไม่ได้</div>}
                     {me.atCap && <div className="text-center text-sm font-bold text-echo-gold mt-1">แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
@@ -870,23 +897,27 @@ export default function Game({ state }) {
                 <div className="flex items-center gap-2 mt-2 flex-wrap text-sm">
                   <span className="font-bold opacity-90">พลังชีวิต</span>
                   <span className="flex">{Array.from({ length: me.maxHp }, (_, i) => <span key={i} className="text-lg leading-none">{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
+                  {me.tempHp > 0 && <span className="text-xs text-echo-gold font-bold">💛{me.tempHp}</span>}
                   <span className="flex gap-0.5 ml-1">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                   {me.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{me.shield}</span>}
                   <span className="font-bold opacity-90">เกราะ</span>
-                  <StatusChips statuses={me.statuses} tonkatsu={me.tonkatsu} />
+                  <StatusChips statuses={me.statuses} tonkatsu={me.tonkatsu} profit={me.profit} />
                 </div>
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat) || mageLocked} onUse={skill} ammo={me.puddingUses} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
                 </div>
-                {me.skillUsed && !mageRepeat && phase === "PLAYING" && !done && (
+                {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
                 )}
                 {mageRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-cyan mt-1">🪄 จอมเวทย์ฝึกหัด กดได้อีก {3 - (me.mageUses || 0)} ครั้งในเทิร์นนี้</div>
+                )}
+                {me.skillUsed && gambleRepeat && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">🎰 เวลาทอง! กดสกิลพื้นฐานต่อได้ (เหลือ {me.gamblerUses} ครั้ง)</div>
                 )}
 
                 {/* หลอดแต้มสกิล (จัดกลาง + สวยขึ้น) */}
@@ -914,7 +945,7 @@ export default function Game({ state }) {
                     {/* แต้มถึงเพดาน (เช่น 21 พอดี) = ปิดปุ่มจั่ว รอผู้ใช้เลือกสกิล/เปิดไพ่เอง */}
                     <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap || noDraw} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
                     <Button variant="gold" className="px-3 py-4 text-lg" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
-                    {noDraw && <div className="text-center text-xs font-bold text-echo-hp">🍜 อิ่มเกินไป!<br />เทิร์นนี้จั่วเพิ่มไม่ได้</div>}
+                    {noDraw && <div className="text-center text-xs font-bold text-echo-hp">🚫 เทิร์นนี้จั่วไม่ได้</div>}
                     {me.atCap && <div className="text-center text-xs font-bold text-echo-gold">แต้มเต็มแล้ว!<br />ใช้สกิล/เปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (

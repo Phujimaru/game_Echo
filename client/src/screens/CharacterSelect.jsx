@@ -132,15 +132,16 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
         /* ================= โหมดรายละเอียด (เลือกแล้ว) ================= */
         <>
           <div className="flex-1 flex flex-col lg:flex-row items-center lg:items-start gap-4 p-4 sm:p-6 overflow-y-auto pb-32 lg:pb-6">
-            {/* คอลัมน์ตัวละครให้สลับ (แนวนอนบนมือถือ / แนวตั้งบนจอกว้าง) */}
-            <div className="flex flex-row lg:flex-col flex-wrap justify-center gap-3 shrink-0">
+            {/* คอลัมน์ตัวละครให้สลับ (แนวนอนบนมือถือ / แนวตั้งบนจอกว้าง)
+                จอกว้าง: ล็อกความสูงแล้วเลื่อนขึ้นลงดูตัวอื่นได้ — ไม่ wrap เป็นหลายคอลัมน์จนดันจอกว้าง */}
+            <div className="flex flex-row lg:flex-col flex-wrap lg:flex-nowrap justify-center lg:justify-start gap-3 shrink-0 p-1 lg:max-h-[70vh] lg:overflow-y-auto">
               {roster.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => !c.locked && pick(c.id)}
                   disabled={c.locked}
                   style={{ outline: c.id === picked ? `3px solid ${color}` : "none" }}
-                  className={`relative rounded-xl transition ${c.locked ? "cursor-not-allowed" : "hover:scale-105"}`}
+                  className={`relative rounded-xl transition shrink-0 ${c.locked ? "cursor-not-allowed" : "hover:scale-105"}`}
                   title={c.locked ? "ยังไม่ปลดล็อก" : c.name}
                 >
                   <CharImage
