@@ -198,7 +198,7 @@ function TransformNotice({ n }) {
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
 // สถานะที่ผูกกับท่าไม้ตายของแต่ละตัวละคร — ใช้เช็คว่ากำลังมีผลอยู่ไหม (กดซ้ำไม่ได้จนกว่าจะหมดเวลา)
-const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata" };
+const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity" };
 
 // ตำแหน่งผู้เล่นคนอื่น (นอกจากตัวเรา) รอบโต๊ะ — [top%, left%] จัดตามจำนวน ไม่เรียงแถว
 const SLOTS = {
@@ -277,6 +277,9 @@ function StatusChips({ statuses, left, tonkatsu }) {
   if (s.rachan) items.push(["ราชัน", "bg-echo-armor"]); // ถาวร ไม่นับเทิร์น
   if (s.song) items.push([`🎵Song${s.song}`, "bg-echo-magenta"]);
   if (s.anata) items.push(["🎤ANATA", "bg-echo-gold text-gray-900"]);
+  if (s.mage) items.push([`🪄จอมเวทย์x${s.mage}`, "bg-echo-cyan text-gray-900"]); // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก
+  if (s.humanity) items.push([`✨EFH${s.humanity}`, "bg-echo-gold text-gray-900"]); // Everything For Humanity
+  if (s.seal) items.push(["📜อมตะ", "bg-echo-hp"]); // เรจูอาคมบัญชา คำสั่ง 1
   if (s.nodraw) items.push(["🍜อิ่มจัด ห้ามจั่ว", "bg-echo-hp"]);
   if (tonkatsu > 0) items.push([`🍜x${tonkatsu}`, "bg-echo-cyan text-gray-900"]); // UI สะสมชามทงคัสสึ (เทมาริ)
   if (!items.length) return null;
@@ -382,6 +385,64 @@ function CharModal({ ch, onClose }) {
   );
 }
 
+// ---------- เรจูอาคมบัญชา (สกิลติดตัวฟุจิมารุ): UI พิเศษแยกจากช่องสกิล ----------
+//  ไม่นับเป็นการใช้สกิล -> ใช้พร้อมสกิลอื่นได้ | 3 ครั้งต่อเกม | รูปเปลี่ยนตามเส้นที่เหลือ (reiju3-0)
+const REIJU_COMMANDS = [
+  { cmd: 1, icon: "🛡️", name: "อมตะ 1 เทิร์น", desc: "เทิร์นนี้ไม่ถูกเลือกโจมตี และไม่รับความเสียหายใดๆ เลย" },
+  { cmd: 2, icon: "🎲", name: "สุ่มฟื้นจนเต็ม", desc: "สุ่มฟื้นพลังชีวิต หรือ เกราะ อย่างใดอย่างหนึ่งจนเต็ม (โอกาส 50/50)" },
+  { cmd: 3, icon: "✨", name: "เติมแต้มสกิลเต็ม", desc: "เติมแต้มสกิลให้เต็ม 6 แต้มทันที" },
+];
+const reijuImg = (n) => `/characters/fujimaru/reiju${Math.max(0, Math.min(3, n ?? 0))}.jpg`;
+
+function ReijuButton({ me, usable, onOpen, className = "" }) {
+  return (
+    <button
+      onClick={() => { if (usable) { clickSound(); onOpen(); } }}
+      disabled={!usable}
+      title="เรจูอาคมบัญชา — สั่งใช้ก่อนเปิดการ์ด (ไม่นับเป็นการใช้สกิล)"
+      className={`relative rounded-xl overflow-hidden border-2 border-echo-gold shadow-lg transition ${
+        usable ? "hover:scale-105 ring-2 ring-echo-gold/60" : "opacity-60 grayscale cursor-not-allowed"
+      } ${className}`}
+    >
+      <img src={reijuImg(me.reiju)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <span className="absolute bottom-0 inset-x-0 bg-black/75 text-[10px] font-bold text-echo-gold leading-tight py-0.5">
+        📜 อาคม {me.reiju ?? 0}/3
+      </span>
+    </button>
+  );
+}
+
+function ReijuModal({ me, onUse, onClose }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-xl overflow-hidden w-16 h-16 border-2 border-echo-gold shrink-0">
+            <img src={reijuImg(me.reiju)} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-echo-gold">ขอสาบานด้วยอาคมบัญชานี้</div>
+            <div className="text-sm opacity-80">เรจูอาคมบัญชาเหลือ {me.reiju ?? 0}/3 — เลือกคำสั่ง</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          {REIJU_COMMANDS.map((c) => (
+            <button
+              key={c.cmd}
+              onClick={() => { clickSound(); onUse(c.cmd); }}
+              className="text-left rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 px-3 py-2 transition"
+            >
+              <div className="font-bold text-echo-gold">{c.icon} คำสั่งที่ {c.cmd} · {c.name}</div>
+              <div className="text-sm opacity-80">{c.desc}</div>
+            </button>
+          ))}
+        </div>
+        <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
+      </div>
+    </div>
+  );
+}
+
 // ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่)
 function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo }) {
   const [broken, setBroken] = useState(false);
@@ -427,6 +488,7 @@ export default function Game({ state }) {
   const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
   const [notice, setNotice] = useState(null); // แปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป) เด้งแจ้งเตือนทันที ไม่หยุดเกม
   const [anataSel, setAnataSel] = useState(null); // เทมาริ: โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (null = ไม่ได้เลือกอยู่)
+  const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
   const vp = useViewport();
   const phase = state.gameState;
   const me = state.players.find((p) => p.id === state.youId);
@@ -444,10 +506,23 @@ export default function Game({ state }) {
   const ultimateActive = !!(me && me.statuses && me.statuses[ULTIMATE_STATUS[ch?.id]]);
   // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
-  // Ohger Finish (คุวากาตะ): ใช้ไม่ได้จนกว่าจะมีทั้ง สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์
-  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.statuses?.rachan && beatMe));
+  // Ohger Finish (คุวากาตะ): ใช้ได้เมื่อมีประกายเขี้ยวปฏิปักษ์ (สวมเกราะราชันด้วยหรือไม่ก็ได้ — 2 กรณี)
+  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.beat || beatMe));
   // ทงคัสสึเกิน 2 ชาม: เทิร์นนี้จั่วการ์ดเพิ่มไม่ได้
   const noDraw = !!(me && me.statuses?.nodraw);
+  // ---------- ฟุจิมารุ ----------
+  const isFuji = ch?.id === "fujimaru";
+  const humanityOn = !!(me && me.statuses?.humanity); // Everything For Humanity กำลังมีผล
+  // จอมเวทย์ฝึกหัด: กดได้ 3 ครั้งต่อเทิร์น (ยกเว้นกฎ 1 สกิลต่อเทิร์น เฉพาะกดซ้ำตัวมันเอง) — ใช้ไม่ได้ระหว่าง EFH
+  const mageRepeat = isFuji && (me?.mageUses || 0) > 0 && (me?.mageUses || 0) < 3;
+  const mageLocked = isFuji && (humanityOn || (me?.mageUses || 0) >= 3);
+  // Mystic Code: ต้องเปิด EFH อยู่ + มีเกราะเหลือ
+  const mysticLocked = isFuji && !(humanityOn && (me?.armor || 0) >= 1);
+  // Everything For Humanity: ต้องมีเรจูอาคมบัญชาครบ 3
+  const humanityLocked = isFuji && (me?.reiju || 0) < 3;
+  // เรจูอาคมบัญชา (สกิลติดตัว): สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล
+  const reijuUsable = !!(isFuji && phase === "PLAYING" && me?.alive && !done && (me?.reiju || 0) > 0);
+  const useReiju = (cmd) => { socket.emit("useReiju", { command: cmd }); setReijuOpen(false); };
   // ANATA WAAAAAAAA: จำนวนเป้าหมายที่ต้องเลือก (2 หรือเท่าที่มีคู่ต่อสู้รอด)
   const aliveOthers = others.filter((p) => p.alive);
   const anataNeed = Math.min(2, aliveOthers.length);
@@ -494,6 +569,10 @@ export default function Game({ state }) {
   useEffect(() => {
     if (anataSel && (phase !== "PLAYING" || me?.skillUsed || done)) setAnataSel(null);
   }, [anataSel, phase, me?.skillUsed, done]);
+  // ปิดเมนูเรจูอาคมบัญชาอัตโนมัติเมื่อใช้ไม่ได้แล้ว (พ้นช่วงจั่วการ์ด / เส้นหมด)
+  useEffect(() => {
+    if (reijuOpen && !reijuUsable) setReijuOpen(false);
+  }, [reijuOpen, reijuUsable]);
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
   //  ยกเว้นฉากประกาศเปลี่ยนร่าง (announce) -> แสดงกระดานเกมตามปกติ + เอฟเฟกต์ทับ (ไม่ตัดจอดำ)
@@ -524,7 +603,7 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={(iAmAttacker || !!anataSel) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
               onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
             />
@@ -558,6 +637,7 @@ export default function Game({ state }) {
                   <div className="absolute inset-0 rounded-xl border-2 pointer-events-none" style={{ borderColor: me.color }} />
                   <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-black/75 rounded-full px-1.5 leading-tight whitespace-nowrap">ℹ️ ข้อมูล</span>
                 </button>
+                {isFuji && <ReijuButton me={me} usable={reijuUsable} onOpen={() => setReijuOpen(true)} className="w-14 h-16 shrink-0" />}
                 <div className="flex-1 min-w-0 flex items-center overflow-x-auto min-h-[56px]">
                   {revealed ? (
                     <div className="text-3xl font-black">
@@ -594,12 +674,15 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked} onUse={skill} ammo={me.beamAmmo} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe} onUse={skill} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat) || mageLocked} onUse={skill} ammo={me.puddingUses} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked} onUse={skill} />
               </div>
-              {me.skillUsed && phase === "PLAYING" && !done && (
+              {me.skillUsed && !mageRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
+              )}
+              {mageRepeat && phase === "PLAYING" && !done && (
+                <div className="text-center text-sm font-bold text-echo-cyan mt-1">🪄 จอมเวทย์ฝึกหัด กดได้อีก {3 - (me.mageUses || 0)} ครั้งในเทิร์นนี้</div>
               )}
 
               {/* ปุ่มแอคชันใหญ่ (ล่างสุด เต็มความกว้าง) */}
@@ -694,6 +777,7 @@ export default function Game({ state }) {
         )}
 
         {showChar && ch && <CharModal ch={ch} onClose={() => setShowChar(false)} />}
+        {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
       </div>
     );
   }
@@ -728,7 +812,7 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={(iAmAttacker || !!anataSel) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
           onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
         />
@@ -754,6 +838,7 @@ export default function Game({ state }) {
               </div>
               <div className="font-bold text-base mt-1 leading-tight">{me.character.name}</div>
               <button onClick={() => { clickSound(); setShowChar(true); }} className="text-xs underline opacity-80">รายละเอียดตัวละคร</button>
+              {isFuji && <ReijuButton me={me} usable={reijuUsable} onOpen={() => setReijuOpen(true)} className="w-20 h-16 mt-1.5" />}
             </div>
 
             <div className="flex gap-3">
@@ -793,12 +878,15 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked} onUse={skill} ammo={me.beamAmmo} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat) || mageLocked} onUse={skill} ammo={me.puddingUses} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked} onUse={skill} />
                 </div>
-                {me.skillUsed && phase === "PLAYING" && !done && (
+                {me.skillUsed && !mageRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
+                )}
+                {mageRepeat && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-cyan mt-1">🪄 จอมเวทย์ฝึกหัด กดได้อีก {3 - (me.mageUses || 0)} ครั้งในเทิร์นนี้</div>
                 )}
 
                 {/* หลอดแต้มสกิล (จัดกลาง + สวยขึ้น) */}
@@ -918,6 +1006,7 @@ export default function Game({ state }) {
 
       {/* ---------- modal รายละเอียดตัวละคร ---------- */}
       {showChar && ch && <CharModal ch={ch} onClose={() => setShowChar(false)} />}
+      {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
       </div>
     </div>
   );

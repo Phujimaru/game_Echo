@@ -17,6 +17,7 @@ const FILES = {
   normal_k: "/characters/kuwagata/normal_k.mp3",         // เสียงพากย์หลังวีดีโอสวมเกราะราชัน
   ex_k: "/characters/kuwagata/ex_k.mp3",                 // เสียงพากย์หลังวีดีโอ Beat Mode
   temari_final_theme: "/characters/temari/temari_final_theme.mp3", // เพลง ANATA WAAAAAAAA (เล่นถึงตอนเปิดไพ่)
+  fujimaru_final: "/characters/fujimaru/fujimaru_final_theme.mp3", // เพลงระหว่าง Everything For Humanity (ฟุจิมารุ)
   action_button: "/effect_sound/action_button.wav",
   trun_change: "/effect_sound/trun_change.wav",
   attack: "/effect_sound/attack.wav",
@@ -59,7 +60,10 @@ export function setMasterVolume(v) {
 }
 
 let currentMusic = null;
-let currentSeq = null; // seq ของเพลงสกิลปัจจุบัน (เปลี่ยน = เริ่มเพลงใหม่)
+// seq ล่าสุด "ต่อเพลง" (ไม่ใช่ต่อการสลับเพลง): จำไว้แม้เพลงถูกพัก/สลับออก
+// -> กลับมาเล่นเพลงเดิมด้วย seq เดิม (เช่น หลังจบ cutscene ของคนอื่น) = เล่นต่อจากจุดเดิม ไม่เริ่มใหม่
+// -> seq ใหม่ (เปิดท่าครั้งใหม่ / คนอื่นเปิดท่าเพลงเดียวกันทับ) = เริ่มจากต้น
+const musicSeq = {};
 const musicCache = {};
 function getMusic(name) {
   if (!musicCache[name]) {
@@ -76,27 +80,24 @@ function getMusic(name) {
 export function playMusic(name, seq) {
   if (!FILES[name]) return;
   const a = getMusic(name);
+  // seq เดิมของเพลงนี้ (จำข้ามการพัก/สลับเพลง) — เปลี่ยนเมื่อไหร่ค่อยเริ่มเพลงใหม่จากต้น
+  const isNewSeq = seq != null && seq !== musicSeq[name];
+  if (isNewSeq) {
+    musicSeq[name] = seq;
+    a.currentTime = 0; // การเปิดร่างครั้งใหม่ (กดใหม่/โดนคนอื่นทับ) -> เริ่มจากต้น
+  }
   if (currentMusic === name) {
-    if (seq != null && seq !== currentSeq) {
-      currentSeq = seq;
-      a.currentTime = 0; // เพลงเดิมแต่คนละการเปิด (โดนทับ/กดใหม่) -> เริ่มใหม่
-      a.play().catch(() => {});
-    } else if (a.paused) {
-      a.play().catch(() => {}); // ถูกพักไว้ -> เล่นต่อจากตำแหน่งเดิม
-    }
+    if (isNewSeq || a.paused) a.play().catch(() => {}); // ไม่ใช่ seq ใหม่ = เล่นต่อจากตำแหน่งเดิม
     return;
   }
   if (currentMusic) getMusic(currentMusic).pause(); // พักเพลงเดิม เก็บตำแหน่งไว้ (ในแมตช์)
   currentMusic = name;
-  currentSeq = seq != null ? seq : null;
-  if (seq != null) a.currentTime = 0; // เพลงสกิลเพิ่งเปิด -> เริ่มจากต้นเสมอ
-  a.play().catch(() => {});
+  a.play().catch(() => {}); // seq เดิม (เช่น กลับมาหลัง cutscene) -> เล่นต่อจากจุดเดิม ไม่เริ่มใหม่
 }
 export function stopMusic() {
   if (!currentMusic) return;
   getMusic(currentMusic).pause(); // พักไว้ ไม่รีเซ็ต -> กลับมาเล่นต่อจากจุดเดิม (ในแมตช์)
   currentMusic = null;
-  currentSeq = null;
 }
 // เริ่มเกมใหม่ / จบแมตช์: รีเซ็ตตำแหน่งเพลงทุกเพลง -> ครั้งถัดไปเริ่มจากต้นทั้งหมด
 export function resetMusicPositions() {
@@ -104,8 +105,8 @@ export function resetMusicPositions() {
     a.pause();
     a.currentTime = 0;
   }
+  for (const k of Object.keys(musicSeq)) delete musicSeq[k];
   currentMusic = null;
-  currentSeq = null;
 }
 export function playSfx(name) {
   if (!FILES[name]) return;

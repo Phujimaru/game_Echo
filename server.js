@@ -36,6 +36,11 @@ const MAX_ARMOR = 2;
 const MAX_SKILL = 6;
 const BEAM_AMMO = 2;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
 const PUDDING_USES = 2; // Rainbow Pudding ใช้ได้ต่อเกม (คุวากาตะ)
+const REIJU_USES = 3;   // เรจูอาคมบัญชา ต่อเกม (ฟุจิมารุ)
+const MAGE_USES_PER_TURN = 3; // จอมเวทย์ฝึกหัด กดได้ 3 ครั้งต่อเทิร์น (ฟุจิมารุ)
+
+// ร่างสุดท้ายฟุจิมารุ (หลังเปิด Everything For Humanity — คงอยู่จนตาย)
+const FUJIMARU_FINAL_IMG = "/characters/fujimaru/fujimaru_final.jpg";
 
 // รูปร่างโอเจอร์ (ใช้ทั้งท่าไม้ตายสวมเกราะราชัน และ Beat Mode)
 const OHGER_FORM = "/characters/kuwagata/kuwakata_ohger_form.jpg";
@@ -52,6 +57,8 @@ const TRANSFORMS = {
   //  rachan: วีดีโอ 11.62 | beat: วีดีโอ 4.70
   rachan:   { img: OHGER_FORM, video: "/characters/kuwagata/kuwagata_final.mp4",   title: "สวมเกราะราชัน",       label: "ปล่อยท่าไม้ตาย",   seconds: 12, music: "final_normal", voice: "normal_k", afterReveal: true },
   beat:     { img: OHGER_FORM, video: "/characters/kuwagata/kuwagata_passive.mp4", title: "ประกายเขี้ยวปฏิปักษ์", label: "สกิลติดตัวทำงาน", seconds: 5,  music: "ex_guts",      voice: "ex_k",     afterReveal: false },
+  // humanity: ท่าไม้ตายฟุจิมารุ — วีดีโอ 13 วิ แล้วเพลง fujimaru_final_theme เล่นค้างระหว่างมีผล
+  humanity: { img: FUJIMARU_FINAL_IMG, video: "/characters/fujimaru/fujimaru_final.mp4", title: "EVERYTHING FOR HUMANITY", label: "ปล่อยท่าไม้ตาย", seconds: 13, music: "fujimaru_final", afterReveal: true },
   // monster: เล่นทันทีตอนใช้สกิล (พักช่วงจั่วการ์ดไว้ก่อน) | anataFinal: สกิลติดตัวเทมาริ เล่นก่อนท่าไม้ตายอื่นเสมอ
   monster:  { img: "/characters/hikaru/black_king.webp", video: "/characters/hikaru/ginga_skill3.mp4", title: "MONSTERLIVE", label: "แปลงร่างไคจู", seconds: 10, music: null, afterReveal: false },
   anataFinal: { img: "/characters/temari/temari.webp", video: "/characters/temari/temari_final.mp4", title: "หิวอะโปรดิวเซอร์", label: "สกิลติดตัวทำงาน", seconds: 10, music: null, afterReveal: false },
@@ -136,8 +143,16 @@ function songActive(p) {
 }
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่างสวมเกราะราชัน (ท่าไม้ตายคุวากาตะ) เพิ่ม +3 เป็น 5
 // ระหว่าง Song for you (เทมาริ) เพิ่มตามโบนัสชามทงคัสสึ (สูงสุด +3)
+// ระหว่าง Everything For Humanity (ฟุจิมารุ) เพิ่ม +3
 function maxArmorOf(p) {
-  return MAX_ARMOR + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0) + (songActive(p) ? songBonus(p) : 0);
+  return MAX_ARMOR
+    + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0)
+    + ((((p.statuses && p.statuses.humanity) || 0) > 0) ? 3 : 0)
+    + (songActive(p) ? songBonus(p) : 0);
+}
+// เรจูอาคมบัญชา คำสั่ง 1 (ฟุจิมารุ): อมตะ 1 เทิร์น — ไม่รับความเสียหายใดๆ
+function sealActive(p) {
+  return !!p && ((p.statuses && p.statuses.seal) || 0) > 0;
 }
 // Beat Mode (คุวากาตะ): พลังชีวิต < 3 = อยู่ในประกายเขี้ยวปฏิปักษ์
 function beatActive(p) {
@@ -156,6 +171,17 @@ function maybeBeatMode(p) {
   if (firstTime) queueTransformAnnounce(p, "beat"); // วีดีโอ -> ประกาศเปลี่ยนร่าง (ระเบิดเขียว + เสียงพากย์)
   lastLog.push(`⚡ ${p.name} เข้าสู่ประกายเขี้ยวปฏิปักษ์ (Beat Mode)!`);
 }
+// Beat Mode กันตาย: ทำงานทันทีเมื่อความเสียหายถึงตาย ไม่ต้องรอเข้า Beat Mode ก่อน
+// (ครั้งเดียวต่อเกม — ค้างที่ 1 หน่วย, เกราะไม่ฟื้นคืน, ภูมิดาเมจจากการแพ้ตอนจั่วการ์ด)
+function maybeBeatSave(p) {
+  if (!p || !p.alive || p.characterId !== "kuwagata") return false;
+  if (p.beatSaved || p.hp >= 1) return false;
+  p.hp = 1;
+  p.beatSaved = true;
+  p.armorLocked = true;
+  lastLog.push(`🛡️⚡ ${p.name} ประกายเขี้ยวปฏิปักษ์ — รอดจากความเสียหายถึงตาย! (กันตายได้ครั้งเดียว)`);
+  return true;
+}
 function joinedPositions() { return Object.values(players).map((p) => p.position); }
 function positionsFor(sid) {
   const joined = joinedPositions();
@@ -167,11 +193,15 @@ function positionUsedByOther(pos, sid) {
     Object.entries(reservations).some(([id, p]) => id !== sid && p === pos);
 }
 
-// รูปที่แสดง: Beat Mode (ถาวรจนตาย) > NT-D คงอยู่จนแก้แค้น > Paradise > ไคจู Black King > Ginga > สวมเกราะราชัน
+// รูปที่แสดง: Beat Mode (ถาวรจนตาย) > ร่างสุดท้ายฟุจิมารุ (จนตาย) > Paradise (เหนือกว่าสกิลติดตัว NT-D)
+//  > NT-D คงอยู่จนแก้แค้น > ไคจู Black King > Ginga > สวมเกราะราชัน
 function displayImg(p) {
   if (p.seen && p.seen.beat) return OHGER_FORM;
+  if (p.humanityActivated) return FUJIMARU_FINAL_IMG; // Everything For Humanity: คงร่างจนตาย
+  // NewType Paradise อยู่เหนือกว่าสกิลติดตัว NT-D — ระหว่างร่าง Paradise คงภาพ Paradise ไว้
+  if (p.seen && p.seen.paradise && (p.statuses.paradise || 0) > 0) return TRANSFORMS.paradise.img;
   if (p.ntdTarget && p.seen && p.seen.ntd) return TRANSFORMS.ntd.img;
-  for (const key of ["paradise", "monster", "ginga", "rachan"]) {
+  for (const key of ["monster", "ginga", "rachan"]) {
     if (p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
   }
   return p.img;
@@ -188,7 +218,7 @@ function activeSkillMusic() {
   }
   if (bestBeat) return bestBeat;
   let best = null;
-  for (const key of ["ginga", "paradise", "rachan"]) {
+  for (const key of ["ginga", "paradise", "rachan", "humanity"]) {
     const t = TRANSFORMS[key];
     if (!t.music) continue;
     for (const p of alivePlayers()) {
@@ -200,13 +230,15 @@ function activeSkillMusic() {
   return best;
 }
 
+// เรจูอาคมบัญชา (อมตะ): ไม่รับความเสียหายใดๆ ตลอดเทิร์น — กันไว้กลางทางทุกช่องทางดาเมจ
 function damageSoft(p) {
-  if (!p.alive) return;
+  if (!p.alive || sealActive(p)) return;
   if (p.shield > 0) { p.shield--; return; }
   if (p.armor > 0) { p.armor--; p.dmgArmor++; }
   else { p.hp--; p.dmgHp++; }
 }
 function dealDirect(p, n) {
+  if (sealActive(p)) return;
   for (let i = 0; i < n; i++) {
     if (!p.alive) return;
     if (p.shield > 0) { p.shield--; continue; }
@@ -214,12 +246,14 @@ function dealDirect(p, n) {
   }
 }
 function dealArmorOnly(p, n) {
+  if (sealActive(p)) return;
   for (let i = 0; i < n; i++) {
     if (p.shield > 0) { p.shield--; continue; }
     if (p.armor > 0) { p.armor--; p.dmgArmor++; }
   }
 }
 function dealMixed(p, n) { // เกราะก่อนแล้วเลือด (สำหรับ NT-D)
+  if (sealActive(p)) return;
   for (let i = 0; i < n; i++) {
     if (!p.alive) return;
     if (p.shield > 0) { p.shield--; continue; }
@@ -299,6 +333,10 @@ function resetCombat(p) {
   p.songUsedOnce = false; // Song for you: ครั้งแรกเติมเกราะให้ ครั้งถัดไปเพิ่มแค่เพดาน
   p.noDrawNext = false;   // ทงคัสสึเกิน 2 ชาม: เทิร์นถัดไปจั่วเพิ่มไม่ได้
   p.anataTargets = null;  // เป้าหมาย ANATA WAAAAAAAA (ลับจนกว่าจะเปิดไพ่)
+  p.reiju = REIJU_USES;   // ฟุจิมารุ: เรจูอาคมบัญชา 3 ครั้งต่อเกม
+  p.mageUses = 0;         // จอมเวทย์ฝึกหัด: จำนวนครั้งที่กดในเทิร์นนี้ (สูงสุด 3)
+  p.mageHealNext = 0;     // จอมเวทย์ฝึกหัด: ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้งที่ใช้
+  p.humanityActivated = false; // Everything For Humanity เปิดแล้ว (ร่างสุดท้ายจนตาย + ตายเมื่อผลจบ)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -352,6 +390,8 @@ function buildStateFor(viewerId) {
         skillPoints: p.skillPoints, maxSkill: MAX_SKILL,
         beamAmmo: p.beamAmmo,
         puddingUses: p.puddingUses,
+        reiju: p.reiju,       // ฟุจิมารุ: เรจูอาคมบัญชาคงเหลือ (UI พิเศษ reiju0-3.jpg)
+        mageUses: p.mageUses, // จอมเวทย์ฝึกหัด: กดไปแล้วกี่ครั้งในเทิร์นนี้ (สูงสุด 3)
         tonkatsu: p.tonkatsu || 0, // เทมาริ: ชามทงคัสสึสะสม (UI สะสมชาม)
         atCap: scoreOf(p) >= scoreCap(p), // แต้มเต็มเพดาน (21/UPG) -> ปิดปุ่มจั่ว รอเปิดไพ่เอง
         skillUsed: !!p.skillUsedRound,    // ใช้สกิลไปแล้วในเทิร์นนี้ (1 อันต่อเทิร์น)
@@ -469,6 +509,7 @@ function dealRound() {
     resetRoundDisplay(p);
     p.shield = 0;
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
+    p.mageUses = 0;           // จอมเวทย์ฝึกหัด: นับใหม่ทุกเทิร์น (กดได้ 3 ครั้งต่อเทิร์น)
     p.anataTargets = null;
     // ทงคัสสึเกิน 2 ชาม: เทิร์นนี้จั่วการ์ดเพิ่มไม่ได้ (หายเองเทิร์นถัดไป)
     if (p.noDrawNext) { p.statuses.nodraw = 1; p.noDrawNext = false; }
@@ -476,6 +517,15 @@ function dealRound() {
 
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืนต้นรอบ
     if (!p.armorLocked) p.armor = Math.min(maxArmorOf(p), p.armor + 1);
+    // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
+    if (p.mageHealNext > 0) {
+      const heal = Math.min(MAX_HP - p.hp, p.mageHealNext);
+      if (heal > 0) {
+        p.hp += heal;
+        lastLog.push(`🪄 ${p.name} จอมเวทย์ฝึกหัด — ฟื้นพลังชีวิต +${heal}`);
+      }
+      p.mageHealNext = 0;
+    }
     firePassive(p, "roundStart");
 
     p.cards = [];
@@ -521,7 +571,18 @@ function useSkill(id, tier, targets) {
 
   const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
 
-  if (p.skillUsedRound) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  // จอมเวทย์ฝึกหัด (ฟุจิมารุ): กดซ้ำได้ถึง 3 ครั้งต่อเทิร์น — เป็นข้อยกเว้นของกฎ 1 สกิลต่อเทิร์น
+  const isMage = p.characterId === "fujimaru" && tier === "basic";
+  const mageRepeat = isMage && (p.mageUses || 0) > 0 && (p.mageUses || 0) < MAGE_USES_PER_TURN;
+  if (p.skillUsedRound && !mageRepeat) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  if (isMage && (p.mageUses || 0) >= MAGE_USES_PER_TURN) return;
+  // จอมเวทย์ฝึกหัด: ระหว่างเปิด Everything For Humanity ใช้ไม่ได้
+  if (isMage && (p.statuses.humanity || 0) > 0) return;
+  // Mystic Code (ฟุจิมารุ): ต้องมีเกราะเหลือ และต้องเปิด Everything For Humanity อยู่เท่านั้น
+  const isMystic = p.characterId === "fujimaru" && tier === "secondary";
+  if (isMystic && ((p.statuses.humanity || 0) <= 0 || p.armor < 1)) return;
+  // Everything For Humanity: ต้องมีเรจูอาคมบัญชาครบ 3 เท่านั้น (ใช้หมดทั้ง 3 ตอนกด)
+  if (st === "humanity" && (p.reiju || 0) < REIJU_USES) return;
   // Beat Mode (ประกายเขี้ยว): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้ (ใช้ได้แค่สกิลรอง)
   if ((tier === "basic" || tier === "ultimate") && beatActive(p)) return;
   // ท่าไม้ตาย: กดซ้ำไม่ได้จนกว่าผลจะหมดเวลา (สวมเกราะราชันคงอยู่ถาวร = กดซ้ำไม่ได้อีกเลยตลอดเกม)
@@ -533,8 +594,9 @@ function useSkill(id, tier, targets) {
   if (isPudding && (p.puddingUses || 0) <= 0) return;
 
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
-  // Ohger Finish: ใช้ไม่ได้เลยจนกว่าจะมีทั้ง สวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ พร้อมกัน
-  if (st === "ohger" && !((p.statuses.rachan || 0) > 0 && beatActive(p))) return;
+  // Ohger Finish: ใช้ได้ 2 กรณี — (สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์) หรือ มีประกายเขี้ยวปฏิปักษ์อยู่
+  //  = ต้องมีประกายเขี้ยวปฏิปักษ์เป็นอย่างน้อย (เข้าโหมดแล้วถือว่ามีจนตาย)
+  if (st === "ohger" && !(beatActive(p) || (p.seen && p.seen.beat))) return;
 
   // ANATA WAAAAAAAA (เทมาริ): ต้องเลือกเป้าหมาย 2 คน (หรือเท่าที่มี) ก่อนใช้
   let anataTargets = null;
@@ -552,6 +614,22 @@ function useSkill(id, tier, targets) {
   p.skillPoints -= skill.cost;
   p.skillUsedRound = true;
   if (isPudding) p.puddingUses--; // นับใช้ Rainbow Pudding
+
+  // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
+  if (isMage) {
+    p.mageUses = (p.mageUses || 0) + 1;
+    p.mageHealNext = (p.mageHealNext || 0) + 1;
+    p.statuses.mage = (p.statuses.mage || 0) + 1; // เก็บเป็นจำนวนสแตค (ล้างหมดตอนจบเทิร์น)
+    lastLog.push(`🪄 ${p.name} จอมเวทย์ฝึกหัด x${p.statuses.mage} — ความเสียหายจากการแพ้/แตกเทิร์นนี้ +${p.statuses.mage}`);
+  }
+  // Mystic Code (ฟุจิมารุ): หักเกราะตัวเอง 1 -> ต่ออายุ Everything For Humanity +1 เทิร์น
+  if (isMystic) {
+    p.armor--;
+    p.statuses.humanity = (p.statuses.humanity || 0) + 1;
+    lastLog.push(`🔧 ${p.name} Mystic Code — หักเกราะ 1 ต่ออายุ Everything For Humanity (เหลือ ${p.statuses.humanity} เทิร์น)`);
+  }
+  // Everything For Humanity: ใช้เรจูอาคมบัญชาทั้ง 3 หมดทันทีตอนกด
+  if (st === "humanity") p.reiju = 0;
 
   // ทงคัสสึ 3 มื้อ (เทมาริ): นับชามสะสม — เกิน 2 ชาม = เทิร์นถัดไปจั่วเพิ่มไม่ได้,
   // เกิน 6 ชาม = ครั้งถัดไปอิ่มเกิน ได้เกราะ 1 หน่วยแทนการฟื้นเลือด
@@ -611,6 +689,45 @@ function useSkill(id, tier, targets) {
   broadcastState();
   checkAllLocked();
 }
+// ---- เรจูอาคมบัญชา (สกิลติดตัวฟุจิมารุ) ----
+//  สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล (ใช้พร้อมสกิลอื่นได้) — 3 ครั้งต่อเกม
+//  คำสั่ง: 1 อมตะ 1 เทิร์น | 2 สุ่มฟื้นเลือด/เกราะเต็ม (50/50) | 3 เติมแต้มสกิลเต็ม
+function useReiju(id, command) {
+  const p = players[id];
+  if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
+  if (p.characterId !== "fujimaru") return;
+  const cmd = Number(command);
+  if (![1, 2, 3].includes(cmd)) return;
+  if ((p.reiju || 0) <= 0) return;
+  p.reiju--;
+
+  let what = "";
+  if (cmd === 1) {
+    p.statuses.seal = 1;
+    what = "อมตะ 1 เทิร์น";
+    lastLog.push(`📜 ${p.name} เรจูอาคมบัญชา — เทิร์นนี้เป็นอมตะ ไม่ถูกเลือกโจมตี ไม่รับความเสียหายใดๆ (เหลือ ${p.reiju})`);
+  } else if (cmd === 2) {
+    if (Math.random() < 0.5) {
+      p.hp = MAX_HP;
+      what = "ฟื้นพลังชีวิตเต็ม";
+    } else {
+      p.armor = maxArmorOf(p);
+      what = "ฟื้นเกราะเต็ม";
+    }
+    lastLog.push(`📜 ${p.name} เรจูอาคมบัญชา — สุ่มได้ ${what}! (เหลือ ${p.reiju})`);
+  } else {
+    addSkill(p, MAX_SKILL); // เติมให้เต็ม 6 แต้ม (addSkill ตัดเพดานให้เอง)
+    what = "เติมแต้มสกิลเต็ม";
+    lastLog.push(`📜 ${p.name} เรจูอาคมบัญชา — เติมแต้มสกิลเต็ม ${MAX_SKILL} แต้ม (เหลือ ${p.reiju})`);
+  }
+  // เด้งโชว์ทันทีบนกระดานทุกคน (แบบเดียวกับสกิล instant) — รูปตามจำนวนเส้นที่เหลือ
+  io.emit("skillFlash", {
+    name: `ขอสาบานด้วยอาคมบัญชานี้ — ${what}`,
+    img: `/characters/fujimaru/reiju${Math.max(0, Math.min(3, p.reiju))}.jpg`,
+    by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96",
+  });
+  broadcastState();
+}
 function checkAllLocked() {
   if (gameState !== "PLAYING") return;
   const c = alivePlayers();
@@ -668,9 +785,25 @@ function resolveRound() {
   }
 
   if (best !== worst) {
+    // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ความเสียหายจากการแพ้จั่ว/แตกรุนแรงขึ้น +1 ต่อสแตค (รวมทุกคนที่เปิดไว้)
+    const mageExtra = combatants.reduce((n, q) => n + (q.statuses.mage || 0), 0);
     for (const l of combatants.filter((p) => val(p) === worst && p.id !== roundWinnerId)) {
       l.isLoser = true;
       l.result = "lose";
+      if (sealActive(l)) {
+        // เรจูอาคมบัญชา (อมตะ): ไม่รับความเสียหายใดๆ เทิร์นนี้
+        addSkill(l, 2);
+        firePassive(l, "lose");
+        lastLog.push(`📜 ${l.name} อาคมบัญชาคุ้มครอง — ไม่รับความเสียหายจากการแพ้`);
+        continue;
+      }
+      if ((l.statuses.humanity || 0) > 0) {
+        // Everything For Humanity: ความเสียหายจากการแพ้จั่ว/แตก ทำอะไรไม่ได้
+        addSkill(l, 2);
+        firePassive(l, "lose");
+        lastLog.push(`✨ ${l.name} Everything For Humanity — ความเสียหายจากการแพ้ทำอะไรไม่ได้`);
+        continue;
+      }
       if (l.beatSaved) {
         // หลังกันตายทำงานแล้ว: ความเสียหายจากการแพ้ตอนจั่วการ์ดไม่มีผล ไม่ว่าห่าง 21 แค่ไหน
         addSkill(l, 2);
@@ -686,16 +819,19 @@ function resolveRound() {
         continue;
       }
       const armorBefore = l.armor;
-      damageSoft(l);
+      const lossDmg = 1 + mageExtra; // จอมเวทย์ฝึกหัด: แพ้จั่ว/แตกเจ็บขึ้นตามสแตค
+      for (let i = 0; i < lossDmg; i++) damageSoft(l);
       // Absorb shield: ถ้าเป็นผู้แพ้แล้วเสียเกราะ ให้แปลงเกราะที่เสียกลับเป็นพลังชีวิต
       const armorLost = armorBefore - l.armor;
       if ((l.statuses.absorb || 0) > 0 && armorLost > 0) {
         const heal = Math.min(MAX_HP - l.hp, armorLost);
         if (heal > 0) { l.hp += heal; lastLog.push(`🛡️ ${l.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`); }
       }
+      // Beat Mode กันตาย: ทำงานทันทีแม้ความเสียหายถึงตายมาจากการแพ้จั่ว/แตก
+      maybeBeatSave(l);
       addSkill(l, 2);
       firePassive(l, "lose");
-      lastLog.push(`${l.name} แต้มน้อยสุด เสียพลังชีวิต -1`);
+      lastLog.push(`${l.name} แต้มน้อยสุด รับความเสียหาย -${lossDmg}${mageExtra > 0 ? ` (จอมเวทย์ฝึกหัด +${mageExtra})` : ""}`);
     }
   }
   for (const p of combatants) if (!p.result) p.result = "safe";
@@ -709,6 +845,7 @@ function resolveRound() {
     let dmg = 1 + (songActive(u) ? songBonus(u) : 0);
     if ((t.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1); // ร่างไคจูรับเบาลง 1
     dealMixed(t, dmg);
+    maybeBeatSave(t); // กันตายทำงานทันทีถ้าโดนขิงจนถึงตาย
     t.wasAttacked = true;
     addSkill(t, 2);
     lastLog.push(`🎤 หิวอะโปรดิวเซอร์! ${t.name} โดนขิงจนช้ำ -${dmg}`);
@@ -734,6 +871,13 @@ function afterResolve() {
         p.transformAt = ++transformCounter;
         // สวมเกราะราชัน: สวมเกราะเต็มทันที (เพดานเพิ่มเป็น 5)
         if (key === "rachan") p.armor = maxArmorOf(p);
+        // Everything For Humanity (ฟุจิมารุ): หักเลือดเหลือ 1 + ความจุเกราะ +3 พร้อมฟื้นเกราะ +3
+        //  ร่างสุดท้ายคงอยู่จนตาย — เมื่อผลจบลงแล้วเกมยังไม่จบ ตัวละครตายทันที (เช็คใน endTurn)
+        if (key === "humanity") {
+          p.humanityActivated = true;
+          p.hp = 1;
+          p.armor = Math.min(maxArmorOf(p), p.armor + 3);
+        }
         const firstTime = !p.cutsceneShown[key];
         triggerCutscene(p, key);
         // ครั้งแรก (เล่นวีดีโอ): ต่อด้วยฉากประกาศเปลี่ยนร่าง (ระเบิด + เสียงพากย์) ก่อนขึ้นคนอื่น/สรุปผล
@@ -760,8 +904,9 @@ function goSummary() {
 }
 
 // ---- โจมตี ----
+// เรจูอาคมบัญชา (อมตะ): ไม่ถูกเลือกเป็นเป้าโจมตีตลอดเทิร์น
 function attackableTargets(atkId) {
-  return alivePlayers().filter((p) => p.id !== atkId);
+  return alivePlayers().filter((p) => p.id !== atkId && !sealActive(p));
 }
 function afterSummary() {
   const winner = players[roundWinnerId];
@@ -787,21 +932,24 @@ function doAttack(byId, targetId) {
   const attacker = players[byId];
   const target = players[targetId];
   if (!attacker || !target || !target.alive || target.id === attacker.id) return;
+  if (sealActive(target)) return; // เรจูอาคมบัญชา (อมตะ): เลือกโจมตีไม่ได้
   clearPhaseTimer();
 
   const ginga = (attacker.statuses.ginga || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
-  // Ohger Finish: ใช้ได้เฉพาะตอนมีทั้ง สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์ (เช็คตอนกดสกิล) = +2 เสมอ
+  // Ohger Finish: ใช้ได้เมื่อมีประกายเขี้ยวปฏิปักษ์ (จะสวมเกราะราชันด้วยหรือไม่ก็ได้ — เช็คตอนกดสกิล) = +2 เสมอ
   const ohger = (attacker.statuses.ohger || 0) > 0;
   const ohgerBonus = ohger ? 2 : 0;
+  // Everything For Humanity (ฟุจิมารุ): พลังโจมตี +4
+  const humanityAtk = (attacker.statuses.humanity || 0) > 0;
   // NT-D System: สวนกลับคนที่ตีเราล่าสุด +1 — NewType Paradise = NT-D แบบพิเศษ ใช้ +1 กับเป้าหมายใดก็ได้
   const isRevenge = attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id;
   const ntdBonus = (isRevenge || paradiseAtk) ? 1 : 0;
   // Ginga no Uta: ถ้าเหลือฝ่ายตรงข้ามเพียงคนเดียว พลังโจมตี +1
   const lastStanding = ginga && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
 
-  let base = 1 + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus; // Beam Magnum +2
+  let base = 1 + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0); // Beam Magnum +2
   let dmg = base + ntdBonus;
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
 
@@ -809,22 +957,14 @@ function doAttack(byId, targetId) {
   if (beam && (attacker.beamAmmo || 0) > 0) attacker.beamAmmo--;
 
   const attackerBeat = beatActive(attacker); // Beat Mode: การโจมตีเป็นความเสียหายจริง ไม่สนเกราะ
-  const targetBeat = beatActive(target);     // Beat Mode: จะไม่ตายจากการโจมตีที่ถึงตายทันที
   const hpBefore = target.hp;
   const armorBefore = target.armor;
   const shieldBefore = target.shield;
   if (attackerBeat) dealDirect(target, dmg); // ประกายเขี้ยวปฏิปักษ์: ทะลุเกราะเข้าเลือดจริง
   else dealMixed(target, dmg);               // กฎปกติ: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
-  // Beat Mode กันตาย (ครั้งเดียวต่อเกม): การโจมตีถึงตายครั้งแรกจะค้างที่ 1 หน่วย
+  // Beat Mode กันตาย (ครั้งเดียวต่อเกม): ทำงานทันทีเมื่อความเสียหายถึงตาย — ไม่ต้องอยู่ใน Beat Mode ก่อน
   //  หลังกันตายทำงาน -> เกราะจะไม่ฟื้นคืน + ภูมิดาเมจจากการแพ้ (แต่ครั้งต่อไปจะตายปกติ)
-  let beatSaveFired = false;
-  if (targetBeat && !target.beatSaved && target.hp < 1) {
-    target.hp = 1;
-    target.beatSaved = true;
-    target.armorLocked = true;
-    beatSaveFired = true;
-    lastLog.push(`🛡️⚡ ${target.name} ประกายเขี้ยวปฏิปักษ์ — รอดจากการโจมตีถึงตาย! (กันตายได้ครั้งเดียว)`);
-  }
+  const beatSaveFired = maybeBeatSave(target);
   target.wasAttacked = true;
   addSkill(target, 2);
   // Absorb shield: เกราะที่เสียไปจากการถูกโจมตี แปลงกลับเป็นพลังชีวิต
@@ -877,6 +1017,7 @@ function doAttack(byId, targetId) {
   if (beam) addFx(skillByStatus(attacker, "beam"), "atk");
   if (ohger) addFx(skillByStatus(attacker, "ohger"), "atk");
   if (ginga) addFx(skillByStatus(attacker, "ginga"), "atk");
+  if (humanityAtk) addFx(skillByStatus(attacker, "humanity"), "atk");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
   if (isRevenge) addFx({ name: "NT-D System แก้แค้น +1", img: TRANSFORMS.ntd.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (attackerBeat) addFx({ name: "ประกายเขี้ยวปฏิปักษ์ (ทะลุเกราะ)", img: OHGER_FORM, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
@@ -905,6 +1046,7 @@ function endTurn() {
   for (const p of Object.values(players)) {
     for (const k of Object.keys(p.statuses || {})) {
       if (k === "rachan") continue; // สวมเกราะราชัน: ผลคงอยู่ถาวร ไม่ลดเทิร์น
+      if (k === "mage") { delete p.statuses.mage; continue; } // จอมเวทย์ฝึกหัด: เก็บเป็นสแตค อยู่แค่ 1 เทิร์น
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
@@ -916,6 +1058,14 @@ function endTurn() {
   }
 
   for (const p of alivePlayers()) addSkill(p, 1);
+
+  // Everything For Humanity (ฟุจิมารุ): ผลจบลงแล้วเกมยังไม่จบ -> จ่ายราคา ตัวละครตายลง
+  for (const p of Object.values(players)) {
+    if (p.alive && p.humanityActivated && !(p.statuses.humanity > 0)) {
+      p.hp = 0;
+      lastLog.push(`💫 ${p.name} ผลของ Everything For Humanity จบลง — ร่างกายรับไม่ไหว...`);
+    }
+  }
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
@@ -1000,6 +1150,7 @@ io.on("connection", (socket) => {
       armorLocked: false, beatSaved: false, skillUsedRound: false,
       beamAmmo: BEAM_AMMO, puddingUses: PUDDING_USES,
       tonkatsu: 0, songUsedOnce: false, noDrawNext: false, anataTargets: null,
+      reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
@@ -1015,6 +1166,7 @@ io.on("connection", (socket) => {
   socket.on("hit", () => hit(socket.id));
   socket.on("lock", () => lock(socket.id));
   socket.on("useSkill", ({ tier, targets } = {}) => useSkill(socket.id, tier, targets));
+  socket.on("useReiju", ({ command } = {}) => useReiju(socket.id, command));
   socket.on("attack", ({ targetId } = {}) => doAttack(socket.id, targetId));
   socket.on("backToLobby", () => { if (gameState === "GAMEOVER") backToLobby(); });
 
