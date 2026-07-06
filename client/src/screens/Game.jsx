@@ -286,6 +286,7 @@ function StatusChips({ statuses, left, tonkatsu, profit }) {
   if (s.golden) items.push([`🎰777 x${s.golden}`, "bg-echo-gold text-gray-900"]); // เวลาทอง (แกมเบลอร์)
   if (profit > 0) items.push([`💰+${profit}`, "bg-echo-gold text-gray-900"]); // กำไรเท่าตัวโว้ย สะสมจนได้ตี
   if (s.spear) items.push(["🗡️หอกลองกินัส", "bg-echo-magenta"]); // เอวา 13: +1 โจมตี 1 เทิร์น
+  if (s.noskill) items.push(["🚫ห้ามใช้สกิล", "bg-echo-hp"]); // โดนหอกลองกินัสปัก
   if (s.fourth) items.push([`☄️Impact${s.fourth}`, "bg-echo-hp"]); // Fourth Impact (เอวา 13)
   if (!items.length) return null;
   return (
@@ -519,8 +520,10 @@ export default function Game({ state }) {
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
   // Ohger Finish (คุวากาตะ): ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ (+1 ความเสียหาย)
   const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.statuses?.rachan && (me.beat || beatMe)));
-  // ห้ามจั่วการ์ดเพิ่มเทิร์นนี้ (ทงคัสสึ / กำไรเท่าตัวโว้ย / หอกลองกินัส)
+  // ห้ามจั่วการ์ดเพิ่มเทิร์นนี้ (ทงคัสสึ / กำไรเท่าตัวโว้ย)
   const noDraw = !!(me && me.statuses?.nodraw);
+  // ห้ามใช้สกิลเทิร์นนี้ (โดนหอกลองกินัสปัก) — เรจูอาคมบัญชาไม่นับเป็นสกิล ใช้ได้ปกติ
+  const noSkill = !!(me && me.statuses?.noskill);
   // ---------- แกมเบลอร์ ----------
   const isGambler = ch?.id === "gambler";
   const goldenOn = !!(me && me.statuses?.golden); // บัฟเวลาทอง 777 กำลังมีผล
@@ -698,10 +701,13 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
               </div>
+              {noSkill && phase === "PLAYING" && !done && (
+                <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+              )}
               {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
               )}
@@ -906,10 +912,13 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
                 </div>
+                {noSkill && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+                )}
                 {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
                 )}

@@ -405,7 +405,8 @@ function resetCombat(p) {
   p.puddingUses = PUDDING_USES; // Rainbow Pudding รีเซ็ตต้นเกม
   p.tonkatsu = 0;         // เทมาริ: ชามทงคัสสึที่กินสะสม (ไม่รีเซ็ตระหว่างแมตช์)
   p.songUsedOnce = false; // Song for you: ครั้งแรกเติมเกราะให้ ครั้งถัดไปเพิ่มแค่เพดาน
-  p.noDrawNext = 0;       // จำนวนเทิร์นที่จั่วเพิ่มไม่ได้ เริ่มเทิร์นถัดไป (ทงคัสสึ / กำไรเท่าตัวโว้ย / หอกลองกินัส)
+  p.noDrawNext = 0;       // จำนวนเทิร์นที่จั่วเพิ่มไม่ได้ เริ่มเทิร์นถัดไป (ทงคัสสึ / กำไรเท่าตัวโว้ย)
+  p.noSkillNext = 0;      // จำนวนเทิร์นที่ใช้สกิลไม่ได้ เริ่มเทิร์นถัดไป (หอกลองกินัส เอวา 13)
   p.gamblerUses = GAMBLER_USES; // แกมเบลอร์: วอสก้าหน่อยน้อง 3 ครั้งต่อเกม (เวลาทองรีเซ็ตให้เต็ม)
   p.profit = 0;           // แกมเบลอร์: บัฟกำไรเท่าตัวโว้ย (+โจมตี, ทะลุเกราะ) สะสมจนกว่าจะได้ตี
   p.tempHp = 0;           // แกมเบลอร์: เลือดชั่วคราวจากฮีลล้น
@@ -592,11 +593,15 @@ function dealRound() {
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
     p.mageUses = 0;           // จอมเวทย์ฝึกหัด: นับใหม่ทุกเทิร์น (กดได้ 3 ครั้งต่อเทิร์น)
     p.anataTargets = null;
-    // ห้ามจั่วการ์ดเพิ่มที่ตั้งไว้จากเทิร์นก่อน (ทงคัสสึ / กำไรเท่าตัวโว้ย / หอกลองกินัส)
-    // noDrawNext เป็นจำนวนเทิร์น (หอกลองกินัส + สกิลติดตัว 3 เอวา = 2 เทิร์น)
+    // ห้ามจั่วการ์ดเพิ่มที่ตั้งไว้จากเทิร์นก่อน (ทงคัสสึ / กำไรเท่าตัวโว้ย) — noDrawNext เป็นจำนวนเทิร์น
     if (p.noDrawNext) {
       p.statuses.nodraw = Math.max(p.statuses.nodraw || 0, Number(p.noDrawNext) || 1);
       p.noDrawNext = 0;
+    }
+    // ห้ามใช้สกิลที่ตั้งไว้จากเทิร์นก่อน (หอกลองกินัส เอวา 13)
+    if (p.noSkillNext) {
+      p.statuses.noskill = Math.max(p.statuses.noskill || 0, Number(p.noSkillNext) || 1);
+      p.noSkillNext = 0;
     }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
@@ -653,6 +658,7 @@ function useSkill(id, tier, targets) {
   const ch = CHAR_BY_ID[p.characterId];
   const skill = ch && ch[tier];
   if (!skill) return;
+  if ((p.statuses.noskill || 0) > 0) return; // โดนหอกลองกินัสปัก: เทิร์นนี้ใช้สกิลไม่ได้
 
   // เวลาทอง (แกมเบลอร์): แต้มที่ใช้ของสกิลพื้นฐาน/สกิลรองลดครึ่งหนึ่ง
   const isGambler = p.characterId === "gambler";
@@ -759,13 +765,14 @@ function useSkill(id, tier, targets) {
         lastLog.push(`💸 ${p.name} กำไรเท่าตัวโว้ย — ขาดทุนยับ! จั่วการ์ดเพิ่มไม่ได้ทั้งเทิร์นนี้และเทิร์นหน้า`);
       }
     } else {
-      // เวลาทองของพี่มาแล้ว 777: 50/50 เสมอ (ค่าโชคเพิ่มไม่ได้) — พลาด = แต้มสกิลหายฟรี
+      // เวลาทองของพี่มาแล้ว 777: 50/50 (สกิลติดตัวเพิ่มโอกาสได้) — พลาด = แต้มสกิลหายฟรี
       if (win) {
-        p.statuses.golden = 3;
+        p.statuses.golden = 5;
+        p.skillPoints = Math.min(MAX_SKILL, p.skillPoints + 3); // สำเร็จ: คืนแต้ม 3 (กินจริงแค่ 3)
         p.gamblerUses = GAMBLER_USES; // รีเซ็ตจำนวนใช้สกิลพื้นฐานกลับมาเต็ม
         p.seen.golden = true;
         p.transformAt = ++transformCounter;
-        lastLog.push(`🎉 ${p.name} เวลาทองของพี่มาแล้ว 777 — แจ๊กพอต! บัฟเวลาทอง 3 เทิร์น`);
+        lastLog.push(`🎉 ${p.name} เวลาทองของพี่มาแล้ว 777 — แจ๊กพอต! บัฟเวลาทอง 5 เทิร์น (คืนแต้มสกิล 3 แต้ม)`);
         if (!p.cutsceneShown.golden) {
           p.cutsceneShown.golden = true;
           queueCutscene(p, "golden");
@@ -1151,15 +1158,15 @@ function doAttack(byId, targetId) {
     attacker.profit = 0; // บัฟกำไรหมดไปเมื่อได้ตี
     lastLog.push(`💰 ${attacker.name} กำไรเท่าตัวโว้ย — โจมตี +${profitAtk} ทะลุเกราะ! (บัฟหมดลง)`);
   }
-  // หอกลองกินัส: โจมตีโดนเป้าหมาย -> มีโอกาส 20/80 ที่เทิร์นถัดมาเป้าหมายจะจั่วการ์ดเพิ่มไม่ได้
+  // หอกลองกินัส: โจมตีโดนเป้าหมาย -> มีโอกาส 20/80 ที่เทิร์นถัดมาเป้าหมายจะใช้สกิลไม่ได้
   //  (สกิลติดตัว 3 เอวาทำงาน = โอกาสเพิ่มเป็น 50/50)
   if (spearAtk && target.alive) {
     const chance = eva3Active(attacker) ? 0.5 : 0.2;
     if (Math.random() < chance) {
-      target.noDrawNext = Math.max(target.noDrawNext || 0, 1);
-      lastLog.push(`🗡️ หอกลองกินัสปักเป้า! ${target.name} จั่วการ์ดเพิ่มไม่ได้ในเทิร์นถัดไป`);
+      target.noSkillNext = Math.max(target.noSkillNext || 0, 1);
+      lastLog.push(`🗡️ หอกลองกินัสปักเป้า! ${target.name} ใช้สกิลไม่ได้ในเทิร์นถัดไป`);
     } else {
-      lastLog.push(`🗡️ หอกลองกินัสพลาด — ${target.name} ยังจั่วการ์ดได้ตามปกติ`);
+      lastLog.push(`🗡️ หอกลองกินัสพลาด — ${target.name} ยังใช้สกิลได้ตามปกติ`);
     }
   }
   // Beat Mode กันตาย (ครั้งเดียวต่อเกม): ทำงานทันทีเมื่อความเสียหายถึงตาย — ไม่ต้องอยู่ใน Beat Mode ก่อน
@@ -1390,7 +1397,7 @@ io.on("connection", (socket) => {
       armorLocked: false, beatSaved: false, skillUsedRound: false,
       beamAmmo: BEAM_AMMO, puddingUses: PUDDING_USES,
       tonkatsu: 0, songUsedOnce: false, noDrawNext: 0, anataTargets: null,
-      gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0,
+      gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0, noSkillNext: 0,
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
