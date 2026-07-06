@@ -92,29 +92,32 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
       ) : !sel ? (
         /* ================= โหมดกริด (ยังไม่เลือก) ================= */
         <>
-          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4 min-w-0 w-full">
             <p className="opacity-70">แตะเลือกตัวละครเพื่อดูรายละเอียด</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
-              {roster.map((c) =>
-                c.locked ? (
-                  <div key={c.id} className="cursor-not-allowed" title="ยังไม่ปลดล็อก">
-                    <div className="relative w-32 h-32 sm:w-40 sm:h-40">
-                      <CharImage c={c} className="w-full h-full grayscale opacity-50" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
-                      <div className="absolute inset-0 grid place-items-center text-5xl">🔒</div>
+            {/* 2 แถวคงที่ ตัวละครใหม่เพิ่มทางขวา -> เลื่อนแนวนอนดูได้ */}
+            <div className="w-full overflow-x-auto">
+              <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-4 sm:gap-6 mx-auto px-1 pb-2">
+                {roster.map((c) =>
+                  c.locked ? (
+                    <div key={c.id} className="cursor-not-allowed" title="ยังไม่ปลดล็อก">
+                      <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+                        <CharImage c={c} className="w-full h-full grayscale opacity-50" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
+                        <div className="absolute inset-0 grid place-items-center text-5xl">🔒</div>
+                      </div>
+                      <div className="mt-1.5 font-bold text-sm text-white/50">{c.name}</div>
                     </div>
-                    <div className="mt-1.5 font-bold text-sm text-white/50">{c.name}</div>
-                  </div>
-                ) : (
-                  <button key={c.id} onClick={() => pick(c.id)} className="transition hover:scale-105" title={c.name}>
-                    <CharImage c={c} className="w-32 h-32 sm:w-40 sm:h-40" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
-                    <div className="mt-1.5 font-bold text-sm">{c.name}</div>
-                  </button>
-                )
-              )}
-              {/* การ์ด "เร็วๆนี้" */}
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl grid place-items-center bg-gray-200 text-gray-700 shadow-lg">
-                <div className="text-6xl">👤</div>
-                <div className="font-bold -mt-1">เร็วๆนี้</div>
+                  ) : (
+                    <button key={c.id} onClick={() => pick(c.id)} className="transition hover:scale-105" title={c.name}>
+                      <CharImage c={c} className="w-32 h-32 sm:w-40 sm:h-40" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
+                      <div className="mt-1.5 font-bold text-sm">{c.name}</div>
+                    </button>
+                  )
+                )}
+                {/* การ์ด "เร็วๆนี้" */}
+                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl grid place-items-center bg-gray-200 text-gray-700 shadow-lg">
+                  <div className="text-6xl">👤</div>
+                  <div className="font-bold -mt-1">เร็วๆนี้</div>
+                </div>
               </div>
             </div>
           </div>

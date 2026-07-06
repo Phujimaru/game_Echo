@@ -16,6 +16,7 @@ const FILES = {
   ex_guts: "/characters/kuwagata/ex_guts.mp3",           // เพลง Beat Mode (ทับทุกเพลงจนตาย)
   normal_k: "/characters/kuwagata/normal_k.mp3",         // เสียงพากย์หลังวีดีโอสวมเกราะราชัน
   ex_k: "/characters/kuwagata/ex_k.mp3",                 // เสียงพากย์หลังวีดีโอ Beat Mode
+  temari_final_theme: "/characters/temari/temari_final_theme.mp3", // เพลง ANATA WAAAAAAAA (เล่นถึงตอนเปิดไพ่)
   action_button: "/effect_sound/action_button.wav",
   trun_change: "/effect_sound/trun_change.wav",
   attack: "/effect_sound/attack.wav",
@@ -26,6 +27,15 @@ const MUSIC_BASE = 0.55;
 const SFX_BASE = 0.85;
 const CLICK_BASE = 0.55;
 const VIDEO_BASE = 0.8;
+
+// เพลงบางเพลงต้นฉบับดังกว่าเพลงอื่นมาก (เพลงคุวากาตะทั้ง 2 แบบ) — ลดเฉพาะตัวให้สมดุลกับเพลงอื่น
+const MUSIC_TRACK_SCALE = {
+  final_normal: 0.6, // สวมเกราะราชัน
+  ex_guts: 0.6,       // Beat Mode
+};
+function trackVolume(name) {
+  return MUSIC_BASE * (MUSIC_TRACK_SCALE[name] ?? 1) * vcurve();
+}
 
 // ---------- master volume (จำค่าไว้ใน localStorage) ----------
 let masterVolume = 0.8;
@@ -44,7 +54,7 @@ export function onVolumeChange(fn) { volListeners.add(fn); return () => volListe
 export function setMasterVolume(v) {
   masterVolume = Math.max(0, Math.min(1, v));
   try { localStorage.setItem("echo_vol", String(masterVolume)); } catch {}
-  if (currentMusic) getMusic(currentMusic).volume = MUSIC_BASE * vcurve();
+  if (currentMusic) getMusic(currentMusic).volume = trackVolume(currentMusic);
   volListeners.forEach((fn) => fn(masterVolume));
 }
 
@@ -57,7 +67,7 @@ function getMusic(name) {
     a.loop = true;
     musicCache[name] = a;
   }
-  musicCache[name].volume = MUSIC_BASE * vcurve();
+  musicCache[name].volume = trackVolume(name);
   return musicCache[name];
 }
 

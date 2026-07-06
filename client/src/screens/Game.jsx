@@ -28,12 +28,10 @@ function useViewport() {
   return vp;
 }
 
-// ---------- cutscene แปลงร่าง ----------
-//  เต็ม = วีดีโอเต็มจอ (ครั้งแรกต่อเกม) | brief = แบนเนอร์สั้นบอกแค่ใครใช้อะไร
+// ---------- cutscene แปลงร่าง (วีดีโอเต็มจอ ครั้งแรกต่อเกมเท่านั้น) ----------
 function Cutscene({ cs }) {
   const ref = useRef(null);
   useEffect(() => {
-    if (cs.brief) return;
     const v = ref.current;
     if (!v) return;
     v.volume = videoVolume(); // ผ่าน master volume curve เดียวกับเสียงอื่น
@@ -42,26 +40,6 @@ function Cutscene({ cs }) {
     // เลื่อนหลอดเสียงระหว่างวีดีโอ -> อัปเดตทันที
     return onVolumeChange(() => { if (ref.current) ref.current.volume = videoVolume(); });
   }, [cs.id]); // remount ต่อ cutscene -> เล่นวีดีโอใหม่เสมอ (กันจอดำตอนท่าเดียวกันต่อกัน)
-
-  if (cs.brief) {
-    return (
-      <div className="fixed inset-0 z-50 grid place-items-center bg-black/75">
-        <div className="text-center pop-in flex flex-col items-center gap-3 px-4 text-hard">
-          <div className="text-3xl sm:text-5xl font-black text-white">{cs.title}</div>
-          {cs.img ? (
-            <div className={`cut-portrait rounded-2xl overflow-hidden border-4 ${cs.skill ? "w-44 h-28" : "w-24 h-24"}`} style={{ borderColor: cs.color }}>
-              <img src={cs.img} alt="" className="w-full h-full object-cover" />
-            </div>
-          ) : (
-            <div className="cut-portrait w-24 h-24 rounded-2xl border-4 grid place-items-center text-4xl" style={{ borderColor: cs.color }}>✦</div>
-          )}
-          <div className="text-2xl font-black">
-            <span style={{ color: cs.color }}>{cs.name}</span> {cs.label}!
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black overflow-hidden">
@@ -197,8 +175,30 @@ function SkillFlash({ f }) {
   );
 }
 
+// ---------- แจ้งเตือนแปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป): การ์ดเล็กๆ ไม่หยุดเกม ----------
+function TransformNotice({ n }) {
+  return (
+    <div className="fixed top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+      <div className="pop-in flex items-center gap-3 bg-black/75 rounded-2xl px-4 py-2 border-2 text-hard" style={{ borderColor: n.color }}>
+        {n.img ? (
+          <img src={n.img} alt="" className="w-16 h-16 object-cover rounded-xl border-2 shrink-0" style={{ borderColor: n.color }} />
+        ) : (
+          <span className="text-2xl">✦</span>
+        )}
+        <div className="text-left leading-tight">
+          <div className="text-lg font-black" style={{ color: n.color }}>{n.name}</div>
+          <div className="text-sm font-bold text-echo-gold">{n.title} {n.label}!</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ชื่อเฟส (โชว์อนิเมชันตอนเปลี่ยนเฟส)
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
+
+// สถานะที่ผูกกับท่าไม้ตายของแต่ละตัวละคร — ใช้เช็คว่ากำลังมีผลอยู่ไหม (กดซ้ำไม่ได้จนกว่าจะหมดเวลา)
+const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata" };
 
 // ตำแหน่งผู้เล่นคนอื่น (นอกจากตัวเรา) รอบโต๊ะ — [top%, left%] จัดตามจำนวน ไม่เรียงแถว
 const SLOTS = {
@@ -262,18 +262,23 @@ function Stats({ p, center }) {
   );
 }
 
-function StatusChips({ statuses, left }) {
-  if (!statuses) return null;
+function StatusChips({ statuses, left, tonkatsu }) {
+  if (!statuses && !tonkatsu) return null;
+  const s = statuses || {};
   const items = [];
-  if (statuses.upg) items.push(["UPG", "bg-echo-cyan text-gray-900"]);
-  if (statuses.monster) items.push([`🦖${statuses.monster}`, "bg-echo-hp"]);
-  if (statuses.ginga) items.push([`✨G${statuses.ginga}`, "bg-echo-gold text-gray-900"]);
-  if (statuses.absorb) items.push(["Absorb", "bg-echo-armor"]);
-  if (statuses.beam) items.push(["Beam", "bg-echo-magenta"]);
-  if (statuses.paradise) items.push([`Paradise${statuses.paradise}`, "bg-echo-gold text-gray-900"]);
-  if (statuses.ntd) items.push(["NT-D", "bg-echo-hp"]);
-  if (statuses.ohger) items.push(["Ohger", "bg-echo-gold text-gray-900"]);
-  if (statuses.rachan) items.push(["ราชัน", "bg-echo-armor"]); // ถาวร ไม่นับเทิร์น
+  if (s.upg) items.push(["UPG", "bg-echo-cyan text-gray-900"]);
+  if (s.monster) items.push([`🦖${s.monster}`, "bg-echo-hp"]);
+  if (s.ginga) items.push([`✨G${s.ginga}`, "bg-echo-gold text-gray-900"]);
+  if (s.absorb) items.push(["Absorb", "bg-echo-armor"]);
+  if (s.beam) items.push(["Beam", "bg-echo-magenta"]);
+  if (s.paradise) items.push([`Paradise${s.paradise}`, "bg-echo-gold text-gray-900"]);
+  if (s.ntd) items.push(["NT-D", "bg-echo-hp"]);
+  if (s.ohger) items.push(["Ohger", "bg-echo-gold text-gray-900"]);
+  if (s.rachan) items.push(["ราชัน", "bg-echo-armor"]); // ถาวร ไม่นับเทิร์น
+  if (s.song) items.push([`🎵Song${s.song}`, "bg-echo-magenta"]);
+  if (s.anata) items.push(["🎤ANATA", "bg-echo-gold text-gray-900"]);
+  if (s.nodraw) items.push(["🍜อิ่มจัด ห้ามจั่ว", "bg-echo-hp"]);
+  if (tonkatsu > 0) items.push([`🍜x${tonkatsu}`, "bg-echo-cyan text-gray-900"]); // UI สะสมชามทงคัสสึ (เทมาริ)
   if (!items.length) return null;
   return (
     <div className={`flex flex-wrap gap-1 ${left ? "justify-start" : "justify-center"} mt-1`}>
@@ -282,8 +287,8 @@ function StatusChips({ statuses, left }) {
   );
 }
 
-// ผู้เล่นคนอื่นรอบโต๊ะ
-function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
+// ผู้เล่นคนอื่นรอบโต๊ะ — picked = ถูกเลือกเป็นเป้าหมาย ANATA WAAAAAAAA แล้ว
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked }) {
   const summary = phase === "SUMMARY";
   return (
     <div
@@ -296,6 +301,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
       >
         <Portrait p={p} className="w-20 h-20 -rotate-3 border-4" />
         <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: p.color }} />
+        {picked && <span className="absolute -top-2 -left-2 text-2xl">🎤</span>}
         {!p.alive && <span className="absolute inset-0 grid place-items-center text-3xl">💀</span>}
         {p.isWinner && summary && <span className="absolute -top-2 -right-2 text-xl">👑</span>}
         {phase === "PLAYING" && p.locked && p.alive && (
@@ -309,13 +315,13 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack }) {
           {p.busted ? "แตก!" : `${p.score} แต้ม`}
         </div>
       )}
-      <StatusChips statuses={p.statuses} />
+      <StatusChips statuses={p.statuses} tonkatsu={p.tonkatsu} />
     </div>
   );
 }
 
-// ---------- การ์ดคู่ต่อสู้แบบมือถือ (เรียงกริดด้านบน แตะเพื่อโจมตี) ----------
-function MobileOpponent({ p, phase, targetable, onAttack }) {
+// ---------- การ์ดคู่ต่อสู้แบบมือถือ (เรียงกริดด้านบน แตะเพื่อโจมตี/เลือกเป้า ANATA) ----------
+function MobileOpponent({ p, phase, targetable, onAttack, picked }) {
   const summary = phase === "SUMMARY";
   return (
     <div
@@ -340,14 +346,18 @@ function MobileOpponent({ p, phase, targetable, onAttack }) {
           {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
           {p.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{p.shield}</span>}
         </div>
-        <StatusChips statuses={p.statuses} left />
+        <StatusChips statuses={p.statuses} left tonkatsu={p.tonkatsu} />
       </div>
       {summary && p.score !== null && (
         <div className={`score-pop shrink-0 text-xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : "text-white"}`}>
           {p.busted ? "แตก!" : p.score}
         </div>
       )}
-      {targetable && <span className="absolute -top-2 -left-2 text-xl">🎯</span>}
+      {picked ? (
+        <span className="absolute -top-2 -left-2 text-xl">🎤</span>
+      ) : targetable ? (
+        <span className="absolute -top-2 -left-2 text-xl">🎯</span>
+      ) : null}
     </div>
   );
 }
@@ -415,6 +425,8 @@ export default function Game({ state }) {
   const [skillOpen, setSkillOpen] = useState(false);
   const [showChar, setShowChar] = useState(false);
   const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
+  const [notice, setNotice] = useState(null); // แปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป) เด้งแจ้งเตือนทันที ไม่หยุดเกม
+  const [anataSel, setAnataSel] = useState(null); // เทมาริ: โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (null = ไม่ได้เลือกอยู่)
   const vp = useViewport();
   const phase = state.gameState;
   const me = state.players.find((p) => p.id === state.youId);
@@ -428,8 +440,17 @@ export default function Game({ state }) {
   const ch = me?.character;
   // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
   const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
-  // สวมเกราะราชันแล้ว (ถาวร): กดท่าไม้ตายซ้ำไม่ได้อีก
-  const rachanUsed = !!(me && ch?.id === "kuwagata" && me.statuses?.rachan);
+  // ท่าไม้ตายกำลังมีผลอยู่: กดซ้ำไม่ได้จนกว่าจะหมดเวลา (สวมเกราะราชันถาวร = กดซ้ำไม่ได้อีกเลย)
+  const ultimateActive = !!(me && me.statuses && me.statuses[ULTIMATE_STATUS[ch?.id]]);
+  // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
+  const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
+  // Ohger Finish (คุวากาตะ): ใช้ไม่ได้จนกว่าจะมีทั้ง สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์
+  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.statuses?.rachan && beatMe));
+  // ทงคัสสึเกิน 2 ชาม: เทิร์นนี้จั่วการ์ดเพิ่มไม่ได้
+  const noDraw = !!(me && me.statuses?.nodraw);
+  // ANATA WAAAAAAAA: จำนวนเป้าหมายที่ต้องเลือก (2 หรือเท่าที่มีคู่ต่อสู้รอด)
+  const aliveOthers = others.filter((p) => p.alive);
+  const anataNeed = Math.min(2, aliveOthers.length);
 
   // สกิลช่วงจั่วการ์ด: server แจ้งมา -> เด้งทันที (ไม่ตัดเข้าจอดำ) แล้วหายเอง
   useEffect(() => {
@@ -442,8 +463,37 @@ export default function Game({ state }) {
     const t = setTimeout(() => setFlash(null), 2500);
     return () => clearTimeout(t);
   }, [flash]);
+  useEffect(() => {
+    const onNotice = (n) => setNotice({ ...n, id: Date.now() });
+    socket.on("transformNotice", onNotice);
+    return () => socket.off("transformNotice", onNotice);
+  }, []);
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 2500);
+    return () => clearTimeout(t);
+  }, [notice]);
 
-  const skill = (tier) => { clickSound(); socket.emit("useSkill", { tier }); setSkillOpen(false); };
+  const skill = (tier) => {
+    clickSound();
+    // ท่าไม้ตายเทมาริ: เข้าโหมดเลือกเป้าหมาย 2 คนก่อน (ยังไม่ส่งไป server)
+    if (tier === "ultimate" && ch?.id === "temari") { setAnataSel([]); setSkillOpen(false); return; }
+    socket.emit("useSkill", { tier });
+    setSkillOpen(false);
+  };
+  // เลือก/ยกเลิกเป้าหมาย ANATA — ครบจำนวนแล้วส่งไป server ทันที
+  const pickAnata = (id) => {
+    if (!anataSel) return;
+    const next = anataSel.includes(id) ? anataSel.filter((x) => x !== id) : [...anataSel, id];
+    if (next.length >= anataNeed) {
+      socket.emit("useSkill", { tier: "ultimate", targets: next });
+      setAnataSel(null);
+    } else setAnataSel(next);
+  };
+  // ออกจากโหมดเลือกเป้าเมื่อพ้นช่วงจั่วการ์ด / ใช้สกิลไปแล้ว (server ยืนยัน)
+  useEffect(() => {
+    if (anataSel && (phase !== "PLAYING" || me?.skillUsed || done)) setAnataSel(null);
+  }, [anataSel, phase, me?.skillUsed, done]);
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
   //  ยกเว้นฉากประกาศเปลี่ยนร่าง (announce) -> แสดงกระดานเกมตามปกติ + เอฟเฟกต์ทับ (ไม่ตัดจอดำ)
@@ -474,14 +524,21 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={iAmAttacker && p.alive}
-              onAttack={(id) => socket.emit("attack", { targetId: id })}
+              targetable={(iAmAttacker || !!anataSel) && p.alive}
+              picked={!!anataSel && anataSel.includes(p.id)}
+              onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
             />
           ))}
         </div>
         {iAmAttacker && (
           <div className="shrink-0 text-center mt-1.5 text-lg font-black text-echo-gold animate-pulse text-hard">
             ⚔️ แตะการ์ดคู่ต่อสู้เพื่อโจมตี!
+          </div>
+        )}
+        {anataSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-gold animate-pulse">🎤 แตะเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
+            <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
 
@@ -524,7 +581,7 @@ export default function Game({ state }) {
                 <span className="flex text-lg leading-none">{Array.from({ length: me.maxHp }, (_, i) => <span key={i}>{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
                 <span className="flex gap-0.5">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                 {me.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{me.shield}</span>}
-                <StatusChips statuses={me.statuses} left />
+                <StatusChips statuses={me.statuses} left tonkatsu={me.tonkatsu} />
                 <span className="ml-auto flex items-center gap-1.5">
                   <span className="flex gap-1 p-1 rounded-lg bg-black/25">
                     {Array.from({ length: me.maxSkill }, (_, i) => (
@@ -538,8 +595,8 @@ export default function Game({ state }) {
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
                 <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed} onUse={skill} ammo={me.beamAmmo} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || rachanUsed} onUse={skill} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked} onUse={skill} ammo={me.beamAmmo} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe} onUse={skill} />
               </div>
               {me.skillUsed && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -550,9 +607,10 @@ export default function Game({ state }) {
                 {phase === "PLAYING" && me.alive && !done ? (
                   <>
                     <div className="flex gap-2">
-                      <Button variant="cyan" className="flex-1 py-4 text-xl" disabled={me.atCap} onClick={() => { clickSound(); socket.emit("hit"); }}>🎴 จั่วการ์ด</Button>
+                      <Button variant="cyan" className="flex-1 py-4 text-xl" disabled={me.atCap || noDraw} onClick={() => { clickSound(); socket.emit("hit"); }}>🎴 จั่วการ์ด</Button>
                       <Button variant="gold" className="flex-1 py-4 text-xl" onClick={() => { clickSound(); socket.emit("lock"); }}>✅ เปิดไพ่</Button>
                     </div>
+                    {noDraw && <div className="text-center text-sm font-bold text-echo-hp mt-1">🍜 อิ่มทงคัสสึเกินไป! เทิร์นนี้จั่วเพิ่มไม่ได้</div>}
                     {me.atCap && <div className="text-center text-sm font-bold text-echo-gold mt-1">แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
@@ -614,6 +672,7 @@ export default function Game({ state }) {
         {phase === "ATTACKING" && state.attack && <AttackFx a={state.attack} />}
         {csAnnounce && <TransformAnnounce key={csAnnounce.id} cs={csAnnounce} />}
         {flash && <SkillFlash key={flash.id} f={flash} />}
+        {notice && <TransformNotice key={notice.id} n={notice} />}
 
         {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
         {phase === "TRANSITION" && (
@@ -669,10 +728,19 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={iAmAttacker && p.alive}
-          onAttack={(id) => socket.emit("attack", { targetId: id })}
+          targetable={(iAmAttacker || !!anataSel) && p.alive}
+          picked={!!anataSel && anataSel.includes(p.id)}
+          onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
         />
       ))}
+
+      {/* โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (เทมาริ) */}
+      {anataSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard">
+          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎤 คลิกเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
+          <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
 
       {/* ---------- แผงตัวเรา (ล่างกลาง) ---------- */}
       {me && (
@@ -720,14 +788,14 @@ export default function Game({ state }) {
                   <span className="flex gap-0.5 ml-1">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                   {me.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{me.shield}</span>}
                   <span className="font-bold opacity-90">เกราะ</span>
-                  <StatusChips statuses={me.statuses} />
+                  <StatusChips statuses={me.statuses} tonkatsu={me.tonkatsu} />
                 </div>
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed} onUse={skill} ammo={me.puddingUses} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed} onUse={skill} ammo={me.beamAmmo} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || rachanUsed} onUse={skill} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || me.skillUsed || ohgerLocked} onUse={skill} ammo={me.beamAmmo} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || beatMe || me.skillUsed || ultimateActive || monsterMe} onUse={skill} />
                 </div>
                 {me.skillUsed && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -756,8 +824,9 @@ export default function Game({ state }) {
                 {phase === "PLAYING" && me.alive && !done ? (
                   <>
                     {/* แต้มถึงเพดาน (เช่น 21 พอดี) = ปิดปุ่มจั่ว รอผู้ใช้เลือกสกิล/เปิดไพ่เอง */}
-                    <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
+                    <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap || noDraw} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
                     <Button variant="gold" className="px-3 py-4 text-lg" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
+                    {noDraw && <div className="text-center text-xs font-bold text-echo-hp">🍜 อิ่มเกินไป!<br />เทิร์นนี้จั่วเพิ่มไม่ได้</div>}
                     {me.atCap && <div className="text-center text-xs font-bold text-echo-gold">แต้มเต็มแล้ว!<br />ใช้สกิล/เปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
@@ -824,6 +893,7 @@ export default function Game({ state }) {
 
       {/* ---------- สกิลช่วงจั่วการ์ด เด้งทันที ---------- */}
       {flash && <SkillFlash key={flash.id} f={flash} />}
+      {notice && <TransformNotice key={notice.id} n={notice} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (

@@ -30,12 +30,11 @@ const SUMMARY_TIME = 5;
 const ATTACK_TIME = 15;
 const TRANSITION_TIME = 3;
 const ATTACKFX_TIME = 3;  // อนิเมชันบอกว่าใครตีใคร
-const BANNER_TIME = 2;    // แบนเนอร์สั้น (แปลงร่างซ้ำ ไม่เล่นวีดีโอ)
 
 const MAX_HP = 5;       // เลือดจริงพื้นฐาน
 const MAX_ARMOR = 2;
 const MAX_SKILL = 6;
-const BEAM_AMMO = 3;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
+const BEAM_AMMO = 2;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
 const PUDDING_USES = 2; // Rainbow Pudding ใช้ได้ต่อเกม (คุวากาตะ)
 
 // รูปร่างโอเจอร์ (ใช้ทั้งท่าไม้ตายสวมเกราะราชัน และ Beat Mode)
@@ -53,6 +52,9 @@ const TRANSFORMS = {
   //  rachan: วีดีโอ 11.62 | beat: วีดีโอ 4.70
   rachan:   { img: OHGER_FORM, video: "/characters/kuwagata/kuwagata_final.mp4",   title: "สวมเกราะราชัน",       label: "ปล่อยท่าไม้ตาย",   seconds: 12, music: "final_normal", voice: "normal_k", afterReveal: true },
   beat:     { img: OHGER_FORM, video: "/characters/kuwagata/kuwagata_passive.mp4", title: "ประกายเขี้ยวปฏิปักษ์", label: "สกิลติดตัวทำงาน", seconds: 5,  music: "ex_guts",      voice: "ex_k",     afterReveal: false },
+  // monster: เล่นทันทีตอนใช้สกิล (พักช่วงจั่วการ์ดไว้ก่อน) | anataFinal: สกิลติดตัวเทมาริ เล่นก่อนท่าไม้ตายอื่นเสมอ
+  monster:  { img: "/characters/hikaru/black_king.webp", video: "/characters/hikaru/ginga_skill3.mp4", title: "MONSTERLIVE", label: "แปลงร่างไคจู", seconds: 10, music: null, afterReveal: false },
+  anataFinal: { img: "/characters/temari/temari.webp", video: "/characters/temari/temari_final.mp4", title: "หิวอะโปรดิวเซอร์", label: "สกิลติดตัวทำงาน", seconds: 10, music: null, afterReveal: false },
 };
 
 
@@ -63,6 +65,7 @@ let timeLeft = 0;
 let phaseTimerId = null;
 let attackerId = null;
 let roundWinnerId = null;
+let roundTiedWin = false;  // ผู้ชนะได้จากการเสมอแต้ม -> ไม่มีเทิร์นโจมตีรอบนี้
 let roundNumber = 0;
 let lastLog = [];
 let reservations = {};
@@ -70,6 +73,7 @@ let cutsceneQueue = [];
 let cutsceneInfo = null;
 let cutsceneSeq = 0;      // id ต่อ cutscene (ให้ client remount วีดีโอ กันจอดำ)
 let transformCounter = 0; // ลำดับการเปิดร่าง (ใช้เลือกเพลงตอนสวนท่ากัน)
+let anataMusicSeq = 0;    // เพลง ANATA WAAAAAAAA เล่นระหว่างช่วงจั่วการ์ด จบเมื่อทุกคนเปิดไพ่
 let lastAttack = null;    // ข้อมูลการโจมตีล่าสุด (อนิเมชันใครตีใคร)
 let roundSkills = [];     // สกิลที่ใช้ในรอบ (เก็บประวัติ — instant เด้งตอนใช้ / หลังเปิดไพ่โชว์ตอนโจมตี)
 
@@ -123,9 +127,17 @@ function bustedOf(p) {
 // ============================================================
 function alivePlayers() { return Object.values(players).filter((p) => p.alive); }
 
+// Song for you (เทมาริ): โบนัสจากชามทงคัสสึที่กินสะสม — 2 ชาม = 1 หน่วย สูงสุด 3 (6 ชาม)
+function songBonus(p) {
+  return Math.min(3, Math.floor((p.tonkatsu || 0) / 2));
+}
+function songActive(p) {
+  return !!p && ((p.statuses && p.statuses.song) || 0) > 0;
+}
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่างสวมเกราะราชัน (ท่าไม้ตายคุวากาตะ) เพิ่ม +3 เป็น 5
+// ระหว่าง Song for you (เทมาริ) เพิ่มตามโบนัสชามทงคัสสึ (สูงสุด +3)
 function maxArmorOf(p) {
-  return MAX_ARMOR + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0);
+  return MAX_ARMOR + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0) + (songActive(p) ? songBonus(p) : 0);
 }
 // Beat Mode (คุวากาตะ): พลังชีวิต < 3 = อยู่ในประกายเขี้ยวปฏิปักษ์
 function beatActive(p) {
@@ -155,11 +167,11 @@ function positionUsedByOther(pos, sid) {
     Object.entries(reservations).some(([id, p]) => id !== sid && p === pos);
 }
 
-// รูปที่แสดง: Beat Mode (ถาวรจนตาย) > NT-D คงอยู่จนแก้แค้น > Paradise > Ginga > สวมเกราะราชัน
+// รูปที่แสดง: Beat Mode (ถาวรจนตาย) > NT-D คงอยู่จนแก้แค้น > Paradise > ไคจู Black King > Ginga > สวมเกราะราชัน
 function displayImg(p) {
   if (p.seen && p.seen.beat) return OHGER_FORM;
   if (p.ntdTarget && p.seen && p.seen.ntd) return TRANSFORMS.ntd.img;
-  for (const key of ["paradise", "ginga", "rachan"]) {
+  for (const key of ["paradise", "monster", "ginga", "rachan"]) {
     if (p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
   }
   return p.img;
@@ -262,6 +274,13 @@ function voidUltimateOnBust(p) {
       lastLog.push(`💥 ${p.name} ไพ่แตก! ท่าไม้ตาย ${TRANSFORMS[key].title} ใช้งานไม่ได้ — แต้มสกิลเสียฟรี`);
     }
   }
+  // ANATA WAAAAAAAA (เทมาริ): ผู้ใช้ไพ่แตกเอง = ท่าไม้ตายเป็นโมฆะ
+  if ((p.statuses.anata || 0) > 0 && p.anataTargets) {
+    delete p.statuses.anata;
+    p.anataTargets = null;
+    anataMusicSeq = 0;
+    lastLog.push(`💥 ${p.name} ไพ่แตก! ท่าไม้ตาย ANATA WAAAAAAAA ใช้งานไม่ได้ — แต้มสกิลเสียฟรี`);
+  }
 }
 
 function resetRoundDisplay(p) {
@@ -276,6 +295,10 @@ function resetCombat(p) {
   p.skillUsedRound = false; // ใช้สกิลได้ 1 อันต่อเทิร์น
   p.beamAmmo = BEAM_AMMO; // กระสุน Beam Magnum รีเซ็ตต้นเกม
   p.puddingUses = PUDDING_USES; // Rainbow Pudding รีเซ็ตต้นเกม
+  p.tonkatsu = 0;         // เทมาริ: ชามทงคัสสึที่กินสะสม (ไม่รีเซ็ตระหว่างแมตช์)
+  p.songUsedOnce = false; // Song for you: ครั้งแรกเติมเกราะให้ ครั้งถัดไปเพิ่มแค่เพดาน
+  p.noDrawNext = false;   // ทงคัสสึเกิน 2 ชาม: เทิร์นถัดไปจั่วเพิ่มไม่ได้
+  p.anataTargets = null;  // เป้าหมาย ANATA WAAAAAAAA (ลับจนกว่าจะเปิดไพ่)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -285,7 +308,10 @@ function resetCombat(p) {
 // ============================================================
 function buildStateFor(viewerId) {
   const revealAll = gameState !== "PLAYING" && gameState !== "LOBBY";
-  const sm = activeSkillMusic();
+  // เพลง ANATA WAAAAAAAA ทับทุกเพลงระหว่างช่วงจั่วการ์ด — จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
+  const sm = (gameState === "PLAYING" && anataMusicSeq)
+    ? { music: "temari_final_theme", at: anataMusicSeq }
+    : activeSkillMusic();
   return {
     gameState,
     timeLeft,
@@ -326,6 +352,7 @@ function buildStateFor(viewerId) {
         skillPoints: p.skillPoints, maxSkill: MAX_SKILL,
         beamAmmo: p.beamAmmo,
         puddingUses: p.puddingUses,
+        tonkatsu: p.tonkatsu || 0, // เทมาริ: ชามทงคัสสึสะสม (UI สะสมชาม)
         atCap: scoreOf(p) >= scoreCap(p), // แต้มเต็มเพดาน (21/UPG) -> ปิดปุ่มจั่ว รอเปิดไพ่เอง
         skillUsed: !!p.skillUsedRound,    // ใช้สกิลไปแล้วในเทิร์นนี้ (1 อันต่อเทิร์น)
         alive: p.alive,
@@ -352,9 +379,9 @@ function broadcastPositions() {
 // ============================================================
 //  cutscene
 // ============================================================
-// ครั้งแรกต่อเกม/ต่อคน = เล่นวีดีโอเต็ม, ครั้งต่อไป = แบนเนอร์สั้น (บอกแค่ใครใช้อะไร)
+// ครั้งแรกต่อเกม/ต่อคน = เล่นวีดีโอเต็ม (หยุดกระดาน), ครั้งต่อไป = แค่การ์ดแจ้งเตือนเล็กๆ ไม่หยุดเกม
 function triggerCutscene(p, key) {
-  if (p.cutsceneShown[key]) queueBanner(p, key);
+  if (p.cutsceneShown[key]) notifyTransform(p, key);
   else { p.cutsceneShown[key] = true; queueCutscene(p, key); }
 }
 function queueCutscene(p, key) {
@@ -369,16 +396,15 @@ function queueCutscene(p, key) {
     },
   });
 }
-function queueBanner(p, key) {
+// การ์ดแจ้งเตือนเล็กๆ (ครั้งที่ 2 เป็นต้นไป): ส่งทันทีแบบเดียวกับ skillFlash — ไม่ตัดเข้าเฟส CUTSCENE
+// ไม่หยุดเวลา/กระดาน แค่บอกว่าใครใช้ท่าอะไรซ้ำ
+function notifyTransform(p, key) {
   const t = TRANSFORMS[key];
   if (!t) return;
-  cutsceneQueue.push({
-    seconds: BANNER_TIME,
-    info: {
-      playerId: p.id, name: p.name,
-      img: t.img, color: POSITION_COLORS[p.position] || "#9B4F96",
-      title: t.title, label: t.label, brief: true, // ไม่มี video -> แสดงแค่แบนเนอร์
-    },
+  io.emit("transformNotice", {
+    playerId: p.id, name: p.name,
+    img: t.img, color: POSITION_COLORS[p.position] || "#9B4F96",
+    title: t.title, label: t.label,
   });
 }
 // ประกาศเปลี่ยนร่าง (เอฟเฟกต์ระเบิด + ชื่อ + เสียงพากย์) — ต่อจากวีดีโอ ก่อนขึ้นสรุปผล/คนอื่น
@@ -393,6 +419,18 @@ function queueTransformAnnounce(p, kind) {
       img: OHGER_FORM, color: POSITION_COLORS[p.position] || "#9B4F96",
       title: t.title, voice: t.voice || null, kind, announce: true,
     },
+  });
+}
+// พักช่วงจั่วการ์ดไว้ เล่น cutscene ให้จบ แล้วกลับมาจั่วต่อด้วยเวลาที่เหลือ
+// (ใช้กับสกิลที่แปลงร่างทันทีก่อนเปิดไพ่ เช่น MonsterLive)
+function pausePlayingForCutscene() {
+  const remain = Math.max(3, timeLeft);
+  clearPhaseTimer();
+  runCutsceneQueue(() => {
+    gameState = "PLAYING";
+    startPhaseTimer(remain, resolveRound);
+    broadcastState();
+    checkAllLocked();
   });
 }
 function runCutsceneQueue(onDone) {
@@ -420,15 +458,20 @@ function dealRound() {
   lastLog = [];
   attackerId = null;
   roundWinnerId = null;
+  roundTiedWin = false;
   cutsceneQueue = [];
   cutsceneInfo = null;
   lastAttack = null;
   roundSkills = [];
+  anataMusicSeq = 0;
 
   for (const p of Object.values(players)) {
     resetRoundDisplay(p);
     p.shield = 0;
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
+    p.anataTargets = null;
+    // ทงคัสสึเกิน 2 ชาม: เทิร์นนี้จั่วการ์ดเพิ่มไม่ได้ (หายเองเทิร์นถัดไป)
+    if (p.noDrawNext) { p.statuses.nodraw = 1; p.noDrawNext = false; }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืนต้นรอบ
@@ -452,6 +495,7 @@ function dealRound() {
 function hit(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
+  if ((p.statuses.nodraw || 0) > 0) return; // อิ่มทงคัสสึเกิน: เทิร์นนี้จั่วเพิ่มไม่ได้
   if (scoreOf(p) >= scoreCap(p)) return; // แต้มเต็มเพดาน (เช่น 21 พอดี) = จั่วไม่ได้ รอผู้ใช้ใช้สกิล/เปิดไพ่เอง
   p.cards.push(drawCardFor(p));
   p.busted = bustedOf(p);
@@ -467,7 +511,7 @@ function lock(id) {
   broadcastState();
   checkAllLocked();
 }
-function useSkill(id, tier) {
+function useSkill(id, tier, targets) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if (!["basic", "secondary", "ultimate"].includes(tier)) return;
@@ -475,25 +519,83 @@ function useSkill(id, tier) {
   const skill = ch && ch[tier];
   if (!skill || p.skillPoints < skill.cost) return;
 
+  const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
+
   if (p.skillUsedRound) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
   // Beat Mode (ประกายเขี้ยว): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้ (ใช้ได้แค่สกิลรอง)
   if ((tier === "basic" || tier === "ultimate") && beatActive(p)) return;
-  // สวมเกราะราชัน: ผลถาวร -> กดซ้ำไม่ได้อีกตลอดเกม
-  if (tier === "ultimate" && p.characterId === "kuwagata" && (p.statuses.rachan || 0) > 0) return;
+  // ท่าไม้ตาย: กดซ้ำไม่ได้จนกว่าผลจะหมดเวลา (สวมเกราะราชันคงอยู่ถาวร = กดซ้ำไม่ได้อีกเลยตลอดเกม)
+  if (tier === "ultimate" && st && (p.statuses[st] || 0) > 0) return;
+  // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
+  if (tier === "ultimate" && p.characterId === "hikaru" && (p.statuses.monster || 0) > 0) return;
   // Rainbow Pudding (คุวากาตะ): ใช้ได้แค่ 2 ครั้งต่อเกม
   const isPudding = p.characterId === "kuwagata" && tier === "basic";
   if (isPudding && (p.puddingUses || 0) <= 0) return;
 
-  const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
+  // Ohger Finish: ใช้ไม่ได้เลยจนกว่าจะมีทั้ง สวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ พร้อมกัน
+  if (st === "ohger" && !((p.statuses.rachan || 0) > 0 && beatActive(p))) return;
+
+  // ANATA WAAAAAAAA (เทมาริ): ต้องเลือกเป้าหมาย 2 คน (หรือเท่าที่มี) ก่อนใช้
+  let anataTargets = null;
+  if (st === "anata") {
+    const avail = alivePlayers().filter((o) => o.id !== p.id);
+    const need = Math.min(2, avail.length);
+    if (need === 0) return;
+    const tgs = Array.isArray(targets)
+      ? [...new Set(targets)].filter((tid) => avail.some((o) => o.id === tid))
+      : [];
+    if (tgs.length !== need) return;
+    anataTargets = tgs;
+  }
 
   p.skillPoints -= skill.cost;
   p.skillUsedRound = true;
   if (isPudding) p.puddingUses--; // นับใช้ Rainbow Pudding
-  applyEffect(p, skill.effect);
+
+  // ทงคัสสึ 3 มื้อ (เทมาริ): นับชามสะสม — เกิน 2 ชาม = เทิร์นถัดไปจั่วเพิ่มไม่ได้,
+  // เกิน 6 ชาม = ครั้งถัดไปอิ่มเกิน ได้เกราะ 1 หน่วยแทนการฟื้นเลือด
+  const isTonkatsu = p.characterId === "temari" && tier === "basic";
+  if (isTonkatsu) {
+    p.tonkatsu = (p.tonkatsu || 0) + 1;
+    if (p.tonkatsu > 2) p.noDrawNext = true;
+    if (p.tonkatsu > 6) {
+      p.armor = Math.min(maxArmorOf(p), p.armor + 1);
+      lastLog.push(`🍜 ${p.name} อิ่มเกินไป! ได้เกราะ +1 แทน (ชามที่ ${p.tonkatsu})`);
+    } else {
+      applyEffect(p, skill.effect);
+    }
+  } else {
+    applyEffect(p, skill.effect);
+  }
 
   // NewType Paradise: เติมกระสุน Beam Magnum +1
   if (st === "paradise") p.beamAmmo = Math.min(BEAM_AMMO, (p.beamAmmo || 0) + 1);
+
+  // Song for you (เทมาริ): ครั้งแรกเติมเกราะให้ตามโบนัสชาม — ครั้งที่ 2 เป็นต้นไปเพิ่มแค่เพดาน
+  if (st === "song" && !p.songUsedOnce) {
+    p.songUsedOnce = true;
+    p.armor = Math.min(maxArmorOf(p), p.armor + songBonus(p));
+  }
+
+  // ANATA WAAAAAAAA: เก็บเป้าหมายไว้เป็นความลับ + เปิดเพลงจนกว่าทุกคนจะเปิดไพ่
+  if (st === "anata") {
+    p.anataTargets = anataTargets;
+    anataMusicSeq = ++transformCounter;
+  }
+
+  // MonsterLive (ฮิคารุ): แปลงร่างไคจู Black King ทันทีก่อนเปิดไพ่ — พักช่วงจั่วการ์ดเล่นฉากแปลงร่าง
+  if (st === "monster") {
+    p.seen.monster = true;
+    if (!p.cutsceneShown.monster) {
+      p.cutsceneShown.monster = true;
+      queueCutscene(p, "monster");
+      pausePlayingForCutscene();
+    } else {
+      notifyTransform(p, "monster");
+    }
+    lastLog.push(`🦖 ${p.name} แปลงร่างไคจู Black King (MonsterLive)!`);
+  }
 
   // สกิลช่วงจั่วการ์ด (instant): เด้งโชว์ทันทีบนกระดานของทุกคน ไม่ต้องรอเปิดไพ่/ไม่ตัดจอดำ
   if (skill.instant) {
@@ -519,6 +621,26 @@ function checkAllLocked() {
 function resolveRound() {
   clearPhaseTimer();
   for (const p of alivePlayers()) p.locked = true;
+  anataMusicSeq = 0; // เพลง ANATA WAAAAAAAA จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
+
+  // ANATA WAAAAAAAA (เทมาริ): เปิดเผยเป้าหมาย + บังคับจั่วเพิ่ม 2 ใบหลังเปิดไพ่
+  // ทำงานก่อนท่าไม้ตายอื่นเสมอ — ถ้าเป้าหมายแตกจากการบังคับจั่ว ท่าไม้ตายที่เพิ่งกดจะเป็นโมฆะ
+  const anataProcs = [];
+  for (const u of alivePlayers()) {
+    if (!u.anataTargets || !u.anataTargets.length) continue;
+    if (bustedOf(u)) { u.anataTargets = null; continue; } // ผู้ใช้แตกเอง (โมฆะไปแล้วใน voidUltimateOnBust)
+    for (const tid of u.anataTargets) {
+      const t = players[tid];
+      if (!t || !t.alive) continue;
+      t.cards.push(drawCardFor(t));
+      t.cards.push(drawCardFor(t));
+      t.busted = bustedOf(t);
+      lastLog.push(`🎤 ANATA WAAAAAAAA! ${u.name} บังคับ ${t.name} จั่วเพิ่ม 2 ใบ${t.busted ? " — ไพ่แตก!" : ""}`);
+      if (t.busted) voidUltimateOnBust(t);
+      anataProcs.push({ u, t });
+    }
+    u.anataTargets = null;
+  }
 
   const combatants = alivePlayers();
   roundWinnerId = null;
@@ -537,11 +659,12 @@ function resolveRound() {
     const tied = combatants.filter((p) => val(p) === best);
     const w = tied[Math.floor(Math.random() * tied.length)];
     roundWinnerId = w.id;
+    roundTiedWin = tied.length > 1; // เสมอแต้มกัน -> ยังได้แต้มสกิล/ท่าไม้ตายทำงานปกติ แต่ไม่มีเทิร์นโจมตี
     w.isWinner = true;
     w.result = "win";
     addSkill(w, 2);
     firePassive(w, "win");
-    if (tied.length > 1) lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name}`);
+    if (tied.length > 1) lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name} (เสมอ ไม่มีเทิร์นโจมตี)`);
   }
 
   if (best !== worst) {
@@ -553,6 +676,13 @@ function resolveRound() {
         addSkill(l, 2);
         firePassive(l, "lose");
         lastLog.push(`⚡ ${l.name} ประกายเขี้ยวปฏิปักษ์ — ไม่รับความเสียหายจากการแพ้`);
+        continue;
+      }
+      if ((l.statuses.monster || 0) > 0) {
+        // ร่างไคจู (MonsterLive): แพ้เพราะแต้มน้อยสุด/ไพ่แตก รับความเสียหายน้อยลง 1 หน่วย (1 -> 0)
+        addSkill(l, 2);
+        firePassive(l, "lose");
+        lastLog.push(`🦖 ${l.name} ร่างไคจู — ไม่รับความเสียหายจากการแพ้`);
         continue;
       }
       const armorBefore = l.armor;
@@ -569,6 +699,24 @@ function resolveRound() {
     }
   }
   for (const p of combatants) if (!p.result) p.result = "safe";
+
+  // สกิลติดตัว หิวอะโปรดิวเซอร์ (เทมาริ): เป้าหมาย ANATA WAAAAAAAA แพ้หรือไพ่แตก
+  // -> โดนขิงจนช้ำ รับความเสียหายทันที (คิดแบบการโจมตีปกติ + โบนัส Song for you)
+  // ต่อให้เทมาริไม่ชนะ/แพ้ในตานั้นก็ตาม — และฉากของสกิลนี้ขึ้นก่อนทุกท่าไม้ตาย
+  let anataFinalShown = false;
+  for (const { u, t } of anataProcs) {
+    if (!t.alive || !(bustedOf(t) || t.isLoser)) continue;
+    let dmg = 1 + (songActive(u) ? songBonus(u) : 0);
+    if ((t.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1); // ร่างไคจูรับเบาลง 1
+    dealMixed(t, dmg);
+    t.wasAttacked = true;
+    addSkill(t, 2);
+    lastLog.push(`🎤 หิวอะโปรดิวเซอร์! ${t.name} โดนขิงจนช้ำ -${dmg}`);
+    if (!anataFinalShown) {
+      anataFinalShown = true;
+      triggerCutscene(u, "anataFinal"); // เข้าคิวก่อน afterResolve -> ขึ้นก่อนท่าไม้ตายอื่นเสมอ
+    }
+  }
 
   afterResolve();
 }
@@ -617,7 +765,7 @@ function attackableTargets(atkId) {
 }
 function afterSummary() {
   const winner = players[roundWinnerId];
-  if (winner && winner.alive) {
+  if (winner && winner.alive && !roundTiedWin) {
     const targets = attackableTargets(winner.id);
     if (targets.length > 0) {
       attackerId = winner.id;
@@ -644,11 +792,9 @@ function doAttack(byId, targetId) {
   const ginga = (attacker.statuses.ginga || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
-  // Ohger Finish: +1 หน่วยหลังเปิดไพ่ — ต้องมีทั้ง สวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์
-  // พร้อมกันถึงจะเป็น +2 แทน (ไม่ซ้อนทับเงื่อนไขปกติ)
+  // Ohger Finish: ใช้ได้เฉพาะตอนมีทั้ง สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์ (เช็คตอนกดสกิล) = +2 เสมอ
   const ohger = (attacker.statuses.ohger || 0) > 0;
-  const ohgerEmpowered = (attacker.statuses.rachan || 0) > 0 && beatActive(attacker);
-  const ohgerBonus = ohger ? (ohgerEmpowered ? 2 : 1) : 0;
+  const ohgerBonus = ohger ? 2 : 0;
   // NT-D System: สวนกลับคนที่ตีเราล่าสุด +1 — NewType Paradise = NT-D แบบพิเศษ ใช้ +1 กับเป้าหมายใดก็ได้
   const isRevenge = attacker.characterId === "banagher" && attacker.ntdTarget && attacker.ntdTarget === target.id;
   const ntdBonus = (isRevenge || paradiseAtk) ? 1 : 0;
@@ -853,6 +999,7 @@ io.on("connection", (socket) => {
       statuses: {}, seen: {}, ntdTarget: null, transformAt: 0, cutsceneShown: {},
       armorLocked: false, beatSaved: false, skillUsedRound: false,
       beamAmmo: BEAM_AMMO, puddingUses: PUDDING_USES,
+      tonkatsu: 0, songUsedOnce: false, noDrawNext: false, anataTargets: null,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
@@ -867,7 +1014,7 @@ io.on("connection", (socket) => {
 
   socket.on("hit", () => hit(socket.id));
   socket.on("lock", () => lock(socket.id));
-  socket.on("useSkill", ({ tier } = {}) => useSkill(socket.id, tier));
+  socket.on("useSkill", ({ tier, targets } = {}) => useSkill(socket.id, tier, targets));
   socket.on("attack", ({ targetId } = {}) => doAttack(socket.id, targetId));
   socket.on("backToLobby", () => { if (gameState === "GAMEOVER") backToLobby(); });
 
