@@ -144,9 +144,9 @@ function bustedOf(p) {
 // ============================================================
 function alivePlayers() { return Object.values(players).filter((p) => p.alive); }
 
-// Song for you (เทมาริ): โบนัสจากชามทงคัสสึที่กินสะสม — 2 ชาม = 1 หน่วย สูงสุด 3 (6 ชาม)
+// Song for you (เทมาริ): โบนัสจากชามทงคัสสึที่กินสะสม — 3 ชาม = 1 หน่วย สูงสุด 3 (9 ชาม)
 function songBonus(p) {
-  return Math.min(3, Math.floor((p.tonkatsu || 0) / 2));
+  return Math.min(3, Math.floor((p.tonkatsu || 0) / 3));
 }
 function songActive(p) {
   return !!p && ((p.statuses && p.statuses.song) || 0) > 0;
@@ -222,13 +222,12 @@ function evaLossImmune(p) {
 function gamblerJackpot(p) {
   return !!p && p.alive && p.characterId === "gambler" && p.hp < 3;
 }
-// โอกาสสำเร็จด้านบวก: พื้นฐาน 50% + สกิลติดตัว 10% + เวลาทอง 10% (ซ้อนกันได้)
-// ท่าไม้ตาย: ค่าโชคเพิ่มไม่ได้ คงที่ 50/50 เสมอ
+// โอกาสสำเร็จด้านบวก: พื้นฐาน 50% + สกิลติดตัว 10% (ทุกสกิล รวมท่าไม้ตาย) + เวลาทอง 10%
+// (เวลาทองไม่มีผลกับท่าไม้ตายอยู่แล้ว — ระหว่างบัฟยังอยู่กดท่าไม้ตายซ้ำไม่ได้)
 function gamblerChance(p, tier) {
-  if (tier === "ultimate") return 0.5;
   let c = 0.5;
   if (gamblerJackpot(p)) c += 0.1;
-  if ((p.statuses.golden || 0) > 0) c += 0.1;
+  if (tier !== "ultimate" && (p.statuses.golden || 0) > 0) c += 0.1;
   return c;
 }
 // ฮีลพร้อมล้น: เลือดจริง -> เกราะ -> เลือดชั่วคราว (หายเองใน 2 เทิร์น / หมดเมื่อรับดาเมจ)
@@ -601,8 +600,8 @@ function dealRound() {
     }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
-    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืนต้นรอบ
-    if (!p.armorLocked) p.armor = Math.min(maxArmorOf(p), p.armor + 1);
+    // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
+    if (!p.armorLocked && roundNumber % 2 === 0) p.armor = Math.min(maxArmorOf(p), p.armor + 1);
     // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
     if (p.mageHealNext > 0) {
       const heal = Math.min(MAX_HP - p.hp, p.mageHealNext);
@@ -699,14 +698,14 @@ function useSkill(id, tier, targets) {
   if (st === "fourth" && !eva3Active(p)) return;
 
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
-  // Ohger Finish: ต้องสวมเกราะราชันเป็นอย่างน้อย — ราชัน + ประกายเขี้ยวปฏิปักษ์ = +2 / ราชันอย่างเดียว = +1
-  if (st === "ohger" && (p.statuses.rachan || 0) <= 0) return;
+  // Ohger Finish: ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ ถึงจะใช้ได้ (+1 ความเสียหาย)
+  if (st === "ohger" && !((p.statuses.rachan || 0) > 0 && (beatActive(p) || (p.seen && p.seen.beat)))) return;
 
-  // ANATA WAAAAAAAA (เทมาริ): ต้องเลือกเป้าหมาย 2 คน (หรือเท่าที่มี) ก่อนใช้
+  // ANATA WAAAAAAAA (เทมาริ): ต้องเลือกเป้าหมาย 1 คนก่อนใช้
   let anataTargets = null;
   if (st === "anata") {
     const avail = alivePlayers().filter((o) => o.id !== p.id);
-    const need = Math.min(2, avail.length);
+    const need = Math.min(1, avail.length);
     if (need === 0) return;
     const tgs = Array.isArray(targets)
       ? [...new Set(targets)].filter((tid) => avail.some((o) => o.id === tid))
@@ -740,6 +739,11 @@ function useSkill(id, tier, targets) {
         loseHp(p);
         flashSuffix = " — ดวงกุด เสียเลือด -1";
         lastLog.push(`🎰 ${p.name} วอสก้าหน่อยน้อง — ดวงกุด เสียพลังชีวิต -1`);
+        // ผลสกิลตัวเองทำให้เลือดหมด -> ตายทันที ไม่ต้องรอจบเทิร์น
+        if (p.hp <= 0) {
+          p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
+          lastLog.push(`💀 ${p.name} เสี่ยงดวงจนสิ้นลม — ตกรอบทันที!`);
+        }
       }
     } else if (tier === "secondary") {
       // กำไรเท่าตัวโว้ย: 50/50 ห้ามจั่วเทิร์นนี้+เทิร์นหน้า หรือ +1 โจมตี (แจ๊กพอต +2) และทะลุเกราะ 1 ครั้ง (ถาวรจนได้ตี)
@@ -1115,10 +1119,9 @@ function doAttack(byId, targetId) {
   const ginga = (attacker.statuses.ginga || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
-  // Ohger Finish: สวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์ = +2 / สวมเกราะราชันอย่างเดียว = +1 (เช็คราชันตอนกดสกิล)
+  // Ohger Finish: ต้องมีทั้งสวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์ (เช็คตอนกดสกิล) = +1
   const ohger = (attacker.statuses.ohger || 0) > 0;
-  const ohgerBeat = beatActive(attacker) || (attacker.seen && attacker.seen.beat);
-  const ohgerBonus = ohger ? (ohgerBeat ? 2 : 1) : 0;
+  const ohgerBonus = ohger ? 1 : 0;
   // Everything For Humanity (ฟุจิมารุ): พลังโจมตี +4
   const humanityAtk = (attacker.statuses.humanity || 0) > 0;
   // หอกลองกินัส (เอวา 13): พลังโจมตี +1 (1 เทิร์น) + เป้าหมายจั่วไม่ได้เทิร์นถัดมา
@@ -1148,11 +1151,16 @@ function doAttack(byId, targetId) {
     attacker.profit = 0; // บัฟกำไรหมดไปเมื่อได้ตี
     lastLog.push(`💰 ${attacker.name} กำไรเท่าตัวโว้ย — โจมตี +${profitAtk} ทะลุเกราะ! (บัฟหมดลง)`);
   }
-  // หอกลองกินัส: โจมตีโดนเป้าหมาย -> เทิร์นถัดมาจั่วการ์ดเพิ่มไม่ได้ (สกิลติดตัว 3 เอวา = +1 เทิร์น)
+  // หอกลองกินัส: โจมตีโดนเป้าหมาย -> มีโอกาส 20/80 ที่เทิร์นถัดมาเป้าหมายจะจั่วการ์ดเพิ่มไม่ได้
+  //  (สกิลติดตัว 3 เอวาทำงาน = โอกาสเพิ่มเป็น 50/50)
   if (spearAtk && target.alive) {
-    const noDrawTurns = eva3Active(attacker) ? 2 : 1;
-    target.noDrawNext = Math.max(target.noDrawNext || 0, noDrawTurns);
-    lastLog.push(`🗡️ หอกลองกินัสปักเป้า! ${target.name} จั่วการ์ดเพิ่มไม่ได้ ${noDrawTurns} เทิร์นถัดไป`);
+    const chance = eva3Active(attacker) ? 0.5 : 0.2;
+    if (Math.random() < chance) {
+      target.noDrawNext = Math.max(target.noDrawNext || 0, 1);
+      lastLog.push(`🗡️ หอกลองกินัสปักเป้า! ${target.name} จั่วการ์ดเพิ่มไม่ได้ในเทิร์นถัดไป`);
+    } else {
+      lastLog.push(`🗡️ หอกลองกินัสพลาด — ${target.name} ยังจั่วการ์ดได้ตามปกติ`);
+    }
   }
   // Beat Mode กันตาย (ครั้งเดียวต่อเกม): ทำงานทันทีเมื่อความเสียหายถึงตาย — ไม่ต้องอยู่ใน Beat Mode ก่อน
   //  หลังกันตายทำงาน -> เกราะจะไม่ฟื้นคืน + ภูมิดาเมจจากการแพ้ (แต่ครั้งต่อไปจะตายปกติ)

@@ -517,8 +517,8 @@ export default function Game({ state }) {
   const ultimateActive = !!(me && me.statuses && me.statuses[ULTIMATE_STATUS[ch?.id]]);
   // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
-  // Ohger Finish (คุวากาตะ): ต้องสวมเกราะราชันเป็นอย่างน้อย (ราชัน+เขี้ยว = +2 / ราชันอย่างเดียว = +1)
-  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !me.statuses?.rachan);
+  // Ohger Finish (คุวากาตะ): ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ (+1 ความเสียหาย)
+  const ohgerLocked = !!(me && ch?.id === "kuwagata" && !(me.statuses?.rachan && (me.beat || beatMe)));
   // ห้ามจั่วการ์ดเพิ่มเทิร์นนี้ (ทงคัสสึ / กำไรเท่าตัวโว้ย / หอกลองกินัส)
   const noDraw = !!(me && me.statuses?.nodraw);
   // ---------- แกมเบลอร์ ----------
@@ -546,9 +546,9 @@ export default function Game({ state }) {
   // เรจูอาคมบัญชา (สกิลติดตัว): สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล
   const reijuUsable = !!(isFuji && phase === "PLAYING" && me?.alive && !done && (me?.reiju || 0) > 0);
   const useReiju = (cmd) => { socket.emit("useReiju", { command: cmd }); setReijuOpen(false); };
-  // ANATA WAAAAAAAA: จำนวนเป้าหมายที่ต้องเลือก (2 หรือเท่าที่มีคู่ต่อสู้รอด)
+  // ANATA WAAAAAAAA: เลือกเป้าหมายได้เพียง 1 คน
   const aliveOthers = others.filter((p) => p.alive);
-  const anataNeed = Math.min(2, aliveOthers.length);
+  const anataNeed = Math.min(1, aliveOthers.length);
 
   // สกิลช่วงจั่วการ์ด: server แจ้งมา -> เด้งทันที (ไม่ตัดเข้าจอดำ) แล้วหายเอง
   useEffect(() => {
