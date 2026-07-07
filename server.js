@@ -33,7 +33,7 @@ const ATTACKFX_TIME = 3;  // อนิเมชันบอกว่าใคร
 
 const MAX_HP = 5;       // เลือดจริงพื้นฐาน
 const MAX_ARMOR = 2;
-const MAX_SKILL = 6;
+const MAX_SKILL = 8;
 const BEAM_AMMO = 2;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
 const PUDDING_USES = 2; // Rainbow Pudding ใช้ได้ต่อเกม (คุวากาตะ)
 const REIJU_USES = 3;   // เรจูอาคมบัญชา ต่อเกม (ฟุจิมารุ)
@@ -89,7 +89,7 @@ const TRANSFORMS = {
   eva3:     { img: "/characters/eva13/eva13_passive3.jpg", video: "/characters/eva13/eva13_passive3.mp4", title: "อย่าให้ฉันทำแแบบนี้เลย", label: "สกิลติดตัวทำงาน", seconds: 10, music: null, afterReveal: false },
   evaboom:  { img: "/characters/eva13/eva13.webp", video: "/characters/eva13/eva13_passive1.mp4", title: "ไม่สามารถแก้ไขอะไรได้อีกแล้ว", label: "สกิลติดตัวทำงาน", seconds: 18, music: null, afterReveal: false },
   // ---------- โอเบรอน (patch 1.7) ----------
-  // lai: ท่าไม้ตายกลางวัน — วีดีโอ 13 วิ | vortigern: ท่าไม้ตายกลางคืน — วีดีโอ 16 วิ
+  // lai: ท่าไม้ตายกลางวัน — วีดีโอ 13 วิ | vortigern: patch 1.7.6 ข้ามวีดีโอประจำท่า — เล่น oberonChange แทนทันที
   // (ฉากหลัง "ราตรีกลืนกิน" ไม่ผูกกับท่าไม้ตาย — ทำงานเองทุกครั้งที่เข้ากลางคืนขณะมีโอเบรอนอยู่ในเกม)
   lai:       { img: "/characters/oberon/oberon_skill3_morning.webp", video: "/characters/oberon/oberon_final_morning.mp4", title: "LAI RHYME GOODFELLOW", label: "ปล่อยท่าไม้ตาย", seconds: 14, music: null, afterReveal: true },
   vortigern: { img: "/characters/oberon/oberon_skill3_night.jpg", video: "/characters/oberon/oberon_final_night.mp4", title: "LIE LIKE VORTIGERN", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: null, afterReveal: true },
@@ -171,24 +171,19 @@ function bustedOf(p) {
 // ============================================================
 function alivePlayers() { return Object.values(players).filter((p) => p.alive); }
 
-// Song for you (เทมาริ): โบนัสจากชามทงคัสสึที่กินสะสม — 3 ชาม = 1 หน่วย สูงสุด 3 (9 ชาม)
-function songBonus(p) {
-  return Math.min(3, Math.floor((p.tonkatsu || 0) / 3));
-}
+// Song for you (เทมาริ patch 1.7.6): บัฟพลังขิงที่ล็อกไว้ตอนใช้สกิล (1 ชาม = +1 สูงสุด 2)
 function songActive(p) {
   return !!p && ((p.statuses && p.statuses.song) || 0) > 0;
 }
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่างสวมเกราะราชัน (ท่าไม้ตายคุวากาตะ) เพิ่ม +3 เป็น 5
-// ระหว่าง Song for you (เทมาริ) เพิ่มตามโบนัสชามทงคัสสึ (สูงสุด +3)
 // ระหว่าง Everything For Humanity (ฟุจิมารุ) เพิ่ม +3
 // ระหว่างสกิลติดตัว 3 เอวา 13 (เลือด <= 3) เพิ่ม +1
-// ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +2
+// ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
 function maxArmorOf(p) {
   return MAX_ARMOR
     + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0)
     + ((((p.statuses && p.statuses.humanity) || 0) > 0) ? 3 : 0)
-    + ((((p.statuses && p.statuses.vortarmor) || 0) > 0) ? 2 : 0)
-    + (songActive(p) ? songBonus(p) : 0)
+    + ((((p.statuses && p.statuses.vortarmor) || 0) > 0) ? 1 : 0)
     + (eva3Active(p) ? 1 : 0);
 }
 // เรจูอาคมบัญชา คำสั่ง 1 (ฟุจิมารุ): อมตะ 1 เทิร์น — ไม่รับความเสียหายใดๆ
@@ -434,8 +429,8 @@ function resetCombat(p) {
   p.skillUsedRound = false; // ใช้สกิลได้ 1 อันต่อเทิร์น
   p.beamAmmo = BEAM_AMMO; // กระสุน Beam Magnum รีเซ็ตต้นเกม
   p.puddingUses = PUDDING_USES; // Rainbow Pudding รีเซ็ตต้นเกม
-  p.tonkatsu = 0;         // เทมาริ: ชามทงคัสสึที่กินสะสม (ไม่รีเซ็ตระหว่างแมตช์)
-  p.songUsedOnce = false; // Song for you: ครั้งแรกเติมเกราะให้ ครั้งถัดไปเพิ่มแค่เพดาน
+  p.tonkatsu = 0;         // เทมาริ: ชามทงคัสสึที่กินสะสม (สูงสุด 3 — Song for you ล้างตอนใช้)
+  p.songAtk = 0;          // Song for you: พลังขิงที่ล็อกไว้ตอนใช้สกิล (สูงสุด 2)
   p.noDrawNext = 0;       // จำนวนเทิร์นที่จั่วเพิ่มไม่ได้ เริ่มเทิร์นถัดไป (ทงคัสสึ / กำไรเท่าตัวโว้ย)
   p.noSkillNext = 0;      // จำนวนเทิร์นที่ใช้สกิลไม่ได้ เริ่มเทิร์นถัดไป (หอกลองกินัส เอวา 13)
   p.gamblerUses = GAMBLER_USES; // แกมเบลอร์: วอสก้าหน่อยน้อง 3 ครั้งต่อเกม (เวลาทองรีเซ็ตให้เต็ม)
@@ -443,6 +438,7 @@ function resetCombat(p) {
   p.tempHp = 0;           // แกมเบลอร์: เลือดชั่วคราวจากฮีลล้น
   p.tempHpTurns = 0;      // เลือดชั่วคราวหายเองเมื่อครบ 2 เทิร์น
   p.anataTargets = null;  // เป้าหมาย ANATA WAAAAAAAA (ลับจนกว่าจะเปิดไพ่)
+  p.nightmareTarget = null; // เป้าหมายฝันร้ายยามค่ำคืน (โอเบรอน — ทำงานหลังเปิดไพ่)
   p.reiju = REIJU_USES;   // ฟุจิมารุ: เรจูอาคมบัญชา 3 ครั้งต่อเกม
   p.mageUses = 0;         // จอมเวทย์ฝึกหัด: จำนวนครั้งที่กดในเทิร์นนี้ (สูงสุด 3)
   p.mageHealNext = 0;     // จอมเวทย์ฝึกหัด: ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้งที่ใช้
@@ -659,6 +655,7 @@ function dealRound() {
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
     p.mageUses = 0;           // จอมเวทย์ฝึกหัด: นับใหม่ทุกเทิร์น (กดได้ 3 ครั้งต่อเทิร์น)
     p.anataTargets = null;
+    p.nightmareTarget = null;
     // ห้ามจั่วการ์ดเพิ่มที่ตั้งไว้จากเทิร์นก่อน (ทงคัสสึ / กำไรเท่าตัวโว้ย) — noDrawNext เป็นจำนวนเทิร์น
     if (p.noDrawNext) {
       p.statuses.nodraw = Math.max(p.statuses.nodraw || 0, Number(p.noDrawNext) || 1);
@@ -819,7 +816,6 @@ function useSkill(id, tier, targets) {
   const isVeil = p.characterId === "oberon" && tier === "basic";
   if (isVeil && (p.statuses.veil || 0) > 0) return;
   // รุ่งอรุณแห่งวันใหม่ (โอเบรอน สกิลรองกลางวัน): เลือกเป้าหมาย 1 คน (ตัวเองได้) — ไม่มีคูลดาวน์
-  //  (กลางคืนสกิลรองเป็น ฝันร้ายยามค่ำคืน — ไม่ต้องเลือกเป้า ทำงานผ่าน status ตอนโจมตี)
   const isSunrise = p.characterId === "oberon" && tier === "secondary" && !isNightRound(roundNumber);
   let sunriseTarget = null;
   if (isSunrise) {
@@ -827,6 +823,16 @@ function useSkill(id, tier, targets) {
     const t = tgs.length === 1 ? players[tgs[0]] : null;
     if (!t || !t.alive) return;
     sunriseTarget = t;
+  }
+  // ฝันร้ายยามค่ำคืน (โอเบรอน สกิลรองกลางคืน): เลือกเป้าหมาย 1 คน (คนอื่นเท่านั้น)
+  //  ทำงานหลังเปิดการ์ด — ความเสียหาย 1 หน่วย × จำนวนการหลับไหลที่เหลือของเป้าหมาย
+  const isNightmare = p.characterId === "oberon" && tier === "secondary" && isNightRound(roundNumber);
+  let nightmareTarget = null;
+  if (isNightmare) {
+    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
+    const t = tgs.length === 1 ? players[tgs[0]] : null;
+    if (!t || !t.alive || t.id === p.id) return;
+    nightmareTarget = t.id;
   }
 
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
@@ -941,6 +947,8 @@ function useSkill(id, tier, targets) {
     flashSuffix = ` — ใส่ ${t.name}`;
     lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (2 เทิร์นถัดมาเสียเลือดเทิร์นละ 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +1" : ""}`);
   }
+  // ---------- โอเบรอน: ฝันร้ายยามค่ำคืน — เก็บเป้าหมายไว้ ทำงานหลังเปิดการ์ด ----------
+  if (isNightmare) p.nightmareTarget = nightmareTarget;
 
   // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
   if (isMage) {
@@ -958,29 +966,27 @@ function useSkill(id, tier, targets) {
   // Everything For Humanity: ใช้เรจูอาคมบัญชาทั้ง 3 หมดทันทีตอนกด
   if (st === "humanity") p.reiju = 0;
 
-  // ทงคัสสึ 3 มื้อ (เทมาริ): นับชามสะสม — เกิน 2 ชาม = เทิร์นถัดไปจั่วเพิ่มไม่ได้,
-  // เกิน 6 ชาม = ครั้งถัดไปอิ่มเกิน ได้เกราะ 1 หน่วยแทนการฟื้นเลือด
+  // ทงคัสสึ 3 มื้อ (เทมาริ): นับชามสะสม (สูงสุด 3 ชาม) — เกิน 2 ชาม = เทิร์นถัดไปจั่วเพิ่มไม่ได้
   const isTonkatsu = p.characterId === "temari" && tier === "basic";
   if (isTonkatsu) {
-    p.tonkatsu = (p.tonkatsu || 0) + 1;
+    p.tonkatsu = Math.min(3, (p.tonkatsu || 0) + 1);
     if (p.tonkatsu > 2) p.noDrawNext = Math.max(p.noDrawNext || 0, 1);
-    if (p.tonkatsu > 6) {
-      p.armor = Math.min(maxArmorOf(p), p.armor + 1);
-      lastLog.push(`🍜 ${p.name} อิ่มเกินไป! ได้เกราะ +1 แทน (ชามที่ ${p.tonkatsu})`);
-    } else {
-      applyEffect(p, skill.effect);
-    }
-  } else {
-    applyEffect(p, skill.effect);
   }
+  applyEffect(p, skill.effect);
 
   // NewType Paradise: เติมกระสุน Beam Magnum +1
   if (st === "paradise") p.beamAmmo = Math.min(BEAM_AMMO, (p.beamAmmo || 0) + 1);
 
-  // Song for you (เทมาริ): ครั้งแรกเติมเกราะให้ตามโบนัสชาม — ครั้งที่ 2 เป็นต้นไปเพิ่มแค่เพดาน
-  if (st === "song" && !p.songUsedOnce) {
-    p.songUsedOnce = true;
-    p.armor = Math.min(maxArmorOf(p), p.armor + songBonus(p));
+  // Song for you (เทมาริ patch 1.7.6): นำชามทงคัสสึมาบัฟตัวเอง แล้วล้างชามทั้งหมด
+  //  1 ชาม = +1 พลังขิง (ซ้ำได้ 2 ครั้ง) — ชามที่เหลือ 1 ชาม = +1 โล่ (ซ้ำได้ 3 ครั้ง)
+  if (st === "song") {
+    const bowls = p.tonkatsu || 0;
+    const atk = Math.min(2, bowls);
+    const sh = Math.min(3, bowls - atk);
+    p.songAtk = atk;
+    p.shield += sh;
+    p.tonkatsu = 0;
+    lastLog.push(`🎵 ${p.name} Song for you — ใช้ทงคัสสึ ${bowls} ชาม: พลังขิง +${atk}${sh > 0 ? ` และโล่ +${sh}` : ""} (ล้างชามทั้งหมด)`);
   }
 
   // ANATA WAAAAAAAA: เก็บเป้าหมายไว้เป็นความลับ + เปิดเพลงจนกว่าทุกคนจะเปิดไพ่
@@ -1180,13 +1186,13 @@ function resolveRound() {
   }
   for (const p of combatants) if (!p.result) p.result = "safe";
 
-  // สกิลติดตัว หิวอะโปรดิวเซอร์ (เทมาริ): เป้าหมาย ANATA WAAAAAAAA แพ้หรือไพ่แตก
-  // -> โดนขิงจนช้ำ รับความเสียหายทันที (คิดแบบการโจมตีปกติ + โบนัส Song for you)
+  // สกิลติดตัว หิวอะโปรดิวเซอร์ (เทมาริ patch 1.7.6): เป้าหมาย ANATA WAAAAAAAA แพ้หรือไพ่แตก
+  // -> โดนขิงจนช้ำ รับความเสียหายตามโบนัส Song for you เท่านั้น (ไม่นับพลังโจมตีปกติ — สูงสุด 2)
   // ต่อให้เทมาริไม่ชนะ/แพ้ในตานั้นก็ตาม — และฉากของสกิลนี้ขึ้นก่อนทุกท่าไม้ตาย
   let anataFinalShown = false;
   for (const { u, t } of anataProcs) {
     if (!t.alive || !(bustedOf(t) || t.isLoser)) continue;
-    let dmg = 1 + (songActive(u) ? songBonus(u) : 0);
+    let dmg = songActive(u) ? (u.songAtk || 0) : 0;
     if ((t.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1); // ร่างไคจูรับเบาลง 1
     dealMixed(t, dmg);
     maybeBeatSave(t); // กันตายทำงานทันทีถ้าโดนขิงจนถึงตาย
@@ -1230,6 +1236,28 @@ function resolveRound() {
 // เปิดร่างท่าไม้ตาย (หลังเปิดไพ่) -> cutscene ก่อนสรุปผล (สรุปผลไว้ท้ายสุดเสมอ)
 //  หมายเหตุ: สกิลทั่วไปไม่มีแบนเนอร์ก่อนสรุปผลแล้ว — instant เด้งตอนใช้ / หลังเปิดไพ่ไปโชว์ตอนโจมตี
 function afterResolve() {
+  // ฝันร้ายยามค่ำคืน (โอเบรอน patch 1.7.6): ทำงานหลังเปิดการ์ด — เป้าหมายเดี่ยว
+  //  ความเสียหาย 1 หน่วย × จำนวนการหลับไหลที่เหลืออยู่ของเป้าหมาย (ผู้ใช้ไพ่แตก = สกิลไม่ทำงาน)
+  for (const p of alivePlayers()) {
+    if (!((p.statuses.nightmare || 0) > 0) || !p.nightmareTarget) continue;
+    const t = players[p.nightmareTarget];
+    p.nightmareTarget = null;
+    if (bustedOf(p)) {
+      lastLog.push(`💥 ${p.name} ไพ่แตก! ฝันร้ายยามค่ำคืนใช้งานไม่ได้ — แต้มสกิลเสียฟรี`);
+      continue;
+    }
+    if (!t || !t.alive) continue;
+    const sleep = t.statuses.sleep || 0;
+    const dmg = sleep;
+    if (dmg > 0) {
+      dealMixed(t, dmg);
+      maybeBeatSave(t);
+      maybeBeatMode(t);
+      maybeEva3(t);
+      t.wasAttacked = true;
+    }
+    lastLog.push(`🌘 ฝันร้ายยามค่ำคืน! ${p.name} เล่นงาน ${t.name} -${dmg} (การหลับไหล x${sleep})`);
+  }
   const activated = [];
   for (const p of alivePlayers()) {
     if (bustedOf(p)) continue; // ไพ่แตก = ท่าไม้ตายไม่ทำงาน (กันหลุดกรณีเพิ่งกดแล้วแตก)
@@ -1246,23 +1274,25 @@ function afterResolve() {
           p.hp = 1;
           p.armor = Math.min(maxArmorOf(p), p.armor + 3);
         }
-        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น)
+        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย
+        //  + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น) + ติด "ยามฟ้าสาง" +1 (คนหลับไม่ติดเพิ่ม)
         if (key === "lai") {
           for (const o of alivePlayers()) {
             if (o.id === p.id) continue;
             dealDirect(o, 1);
             maybeBeatSave(o);
             o.statuses.awaken = Math.max(o.statuses.awaken || 0, 2); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
+            if (!((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
             o.wasAttacked = true;
           }
-          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -1 (ไม่สนเกราะ) และมอบสถานะ "การตื่นขึ้น"`);
+          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -1 (ไม่สนเกราะ) มอบสถานะ "การตื่นขึ้น" และยามฟ้าสาง +1`);
         }
-        // Lie Like Vortigern (โอเบรอน กลางคืน): เกราะหมู่ +2 (ยกเว้นตัวเอง) แล้วกล่อมคนติดยามฟ้าสางให้หลับไหล
+        // Lie Like Vortigern (โอเบรอน กลางคืน): เกราะหมู่ +1 (ยกเว้นตัวเอง) แล้วกล่อมคนติดยามฟ้าสางให้หลับไหล
         if (key === "vortigern") {
           for (const o of alivePlayers()) {
             if (o.id === p.id) continue;
-            o.statuses.vortarmor = 4; // เพดานเกราะ +2 คงอยู่ 3 เทิร์น (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
-            o.armor = Math.min(maxArmorOf(o), o.armor + 2);
+            o.statuses.vortarmor = 4; // เพดานเกราะ +1 คงอยู่ 3 เทิร์น (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
+            o.armor = Math.min(maxArmorOf(o), o.armor + 1);
             const dawn = Math.min(3, o.statuses.dawn || 0); // ยามฟ้าสางสะสมได้ไม่เกิน 3 -> หลับสูงสุด 3 เทิร์น
             if (dawn > 0) {
               // เก็บจำนวนเทิร์นหลับตามจริง — sleepFresh กันการนับถอยหลังในเทิร์นที่เพิ่งโดนกล่อม
@@ -1277,14 +1307,18 @@ function afterResolve() {
           oberonDevour = ++transformCounter;
           // สนามของโอเบรอน: รีเซ็ตเวลากลางคืนให้เหลืออีก 3 เทิร์นนับจากเทิร์นถัดไป
           nightResetPending = true;
-          lastLog.push(`🌑 Lie Like Vortigern! ${p.name} มอบเกราะ +2 ให้ทุกคน (3 เทิร์น) — ราตรีกลืนกิน และรีเซ็ตกลางคืนเหลืออีก 3 เทิร์น`);
+          lastLog.push(`🌑 Lie Like Vortigern! ${p.name} มอบเกราะ +1 ให้ทุกคน (3 เทิร์น) — ราตรีกลืนกิน และรีเซ็ตกลางคืนเหลืออีก 3 เทิร์น`);
         }
-        const firstTime = !p.cutsceneShown[key];
-        triggerCutscene(p, key);
-        // ครั้งแรก (เล่นวีดีโอ): ต่อด้วยฉากประกาศเปลี่ยนร่าง (ระเบิด + เสียงพากย์) ก่อนขึ้นคนอื่น/สรุปผล
-        if (firstTime && key === "rachan") queueTransformAnnounce(p, "rachan");
-        // Vortigern: ต่อด้วยวีดีโอ ราตรีกลืนกิน (oberon_changefill.mp4) — ครั้งแรกเล่นเต็ม ครั้งถัดไปแจ้งเตือนเล็กๆ
-        if (key === "vortigern") triggerCutscene(p, "oberonChange");
+        // Vortigern (patch 1.7.6): ข้ามวีดีโอประจำท่าไม้ตาย — เล่นราตรีกลืนกิน (oberon_changefill.mp4) ทันที
+        //  จบแล้วฉากหลังกลางคืนกลายเป็น oberon_background.mp4 + เพลงประจำตัว (ผ่าน oberonDevour)
+        if (key === "vortigern") {
+          triggerCutscene(p, "oberonChange");
+        } else {
+          const firstTime = !p.cutsceneShown[key];
+          triggerCutscene(p, key);
+          // ครั้งแรก (เล่นวีดีโอ): ต่อด้วยฉากประกาศเปลี่ยนร่าง (ระเบิด + เสียงพากย์) ก่อนขึ้นคนอื่น/สรุปผล
+          if (firstTime && key === "rachan") queueTransformAnnounce(p, "rachan");
+        }
         lastLog.push(`✨ ${p.name} ${TRANSFORMS[key].label} ${TRANSFORMS[key].title}!`);
         activated.push(p);
       }
@@ -1366,11 +1400,10 @@ function doAttack(byId, targetId) {
   const lastStanding = ginga && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
   // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1 ทุกคนที่ติดบัฟ (2 เทิร์น)
   const veilAtk = (attacker.statuses.veil || 0) > 0;
-  // ฝันร้ายยามค่ำคืน (โอเบรอน สกิลรองกลางคืน): เปลี่ยนการโจมตีเทิร์นนี้เป็นการตีหมู่
-  const nightmareAtk = attacker.characterId === "oberon" && (attacker.statuses.nightmare || 0) > 0;
-  // การหลับไหลอันไม่สิ้นสุด (สกิลติดตัวโอเบรอน): ร่างกลางวันพลังโจมตีพื้นฐานเป็น 0 — ชนะจั่วก็ตีไม่เข้า
-  //  เว้นแต่มีบัฟม่านแห่งราตรี | ร่างกลางคืน (ราชาแห่งการหลอกลวง): โจมตีได้ปกติ 1 หน่วย
-  const oberonZero = attacker.characterId === "oberon" && !isNightRound(roundNumber) ? -1 : 0;
+  // การหลับไหลอันไม่สิ้นสุด (สกิลติดตัวโอเบรอน patch 1.7.6): พลังโจมตีพื้นฐานเป็น 0 ทั้งสองร่าง
+  //  ชนะจั่วก็ตีไม่เข้า เว้นแต่มีบัฟม่านแห่งราตรี (+1) — และร่างกลางวัน การโจมตีปกติติด "ยามฟ้าสาง" +1
+  const oberonZero = attacker.characterId === "oberon" ? -1 : 0;
+  const oberonDayAtk = attacker.characterId === "oberon" && !isNightRound(roundNumber);
 
   let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk; // Beam Magnum +2
   let dmg = base + ntdBonus;
@@ -1437,29 +1470,13 @@ function doAttack(byId, targetId) {
     if (splashHit.length) lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -1`);
   }
 
-  // ฝันร้ายยามค่ำคืน (โอเบรอน): ตีหมู่ — ผู้เล่นคนอื่นทุกคนรับความเสียหายเท่าเป้าหมายหลัก
-  //  (ไม่รวมโบนัสเฉพาะเป้าอย่าง NT-D — เกราะก่อนแล้วเลือด และไคจูรับเบาลง 1 ตามปกติ)
-  //  และทุกคนที่ถูกฝันร้ายเล่นงานจะติด "ยามฟ้าสาง" +1 (สูงสุด 3 — คนที่กำลังหลับไหลไม่ติดเพิ่ม)
-  if (nightmareAtk) {
-    const giveDawn = (o) => {
-      if (!o.alive || (o.statuses.sleep || 0) > 0) return;
-      o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
-    };
-    giveDawn(target);
-    let hitCount = 0;
-    for (const o of alivePlayers()) {
-      if (o.id === attacker.id || o.id === target.id) continue;
-      let admg = base;
-      if ((o.statuses.monster || 0) > 0) admg = Math.max(0, admg - 1);
-      dealMixed(o, admg);
-      maybeBeatSave(o);
-      maybeBeatMode(o);
-      maybeEva3(o);
-      giveDawn(o);
-      o.wasAttacked = true;
-      hitCount++;
-    }
-    lastLog.push(`🌙 ฝันร้ายยามค่ำคืน!${hitCount ? ` ผู้เล่นอื่นทุกคนรับความเสียหายด้วย -${base}` : ""} เป้าหมายที่ถูกเล่นงานติดยามฟ้าสาง +1`);
+  // การหลับไหลอันไม่สิ้นสุด (โอเบรอน patch 1.7.6): ยามกลางวัน การโจมตีปกติติด "ยามฟ้าสาง" +1 แก่เป้าหมาย
+  //  (สะสมสูงสุด 3 — คนที่กำลังหลับไหลไม่ติดเพิ่ม)
+  let dawnApplied = false;
+  if (oberonDayAtk && target.alive && !((target.statuses.sleep || 0) > 0)) {
+    target.statuses.dawn = Math.min(3, (target.statuses.dawn || 0) + 1);
+    dawnApplied = true;
+    lastLog.push(`🌅 การหลับไหลอันไม่สิ้นสุด: ${target.name} ติดยามฟ้าสาง +1`);
   }
 
   // Ginga no Uta: ถ้ากำจัดเป้าหมายที่เลือกได้ ต่ออายุท่าไม้ตาย +1 เทิร์น (ชดเชยการลดสถานะตอนจบเทิร์น)
@@ -1485,8 +1502,8 @@ function doAttack(byId, targetId) {
   if (humanityAtk) addFx(skillByStatus(attacker, "humanity"), "atk");
   if (spearAtk) addFx(skillByStatus(attacker, "spear"), "atk");
   if (veilAtk) addFx({ name: "ม่านแห่งราตรี +1", img: "/characters/oberon/oberon_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
-  if (nightmareAtk) addFx({ name: "ฝันร้ายยามค่ำคืน (ตีหมู่)", img: "/characters/oberon/oberon_skill2_night.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (oberonZero < 0 && !veilAtk) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (พลังโจมตี 0)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (dawnApplied) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (ยามฟ้าสาง +1)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (profitAtk > 0) addFx({ name: `กำไรเท่าตัวโว้ย +${profitAtk} (ทะลุเกราะ)`, img: "/characters/gambler/gambler_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
   if (isRevenge) addFx({ name: "NT-D System แก้แค้น +1", img: TRANSFORMS.ntd.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
@@ -1500,7 +1517,7 @@ function doAttack(byId, targetId) {
   lastAttack = {
     byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
     targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
-    dmg, aoe: ginga || nightmareAtk, revenge: isRevenge, skills: fxSkills,
+    dmg, aoe: ginga, revenge: isRevenge, skills: fxSkills,
   };
   gameState = "ATTACKING";
   // มีข้อมูลสกิลให้อ่าน -> ยืดเวลาอนิเมชันให้อ่านทัน
@@ -1664,7 +1681,7 @@ io.on("connection", (socket) => {
       statuses: {}, seen: {}, ntdTarget: null, transformAt: 0, cutsceneShown: {},
       armorLocked: false, beatSaved: false, skillUsedRound: false,
       beamAmmo: BEAM_AMMO, puddingUses: PUDDING_USES,
-      tonkatsu: 0, songUsedOnce: false, noDrawNext: 0, anataTargets: null,
+      tonkatsu: 0, songAtk: 0, noDrawNext: 0, anataTargets: null, nightmareTarget: null,
       gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0, noSkillNext: 0,
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       sunriseDrop: 0, sleepFresh: false,
