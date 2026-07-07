@@ -60,7 +60,6 @@ function isNightRound(n) {
 // ร่างกลางวัน/กลางคืนของโอเบรอน (สลับอัตโนมัติตามช่วงเวลา)
 const OBERON_MORNING_IMG = "/characters/oberon/oberon_morning.jpg";
 const OBERON_NIGHT_IMG = "/characters/oberon/oberon_night.jpg";
-const SUNRISE_CD = 4; // รุ่งอรุณแห่งวันใหม่: รออีก 3 เทิร์นถึงใช้ได้อีก (+1 ชดเชยการลด cd ตอนจบเทิร์นที่ใช้)
 
 // รูปร่างโอเจอร์ (ใช้ทั้งท่าไม้ตายสวมเกราะราชัน และ Beat Mode)
 const OHGER_FORM = "/characters/kuwagata/kuwakata_ohger_form.jpg";
@@ -448,8 +447,7 @@ function resetCombat(p) {
   p.mageUses = 0;         // จอมเวทย์ฝึกหัด: จำนวนครั้งที่กดในเทิร์นนี้ (สูงสุด 3)
   p.mageHealNext = 0;     // จอมเวทย์ฝึกหัด: ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้งที่ใช้
   p.humanityActivated = false; // Everything For Humanity เปิดแล้ว (ร่างสุดท้ายจนตาย + ตายเมื่อผลจบ)
-  p.sunriseCd = 0;   // โอเบรอน: คูลดาวน์รุ่งอรุณแห่งวันใหม่ (รอ 3 เทิร์น)
-  p.sunriseDrop = 0; // โอเบรอน: เทิร์นถัดมาพลังชีวิตลดลง 2 หน่วยอัตโนมัติ (หลังโดนฮีล 5)
+  p.sunriseDrop = 0; // โอเบรอน: จำนวนเทิร์นที่พลังชีวิตจะลดลงเทิร์นละ 1 อัตโนมัติ (หลังโดนฮีล 5)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -526,7 +524,7 @@ function buildStateFor(viewerId) {
         puddingUses: p.puddingUses,
         gamblerUses: p.gamblerUses, // แกมเบลอร์: จำนวนวอสก้าหน่อยน้องคงเหลือ
         profit: p.profit || 0,      // แกมเบลอร์: บัฟกำไรเท่าตัวโว้ยสะสม
-        sunriseCd: p.sunriseCd || 0, // โอเบรอน: คูลดาวน์รุ่งอรุณแห่งวันใหม่คงเหลือ
+        sunriseDrop: p.sunriseDrop || 0, // โอเบรอน: จำนวนเทิร์นที่จะเสียเลือด 1/เทิร์นจากรุ่งอรุณแห่งวันใหม่
         reiju: p.reiju,       // ฟุจิมารุ: เรจูอาคมบัญชาคงเหลือ (UI พิเศษ reiju0-3.jpg)
         mageUses: p.mageUses, // จอมเวทย์ฝึกหัด: กดไปแล้วกี่ครั้งในเทิร์นนี้ (สูงสุด 3)
         tonkatsu: p.tonkatsu || 0, // เทมาริ: ชามทงคัสสึสะสม (UI สะสมชาม)
@@ -671,12 +669,11 @@ function dealRound() {
     }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
-    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เทิร์นถัดมาพลังชีวิตลดลง 2 หน่วยอัตโนมัติ
+    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เสียพลังชีวิตเทิร์นละ 1 หน่วยแบบไม่สนเกราะ (รวม 2 เทิร์น)
     if ((p.sunriseDrop || 0) > 0) {
-      const drop = p.sunriseDrop;
-      p.sunriseDrop = 0;
-      for (let i = 0; i < drop; i++) loseHp(p);
-      lastLog.push(`🌄 ${p.name} ผลรุ่งอรุณแห่งวันใหม่จางลง — พลังชีวิตลดลง -${drop}`);
+      p.sunriseDrop--;
+      loseHp(p);
+      lastLog.push(`🌄 ${p.name} ผลรุ่งอรุณแห่งวันใหม่จางลง — พลังชีวิต -1${p.sunriseDrop > 0 ? ` (เหลืออีก ${p.sunriseDrop} เทิร์น)` : ""}`);
       if (p.hp <= 0) {
         p.hp = 0; p.alive = false; p.result = "dead"; p.cards = []; p.locked = true; p.busted = false;
         lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
@@ -818,11 +815,10 @@ function useSkill(id, tier, targets) {
   // ม่านแห่งราตรี (โอเบรอน): กดซ้ำไม่ได้จนกว่าผลเพิ่มพลังโจมตีจะหมด
   const isVeil = p.characterId === "oberon" && tier === "basic";
   if (isVeil && (p.statuses.veil || 0) > 0) return;
-  // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เลือกเป้าหมาย 1 คน (ตัวเองได้) + หลังใช้รออีก 3 เทิร์น
+  // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เลือกเป้าหมาย 1 คน (ตัวเองได้) — ไม่มีคูลดาวน์
   const isSunrise = p.characterId === "oberon" && tier === "secondary";
   let sunriseTarget = null;
   if (isSunrise) {
-    if ((p.sunriseCd || 0) > 0) return;
     const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
     const t = tgs.length === 1 ? players[tgs[0]] : null;
     if (!t || !t.alive) return;
@@ -931,16 +927,15 @@ function useSkill(id, tier, targets) {
     }
     lastLog.push(`🌙 ${p.name} ม่านแห่งราตรี — ทุกคนพลังโจมตี +1 (2 เทิร์น) ฟื้นเลือด/เกราะ +1 และติดยามฟ้าสาง (ยกเว้นผู้ใช้/คนหลับ)`);
   }
-  // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับลดเลือด 1 ในเทิร์นถัดมา (ไม่สนเกราะ) ----------
+  // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับเสียเลือด 1/เทิร์น 2 เทิร์น (ไม่สนเกราะ) ----------
   if (isSunrise && sunriseTarget) {
     const t = sunriseTarget;
     t.hp = Math.min(MAX_HP, t.hp + 5);
-    t.sunriseDrop = 1; // เทิร์นถัดมาลดลง 1 หน่วยอัตโนมัติ แบบไม่สนเกราะ
+    t.sunriseDrop = 2; // หลังจากนั้นลดลงรวม 2 หน่วย — หักเทิร์นละ 1 แบบไม่สนเกราะ
     // ยามฟ้าสาง +2 — ไม่ติดถ้าใช้กับตัวเอง หรือเป้าหมายกำลังหลับไหล (ผลก่อนหน้ายังไม่หมด)
     if (t.id !== p.id && !((t.statuses.sleep || 0) > 0)) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 2);
-    p.sunriseCd = SUNRISE_CD;
     flashSuffix = ` — ใส่ ${t.name}`;
-    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (เทิร์นถัดมาลดลง 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +2" : ""}`);
+    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (2 เทิร์นถัดมาเสียเลือดเทิร์นละ 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +2" : ""}`);
   }
 
   // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
@@ -1338,8 +1333,9 @@ function doAttack(byId, targetId) {
   const lastStanding = ginga && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
   // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1 ทุกคนที่ติดบัฟ (2 เทิร์น)
   const veilAtk = (attacker.statuses.veil || 0) > 0;
-  // การหลับไหลอันไม่สิ้นสุด (สกิลติดตัวโอเบรอน): พลังโจมตีพื้นฐานเป็น 0 — ชนะจั่วก็ตีไม่เข้า เว้นแต่มีบัฟม่านแห่งราตรี
-  const oberonZero = attacker.characterId === "oberon" ? -1 : 0;
+  // การหลับไหลอันไม่สิ้นสุด (สกิลติดตัวโอเบรอน): ร่างกลางวันพลังโจมตีพื้นฐานเป็น 0 — ชนะจั่วก็ตีไม่เข้า
+  //  เว้นแต่มีบัฟม่านแห่งราตรี | ร่างกลางคืน (ราชาแห่งการหลอกลวง): โจมตีได้ปกติ 1 หน่วย
+  const oberonZero = attacker.characterId === "oberon" && !isNightRound(roundNumber) ? -1 : 0;
 
   let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk; // Beam Magnum +2
   let dmg = base + ntdBonus;
@@ -1429,7 +1425,7 @@ function doAttack(byId, targetId) {
   if (humanityAtk) addFx(skillByStatus(attacker, "humanity"), "atk");
   if (spearAtk) addFx(skillByStatus(attacker, "spear"), "atk");
   if (veilAtk) addFx({ name: "ม่านแห่งราตรี +1", img: "/characters/oberon/oberon_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
-  if (attacker.characterId === "oberon" && !veilAtk) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (พลังโจมตี 0)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (oberonZero < 0 && !veilAtk) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (พลังโจมตี 0)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (profitAtk > 0) addFx({ name: `กำไรเท่าตัวโว้ย +${profitAtk} (ทะลุเกราะ)`, img: "/characters/gambler/gambler_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
   if (isRevenge) addFx({ name: "NT-D System แก้แค้น +1", img: TRANSFORMS.ntd.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
@@ -1470,8 +1466,6 @@ function endTurn() {
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
-    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): นับถอยหลังคูลดาวน์
-    if ((p.sunriseCd || 0) > 0) p.sunriseCd--;
     for (const k of Object.keys(p.seen || {})) {
       if (k === "ntd" || k === "beat" || k === "eva3") continue; // NT-D คงอยู่จนแก้แค้น / Beat Mode ถาวร / eva3 เปิดปิดตามเลือด
       if (!(p.statuses[k] > 0)) delete p.seen[k];
@@ -1610,7 +1604,7 @@ io.on("connection", (socket) => {
       tonkatsu: 0, songUsedOnce: false, noDrawNext: 0, anataTargets: null,
       gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0, noSkillNext: 0,
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
-      sunriseCd: 0, sunriseDrop: 0,
+      sunriseDrop: 0,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
