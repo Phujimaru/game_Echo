@@ -396,7 +396,7 @@ function firePassive(p, trigger) {
 function skillByStatus(p, status) {
   const ch = CHAR_BY_ID[p.characterId];
   if (!ch) return null;
-  for (const tier of ["basic", "secondary", "ultimate", "ultimateNight"]) {
+  for (const tier of ["basic", "secondary", "secondaryNight", "ultimate", "ultimateNight"]) {
     const s = ch[tier];
     if (s && s.effect && !Array.isArray(s.effect) && s.effect.type === "status" && s.effect.status === status) {
       return { name: s.name, img: s.img || null, by: p.name, color: POSITION_COLORS[p.position] || "#888" };
@@ -457,7 +457,7 @@ function resetCombat(p) {
 // ============================================================
 // สถานะที่ผู้เล่นคนอื่นเห็นได้ระหว่างช่วงจั่วการ์ด (patch 1.7.1): โชว์ให้ดูของกันและกันได้
 //  ยกเว้นสกิลหลังเปิดไพ่ที่เพิ่งกดรอไว้ในเทิร์นนี้ — เปิดเผยเมื่อทำงานแล้วเท่านั้น (กันสปอยล์)
-const HIDDEN_UNTIL_REVEAL = ["beam", "ohger", "absorb", "spear"];
+const HIDDEN_UNTIL_REVEAL = ["beam", "ohger", "absorb", "spear", "nightmare"];
 function publicStatuses(p) {
   const out = {};
   for (const [k, v] of Object.entries(p.statuses || {})) {
@@ -533,10 +533,11 @@ function buildStateFor(viewerId) {
         alive: p.alive,
         statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : publicStatuses(p),
         character: {
-          // โอเบรอน: กลางคืนสลับชื่อ + ท่าไม้ตายเป็นเวอร์ชันกลางคืน (Lie Like Vortigern)
+          // โอเบรอน: กลางคืนสลับชื่อ + สกิลรอง/ท่าไม้ตายเป็นเวอร์ชันกลางคืน (ฝันร้ายยามค่ำคืน / Lie Like Vortigern)
           id: ch.id, name: nightNow && ch.nightName ? ch.nightName : ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
-          basic: pub(ch.basic), secondary: pub(ch.secondary),
+          basic: pub(ch.basic),
+          secondary: pub(nightNow && ch.secondaryNight ? ch.secondaryNight : ch.secondary),
           ultimate: pub(nightNow && ch.ultimateNight ? ch.ultimateNight : ch.ultimate),
         },
         dmgHp: p.dmgHp, dmgArmor: p.dmgArmor, gainedSkill: p.gainedSkill,
@@ -670,14 +671,14 @@ function dealRound() {
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
     // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เสียพลังชีวิตเทิร์นละ 1 หน่วยแบบไม่สนเกราะ (รวม 2 เทิร์น)
+    //  ผลด้านลบจากสกิลหักเลือดได้เรื่อยๆ แต่ห้ามตาย — ค้างที่พลังชีวิต 1 หน่วย
     if ((p.sunriseDrop || 0) > 0) {
       p.sunriseDrop--;
-      loseHp(p);
-      lastLog.push(`🌄 ${p.name} ผลรุ่งอรุณแห่งวันใหม่จางลง — พลังชีวิต -1${p.sunriseDrop > 0 ? ` (เหลืออีก ${p.sunriseDrop} เทิร์น)` : ""}`);
-      if (p.hp <= 0) {
-        p.hp = 0; p.alive = false; p.result = "dead"; p.cards = []; p.locked = true; p.busted = false;
-        lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
-        continue;
+      if (p.hp > 1 || (p.tempHp || 0) > 0) {
+        loseHp(p);
+        lastLog.push(`🌄 ${p.name} ผลรุ่งอรุณแห่งวันใหม่จางลง — พลังชีวิต -1${p.sunriseDrop > 0 ? ` (เหลืออีก ${p.sunriseDrop} เทิร์น)` : ""}`);
+      } else {
+        lastLog.push(`🌄 ${p.name} ผลรุ่งอรุณแห่งวันใหม่จางลง — พลังชีวิตเหลือ 1 จึงไม่ลดต่อ`);
       }
     }
 
@@ -710,10 +711,10 @@ function dealRound() {
     p.result = null;
 
     // หลับไหล (Lie Like Vortigern โอเบรอน): ออกการกระทำใดๆ ไม่ได้ทั้งเทิร์น
-    // และเสียพลังชีวิตแบบไม่สนเกราะเทิร์นละ 1 หน่วย — ไม่ถึงตายจากผลนี้ (เลือดเหลือ 2 จะไม่ลดต่อ)
+    // และเสียพลังชีวิตแบบไม่สนเกราะเทิร์นละ 1 หน่วย — หักได้เรื่อยๆ แต่ห้ามตาย (ค้างที่ 1 หน่วย)
     if ((p.statuses.sleep || 0) > 0) {
       p.locked = true;
-      if (p.hp > 2) { p.hp--; p.dmgHp++; }
+      if (p.hp > 1) { p.hp--; p.dmgHp++; }
       lastLog.push(`💤 ${p.name} หลับไหลจากคำลวงของราชาภูติ — ขยับไม่ได้ (เหลืออีก ${p.statuses.sleep} เทิร์น)`);
     }
   }
@@ -766,8 +767,9 @@ function useSkill(id, tier, targets) {
   const ch = CHAR_BY_ID[p.characterId];
   let skill = ch && ch[tier];
   if (!skill) return;
-  // โอเบรอน: ท่าไม้ตายสลับตามช่วงเวลา — กลางคืนใช้ Lie Like Vortigern แทน
+  // โอเบรอน: ท่าไม้ตาย/สกิลรองสลับตามช่วงเวลา — กลางคืนใช้ Lie Like Vortigern / ฝันร้ายยามค่ำคืน แทน
   if (tier === "ultimate" && ch.ultimateNight && isNightRound(roundNumber)) skill = ch.ultimateNight;
+  if (tier === "secondary" && ch.secondaryNight && isNightRound(roundNumber)) skill = ch.secondaryNight;
   if ((p.statuses.noskill || 0) > 0) return; // โดนหอกลองกินัสปัก: เทิร์นนี้ใช้สกิลไม่ได้
 
   // เวลาทอง (แกมเบลอร์): แต้มที่ใช้ของสกิลพื้นฐาน/สกิลรองลดครึ่งหนึ่ง
@@ -815,8 +817,9 @@ function useSkill(id, tier, targets) {
   // ม่านแห่งราตรี (โอเบรอน): กดซ้ำไม่ได้จนกว่าผลเพิ่มพลังโจมตีจะหมด
   const isVeil = p.characterId === "oberon" && tier === "basic";
   if (isVeil && (p.statuses.veil || 0) > 0) return;
-  // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เลือกเป้าหมาย 1 คน (ตัวเองได้) — ไม่มีคูลดาวน์
-  const isSunrise = p.characterId === "oberon" && tier === "secondary";
+  // รุ่งอรุณแห่งวันใหม่ (โอเบรอน สกิลรองกลางวัน): เลือกเป้าหมาย 1 คน (ตัวเองได้) — ไม่มีคูลดาวน์
+  //  (กลางคืนสกิลรองเป็น ฝันร้ายยามค่ำคืน — ไม่ต้องเลือกเป้า ทำงานผ่าน status ตอนโจมตี)
+  const isSunrise = p.characterId === "oberon" && tier === "secondary" && !isNightRound(roundNumber);
   let sunriseTarget = null;
   if (isSunrise) {
     const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
@@ -922,20 +925,20 @@ function useSkill(id, tier, targets) {
       o.statuses.veil = Math.max(o.statuses.veil || 0, 2); // พลังโจมตี +1 คงอยู่ 2 เทิร์น (รวมตัวเอง)
       o.hp = Math.min(MAX_HP, o.hp + 1);                   // ฟื้นพลังชีวิตทุกคน +1 (รวมตัวเอง)
       o.armor = Math.min(maxArmorOf(o), o.armor + 1);      // ฟื้นเกราะทุกคน +1 (รวมตัวเอง)
-      // ยามฟ้าสาง ถาวร (สะสมสูงสุด 3) — คนที่กำลังหลับไหลจะไม่รับเพิ่ม (ผลก่อนหน้ายังไม่หมด)
-      if (o.id !== p.id && !((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
+      // ยามฟ้าสาง +2 ถาวร (สะสมสูงสุด 3) — คนที่กำลังหลับไหลจะไม่รับเพิ่ม (ผลก่อนหน้ายังไม่หมด)
+      if (o.id !== p.id && !((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 2);
     }
-    lastLog.push(`🌙 ${p.name} ม่านแห่งราตรี — ทุกคนพลังโจมตี +1 (2 เทิร์น) ฟื้นเลือด/เกราะ +1 และติดยามฟ้าสาง (ยกเว้นผู้ใช้/คนหลับ)`);
+    lastLog.push(`🌙 ${p.name} ม่านแห่งราตรี — ทุกคนพลังโจมตี +1 (2 เทิร์น) ฟื้นเลือด/เกราะ +1 และติดยามฟ้าสาง +2 (ยกเว้นผู้ใช้/คนหลับ)`);
   }
   // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับเสียเลือด 1/เทิร์น 2 เทิร์น (ไม่สนเกราะ) ----------
   if (isSunrise && sunriseTarget) {
     const t = sunriseTarget;
     t.hp = Math.min(MAX_HP, t.hp + 5);
-    t.sunriseDrop = 2; // หลังจากนั้นลดลงรวม 2 หน่วย — หักเทิร์นละ 1 แบบไม่สนเกราะ
-    // ยามฟ้าสาง +2 — ไม่ติดถ้าใช้กับตัวเอง หรือเป้าหมายกำลังหลับไหล (ผลก่อนหน้ายังไม่หมด)
-    if (t.id !== p.id && !((t.statuses.sleep || 0) > 0)) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 2);
+    t.sunriseDrop = 2; // หลังจากนั้นลดลงรวม 2 หน่วย — หักเทิร์นละ 1 แบบไม่สนเกราะ (ไม่ถึงตาย ค้างที่ 1)
+    // ยามฟ้าสาง +1 — ไม่ติดถ้าใช้กับตัวเอง หรือเป้าหมายกำลังหลับไหล (ผลก่อนหน้ายังไม่หมด)
+    if (t.id !== p.id && !((t.statuses.sleep || 0) > 0)) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 1);
     flashSuffix = ` — ใส่ ${t.name}`;
-    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (2 เทิร์นถัดมาเสียเลือดเทิร์นละ 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +2" : ""}`);
+    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (2 เทิร์นถัดมาเสียเลือดเทิร์นละ 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +1" : ""}`);
   }
 
   // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
@@ -1333,6 +1336,8 @@ function doAttack(byId, targetId) {
   const lastStanding = ginga && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
   // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1 ทุกคนที่ติดบัฟ (2 เทิร์น)
   const veilAtk = (attacker.statuses.veil || 0) > 0;
+  // ฝันร้ายยามค่ำคืน (โอเบรอน สกิลรองกลางคืน): เปลี่ยนการโจมตีเทิร์นนี้เป็นการตีหมู่
+  const nightmareAtk = attacker.characterId === "oberon" && (attacker.statuses.nightmare || 0) > 0;
   // การหลับไหลอันไม่สิ้นสุด (สกิลติดตัวโอเบรอน): ร่างกลางวันพลังโจมตีพื้นฐานเป็น 0 — ชนะจั่วก็ตีไม่เข้า
   //  เว้นแต่มีบัฟม่านแห่งราตรี | ร่างกลางคืน (ราชาแห่งการหลอกลวง): โจมตีได้ปกติ 1 หน่วย
   const oberonZero = attacker.characterId === "oberon" && !isNightRound(roundNumber) ? -1 : 0;
@@ -1402,6 +1407,24 @@ function doAttack(byId, targetId) {
     if (splashHit.length) lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -1`);
   }
 
+  // ฝันร้ายยามค่ำคืน (โอเบรอน): ตีหมู่ — ผู้เล่นคนอื่นทุกคนรับความเสียหายเท่าเป้าหมายหลัก
+  //  (ไม่รวมโบนัสเฉพาะเป้าอย่าง NT-D — เกราะก่อนแล้วเลือด และไคจูรับเบาลง 1 ตามปกติ)
+  if (nightmareAtk) {
+    let hitCount = 0;
+    for (const o of alivePlayers()) {
+      if (o.id === attacker.id || o.id === target.id) continue;
+      let admg = base;
+      if ((o.statuses.monster || 0) > 0) admg = Math.max(0, admg - 1);
+      dealMixed(o, admg);
+      maybeBeatSave(o);
+      maybeBeatMode(o);
+      maybeEva3(o);
+      o.wasAttacked = true;
+      hitCount++;
+    }
+    if (hitCount) lastLog.push(`🌙 ฝันร้ายยามค่ำคืน! ผู้เล่นอื่นทุกคนรับความเสียหายด้วย -${base}`);
+  }
+
   // Ginga no Uta: ถ้ากำจัดเป้าหมายที่เลือกได้ ต่ออายุท่าไม้ตาย +1 เทิร์น (ชดเชยการลดสถานะตอนจบเทิร์น)
   if (attacker.characterId === "hikaru" && ginga && hpBefore > 0 && target.hp <= 0) {
     attacker.statuses.ginga = (attacker.statuses.ginga || 0) + 1;
@@ -1425,6 +1448,7 @@ function doAttack(byId, targetId) {
   if (humanityAtk) addFx(skillByStatus(attacker, "humanity"), "atk");
   if (spearAtk) addFx(skillByStatus(attacker, "spear"), "atk");
   if (veilAtk) addFx({ name: "ม่านแห่งราตรี +1", img: "/characters/oberon/oberon_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (nightmareAtk) addFx({ name: "ฝันร้ายยามค่ำคืน (ตีหมู่)", img: "/characters/oberon/oberon_skill2_night.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (oberonZero < 0 && !veilAtk) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (พลังโจมตี 0)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (profitAtk > 0) addFx({ name: `กำไรเท่าตัวโว้ย +${profitAtk} (ทะลุเกราะ)`, img: "/characters/gambler/gambler_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
@@ -1439,7 +1463,7 @@ function doAttack(byId, targetId) {
   lastAttack = {
     byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
     targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
-    dmg, aoe: ginga, revenge: isRevenge, skills: fxSkills,
+    dmg, aoe: ginga || nightmareAtk, revenge: isRevenge, skills: fxSkills,
   };
   gameState = "ATTACKING";
   // มีข้อมูลสกิลให้อ่าน -> ยืดเวลาอนิเมชันให้อ่านทัน

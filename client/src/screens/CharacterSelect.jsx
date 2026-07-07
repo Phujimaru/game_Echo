@@ -176,8 +176,9 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
               <div className="grid grid-cols-2 auto-rows-fr gap-3 flex-1 min-h-0">
                 <SkillTile label="สกิลติดตัว" skill={sel.passive} />
                 <SkillTile label="สกิลพื้นฐาน" skill={sel.basic} />
-                <SkillTile label="สกิลรอง" skill={sel.secondary} />
-                {/* โอเบรอน: ท่าไม้ตายสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ทั้ง 2 ท่า */}
+                {/* โอเบรอน: สกิลรอง/ท่าไม้ตายสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
+                <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
+                {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
                 <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />
                 {sel.ultimateNight && <SkillTile label="ท่าไม้ตาย (กลางคืน)" skill={sel.ultimateNight} />}
               </div>

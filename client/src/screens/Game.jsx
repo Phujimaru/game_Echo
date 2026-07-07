@@ -352,7 +352,8 @@ const STATUS_INFO = {
   veil:      { icon: "🌙", label: "ม่านราตรี", cls: "bg-echo-magenta", desc: "ม่านแห่งราตรี: พลังโจมตี +1 หน่วย" },
   dawn:      { icon: "🌅", label: "ฟ้าสาง", cls: "bg-echo-gold text-gray-900", desc: "ยามฟ้าสาง: สะสมถาวร (สูงสุด 3) — Lie Like Vortigern จะกล่อมหลับตามจำนวนสแตค" },
   awaken:    { icon: "⏰", label: "ตื่นขึ้น", cls: "bg-echo-cyan text-gray-900", desc: "การตื่นขึ้น: ฟื้นพลังชีวิตเทิร์นละ 1 — ถ้าติดคู่ยามฟ้าสาง ดาเมจแพ้/แตก +1 (เสียการตื่นขึ้น 1 เมื่อเกิดผล)" },
-  sleep:     { icon: "💤", label: "หลับไหล", cls: "bg-echo-hp", desc: "หลับไหล: ออกการกระทำใดๆ ไม่ได้ และเสียเลือด 1/เทิร์นไม่สนเกราะ (ไม่ต่ำกว่า 2)" },
+  sleep:     { icon: "💤", label: "หลับไหล", cls: "bg-echo-hp", desc: "หลับไหล: ออกการกระทำใดๆ ไม่ได้ และเสียเลือด 1/เทิร์นไม่สนเกราะ (ไม่ถึงตาย — ค้างที่ 1)" },
+  nightmare: { icon: "🌘", label: "ฝันร้าย", cls: "bg-echo-magenta", desc: "ฝันร้ายยามค่ำคืน: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — ผู้เล่นอื่นทุกคนรับความเสียหายด้วย" },
   vortarmor: { icon: "🛡️", label: "เกราะราตรี", cls: "bg-echo-armor", desc: "Lie Like Vortigern: เพดานเกราะ +2 ชั่วคราว" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
@@ -730,8 +731,9 @@ export default function Game({ state }) {
     clickSound();
     // ท่าไม้ตายเทมาริ: เข้าโหมดเลือกเป้าหมาย 2 คนก่อน (ยังไม่ส่งไป server)
     if (tier === "ultimate" && ch?.id === "temari") { setAnataSel([]); setSkillOpen(false); return; }
-    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เข้าโหมดเลือกเป้าหมาย 1 คน (ตัวเองได้) ก่อนส่งไป server
-    if (tier === "secondary" && ch?.id === "oberon") { setDawnSel(true); setSkillOpen(false); return; }
+    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน สกิลรองกลางวัน): เข้าโหมดเลือกเป้าหมาย 1 คน (ตัวเองได้) ก่อนส่งไป server
+    //  กลางคืนสกิลรองเป็น ฝันร้ายยามค่ำคืน (ตีหมู่) — ไม่ต้องเลือกเป้า ส่งได้เลย
+    if (tier === "secondary" && ch?.id === "oberon" && !nightNow) { setDawnSel(true); setSkillOpen(false); return; }
     socket.emit("useSkill", { tier });
     setSkillOpen(false);
   };
