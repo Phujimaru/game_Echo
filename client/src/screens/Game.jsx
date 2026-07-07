@@ -276,12 +276,29 @@ function Portrait({ p, className, rounded = "rounded-2xl" }) {
   );
 }
 
-function Shield({ on }) {
+function Shield({ on, size = 16 }) {
   return (
-    <svg width="16" height="18" viewBox="0 0 24 24">
+    <svg width={size} height={Math.round(size * 1.125)} viewBox="0 0 24 24" className="shrink-0">
       <path d="M12 2 L21 6 V12 C21 17 12 22 12 22 C12 22 3 17 3 12 V6 Z"
         fill={on ? "#3b82c4" : "transparent"} stroke="#3b82c4" strokeWidth="2" />
     </svg>
+  );
+}
+
+// ---------- แถวเลือด + เกราะ (ใช้ร่วมกันทุกจุด) ----------
+//  บังคับอยู่บรรทัดเดียวแนวนอนเสมอ ไม่หักขึ้นบรรทัดใหม่ตามความยาว — sm = ขนาดเล็ก (การ์ดคู่ต่อสู้มือถือ)
+function LifeBar({ p, sm, className = "" }) {
+  return (
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${className}`}>
+      <span className={`${sm ? "text-sm" : "text-lg"} leading-none whitespace-nowrap`}>
+        {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
+      </span>
+      {p.tempHp > 0 && <span className={`${sm ? "text-xs" : "text-sm"} text-echo-gold font-bold`}>💛{p.tempHp}</span>}
+      <span className="inline-flex gap-0.5 shrink-0">
+        {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} size={sm ? 12 : 16} />)}
+      </span>
+      {p.shield > 0 && <span className={`${sm ? "text-xs" : "text-sm"} text-echo-cyan font-bold`}>+🛡️{p.shield}</span>}
+    </span>
   );
 }
 
@@ -289,16 +306,7 @@ function Shield({ on }) {
 function Stats({ p, center }) {
   return (
     <div className={center ? "flex flex-col items-center gap-1" : ""}>
-      <div className="flex items-center gap-1.5">
-        <span className="text-lg leading-none">
-          {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
-        </span>
-        {p.tempHp > 0 && <span className="text-sm text-echo-gold font-bold">💛{p.tempHp}</span>}
-        <span className="flex gap-0.5">
-          {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
-        </span>
-        {p.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{p.shield}</span>}
-      </div>
+      <LifeBar p={p} />
       <div className="flex gap-0.5 mt-1">
         {Array.from({ length: p.maxSkill }, (_, i) => (
           <span key={i} className={`w-3.5 h-3.5 rounded-[3px] ${i < p.skillPoints ? "bg-echo-gold" : "bg-white/15 border border-white/20"}`} />
@@ -459,14 +467,8 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked, onInspect }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="truncate text-base font-black" style={{ color: p.color }}>{p.name}</div>
-        <div className="text-sm leading-none whitespace-nowrap">
-          {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
-          {p.tempHp > 0 && <span className="text-xs text-echo-gold font-bold"> 💛{p.tempHp}</span>}
-        </div>
-        <div className="flex items-center gap-0.5 mt-0.5">
-          {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
-          {p.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{p.shield}</span>}
-        </div>
+        {/* เลือด + เกราะ อยู่บรรทัดเดียวแนวนอนเสมอ */}
+        <LifeBar p={p} sm className="mt-0.5" />
         <StatusChips p={p} left />
       </div>
       {summary && p.score !== null && (
@@ -762,9 +764,11 @@ export default function Game({ state }) {
   }, [state.oberonBg]);
   useEffect(() => {
     if (!cycleFx) return;
+    // ระหว่าง CUTSCENE แบนเนอร์ยังไม่ถูกแสดง (จอวีดีโอเต็มจอ) — รอวีดีโอจบก่อนค่อยเริ่มนับถอยหลัง
+    if (phase === "CUTSCENE") return;
     const t = setTimeout(() => setCycleFx(null), 3500);
     return () => clearTimeout(t);
-  }, [cycleFx]);
+  }, [cycleFx, phase]);
   // ปิดเมนูเรจูอาคมบัญชาอัตโนมัติเมื่อใช้ไม่ได้แล้ว (พ้นช่วงจั่วการ์ด / เส้นหมด)
   useEffect(() => {
     if (reijuOpen && !reijuUsable) setReijuOpen(false);
@@ -864,12 +868,9 @@ export default function Game({ state }) {
                 <div className="h-full transition-all" style={{ width: `${Math.min(100, ((me.score || 0) / 21) * 100)}%`, background: me.busted ? "#c0392b" : "#fff" }} />
               </div>
 
-              {/* พลังชีวิต + เกราะ + สถานะ + หลอดสกิล */}
+              {/* พลังชีวิต + เกราะ (บรรทัดเดียวเสมอ) + สถานะ + หลอดสกิล */}
               <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2">
-                <span className="flex text-lg leading-none">{Array.from({ length: me.maxHp }, (_, i) => <span key={i}>{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
-                {me.tempHp > 0 && <span className="text-sm text-echo-gold font-bold">💛{me.tempHp}</span>}
-                <span className="flex gap-0.5">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
-                {me.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{me.shield}</span>}
+                <LifeBar p={me} />
                 <StatusChips p={me} left />
                 <span className="ml-auto flex items-center gap-1.5">
                   <span className="flex gap-1 p-1 rounded-lg bg-black/25">
@@ -1103,14 +1104,11 @@ export default function Game({ state }) {
                   </div>
                 </div>
 
-                {/* พลังชีวิต + เกราะ */}
+                {/* พลังชีวิต + เกราะ (บรรทัดเดียวเสมอ — ป้ายสถานะเท่านั้นที่หักบรรทัดได้) */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap text-sm">
-                  <span className="font-bold opacity-90">พลังชีวิต</span>
-                  <span className="flex">{Array.from({ length: me.maxHp }, (_, i) => <span key={i} className="text-lg leading-none">{i < me.hp ? "❤️" : "🖤"}</span>)}</span>
-                  {me.tempHp > 0 && <span className="text-xs text-echo-gold font-bold">💛{me.tempHp}</span>}
-                  <span className="flex gap-0.5 ml-1">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
-                  {me.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{me.shield}</span>}
-                  <span className="font-bold opacity-90">เกราะ</span>
+                  <span className="font-bold opacity-90 shrink-0">พลังชีวิต</span>
+                  <LifeBar p={me} />
+                  <span className="font-bold opacity-90 shrink-0">เกราะ</span>
                   <StatusChips p={me} />
                 </div>
 

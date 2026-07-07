@@ -94,6 +94,8 @@ const TRANSFORMS = {
   // (ฉากหลัง "ราตรีกลืนกิน" ไม่ผูกกับท่าไม้ตาย — ทำงานเองทุกครั้งที่เข้ากลางคืนขณะมีโอเบรอนอยู่ในเกม)
   lai:       { img: "/characters/oberon/oberon_skill3_morning.webp", video: "/characters/oberon/oberon_final_morning.mp4", title: "LAI RHYME GOODFELLOW", label: "ปล่อยท่าไม้ตาย", seconds: 14, music: null, afterReveal: true },
   vortigern: { img: "/characters/oberon/oberon_skill3_night.jpg", video: "/characters/oberon/oberon_final_night.mp4", title: "LIE LIKE VORTIGERN", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: null, afterReveal: true },
+  // oberonChange: ต่อจากวีดีโอ Vortigern — ราตรีกลืนกิน (16 วิ) แล้วฉากหลังกลางคืนกลายเป็น oberon_background.mp4
+  oberonChange: { img: OBERON_NIGHT_IMG, video: "/characters/oberon/oberon_changefill.mp4", title: "ราตรีกลืนกิน", label: "ราตรีถูกครอบงำ", seconds: 17, music: null, afterReveal: false },
   // oberonNight: สลับร่างตอนเข้ากลางคืน (วีดีโอ 5 วิ) | oberonDay: กลับร่างกลางวัน = แจ้งเตือนปกติ ไม่มีวีดีโอ
   oberonNight: { img: OBERON_NIGHT_IMG, video: "/characters/oberon/morning_tonight.mp4", title: "ราชาแห่งการหลอกลวง", label: "สลับร่างยามราตรี", seconds: 6, music: null, afterReveal: false },
   oberonDay:   { img: OBERON_MORNING_IMG, video: null, title: "ราชาแห่งภูติ", label: "กลับคืนร่างกลางวัน", seconds: 0, music: null, afterReveal: false },
@@ -1220,16 +1222,16 @@ function afterResolve() {
           p.hp = 1;
           p.armor = Math.min(maxArmorOf(p), p.armor + 3);
         }
-        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 2 หน่วย + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 2 เทิร์น)
+        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น)
         if (key === "lai") {
           for (const o of alivePlayers()) {
             if (o.id === p.id) continue;
-            dealDirect(o, 2);
+            dealDirect(o, 1);
             maybeBeatSave(o);
-            o.statuses.awaken = Math.max(o.statuses.awaken || 0, 3); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
+            o.statuses.awaken = Math.max(o.statuses.awaken || 0, 2); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
             o.wasAttacked = true;
           }
-          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -2 (ไม่สนเกราะ) และมอบสถานะ "การตื่นขึ้น"`);
+          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -1 (ไม่สนเกราะ) และมอบสถานะ "การตื่นขึ้น"`);
         }
         // Lie Like Vortigern (โอเบรอน กลางคืน): เกราะหมู่ +2 (ยกเว้นตัวเอง) แล้วกล่อมคนติดยามฟ้าสางให้หลับไหล
         if (key === "vortigern") {
@@ -1254,6 +1256,8 @@ function afterResolve() {
         triggerCutscene(p, key);
         // ครั้งแรก (เล่นวีดีโอ): ต่อด้วยฉากประกาศเปลี่ยนร่าง (ระเบิด + เสียงพากย์) ก่อนขึ้นคนอื่น/สรุปผล
         if (firstTime && key === "rachan") queueTransformAnnounce(p, "rachan");
+        // Vortigern: ต่อด้วยวีดีโอ ราตรีกลืนกิน (oberon_changefill.mp4) — ครั้งแรกเล่นเต็ม ครั้งถัดไปแจ้งเตือนเล็กๆ
+        if (key === "vortigern") triggerCutscene(p, "oberonChange");
         lastLog.push(`✨ ${p.name} ${TRANSFORMS[key].label} ${TRANSFORMS[key].title}!`);
         activated.push(p);
       }
