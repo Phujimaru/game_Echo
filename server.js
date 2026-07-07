@@ -448,6 +448,7 @@ function resetCombat(p) {
   p.mageHealNext = 0;     // จอมเวทย์ฝึกหัด: ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้งที่ใช้
   p.humanityActivated = false; // Everything For Humanity เปิดแล้ว (ร่างสุดท้ายจนตาย + ตายเมื่อผลจบ)
   p.sunriseDrop = 0; // โอเบรอน: จำนวนเทิร์นที่พลังชีวิตจะลดลงเทิร์นละ 1 อัตโนมัติ (หลังโดนฮีล 5)
+  p.sleepFresh = false; // หลับไหล: เทิร์นที่เพิ่งโดนกล่อมยังไม่เริ่มนับ/ยังโจมตีได้
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -1198,6 +1199,31 @@ function resolveRound() {
     }
   }
 
+  // สกิลติดตัว 1 เอวา 13: เลือดหมดตั้งแต่ช่วงสรุปผล (แพ้จั่ว/แตก/โดนขิง) ขณะ Fourth Impact ยังอยู่
+  //  -> ตกรอบและระเบิดทันที ไม่ต้องรอจบเทิร์น (เลือดเหลือ 0 แล้ว ไม่ควรรอโดนตีอีกรอบ)
+  for (const e of combatants) {
+    if (!(e.alive && e.hp <= 0 && e.characterId === "eva13" && (e.statuses.fourth || 0) > 0)) continue;
+    e.hp = 0; e.alive = false; e.result = "dead"; e.locked = true;
+    lastLog.push(`💀 ${e.name} เลือดจริงหมด ตกรอบ!`);
+    lastLog.push(`💥 ${e.name} ไม่สามารถแก้ไขอะไรได้อีกแล้ว — ทุกสิ่งทุกอย่างไร้ความหมาย! ระเบิดใส่ทุกคน -${EVA_BLAST_DMG}`);
+    for (const o of alivePlayers()) {
+      if (o.id === e.id) continue;
+      dealMixed(o, EVA_BLAST_DMG);
+      maybeBeatSave(o);
+      maybeBeatMode(o);
+      maybeEva3(o);
+      o.wasAttacked = true;
+    }
+    triggerCutscene(e, "evaboom");
+    // คนที่โดนแรงระเบิดจนเลือดหมด ตกรอบทันทีเช่นกัน
+    for (const o of Object.values(players)) {
+      if (o.alive && o.hp <= 0) {
+        o.hp = 0; o.alive = false; o.result = "dead"; o.locked = true;
+        lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
+      }
+    }
+  }
+
   afterResolve();
 }
 
@@ -1237,9 +1263,12 @@ function afterResolve() {
             if (o.id === p.id) continue;
             o.statuses.vortarmor = 4; // เพดานเกราะ +2 คงอยู่ 3 เทิร์น (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
             o.armor = Math.min(maxArmorOf(o), o.armor + 2);
-            const dawn = o.statuses.dawn || 0;
+            const dawn = Math.min(3, o.statuses.dawn || 0); // ยามฟ้าสางสะสมได้ไม่เกิน 3 -> หลับสูงสุด 3 เทิร์น
             if (dawn > 0) {
-              o.statuses.sleep = dawn + 1; // หลับตามจำนวนยามฟ้าสาง (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
+              // เก็บจำนวนเทิร์นหลับตามจริง — sleepFresh กันการนับถอยหลังในเทิร์นที่เพิ่งโดนกล่อม
+              // (เริ่มหลับจริงเทิร์นถัดไป และป้ายสถานะโชว์เลขตรงกับจำนวนเทิร์นที่หลับ)
+              o.statuses.sleep = dawn;
+              o.sleepFresh = true;
               lastLog.push(`💤 ${o.name} ต้องคำลวงของราชาภูติ — หลับไหล ${dawn} เทิร์น!`);
             }
           }
@@ -1287,7 +1316,8 @@ function attackableTargets(atkId) {
 function afterSummary() {
   const winner = players[roundWinnerId];
   // หลับไหล (Lie Like Vortigern): ผู้ชนะที่ยังหลับอยู่ ออกการกระทำไม่ได้ -> ไม่มีเทิร์นโจมตี
-  if (winner && winner.alive && (winner.statuses.sleep || 0) > 0) {
+  //  (เทิร์นที่เพิ่งโดนกล่อม sleepFresh ยังโจมตีได้ — การหลับเริ่มเทิร์นถัดไป)
+  if (winner && winner.alive && (winner.statuses.sleep || 0) > 0 && !winner.sleepFresh) {
     lastLog.push(`💤 ${winner.name} ยังหลับไหลอยู่ — ไม่มีเทิร์นโจมตี`);
     endTurn();
     return;
@@ -1409,7 +1439,13 @@ function doAttack(byId, targetId) {
 
   // ฝันร้ายยามค่ำคืน (โอเบรอน): ตีหมู่ — ผู้เล่นคนอื่นทุกคนรับความเสียหายเท่าเป้าหมายหลัก
   //  (ไม่รวมโบนัสเฉพาะเป้าอย่าง NT-D — เกราะก่อนแล้วเลือด และไคจูรับเบาลง 1 ตามปกติ)
+  //  และทุกคนที่ถูกฝันร้ายเล่นงานจะติด "ยามฟ้าสาง" +1 (สูงสุด 3 — คนที่กำลังหลับไหลไม่ติดเพิ่ม)
   if (nightmareAtk) {
+    const giveDawn = (o) => {
+      if (!o.alive || (o.statuses.sleep || 0) > 0) return;
+      o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
+    };
+    giveDawn(target);
     let hitCount = 0;
     for (const o of alivePlayers()) {
       if (o.id === attacker.id || o.id === target.id) continue;
@@ -1419,10 +1455,11 @@ function doAttack(byId, targetId) {
       maybeBeatSave(o);
       maybeBeatMode(o);
       maybeEva3(o);
+      giveDawn(o);
       o.wasAttacked = true;
       hitCount++;
     }
-    if (hitCount) lastLog.push(`🌙 ฝันร้ายยามค่ำคืน! ผู้เล่นอื่นทุกคนรับความเสียหายด้วย -${base}`);
+    lastLog.push(`🌙 ฝันร้ายยามค่ำคืน!${hitCount ? ` ผู้เล่นอื่นทุกคนรับความเสียหายด้วย -${base}` : ""} เป้าหมายที่ถูกเล่นงานติดยามฟ้าสาง +1`);
   }
 
   // Ginga no Uta: ถ้ากำจัดเป้าหมายที่เลือกได้ ต่ออายุท่าไม้ตาย +1 เทิร์น (ชดเชยการลดสถานะตอนจบเทิร์น)
@@ -1487,6 +1524,8 @@ function endTurn() {
       if (k === "rachan") continue; // สวมเกราะราชัน: ผลคงอยู่ถาวร ไม่ลดเทิร์น
       if (k === "dawn") continue;   // ยามฟ้าสาง (โอเบรอน): สแตคถาวร จนกว่า Vortigern จะล้าง
       if (k === "mage") { delete p.statuses.mage; continue; } // จอมเวทย์ฝึกหัด: เก็บเป็นสแตค อยู่แค่ 1 เทิร์น
+      // หลับไหล: เทิร์นที่เพิ่งโดนกล่อม ยังไม่เริ่มนับ (เริ่มหลับจริงเทิร์นถัดไป ครบตามจำนวนยามฟ้าสาง)
+      if (k === "sleep" && p.sleepFresh) { p.sleepFresh = false; continue; }
       p.statuses[k]--;
       if (p.statuses[k] <= 0) delete p.statuses[k];
     }
@@ -1628,7 +1667,7 @@ io.on("connection", (socket) => {
       tonkatsu: 0, songUsedOnce: false, noDrawNext: 0, anataTargets: null,
       gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0, noSkillNext: 0,
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
-      sunriseDrop: 0,
+      sunriseDrop: 0, sleepFresh: false,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
