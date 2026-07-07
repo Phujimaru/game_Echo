@@ -27,10 +27,11 @@ function CharImage({ c, className, emojiSize = "3.5rem", rounded = "" }) {
 }
 
 // ช่องสกิล 1 อัน — แสดงข้อมูลเต็ม (ชื่อ + คำอธิบาย + แต้มที่ใช้)
+// คำอธิบายยาวเกินเพดาน (max-h) จะเลื่อนขึ้นลงดูในช่องตัวเองได้ ไม่ดันช่องอื่นจนอัดกัน
 function SkillTile({ label, skill }) {
   return (
-    <div style={{ background: PURPLE }} className="rounded-2xl px-4 py-3 shadow-lg text-white text-left flex flex-col">
-      <div className="flex items-center justify-between gap-2">
+    <div style={{ background: PURPLE }} className="rounded-2xl px-4 py-3 shadow-lg text-white text-left flex flex-col min-h-0">
+      <div className="flex items-center justify-between gap-2 shrink-0">
         <span className="text-base sm:text-lg font-bold">{label}</span>
         <span className="text-xs bg-black/30 rounded-full px-2 py-0.5 shrink-0">
           {skill && skill.cost != null ? `แต้มสกิลที่ใช้ ${skill.cost} แต้ม` : "ไม่เสีย"}
@@ -38,8 +39,8 @@ function SkillTile({ label, skill }) {
       </div>
       {skill ? (
         <>
-          <div className="font-bold text-echo-gold mt-1">{skill.name}</div>
-          <div className="text-sm text-white/90 mt-0.5 leading-snug">{skill.desc}</div>
+          <div className="font-bold text-echo-gold mt-1 shrink-0">{skill.name}</div>
+          <div className="text-sm text-white/90 mt-0.5 leading-snug flex-1 min-h-0 max-h-36 overflow-y-auto pr-1">{skill.desc}</div>
         </>
       ) : (
         <div className="text-sm text-white/60 mt-1">—</div>
@@ -171,11 +172,14 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
               >
                 {sel.name}
               </div>
-              <div className="grid grid-cols-2 gap-3 flex-1">
+              {/* auto-rows-fr = ทุกช่องสูงเท่ากัน ช่องที่คำอธิบายยาวจะเลื่อนดูในตัวเอง */}
+              <div className="grid grid-cols-2 auto-rows-fr gap-3 flex-1 min-h-0">
                 <SkillTile label="สกิลติดตัว" skill={sel.passive} />
                 <SkillTile label="สกิลพื้นฐาน" skill={sel.basic} />
                 <SkillTile label="สกิลรอง" skill={sel.secondary} />
-                <SkillTile label="ท่าไม้ตาย" skill={sel.ultimate} />
+                {/* โอเบรอน: ท่าไม้ตายสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ทั้ง 2 ท่า */}
+                <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />
+                {sel.ultimateNight && <SkillTile label="ท่าไม้ตาย (กลางคืน)" skill={sel.ultimateNight} />}
               </div>
             </div>
           </div>

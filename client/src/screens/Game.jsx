@@ -194,6 +194,51 @@ function TransformNotice({ n }) {
   );
 }
 
+// ---------- ฉากหลังกลางวัน/กลางคืน (patch 1.7) ----------
+//  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
+//  ระหว่าง Lie Like Vortigern (โอเบรอน) ฉากหลังกลางคืนกลายเป็นวีดีโอ oberon_background.mp4
+function GameBackground({ cycle, oberonBg }) {
+  const night = cycle === "night";
+  return (
+    <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+      <img
+        src={night ? "/image/background_night.jpg" : "/image/background_morning.jpg"}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {night && oberonBg && (
+        <video
+          src="/characters/oberon/oberon_background.mp4"
+          autoPlay loop muted playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      <div className="absolute inset-0 bg-black/25" />
+    </div>
+  );
+}
+
+// ---------- แบนเนอร์สลับช่วงเวลา (กลางวัน <-> กลางคืน ทุก 3 เทิร์น) ----------
+//  c.oberon = "ราตรีกลืนกิน": โอเบรอนใช้ท่าไม้ตาย 2 — ฉากหลังวีดีโอ + เพลงประจำตัว จนกว่าจะหมดกลางคืน
+function CycleBanner({ c }) {
+  const night = c.cycle === "night";
+  return (
+    <div className="fixed top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+      <div className="pop-in flex items-center gap-3 bg-black/80 rounded-2xl px-6 py-3 border-2 text-hard" style={{ borderColor: night ? "#818cf8" : "#e5b33b" }}>
+        <span className="text-4xl">{night ? (c.oberon ? "🌑" : "🌙") : "☀️"}</span>
+        <div className="text-left leading-tight">
+          <div className="text-xl font-black" style={{ color: night ? "#a5b4fc" : "#e5b33b" }}>
+            {night ? (c.oberon ? "ราตรีกลืนกิน" : "ราตรีมาเยือน") : "รุ่งอรุณมาถึง"}
+          </div>
+          <div className="text-sm font-bold opacity-90">
+            {night ? (c.oberon ? "ราชาแห่งการหลอกลวงครอบงำราตรี — จนกว่าฟ้าจะสาง" : "เกราะฟื้นทุกเทิร์น") : "จบเทิร์นได้แต้มสกิลเพิ่ม +1"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ชื่อเฟส (โชว์อนิเมชันตอนเปลี่ยนเฟส)
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
@@ -288,6 +333,12 @@ function StatusChips({ statuses, left, tonkatsu, profit }) {
   if (s.spear) items.push(["🗡️หอกลองกินัส", "bg-echo-magenta"]); // เอวา 13: +1 โจมตี 1 เทิร์น
   if (s.noskill) items.push(["🚫ห้ามใช้สกิล", "bg-echo-hp"]); // โดนหอกลองกินัสปัก
   if (s.fourth) items.push([`☄️Impact${s.fourth}`, "bg-echo-hp"]); // Fourth Impact (เอวา 13)
+  if (s.veil) items.push([`🌙ม่าน+1 (${s.veil})`, "bg-echo-magenta"]); // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1
+  if (s.dawn) items.push([`🌅ฟ้าสาง x${s.dawn}`, "bg-echo-gold text-gray-900"]); // ยามฟ้าสาง สะสมถาวร (สูงสุด 3)
+  if (s.awaken) items.push([`⏰ตื่น${s.awaken}`, "bg-echo-cyan text-gray-900"]); // การตื่นขึ้น: ฟื้น 1/เทิร์น
+  if (s.sleep) items.push([`💤หลับ${s.sleep}`, "bg-echo-hp"]); // หลับไหลจาก Lie Like Vortigern
+  if (s.vortarmor) items.push([`🛡️เกราะ+2 (${s.vortarmor})`, "bg-echo-armor"]); // เกราะจาก Vortigern
+  if (s.vortigern) items.push([`🌑Vortigern${s.vortigern}`, "bg-echo-hp"]); // โอเบรอน: ท่าไม้ตายกลางคืนกำลังมีผล
   if (!items.length) return null;
   return (
     <div className={`flex flex-wrap gap-1 ${left ? "justify-start" : "justify-center"} mt-1`}>
@@ -500,6 +551,9 @@ export default function Game({ state }) {
   const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
   const [notice, setNotice] = useState(null); // แปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป) เด้งแจ้งเตือนทันที ไม่หยุดเกม
   const [anataSel, setAnataSel] = useState(null); // เทมาริ: โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (null = ไม่ได้เลือกอยู่)
+  const [dawnSel, setDawnSel] = useState(false); // โอเบรอน: โหมดเลือกเป้าหมายรุ่งอรุณแห่งวันใหม่ (เลือกตัวเองได้)
+  const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
+  const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
   const vp = useViewport();
   const phase = state.gameState;
@@ -514,8 +568,12 @@ export default function Game({ state }) {
   const ch = me?.character;
   // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
   const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
+  // กลางวัน/กลางคืน (patch 1.7): สลับทุก 3 เทิร์น — โอเบรอนสลับร่าง/ท่าไม้ตายตามช่วงเวลา
+  const nightNow = state.cycle === "night";
   // ท่าไม้ตายกำลังมีผลอยู่: กดซ้ำไม่ได้จนกว่าจะหมดเวลา (สวมเกราะราชันถาวร = กดซ้ำไม่ได้อีกเลย)
-  const ultimateActive = !!(me && me.statuses && me.statuses[ULTIMATE_STATUS[ch?.id]]);
+  //  โอเบรอน: กลางวันเช็ค lai / กลางคืนเช็ค vortigern
+  const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai") : ULTIMATE_STATUS[ch?.id];
+  const ultimateActive = !!(me && me.statuses && me.statuses[ultStatusKey]);
   // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
   // Ohger Finish (คุวากาตะ): ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ (+1 ความเสียหาย)
@@ -549,6 +607,12 @@ export default function Game({ state }) {
   // เรจูอาคมบัญชา (สกิลติดตัว): สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล
   const reijuUsable = !!(isFuji && phase === "PLAYING" && me?.alive && !done && (me?.reiju || 0) > 0);
   const useReiju = (cmd) => { socket.emit("useReiju", { command: cmd }); setReijuOpen(false); };
+  // ---------- โอเบรอน ----------
+  const isOberon = ch?.id === "oberon";
+  // ม่านแห่งราตรี: กดซ้ำไม่ได้จนกว่าผลเพิ่มพลังโจมตีจะหมด
+  const veilLocked = isOberon && !!me?.statuses?.veil;
+  // รุ่งอรุณแห่งวันใหม่: หลังใช้ต้องรออีก 3 เทิร์น
+  const sunriseLocked = isOberon && (me?.sunriseCd || 0) > 0;
   // ANATA WAAAAAAAA: เลือกเป้าหมายได้เพียง 1 คน
   const aliveOthers = others.filter((p) => p.alive);
   const anataNeed = Math.min(1, aliveOthers.length);
@@ -579,8 +643,15 @@ export default function Game({ state }) {
     clickSound();
     // ท่าไม้ตายเทมาริ: เข้าโหมดเลือกเป้าหมาย 2 คนก่อน (ยังไม่ส่งไป server)
     if (tier === "ultimate" && ch?.id === "temari") { setAnataSel([]); setSkillOpen(false); return; }
+    // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เข้าโหมดเลือกเป้าหมาย 1 คน (ตัวเองได้) ก่อนส่งไป server
+    if (tier === "secondary" && ch?.id === "oberon") { setDawnSel(true); setSkillOpen(false); return; }
     socket.emit("useSkill", { tier });
     setSkillOpen(false);
+  };
+  // เลือกเป้าหมายรุ่งอรุณแห่งวันใหม่ -> ส่งไป server ทันที
+  const pickDawn = (id) => {
+    socket.emit("useSkill", { tier: "secondary", targets: [id] });
+    setDawnSel(false);
   };
   // เลือก/ยกเลิกเป้าหมาย ANATA — ครบจำนวนแล้วส่งไป server ทันที
   const pickAnata = (id) => {
@@ -595,6 +666,27 @@ export default function Game({ state }) {
   useEffect(() => {
     if (anataSel && (phase !== "PLAYING" || me?.skillUsed || done)) setAnataSel(null);
   }, [anataSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
+    if (dawnSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDawnSel(false);
+  }, [dawnSel, phase, me?.skillUsed, done]);
+  // แบนเนอร์สลับกลางวัน/กลางคืน: เด้งเมื่อ cycle เปลี่ยนระหว่างแมตช์ แล้วหายเอง
+  useEffect(() => {
+    if (prevCycle.current && state.cycle && prevCycle.current !== state.cycle) {
+      setCycleFx({ cycle: state.cycle, id: Date.now() });
+    }
+    prevCycle.current = state.cycle;
+  }, [state.cycle]);
+  // ราตรีกลืนกิน: เด้งแบนเนอร์เมื่อโอเบรอนใช้ท่าไม้ตาย 2 (ฉากหลังเปลี่ยน) แล้วหายเอง
+  const prevDevour = useRef(false);
+  useEffect(() => {
+    if (!prevDevour.current && state.oberonBg) setCycleFx({ cycle: "night", oberon: true, id: Date.now() });
+    prevDevour.current = !!state.oberonBg;
+  }, [state.oberonBg]);
+  useEffect(() => {
+    if (!cycleFx) return;
+    const t = setTimeout(() => setCycleFx(null), 3500);
+    return () => clearTimeout(t);
+  }, [cycleFx]);
   // ปิดเมนูเรจูอาคมบัญชาอัตโนมัติเมื่อใช้ไม่ได้แล้ว (พ้นช่วงจั่วการ์ด / เส้นหมด)
   useEffect(() => {
     if (reijuOpen && !reijuUsable) setReijuOpen(false);
@@ -613,12 +705,16 @@ export default function Game({ state }) {
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
+        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} />
         {/* แถบบน: รอบ + เวลา (เว้นขวาให้ปุ่มเสียง) */}
-        <div className="shrink-0 flex justify-center pt-2 px-14 min-h-[40px]">
+        <div className="shrink-0 flex flex-col items-center gap-1 pt-2 px-14 min-h-[40px]">
           {(phase === "PLAYING" || phase === "ATTACK") && (
             <div className="text-lg font-bold bg-black/50 px-5 py-1 rounded-full border border-white/10">
-              รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ
+              {state.oberonBg ? "🌑" : nightNow ? "🌙" : "☀️"} รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ
             </div>
+          )}
+          {state.oberonBg && (
+            <div className="text-sm font-black text-indigo-300 bg-black/60 px-4 py-0.5 rounded-full border border-indigo-400/40 text-hard">🌑 ราตรีกลืนกิน</div>
           )}
         </div>
 
@@ -629,9 +725,9 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : socket.emit("attack", { targetId: id }))}
             />
           ))}
         </div>
@@ -644,6 +740,13 @@ export default function Game({ state }) {
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-gold animate-pulse">🎤 แตะเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
             <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {dawnSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-gold animate-pulse">🌄 แตะเลือกเป้าหมายรุ่งอรุณแห่งวันใหม่</span>
+            <button onClick={() => { clickSound(); pickDawn(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            <button onClick={() => { clickSound(); setDawnSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
 
@@ -701,12 +804,15 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked || veilLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || sunriseLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
                 <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
               </div>
               {noSkill && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+              )}
+              {sunriseLocked && phase === "PLAYING" && !done && (
+                <div className="text-center text-sm font-bold text-echo-gold mt-1">🌄 รุ่งอรุณแห่งวันใหม่ — รออีก {me.sunriseCd} เทิร์น</div>
               )}
               {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -730,7 +836,7 @@ export default function Game({ state }) {
                     {me.atCap && <div className="text-center text-sm font-bold text-echo-gold mt-1">แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
-                  <div className="text-center text-lg font-bold py-2">{me.busted ? "แตก! 😢" : "พร้อมแล้ว ✅"} รอเพื่อน...</div>
+                  <div className="text-center text-lg font-bold py-2">{me.busted ? "แตก! 😢" : me.statuses?.sleep ? "หลับไหลอยู่ 💤" : "พร้อมแล้ว ✅"} รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
                   <div className="text-center text-lg font-bold py-2">{iAmAttacker ? "⚔️ แตะการ์ดคู่ต่อสู้ด้านบน!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"} เลือกเป้าหมาย...`}</div>
                 ) : !me.alive ? (
@@ -789,6 +895,7 @@ export default function Game({ state }) {
         {csAnnounce && <TransformAnnounce key={csAnnounce.id} cs={csAnnounce} />}
         {flash && <SkillFlash key={flash.id} f={flash} />}
         {notice && <TransformNotice key={notice.id} n={notice} />}
+        {cycleFx && <CycleBanner key={cycleFx.id} c={cycleFx} />}
 
         {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
         {phase === "TRANSITION" && (
@@ -822,6 +929,7 @@ export default function Game({ state }) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
+      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} />
       <div
         className="relative overflow-hidden"
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
@@ -834,7 +942,13 @@ export default function Game({ state }) {
       {/* ตัวจับเวลา + รอบ */}
       {(phase === "PLAYING" || phase === "ATTACK") && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 text-lg font-bold bg-black/40 px-4 py-1.5 rounded-full">
-          <span className="text-xl">รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ</span>
+          <span className="text-xl">{state.oberonBg ? "🌑" : nightNow ? "🌙" : "☀️"} รอบที่ {state.roundNumber} · ⏱️ {state.timeLeft} วิ</span>
+        </div>
+      )}
+      {/* ราตรีกลืนกิน: ป้ายค้างระหว่างฉากหลังโอเบรอนมีผล (จนกว่าจะหมดกลางคืน) */}
+      {state.oberonBg && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 text-sm font-black text-indigo-300 bg-black/60 px-4 py-0.5 rounded-full border border-indigo-400/40 text-hard">
+          🌑 ราตรีกลืนกิน
         </div>
       )}
 
@@ -845,9 +959,9 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : socket.emit("attack", { targetId: id }))}
         />
       ))}
 
@@ -856,6 +970,15 @@ export default function Game({ state }) {
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard">
           <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎤 คลิกเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
           <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
+      {/* โหมดเลือกเป้าหมายรุ่งอรุณแห่งวันใหม่ (โอเบรอน) — เลือกตัวเองได้ */}
+      {dawnSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🌄 คลิกเลือกเป้าหมายรุ่งอรุณแห่งวันใหม่</span>
+          <button onClick={() => { clickSound(); pickDawn(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          <button onClick={() => { clickSound(); setDawnSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
 
@@ -912,12 +1035,15 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat) || mageLocked || cassiusLocked || veilLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || sunriseLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
                   <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked} onUse={skill} />
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+                )}
+                {sunriseLocked && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">🌄 รุ่งอรุณแห่งวันใหม่ — รออีก {me.sunriseCd} เทิร์น</div>
                 )}
                 {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -958,7 +1084,7 @@ export default function Game({ state }) {
                     {me.atCap && <div className="text-center text-xs font-bold text-echo-gold">แต้มเต็มแล้ว!<br />ใช้สกิล/เปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
-                  <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
+                  <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : me.statuses?.sleep ? "หลับไหลอยู่ 💤" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
                   <div className="text-center text-base font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
                 ) : !me.alive ? (
@@ -1022,6 +1148,7 @@ export default function Game({ state }) {
       {/* ---------- สกิลช่วงจั่วการ์ด เด้งทันที ---------- */}
       {flash && <SkillFlash key={flash.id} f={flash} />}
       {notice && <TransformNotice key={notice.id} n={notice} />}
+      {cycleFx && <CycleBanner key={cycleFx.id} c={cycleFx} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && (

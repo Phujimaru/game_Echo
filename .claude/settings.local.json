@@ -37,7 +37,8 @@
       "Bash(npm init *)",
       "Bash(PORT=3123 node server.js)",
       "Bash(curl -s -o /dev/null -w \"server HTTP %{http_code}\\\\n\" http://localhost:3123/)",
-      "Bash(node drive.js)"
+      "Bash(node drive.js)",
+      "Bash(node -e \"const {CHARACTERS, publicRoster} = require\\('e:/OneDrive/Desktop/backjact/characters.js'\\); const r = publicRoster\\(\\); console.log\\(r.map\\(c=>c.avatar+' '+c.id+' locked='+c.locked\\).join\\('\\\\n'\\)\\);\")"
     ]
   }
 }
