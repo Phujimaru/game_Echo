@@ -48,9 +48,13 @@ const FUJIMARU_FINAL_IMG = "/characters/fujimaru/fujimaru_final.jpg";
 // ---------- ระบบกลางวัน/กลางคืน (patch 1.7) ----------
 //  เริ่มเกมเป็นกลางวันเสมอ สลับทุก 3 เทิร์น: รอบ 1-3 กลางวัน, 4-6 กลางคืน, 7-9 กลางวัน, ...
 //  จบเทิร์นกลางวัน = ทุกคนได้แต้มสกิลเพิ่ม +1 | กลางคืน = เกราะฟื้นทุกเทิร์น (ปกติทุก 2 เทิร์น)
+//  cycleShift: Lie Like Vortigern รีเซ็ตเวลากลางคืนให้เหลืออีก 3 เทิร์น — เลื่อนวงจรทั้งเกมไปข้างหน้า
 const CYCLE_TURNS = 3;
+let cycleShift = 0;
+let nightResetPending = false; // ตั้งตอนกดท่าไม้ตาย 2 -> เริ่มนับกลางคืนใหม่ตั้งแต่เทิร์นถัดไป
 function isNightRound(n) {
-  return n > 0 && Math.floor((n - 1) / CYCLE_TURNS) % 2 === 1;
+  const m = n - cycleShift;
+  return m > 0 && Math.floor((m - 1) / CYCLE_TURNS) % 2 === 1;
 }
 
 // ร่างกลางวัน/กลางคืนของโอเบรอน (สลับอัตโนมัติตามช่วงเวลา)
@@ -451,6 +455,19 @@ function resetCombat(p) {
 // ============================================================
 //  ส่งสถานะ
 // ============================================================
+// สถานะที่ผู้เล่นคนอื่นเห็นได้ระหว่างช่วงจั่วการ์ด (patch 1.7.1): โชว์ให้ดูของกันและกันได้
+//  ยกเว้นสกิลหลังเปิดไพ่ที่เพิ่งกดรอไว้ในเทิร์นนี้ — เปิดเผยเมื่อทำงานแล้วเท่านั้น (กันสปอยล์)
+const HIDDEN_UNTIL_REVEAL = ["beam", "ohger", "absorb", "spear"];
+function publicStatuses(p) {
+  const out = {};
+  for (const [k, v] of Object.entries(p.statuses || {})) {
+    if (TRANSFORMS[k] && TRANSFORMS[k].afterReveal && !(p.seen && p.seen[k])) continue;
+    if (HIDDEN_UNTIL_REVEAL.includes(k)) continue;
+    out[k] = v;
+  }
+  if (p.ntdTarget) out.ntd = 1;
+  return out;
+}
 function buildStateFor(viewerId) {
   const revealAll = gameState !== "PLAYING" && gameState !== "LOBBY";
   // เพลง ANATA WAAAAAAAA ทับทุกเพลงระหว่างช่วงจั่วการ์ด — จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
@@ -514,7 +531,7 @@ function buildStateFor(viewerId) {
         atCap: scoreOf(p) >= scoreCap(p), // แต้มเต็มเพดาน (21/UPG) -> ปิดปุ่มจั่ว รอเปิดไพ่เอง
         skillUsed: !!p.skillUsedRound,    // ใช้สกิลไปแล้วในเทิร์นนี้ (1 อันต่อเทิร์น)
         alive: p.alive,
-        statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : {},
+        statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : publicStatuses(p),
         character: {
           // โอเบรอน: กลางคืนสลับชื่อ + ท่าไม้ตายเป็นเวอร์ชันกลางคืน (Lie Like Vortigern)
           id: ch.id, name: nightNow && ch.nightName ? ch.nightName : ch.name,
@@ -609,12 +626,21 @@ function runCutsceneQueue(onDone) {
 function startMatch() {
   for (const p of Object.values(players)) resetCombat(p);
   roundNumber = 0;
+  cycleShift = 0;
+  nightResetPending = false;
+  oberonDevour = 0;
   dealRound();
 }
 
 function dealRound() {
   clearPhaseTimer();
   roundNumber++;
+  // รีเซ็ตเวลากลางคืน (Lie Like Vortigern): นับกลางคืนใหม่ — เทิร์นนี้เป็นคืนที่ 1 จาก 3
+  const prevNight = isNightRound(roundNumber - 1); // เช็คด้วยวงจรเดิมก่อนเลื่อน (กันแบนเนอร์สลับเวลาเด้งผิด)
+  if (nightResetPending) {
+    nightResetPending = false;
+    cycleShift = roundNumber - (CYCLE_TURNS + 1); // ให้เทิร์นนี้ตรงกับคืนแรกของวงจร
+  }
   lastLog = [];
   attackerId = null;
   roundWinnerId = null;
@@ -657,8 +683,8 @@ function dealRound() {
     }
 
     // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — จบเทิร์นช่วงกลางคืน: ฟื้นทุกเทิร์น
-    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
-    if (!p.armorLocked && (roundNumber % 2 === 0 || isNightRound(roundNumber - 1))) {
+    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน (prevNight = เทิร์นที่เพิ่งจบเป็นกลางคืนตามวงจรเดิม)
+    if (!p.armorLocked && (roundNumber % 2 === 0 || prevNight)) {
       p.armor = Math.min(maxArmorOf(p), p.armor + 1);
     }
     // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
@@ -699,7 +725,7 @@ function dealRound() {
     oberonDevour = 0; // ราตรีกลืนกิน หายไปเมื่อหมดกลางคืน
     lastLog.push("🌄 ราตรีกลืนกินจางหายไปพร้อมแสงแรกของวัน");
   }
-  if (roundNumber > 1 && night !== isNightRound(roundNumber - 1)) {
+  if (roundNumber > 1 && night !== prevNight) {
     lastLog.push(night ? "🌙 ราตรีมาเยือน — เกราะจะฟื้นทุกเทิร์น" : "☀️ ฟ้าสางแล้ว — จบเทิร์นได้แต้มสกิลเพิ่ม +1");
     for (const p of alivePlayers()) {
       if (p.characterId !== "oberon") continue;
@@ -897,19 +923,22 @@ function useSkill(id, tier, targets) {
     for (const o of alivePlayers()) {
       o.statuses.veil = Math.max(o.statuses.veil || 0, 2); // พลังโจมตี +1 คงอยู่ 2 เทิร์น (รวมตัวเอง)
       o.hp = Math.min(MAX_HP, o.hp + 1);                   // ฟื้นพลังชีวิตทุกคน +1 (รวมตัวเอง)
-      if (o.id !== p.id) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1); // ยามฟ้าสาง ถาวร (สะสมสูงสุด 3)
+      o.armor = Math.min(maxArmorOf(o), o.armor + 1);      // ฟื้นเกราะทุกคน +1 (รวมตัวเอง)
+      // ยามฟ้าสาง ถาวร (สะสมสูงสุด 3) — คนที่กำลังหลับไหลจะไม่รับเพิ่ม (ผลก่อนหน้ายังไม่หมด)
+      if (o.id !== p.id && !((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
     }
-    lastLog.push(`🌙 ${p.name} ม่านแห่งราตรี — ทุกคนพลังโจมตี +1 (2 เทิร์น) ฟื้นเลือด +1 และติดยามฟ้าสาง (ยกเว้นผู้ใช้)`);
+    lastLog.push(`🌙 ${p.name} ม่านแห่งราตรี — ทุกคนพลังโจมตี +1 (2 เทิร์น) ฟื้นเลือด/เกราะ +1 และติดยามฟ้าสาง (ยกเว้นผู้ใช้/คนหลับ)`);
   }
-  // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับลดเลือด 2 ในเทิร์นถัดมา ----------
+  // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับลดเลือด 1 ในเทิร์นถัดมา (ไม่สนเกราะ) ----------
   if (isSunrise && sunriseTarget) {
     const t = sunriseTarget;
     t.hp = Math.min(MAX_HP, t.hp + 5);
-    t.sunriseDrop = 2; // เทิร์นถัดมาลดลง 2 หน่วยอัตโนมัติ
-    if (t.id !== p.id) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 2); // ยามฟ้าสาง +2 (ไม่ติดถ้าใช้กับตัวเอง)
+    t.sunriseDrop = 1; // เทิร์นถัดมาลดลง 1 หน่วยอัตโนมัติ แบบไม่สนเกราะ
+    // ยามฟ้าสาง +2 — ไม่ติดถ้าใช้กับตัวเอง หรือเป้าหมายกำลังหลับไหล (ผลก่อนหน้ายังไม่หมด)
+    if (t.id !== p.id && !((t.statuses.sleep || 0) > 0)) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 2);
     p.sunriseCd = SUNRISE_CD;
     flashSuffix = ` — ใส่ ${t.name}`;
-    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (เทิร์นถัดมาลดลง 2)${t.id !== p.id ? " และติดยามฟ้าสาง +2" : ""}`);
+    lastLog.push(`🌄 ${p.name} รุ่งอรุณแห่งวันใหม่ — ฟื้นพลังชีวิต ${t.name} +5 (เทิร์นถัดมาลดลง 1 ไม่สนเกราะ)${t.id !== p.id && !(t.statuses.sleep > 0) ? " และติดยามฟ้าสาง +2" : ""}`);
   }
 
   // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
@@ -1127,7 +1156,12 @@ function resolveRound() {
       }
       const armorBefore = l.armor;
       // การหลับไหลอันไม่สิ้นสุด: ติดทั้งการตื่นขึ้น + ยามฟ้าสาง -> ดาเมจแตก/แพ้ +1
+      // และล้าง "การตื่นขึ้น" ออก 1 หน่วยทุกครั้งที่เกิดผล
       const dawnExtra = (oberonHere && (l.statuses.awaken || 0) > 0 && (l.statuses.dawn || 0) > 0) ? 1 : 0;
+      if (dawnExtra > 0) {
+        l.statuses.awaken--;
+        if (l.statuses.awaken <= 0) delete l.statuses.awaken;
+      }
       const lossDmg = 1 + mageExtra + dawnExtra; // จอมเวทย์ฝึกหัด: แพ้จั่ว/แตกเจ็บขึ้นตามสแตค
       for (let i = 0; i < lossDmg; i++) damageSoft(l);
       // Absorb shield: ถ้าเป็นผู้แพ้แล้วเสียเกราะ ให้แปลงเกราะที่เสียกลับเป็นพลังชีวิต
@@ -1186,16 +1220,16 @@ function afterResolve() {
           p.hp = 1;
           p.armor = Math.min(maxArmorOf(p), p.armor + 3);
         }
-        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 2 เทิร์น)
+        // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 2 หน่วย + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 2 เทิร์น)
         if (key === "lai") {
           for (const o of alivePlayers()) {
             if (o.id === p.id) continue;
-            dealDirect(o, 1);
+            dealDirect(o, 2);
             maybeBeatSave(o);
             o.statuses.awaken = Math.max(o.statuses.awaken || 0, 3); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
             o.wasAttacked = true;
           }
-          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -1 (ไม่สนเกราะ) และมอบสถานะ "การตื่นขึ้น"`);
+          lastLog.push(`🌞 Lai Rhyme Goodfellow! ${p.name} โจมตีทุกคน -2 (ไม่สนเกราะ) และมอบสถานะ "การตื่นขึ้น"`);
         }
         // Lie Like Vortigern (โอเบรอน กลางคืน): เกราะหมู่ +2 (ยกเว้นตัวเอง) แล้วกล่อมคนติดยามฟ้าสางให้หลับไหล
         if (key === "vortigern") {
@@ -1212,7 +1246,9 @@ function afterResolve() {
           for (const o of Object.values(players)) delete o.statuses.dawn; // ล้างยามฟ้าสางให้ทุกคน
           // ราตรีกลืนกิน: ฉากหลังกลางคืนกลายเป็นวีดีโอ + เพลงประจำตัวโอเบรอน จนกว่าจะหมดกลางคืน
           oberonDevour = ++transformCounter;
-          lastLog.push(`🌑 Lie Like Vortigern! ${p.name} มอบเกราะ +2 ให้ทุกคน (3 เทิร์น) — ราตรีกลืนกิน จนกว่าฟ้าจะสาง`);
+          // สนามของโอเบรอน: รีเซ็ตเวลากลางคืนให้เหลืออีก 3 เทิร์นนับจากเทิร์นถัดไป
+          nightResetPending = true;
+          lastLog.push(`🌑 Lie Like Vortigern! ${p.name} มอบเกราะ +2 ให้ทุกคน (3 เทิร์น) — ราตรีกลืนกิน และรีเซ็ตกลางคืนเหลืออีก 3 เทิร์น`);
         }
         const firstTime = !p.cutsceneShown[key];
         triggerCutscene(p, key);
@@ -1519,6 +1555,9 @@ function backToLobby() {
   attackerId = null;
   roundWinnerId = null;
   roundNumber = 0;
+  cycleShift = 0;
+  nightResetPending = false;
+  oberonDevour = 0;
   lastLog = [];
   cutsceneQueue = [];
   cutsceneInfo = null;

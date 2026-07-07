@@ -308,47 +308,105 @@ function Stats({ p, center }) {
   );
 }
 
-function StatusChips({ statuses, left, tonkatsu, profit }) {
-  if (!statuses && !tonkatsu && !profit) return null;
-  const s = statuses || {};
-  const items = [];
-  if (s.upg) items.push(["UPG", "bg-echo-cyan text-gray-900"]);
-  if (s.monster) items.push([`🦖${s.monster}`, "bg-echo-hp"]);
-  if (s.ginga) items.push([`✨G${s.ginga}`, "bg-echo-gold text-gray-900"]);
-  if (s.absorb) items.push(["Absorb", "bg-echo-armor"]);
-  if (s.beam) items.push(["Beam", "bg-echo-magenta"]);
-  if (s.paradise) items.push([`Paradise${s.paradise}`, "bg-echo-gold text-gray-900"]);
-  if (s.ntd) items.push(["NT-D", "bg-echo-hp"]);
-  if (s.ohger) items.push(["Ohger", "bg-echo-gold text-gray-900"]);
-  if (s.rachan) items.push(["ราชัน", "bg-echo-armor"]); // ถาวร ไม่นับเทิร์น
-  if (s.song) items.push([`🎵Song${s.song}`, "bg-echo-magenta"]);
-  if (s.anata) items.push(["🎤ANATA", "bg-echo-gold text-gray-900"]);
-  if (s.mage) items.push([`🪄จอมเวทย์x${s.mage}`, "bg-echo-cyan text-gray-900"]); // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก
-  if (s.humanity) items.push([`✨EFH${s.humanity}`, "bg-echo-gold text-gray-900"]); // Everything For Humanity
-  if (s.seal) items.push(["📜อมตะ", "bg-echo-hp"]); // เรจูอาคมบัญชา คำสั่ง 1
-  if (s.nodraw) items.push([`🚫ห้ามจั่ว${s.nodraw > 1 ? s.nodraw : ""}`, "bg-echo-hp"]);
-  if (tonkatsu > 0) items.push([`🍜x${tonkatsu}`, "bg-echo-cyan text-gray-900"]); // UI สะสมชามทงคัสสึ (เทมาริ)
-  if (s.golden) items.push([`🎰777 x${s.golden}`, "bg-echo-gold text-gray-900"]); // เวลาทอง (แกมเบลอร์)
-  if (profit > 0) items.push([`💰+${profit}`, "bg-echo-gold text-gray-900"]); // กำไรเท่าตัวโว้ย สะสมจนได้ตี
-  if (s.spear) items.push(["🗡️หอกลองกินัส", "bg-echo-magenta"]); // เอวา 13: +1 โจมตี 1 เทิร์น
-  if (s.noskill) items.push(["🚫ห้ามใช้สกิล", "bg-echo-hp"]); // โดนหอกลองกินัสปัก
-  if (s.fourth) items.push([`☄️Impact${s.fourth}`, "bg-echo-hp"]); // Fourth Impact (เอวา 13)
-  if (s.veil) items.push([`🌙ม่าน+1 (${s.veil})`, "bg-echo-magenta"]); // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1
-  if (s.dawn) items.push([`🌅ฟ้าสาง x${s.dawn}`, "bg-echo-gold text-gray-900"]); // ยามฟ้าสาง สะสมถาวร (สูงสุด 3)
-  if (s.awaken) items.push([`⏰ตื่น${s.awaken}`, "bg-echo-cyan text-gray-900"]); // การตื่นขึ้น: ฟื้น 1/เทิร์น
-  if (s.sleep) items.push([`💤หลับ${s.sleep}`, "bg-echo-hp"]); // หลับไหลจาก Lie Like Vortigern
-  if (s.vortarmor) items.push([`🛡️เกราะ+2 (${s.vortarmor})`, "bg-echo-armor"]); // เกราะจาก Vortigern
-  if (s.vortigern) items.push([`🌑Vortigern${s.vortigern}`, "bg-echo-hp"]); // โอเบรอน: ท่าไม้ตายกลางคืนกำลังมีผล
+// ---------- สถานะผิดปกติ (patch 1.7.1): ตารางกลาง ไอคอน + ชื่อ + สี + คำอธิบาย ----------
+//  ใช้ทั้งป้ายเล็กบนการ์ดผู้เล่น และหน้าต่างรายละเอียด — ทุกคนเห็นสถานะของกันและกันได้
+//  (แตะ/คลิกการ์ดผู้เล่นตอนที่ไม่ได้เลือกเป้าโจมตี เพื่อเปิดดูคำอธิบายเต็ม)
+const STATUS_INFO = {
+  upg:       { icon: "🎴", label: "UPG", cls: "bg-echo-cyan text-gray-900", desc: "เทิร์นนี้ไพ่ไม่มีทางแตก แต่แต้มไม่เกินเพดานของสกิล" },
+  monster:   { icon: "🦖", label: "ไคจู", cls: "bg-echo-hp", desc: "ร่างไคจู Black King: รับความเสียหายจากการโจมตี/แพ้ น้อยลง 1 หน่วย (ใช้ท่าไม้ตายไม่ได้)" },
+  ginga:     { icon: "✨", label: "Ginga", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Ultraman Ginga: โจมตี +1 และตีหมู่ทุกคน" },
+  absorb:    { icon: "🛡️", label: "Absorb", cls: "bg-echo-armor", desc: "เกราะที่เสียในเทิร์นนี้แปลงกลับเป็นพลังชีวิต" },
+  beam:      { icon: "🔫", label: "Beam", cls: "bg-echo-magenta", desc: "Beam Magnum: การโจมตีเทิร์นนี้ +2 หน่วย" },
+  paradise:  { icon: "🦄", label: "Paradise", cls: "bg-echo-gold text-gray-900", desc: "NewType Paradise: โจมตีด้วยพลัง NT-D (+1) ได้ทุกเป้าหมาย" },
+  ntd:       { icon: "⚡", label: "NT-D", cls: "bg-echo-hp", desc: "NT-D System: การโจมตีสวนกลับคนที่ตีเราล่าสุด +1 หน่วย" },
+  ohger:     { icon: "👑", label: "Ohger", cls: "bg-echo-gold text-gray-900", desc: "Ohger Finish: การโจมตีเทิร์นนี้ +1 หน่วย" },
+  rachan:    { icon: "🛡️", label: "ราชัน", cls: "bg-echo-armor", desc: "สวมเกราะราชัน: เพดานเกราะ +3 ถาวร" },
+  song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: โบนัสพลังโจมตี/เพดานเกราะตามชามทงคัสสึ (3 ชาม = +1)" },
+  anata:     { icon: "🎤", label: "ANATA", cls: "bg-echo-gold text-gray-900", desc: "ANATA WAAAAAAAA: เป้าหมายลับจะถูกบังคับจั่ว 2 ใบหลังเปิดไพ่" },
+  mage:      { icon: "🪄", label: "จอมเวทย์", cls: "bg-echo-cyan text-gray-900", desc: "จอมเวทย์ฝึกหัด: ความเสียหายจากการแพ้/แตกเทิร์นนี้ +1 ต่อสแตค (ฟื้นเลือดคืนเทิร์นหน้า)" },
+  humanity:  { icon: "✨", label: "EFH", cls: "bg-echo-gold text-gray-900", desc: "Everything For Humanity: โจมตี +4 เกราะ +3 และกันดาเมจแพ้/แตก — ผลจบแล้วตัวละครตาย" },
+  seal:      { icon: "📜", label: "อมตะ", cls: "bg-echo-hp", desc: "เรจูอาคมบัญชา: เทิร์นนี้ไม่ถูกเลือกโจมตี และไม่รับความเสียหายใดๆ" },
+  nodraw:    { icon: "🚫", label: "ห้ามจั่ว", cls: "bg-echo-hp", desc: "จั่วการ์ดเพิ่มไม่ได้ในเทิร์นนี้" },
+  noskill:   { icon: "🚫", label: "ห้ามสกิล", cls: "bg-echo-hp", desc: "โดนหอกลองกินัสปัก: ใช้สกิลไม่ได้ในเทิร์นนี้" },
+  golden:    { icon: "🎰", label: "777", cls: "bg-echo-gold text-gray-900", desc: "เวลาทอง: โชคด้านบวก +10% คอสสกิลพื้นฐาน/รองลดครึ่ง กดสกิลพื้นฐานซ้ำได้" },
+  spear:     { icon: "🗡️", label: "หอกลองกินัส", cls: "bg-echo-magenta", desc: "หอกลองกินัส: โจมตี +1 และมีโอกาสทำให้เป้าหมายใช้สกิลไม่ได้เทิร์นถัดไป" },
+  fourth:    { icon: "☄️", label: "Impact", cls: "bg-echo-hp", desc: "Fourth Impact: กันดาเมจแพ้/แตก — ถูกกำจัดระหว่างนี้จะระเบิดทุกคน 5 หน่วย" },
+  lai:       { icon: "🌞", label: "Goodfellow", cls: "bg-echo-gold text-gray-900", desc: "Lai Rhyme Goodfellow กำลังทำงาน" },
+  vortigern: { icon: "🌑", label: "Vortigern", cls: "bg-echo-hp", desc: "Lie Like Vortigern: ราตรีกลืนกินครอบงำสนามจนกว่าฟ้าจะสาง" },
+  veil:      { icon: "🌙", label: "ม่านราตรี", cls: "bg-echo-magenta", desc: "ม่านแห่งราตรี: พลังโจมตี +1 หน่วย" },
+  dawn:      { icon: "🌅", label: "ฟ้าสาง", cls: "bg-echo-gold text-gray-900", desc: "ยามฟ้าสาง: สะสมถาวร (สูงสุด 3) — Lie Like Vortigern จะกล่อมหลับตามจำนวนสแตค" },
+  awaken:    { icon: "⏰", label: "ตื่นขึ้น", cls: "bg-echo-cyan text-gray-900", desc: "การตื่นขึ้น: ฟื้นพลังชีวิตเทิร์นละ 1 — ถ้าติดคู่ยามฟ้าสาง ดาเมจแพ้/แตก +1 (เสียการตื่นขึ้น 1 เมื่อเกิดผล)" },
+  sleep:     { icon: "💤", label: "หลับไหล", cls: "bg-echo-hp", desc: "หลับไหล: ออกการกระทำใดๆ ไม่ได้ และเสียเลือด 1/เทิร์นไม่สนเกราะ (ไม่ต่ำกว่า 2)" },
+  vortarmor: { icon: "🛡️", label: "เกราะราตรี", cls: "bg-echo-armor", desc: "Lie Like Vortigern: เพดานเกราะ +2 ชั่วคราว" },
+};
+// รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
+function statusEntries(p, full) {
+  const out = [];
+  for (const [k, v] of Object.entries(p.statuses || {})) {
+    if (!(v > 0)) continue;
+    const info = STATUS_INFO[k] || { icon: "✦", label: k, cls: "bg-white/20", desc: "" };
+    out.push({ key: k, v, ...info });
+  }
+  if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม — เพิ่มโบนัส Song for you (3 ชาม = +1)" });
+  if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
+  if (full && (p.shield || 0) > 0) out.push({ key: "shield", v: p.shield, icon: "🛡️", label: "โล่", cls: "bg-echo-armor", desc: "กันความเสียหายครั้งถัดไปตามจำนวนโล่" });
+  if (full && (p.tempHp || 0) > 0) out.push({ key: "tempHp", v: p.tempHp, icon: "💛", label: "เลือดชั่วคราว", cls: "bg-echo-gold text-gray-900", desc: "หายเองใน 2 เทิร์น หรือหมดไปเมื่อรับความเสียหาย" });
+  return out;
+}
+function StatusChips({ p, left }) {
+  const items = statusEntries(p);
   if (!items.length) return null;
   return (
     <div className={`flex flex-wrap gap-1 ${left ? "justify-start" : "justify-center"} mt-1`}>
-      {items.map(([t, c], i) => <span key={i} className={`text-xs px-1.5 py-0.5 rounded font-bold ${c}`}>{t}</span>)}
+      {items.map((it) => (
+        <span
+          key={it.key}
+          title={`${it.label}${it.v > 1 ? ` x${it.v}` : ""} — ${it.desc}`}
+          className={`text-xs px-1.5 py-0.5 rounded-md font-bold border border-black/25 shadow ${it.cls}`}
+        >
+          {it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}
+        </span>
+      ))}
     </div>
   );
 }
 
-// ผู้เล่นคนอื่นรอบโต๊ะ — picked = ถูกเลือกเป็นเป้าหมาย ANATA WAAAAAAAA แล้ว
-function OtherPlayer({ p, phase, slot, targetable, onAttack, picked }) {
+// ---------- หน้าต่างดูสถานะของผู้เล่น (แตะการ์ดผู้เล่นคนไหนก็ได้ตอนไม่ได้เลือกเป้า) ----------
+function StatusModal({ p, onClose }) {
+  const items = statusEntries(p, true);
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-xl overflow-hidden w-14 h-14 border-2 shrink-0 bg-black/40" style={{ borderColor: p.color }}>
+            {p.img && <img src={p.img} alt="" className="w-full h-full object-cover" />}
+          </div>
+          <div className="min-w-0">
+            <div className="text-lg font-black truncate" style={{ color: p.color }}>{p.name}</div>
+            <div className="text-sm opacity-80 truncate">{p.character?.name} — สถานะที่ติดอยู่ตอนนี้</div>
+          </div>
+        </div>
+        {items.length === 0 ? (
+          <div className="text-sm opacity-70 py-2 text-center">ไม่มีสถานะผิดปกติ</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {items.map((it) => (
+              <div key={it.key} className="flex items-start gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
+                <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}</span>
+                <span className="text-sm opacity-90 leading-snug">{it.desc}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
+      </div>
+    </div>
+  );
+}
+
+// ผู้เล่นคนอื่นรอบโต๊ะ — picked = ถูกเลือกเป้าหมาย ANATA WAAAAAAAA แล้ว
+//  คลิกตอนไม่ได้เลือกเป้า = เปิดหน้าต่างดูสถานะของคนนั้น (onInspect)
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect }) {
   const summary = phase === "SUMMARY";
   return (
     <div
@@ -356,8 +414,9 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked }) {
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%` }}
     >
       <div
-        onClick={targetable ? () => { clickSound(); onAttack(p.id); } : undefined}
-        className={`relative ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair targetable rounded-2xl" : ""}`}
+        onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
+        className={`relative ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair targetable rounded-2xl" : "cursor-pointer"}`}
+        title={targetable ? undefined : "แตะเพื่อดูสถานะ"}
       >
         <Portrait p={p} className="w-20 h-20 -rotate-3 border-4" />
         <div className="absolute inset-0 rounded-2xl border-4 -rotate-3 pointer-events-none" style={{ borderColor: p.color }} />
@@ -375,18 +434,19 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked }) {
           {p.busted ? "แตก!" : `${p.score} แต้ม`}
         </div>
       )}
-      <StatusChips statuses={p.statuses} tonkatsu={p.tonkatsu} profit={p.profit} />
+      <StatusChips p={p} />
     </div>
   );
 }
 
 // ---------- การ์ดคู่ต่อสู้แบบมือถือ (เรียงกริดด้านบน แตะเพื่อโจมตี/เลือกเป้า ANATA) ----------
-function MobileOpponent({ p, phase, targetable, onAttack, picked }) {
+//  แตะตอนไม่ได้เลือกเป้า = เปิดหน้าต่างดูสถานะของคนนั้น (onInspect)
+function MobileOpponent({ p, phase, targetable, onAttack, picked, onInspect }) {
   const summary = phase === "SUMMARY";
   return (
     <div
-      onClick={targetable ? () => { clickSound(); onAttack(p.id); } : undefined}
-      className={`relative flex items-center gap-2 rounded-2xl bg-black/50 border-2 px-2 py-1.5 min-h-[68px] ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "targetable cursor-crosshair" : ""}`}
+      onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
+      className={`relative flex items-center gap-2 rounded-2xl bg-black/50 border-2 px-2 py-1.5 min-h-[68px] ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "targetable cursor-crosshair" : "cursor-pointer"}`}
       style={{ borderColor: p.color }}
     >
       <div className="relative shrink-0">
@@ -407,7 +467,7 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked }) {
           {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} />)}
           {p.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{p.shield}</span>}
         </div>
-        <StatusChips statuses={p.statuses} left tonkatsu={p.tonkatsu} profit={p.profit} />
+        <StatusChips p={p} left />
       </div>
       {summary && p.score !== null && (
         <div className={`score-pop shrink-0 text-xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : "text-white"}`}>
@@ -424,7 +484,9 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked }) {
 }
 
 // ---------- modal รายละเอียดตัวละคร (ใช้ร่วมกันทั้งจอคอม/มือถือ) ----------
-function CharModal({ ch, onClose }) {
+//  me = ผู้เล่นของเรา -> โชว์สถานะผิดปกติที่ติดอยู่ตอนนี้ พร้อมคำอธิบายเต็ม
+function CharModal({ ch, me, onClose }) {
+  const myStatuses = me ? statusEntries(me, true) : [];
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -436,6 +498,19 @@ function CharModal({ ch, onClose }) {
               <div className="text-sm opacity-80">{s.desc}</div>
             </div>
           ) : null
+        )}
+        {myStatuses.length > 0 && (
+          <div className="py-1.5 border-t border-white/10">
+            <div className="font-bold mb-1.5">สถานะที่ติดอยู่ตอนนี้</div>
+            <div className="flex flex-col gap-1.5">
+              {myStatuses.map((it) => (
+                <div key={it.key} className="flex items-start gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-1.5">
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}</span>
+                  <span className="text-sm opacity-90 leading-snug">{it.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
         <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
       </div>
@@ -555,6 +630,7 @@ export default function Game({ state }) {
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
+  const [statusViewId, setStatusViewId] = useState(null); // ดูสถานะผู้เล่นคนอื่น (แตะการ์ดตอนไม่ได้เลือกเป้า)
   const vp = useViewport();
   const phase = state.gameState;
   const me = state.players.find((p) => p.id === state.youId);
@@ -566,6 +642,8 @@ export default function Game({ state }) {
   const loser = state.players.find((p) => p.isLoser);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
+  // ผู้เล่นที่กำลังเปิดดูสถานะ (ข้อมูลสดจาก state ทุกครั้งที่ re-render)
+  const statusView = statusViewId ? state.players.find((x) => x.id === statusViewId) : null;
   // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
   const beatMe = !!(me && ch?.id === "kuwagata" && me.alive && me.hp < 3);
   // กลางวัน/กลางคืน (patch 1.7): สลับทุก 3 เทิร์น — โอเบรอนสลับร่าง/ท่าไม้ตายตามช่วงเวลา
@@ -728,6 +806,7 @@ export default function Game({ state }) {
               targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
               onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : socket.emit("attack", { targetId: id }))}
+              onInspect={setStatusViewId}
             />
           ))}
         </div>
@@ -791,7 +870,7 @@ export default function Game({ state }) {
                 {me.tempHp > 0 && <span className="text-sm text-echo-gold font-bold">💛{me.tempHp}</span>}
                 <span className="flex gap-0.5">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                 {me.shield > 0 && <span className="text-sm text-echo-cyan font-bold">+🛡️{me.shield}</span>}
-                <StatusChips statuses={me.statuses} left tonkatsu={me.tonkatsu} profit={me.profit} />
+                <StatusChips p={me} left />
                 <span className="ml-auto flex items-center gap-1.5">
                   <span className="flex gap-1 p-1 rounded-lg bg-black/25">
                     {Array.from({ length: me.maxSkill }, (_, i) => (
@@ -916,8 +995,9 @@ export default function Game({ state }) {
           </div>
         )}
 
-        {showChar && ch && <CharModal ch={ch} onClose={() => setShowChar(false)} />}
+        {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
         {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
+        {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>
     );
   }
@@ -962,6 +1042,7 @@ export default function Game({ state }) {
           targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
           onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : socket.emit("attack", { targetId: id }))}
+          onInspect={setStatusViewId}
         />
       ))}
 
@@ -1030,7 +1111,7 @@ export default function Game({ state }) {
                   <span className="flex gap-0.5 ml-1">{Array.from({ length: me.maxArmor }, (_, i) => <Shield key={i} on={i < me.armor} />)}</span>
                   {me.shield > 0 && <span className="text-xs text-echo-cyan font-bold">+🛡️{me.shield}</span>}
                   <span className="font-bold opacity-90">เกราะ</span>
-                  <StatusChips statuses={me.statuses} tonkatsu={me.tonkatsu} profit={me.profit} />
+                  <StatusChips p={me} />
                 </div>
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
@@ -1171,9 +1252,10 @@ export default function Game({ state }) {
         </div>
       )}
 
-      {/* ---------- modal รายละเอียดตัวละคร ---------- */}
-      {showChar && ch && <CharModal ch={ch} onClose={() => setShowChar(false)} />}
+      {/* ---------- modal รายละเอียดตัวละคร / ดูสถานะผู้เล่น ---------- */}
+      {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
       {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
+      {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>
     </div>
   );
