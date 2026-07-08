@@ -5,6 +5,20 @@ import { POSITION_COLORS } from "../data/positions";
 
 const PURPLE = "linear-gradient(135deg,#9b4f96,#7d3a78)";
 
+// ---------- กลุ่มความยากในการเล่น (แบ่งหน้าเลือกตัวละคร) ----------
+//  order = ลำดับการแสดงในกลุ่ม — ตัวที่ไม่อยู่ในลิสต์จะต่อท้ายตามลำดับ roster
+const DIFFICULTY_GROUPS = [
+  { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["banagher", "hikaru", "kuwagata"] },
+  { key: "medium", label: "กลาง", color: "#E5B33B", order: ["eva13", "temari"] },
+  { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone"] },
+  { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["gambler", "appleguy", "broadband_man"] },
+];
+// ตัวละครในกลุ่มความยากนั้น เรียงตาม order ที่กำหนด
+function charsInGroup(roster, g) {
+  const idx = (c) => { const i = g.order.indexOf(c.id); return i < 0 ? 999 : i; };
+  return roster.filter((c) => (c.difficulty || "easy") === g.key).sort((a, b) => idx(a) - idx(b));
+}
+
 // รูปตัวละคร (เต็มกรอบ) — ใช้ img ถ้ามี ไม่งั้นอีโมจิสำรอง
 function CharImage({ c, className, emojiSize = "3.5rem", rounded = "" }) {
   const [broken, setBroken] = useState(false);
@@ -53,6 +67,13 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
   const [picked, setPicked] = useState(null);
   const color = POSITION_COLORS[position] || "#9B4F96";
   const sel = roster.find((c) => c.id === picked);
+  // roster เรียงตามกลุ่มความยาก (ง่าย -> กลาง -> ยาก -> เอาฮา) — ตัวที่ไม่มีกลุ่มต่อท้าย
+  const grouped = DIFFICULTY_GROUPS.map((g) => ({ ...g, chars: charsInGroup(roster, g) }));
+  const orderedRoster = [
+    ...grouped.flatMap((g) => g.chars),
+    ...roster.filter((c) => !DIFFICULTY_GROUPS.some((g) => (c.difficulty || "easy") === g.key)),
+  ];
+  const selGroup = sel ? DIFFICULTY_GROUPS.find((g) => g.key === (sel.difficulty || "easy")) : null;
 
   const pick = (id) => { clickSound(); setPicked(id); };
   const confirm = () => { clickSound(); if (picked) onConfirm(picked); };
@@ -91,35 +112,45 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
       {roster.length === 0 ? (
         <div className="flex-1 grid place-items-center opacity-70">กำลังโหลดตัวละคร...</div>
       ) : !sel ? (
-        /* ================= โหมดกริด (ยังไม่เลือก) ================= */
+        /* ================= โหมดกริด (ยังไม่เลือก) — แบ่งกลุ่มตามความยากในการเล่น ================= */
         <>
-          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4 min-w-0 w-full">
-            <p className="opacity-70">แตะเลือกตัวละครเพื่อดูรายละเอียด</p>
-            {/* 2 แถวคงที่ ตัวละครใหม่เพิ่มทางขวา -> เลื่อนแนวนอนดูได้ */}
-            <div className="w-full overflow-x-auto">
-              <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-4 sm:gap-6 mx-auto px-1 pb-2">
-                {roster.map((c) =>
-                  c.locked ? (
-                    <div key={c.id} className="cursor-not-allowed" title="ยังไม่ปลดล็อก">
-                      <div className="relative w-32 h-32 sm:w-40 sm:h-40">
-                        <CharImage c={c} className="w-full h-full grayscale opacity-50" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
-                        <div className="absolute inset-0 grid place-items-center text-5xl">🔒</div>
-                      </div>
-                      <div className="mt-1.5 font-bold text-sm text-white/50">{c.name}</div>
+          <div className="flex-1 w-full min-w-0 overflow-y-auto p-4 sm:p-6">
+            <p className="opacity-70 text-center mb-4">แตะเลือกตัวละครเพื่อดูรายละเอียด</p>
+            <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24">
+              {grouped.map((g) =>
+                g.chars.length === 0 ? null : (
+                  <div key={g.key}>
+                    {/* หัวข้อกลุ่มความยาก */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-base sm:text-lg font-black px-4 py-1 rounded-full text-white shadow-lg shrink-0" style={{ background: g.color }}>
+                        ความยาก · {g.label}
+                      </span>
+                      <div className="flex-1 h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${g.color}, transparent)` }} />
                     </div>
-                  ) : (
-                    <button key={c.id} onClick={() => pick(c.id)} className="transition hover:scale-105" title={c.name}>
-                      <CharImage c={c} className="w-32 h-32 sm:w-40 sm:h-40" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
-                      <div className="mt-1.5 font-bold text-sm">{c.name}</div>
-                    </button>
-                  )
-                )}
-                {/* การ์ด "เร็วๆนี้" */}
-                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl grid place-items-center bg-gray-200 text-gray-700 shadow-lg">
-                  <div className="text-6xl">👤</div>
-                  <div className="font-bold -mt-1">เร็วๆนี้</div>
-                </div>
-              </div>
+                    <div className="flex flex-wrap gap-4 sm:gap-6">
+                      {g.chars.map((c) =>
+                        c.locked ? (
+                          <div key={c.id} className="cursor-not-allowed" title="ยังไม่ปลดล็อก">
+                            <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+                              <CharImage c={c} className="w-full h-full grayscale opacity-50" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
+                              <div className="absolute inset-0 grid place-items-center text-5xl">🔒</div>
+                            </div>
+                            <div className="mt-1.5 font-bold text-sm text-white/50">{c.name}</div>
+                          </div>
+                        ) : (
+                          <button key={c.id} onClick={() => pick(c.id)} className="transition hover:scale-105" title={c.name}>
+                            <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+                              <CharImage c={c} className="w-full h-full" rounded="rounded-2xl shadow-lg" emojiSize="4rem" />
+                              <div className="absolute inset-x-0 bottom-0 h-1.5 rounded-b-2xl" style={{ background: g.color }} />
+                            </div>
+                            <div className="mt-1.5 font-bold text-sm">{c.name}</div>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
           <button
@@ -136,7 +167,7 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
             {/* คอลัมน์ตัวละครให้สลับ (แนวนอนบนมือถือ / แนวตั้งบนจอกว้าง)
                 จอกว้าง: ล็อกความสูงแล้วเลื่อนขึ้นลงดูตัวอื่นได้ — ไม่ wrap เป็นหลายคอลัมน์จนดันจอกว้าง */}
             <div className="flex flex-row lg:flex-col flex-wrap lg:flex-nowrap justify-center lg:justify-start gap-3 shrink-0 p-1 lg:max-h-[70vh] lg:overflow-y-auto">
-              {roster.map((c) => (
+              {orderedRoster.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => !c.locked && pick(c.id)}
@@ -167,10 +198,15 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
             {/* แผงสกิล */}
             <div className="w-full lg:flex-1 lg:self-stretch lg:max-h-[70vh] bg-echo-navy/85 rounded-3xl p-4 sm:p-5 flex flex-col gap-3">
               <div
-                className="rounded-xl bg-white/5 border-2 px-4 py-2 text-2xl sm:text-3xl font-bold text-white text-center"
+                className="rounded-xl bg-white/5 border-2 px-4 py-2 text-center"
                 style={{ borderColor: color }}
               >
-                {sel.name}
+                <span className="text-2xl sm:text-3xl font-bold text-white align-middle">{sel.name}</span>
+                {selGroup && (
+                  <span className="ml-3 align-middle text-sm font-black px-3 py-1 rounded-full text-white whitespace-nowrap" style={{ background: selGroup.color }}>
+                    ความยาก · {selGroup.label}
+                  </span>
+                )}
               </div>
               {/* auto-rows-fr = ทุกช่องสูงเท่ากัน ช่องที่คำอธิบายยาวจะเลื่อนดูในตัวเอง */}
               <div className="grid grid-cols-2 auto-rows-fr gap-3 flex-1 min-h-0">

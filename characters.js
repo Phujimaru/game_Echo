@@ -28,6 +28,7 @@ const CHARACTERS = [
     id: "hikaru",
     name: "ไรโด ฮิคารุ",
     avatar: 0,
+    difficulty: "easy", // ความยากในการเล่น: easy | medium | hard | fun (ใช้แบ่งหน้าเลือกตัวละคร)
     img: "/characters/hikaru/hikaru_ginga.jpg",
     transformImg: "/characters/hikaru/ginga.jpg", // สลับรูปเป็นร่าง Ginga ระหว่างอยู่ในผลท่าไม้ตาย
     // สกิลติดตัว: ระหว่างอยู่ในร่าง Ginga (ท่าไม้ตาย) การโจมตี +1 หน่วย
@@ -63,6 +64,7 @@ const CHARACTERS = [
     id: "kuwagata",
     name: "คุวากาตะโอเจอร์",
     avatar: 1,
+    difficulty: "easy",
     img: "/characters/kuwagata/Kuwakata_Ohger.webp",
     // สกิลติดตัว Beat Mode: พลังชีวิต < 3 -> ประกายเขี้ยวปฏิปักษ์ (จัดการในตรรกะ engine โดยตรง)
     passive: {
@@ -94,30 +96,10 @@ const CHARACTERS = [
     },
   },
   {
-    id: "winton",
-    name: "วินตัน",
-    avatar: 2,
-    img: "/characters/winton/winton.webp",
-    locked: true,
-    passive: {
-      name: "ชิงไหวพริบ",
-      desc: "เมื่อชนะรอบ รับแต้มสกิล +1",
-      trigger: "win",
-      effect: { type: "points", amount: 1 },
-    },
-    basic: { name: "เสี่ยงดวง", desc: "จั่วไพ่เพิ่ม 1 ใบ", cost: 2, instant: true, effect: { type: "draw", amount: 1 } },
-    secondary: { name: "เงาปกป้อง", desc: "กันความเสียหายครั้งถัดไป 1 ครั้ง", cost: 4, effect: { type: "shield", amount: 1 } },
-    ultimate: {
-      name: "ลอบสังหาร",
-      desc: "ฟื้นเลือดจริง +1 และรับเกราะ +1",
-      cost: 6,
-      effect: [{ type: "heal", amount: 1 }, { type: "armor", amount: 1 }],
-    },
-  },
-  {
     id: "banagher",
     name: "บานาจ ลิงก์",
     avatar: 3,
+    difficulty: "easy",
     img: "/characters/banagher/Banagher_Links.png",
     // สกิลติดตัว NT-D System: ถูกเลือกโจมตี -> สวนกลับผู้โจมตี 2 (นับเกราะ) + เปิดร่าง NT-D
     // (จัดการในตรรกะ engine โดยตรง ไม่ผูก trigger)
@@ -152,6 +134,7 @@ const CHARACTERS = [
     id: "temari",
     name: "เทมาริ สึกิมูระ",
     avatar: 4,
+    difficulty: "medium",
     img: "/characters/temari/temari.webp",
     // สกิลติดตัว หิวอะโปรดิวเซอร์: เป้าหมาย ANATA WAAAAAAAA แพ้/ไพ่แตก -> โดนขิงจนช้ำ รับดาเมจทันที
     // (จัดการในตรรกะ engine โดยตรง ไม่ผูก trigger)
@@ -184,44 +167,10 @@ const CHARACTERS = [
     },
   },
   {
-    id: "fujimaru",
-    name: "ฟูจิมารุ ริทสึกะ",
-    avatar: 5,
-    img: "/characters/fujimaru/fujimaru.jpg",
-    locked: true, // ล็อกไว้ ยังไม่เปิดให้เลือก
-    // สกิลติดตัว เรจูอาคมบัญชา: UI พิเศษแยกจากช่องสกิล ไม่นับเป็นการใช้สกิล (จัดการใน engine โดยตรง)
-    passive: {
-      name: "ขอสาบานด้วยอาคมบัญชานี้",
-      desc: "มีเรจูอาคมบัญชา 3 ครั้งต่อเกม สั่งใช้ก่อนเปิดการ์ดโดยไม่นับเป็นการใช้สกิล (ใช้พร้อมสกิลอื่นได้) เลือกได้ 3 คำสั่ง: 1) เทิร์นนี้เป็นอมตะ ไม่ถูกเลือกโจมตี และไม่รับความเสียหายใดๆ 2) สุ่มฟื้นพลังชีวิต หรือ เกราะ อย่างใดอย่างหนึ่งจนเต็ม (50/50) 3) เติมแต้มสกิลให้เต็ม 8 แต้ม",
-    },
-    basic: {
-      name: "จอมเวทย์ฝึกหัด",
-      desc: "ทำงานก่อนเปิดการ์ด: ความเสียหายจากการแพ้จั่วการ์ดหรือไพ่แตกในเทิร์นนี้รุนแรงขึ้น +1 หน่วยต่อการใช้ (คงอยู่ 1 เทิร์น) และเทิร์นถัดไปจะฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้ — พิเศษ: กดใช้ได้ถึง 3 ครั้งต่อเทิร์น แต่ใช้ไม่ได้ระหว่างเปิด Everything For Humanity",
-      cost: 2,
-      img: "/characters/fujimaru/fujimaru_skill1.jpg",
-      instant: true, // มีผลช่วงจั่วการ์ด เด้งโชว์ทันที
-      effect: null, // จัดการใน engine โดยตรง (นับสแตค mage + ฟื้นเลือดเทิร์นถัดไป)
-    },
-    secondary: {
-      name: "Mystic Code",
-      desc: "ทำงานก่อนเปิดการ์ด: หักเกราะตัวเอง 1 หน่วย เพื่อต่ออายุ Everything For Humanity +1 เทิร์น — ใช้ไม่ได้ถ้าไม่มีเกราะเหลือ หรือยังไม่ได้เปิด Everything For Humanity",
-      cost: 4,
-      img: "/characters/fujimaru/fujimaru_skill2.jpg",
-      instant: true, // มีผลทันทีช่วงจั่วการ์ด
-      effect: null, // จัดการใน engine โดยตรง (หักเกราะ + ต่ออายุ humanity)
-    },
-    ultimate: {
-      name: "Everything For Humanity",
-      desc: "ทำงานหลังเปิดการ์ด: ใช้เรจูอาคมบัญชาทั้ง 3 ที่เหลือ (มีไม่ครบ 3 = ใช้ไม่ได้) หักพลังชีวิตตัวเองเหลือ 1 หน่วย เพิ่มความจุและฟื้นเกราะ +3 หน่วย เพิ่มพลังโจมตี +4 หน่วย และความเสียหายจากการแพ้จั่วการ์ด/ไพ่แตกจะทำอะไรไม่ได้ — คงอยู่ 3 เทิร์น หากผลจบลงแล้วเกมยังไม่จบ ตัวละครจะตายลงและแพ้ทันที",
-      cost: 6,
-      img: "/characters/fujimaru/fujimaru_skill3.jpg",
-      effect: { type: "status", status: "humanity", turns: 3 },
-    },
-  },
-  {
     id: "gambler",
     name: "Gambler the gambling",
     avatar: 6,
+    difficulty: "fun",
     img: "/characters/gambler/gambler.jpg",
     // สกิลติดตัว แจ๊กพอตแตก!: พลังชีวิต < 3 -> เสี่ยงโชคทุกสกิล (รวมท่าไม้ตาย) เป็น 60/40 + ผลดี +1 หน่วย
     passive: {
@@ -258,6 +207,7 @@ const CHARACTERS = [
     id: "eva13",
     name: "เอวานเกเลี่ยน หมายเลข 13",
     avatar: 7,
+    difficulty: "medium",
     img: "/characters/eva13/eva13.webp",
     // สกิลติดตัว 3 อย่าง (จัดการใน engine โดยตรง):
     //  1 ไม่สามารถแก้ไขอะไรได้อีกแล้ว: ตายขณะ fourth impact -> ระเบิดทุกคน 5 หน่วย
@@ -294,6 +244,7 @@ const CHARACTERS = [
     id: "oberon",
     name: "โอเบรอน ราชาแห่งภูติ",
     avatar: 8,
+    difficulty: "hard",
     img: "/characters/oberon/oberon_morning.jpg",
     // ระบบกลางวัน/กลางคืน (patch 1.7): กลางคืนสลับร่างเป็น "ราชาแห่งการหลอกลวง" อัตโนมัติ
     nightName: "โอเบรอน ราชาแห่งการหลอกลวง",
@@ -347,41 +298,10 @@ const CHARACTERS = [
     },
   },
   {
-    id: "shaggy",
-    name: "แชกกี้ โรเจอร์",
-    avatar: 9,
-    img: "/characters/shaggy/shaggy.jpg",
-    locked: true, // ล็อกไว้ ยังไม่เปิดให้เลือก (ชุดสกิลจริงจะออกแบบทีหลัง)
-    passive: {
-      name: "พลังแค่ 1%",
-      desc: "เมื่อชนะรอบ รับแต้มสกิล +1",
-      trigger: "win",
-      effect: { type: "points", amount: 1 },
-    },
-    basic: {
-      name: "Zoinks!",
-      desc: "จั่วไพ่เพิ่ม 1 ใบ",
-      cost: 2,
-      instant: true,
-      effect: { type: "draw", amount: 1 },
-    },
-    secondary: {
-      name: "แซนด์วิชยักษ์",
-      desc: "ฟื้นพลังชีวิต 1 หน่วย",
-      cost: 4,
-      effect: { type: "heal", amount: 1 },
-    },
-    ultimate: {
-      name: "สแกร็ปปี้ ดู",
-      desc: "ฟื้นเลือดจริง +1 และรับเกราะ +1",
-      cost: 6,
-      effect: [{ type: "heal", amount: 1 }, { type: "armor", amount: 1 }],
-    },
-  },
-  {
     id: "appleguy",
     name: "Apple guy",
     avatar: 10,
+    difficulty: "fun",
     img: "/characters/appleguy/appleguy.jpg",
     // สกิลติดตัว: หลบการถูกเลือกโจมตีระหว่างท่าไม้ตายทำงาน (จัดการใน engine โดยตรง)
     passive: {
@@ -418,6 +338,7 @@ const CHARACTERS = [
     id: "broadband_man",
     name: "เจ้าแห่งเน็ตบ้าน",
     avatar: 11,
+    difficulty: "fun",
     img: "/characters/broadband_man/broadband_man.jpg",
     // สกิลติดตัว ชำระค่าบริการ + ระบบสัญญา (จัดการใน engine โดยตรง):
     //  - คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1
@@ -455,6 +376,7 @@ const CHARACTERS = [
     id: "kotone",
     name: "ฟุจิตะ โคโตเนะ",
     avatar: 12,
+    difficulty: "hard",
     img: "/characters/kotone/kotone.jpg",
     // สกิลติดตัว กระปุกออมสินน้องหมูน้อย + ข้อเสียเจอท่านประธานเซนะ + สถานะพิเศษ (จัดการใน engine โดยตรง):
     //  - coin สะสมจาก Part-time (สูงสุด 6) -> ตอนโจมตี 2 coin = +1 ความเสียหาย (ใช้แล้วเหรียญหมดไป)
@@ -529,6 +451,7 @@ function publicRoster() {
     avatar: c.avatar,
     img: c.img,
     locked: !!c.locked,
+    difficulty: c.difficulty || "easy", // ความยากในการเล่น (ใช้แบ่งหน้าเลือกตัวละคร)
     passive: c.passive ? { name: c.passive.name, desc: c.passive.desc } : null,
     basic: pub(c.basic),
     secondary: pub(c.secondary),
