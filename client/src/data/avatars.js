@@ -1,5 +1,5 @@
 // อีโมจิสำรอง (ใช้เมื่อรูปตัวละครโหลดไม่ขึ้น) — รูปจริงอยู่ที่ public/characters/<id>/
-export const AVATAR_COUNT = 10;
+export const AVATAR_COUNT = 11;
 
 // อีโมจิสำรอง เผื่อยังไม่ได้ใส่รูป
-export const FALLBACK = ["🐱", "🐶", "🦊", "🐻", "🐼", "🐨", "🦁", "🐯", "🐸", "🐵"];
+export const FALLBACK = ["🐱", "🐶", "🦊", "🐻", "🐼", "🐨", "🦁", "🐯", "🐸", "🐵", "🍎"];
