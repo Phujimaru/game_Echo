@@ -53,9 +53,9 @@ const APPLE_ITEMS = {
   iphone: { name: "ไอโฟนเครื่องใหม่", img: "/characters/appleguy/appleguy_skill1.2.png" },
   promo:  { name: "ใบโปรโมทสินค้า", img: "/characters/appleguy/appleguy_skill1.3.jpg" },
 };
-const APPLE_ATK_MAX = 2;     // บัฟพลังโจมตีจากการมอบของ ซ้อนทับได้ไม่เกิน 2
-const CHILL_DODGE_STEP = 25; // อัตราหลบลดลงต่อครั้งที่หลบได้ (%)
-const CHILL_DODGE_MIN = 25;  // อัตราหลบต่ำสุด (%)
+const APPLE_ATK_MAX = 2;    // บัฟพลังโจมตีจากการมอบของ ซ้อนทับได้ไม่เกิน 2
+// อัตราหลบขณะชิวๆครับน้องๆ: เริ่ม 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
+const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
 
 // ---------- ระบบกลางวัน/กลางคืน (patch 1.7) ----------
 //  เริ่มเกมเป็นกลางวันเสมอ สลับทุก 3 เทิร์น: รอบ 1-3 กลางวัน, 4-6 กลางคืน, 7-9 กลางวัน, ...
@@ -1487,12 +1487,12 @@ function doAttack(byId, targetId) {
   clearPhaseTimer();
 
   // สกิลติดตัว Apple guy (ชิวๆ ไม่โดนหรอกครับ): ขณะชิวๆครับน้องๆ ทำงาน มีโอกาสหลบการถูกเลือกโจมตี
-  //  เริ่มต้น 100% ลดลง 25% ต่อครั้งที่หลบได้ (ต่ำสุด 25%) — หลบได้ฟื้นเลือด 1 + ขึ้นวีดีโอ
-  //  หลบไม่พ้น = โดนโจมตีตามปกติ และผลชิวๆครับน้องๆ จบลง
+  //  เริ่มต้น 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
+  //  หลบได้ฟื้นเลือด 1 + ขึ้นวีดีโอ — หลบไม่พ้น = โดนโจมตีตามปกติ และผลชิวๆครับน้องๆ จบลง
   if (target.characterId === "appleguy" && (target.statuses.chill || 0) > 0) {
     const rate = Math.max(CHILL_DODGE_MIN, Math.min(100, target.chillDodge != null ? target.chillDodge : 100));
     if (Math.random() * 100 < rate) {
-      target.chillDodge = Math.max(CHILL_DODGE_MIN, rate - CHILL_DODGE_STEP);
+      target.chillDodge = rate > 50 ? 50 : CHILL_DODGE_MIN;
       target.hp = Math.min(MAX_HP, target.hp + 1); // หลบได้ ฟื้นพลังชีวิต 1 หน่วย
       addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
       target.wasAttacked = true;

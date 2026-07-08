@@ -384,7 +384,7 @@ function statusEntries(p, full) {
   if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 3) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง (สูงสุด 2) ชามที่เหลือเป็นโล่" });
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (สูงสุด 2) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟลด 1" });
-  if ((p.statuses?.chill || 0) > 0) out.push({ key: "chillDodge", v: 1, icon: "💨", label: `หลบ ${p.chillDodge != null ? p.chillDodge : 100}%`, cls: "bg-echo-cyan text-gray-900", desc: "โอกาสหลบการถูกเลือกโจมตีขณะชิวๆครับน้องๆ — ลด 25% ต่อครั้งที่หลบได้ (ต่ำสุด 25%)" });
+  if ((p.statuses?.chill || 0) > 0) out.push({ key: "chillDodge", v: 1, icon: "💨", label: `หลบ ${p.chillDodge != null ? p.chillDodge : 100}%`, cls: "bg-echo-cyan text-gray-900", desc: "โอกาสหลบการถูกเลือกโจมตีขณะชิวๆครับน้องๆ — เริ่ม 100% หลบได้เหลือ 50% หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด" });
   if (full && (p.shield || 0) > 0) out.push({ key: "shield", v: p.shield, icon: "🛡️", label: "โล่", cls: "bg-echo-armor", desc: "กันความเสียหายครั้งถัดไปตามจำนวนโล่" });
   if (full && (p.tempHp || 0) > 0) out.push({ key: "tempHp", v: p.tempHp, icon: "💛", label: "เลือดชั่วคราว", cls: "bg-echo-gold text-gray-900", desc: "หายเองใน 2 เทิร์น หรือหมดไปเมื่อรับความเสียหาย" });
   return out;
@@ -609,14 +609,14 @@ function ReijuModal({ me, onUse, onClose }) {
 }
 
 // ---------- เอาแบบนี้ได้ไหม (Apple guy สกิลพื้นฐาน): เมนูเลือกของส่งมอบ ----------
-//  ใช้ 1 แต้ม เปลี่ยนของที่จะมอบผ่านสกิลรอง "เอาไปสิ" — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง
+//  ใช้ 2 แต้ม เปลี่ยนของที่จะมอบผ่านสกิลรอง "เอาไปสิ" — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง
 //  ภาพปกสกิลพื้นฐานเปลี่ยนตามของที่เลือกอยู่
 function AppleItemModal({ me, onPick, onClose }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="text-lg font-black text-echo-gold">🍎 เอาแบบนี้ได้ไหม — เลือกของส่งมอบ</div>
-        <div className="text-sm opacity-80 mb-3">ของที่เลือกจะถูกมอบให้เป้าหมายผ่านสกิลรอง "เอาไปสิ" (ใช้ 1 แต้ม — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง)</div>
+        <div className="text-sm opacity-80 mb-3">ของที่เลือกจะถูกมอบให้เป้าหมายผ่านสกิลรอง "เอาไปสิ" (ใช้ 2 แต้ม — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง)</div>
         <div className="flex flex-col gap-2">
           {APPLE_ITEMS.map((it) => (
             <button
