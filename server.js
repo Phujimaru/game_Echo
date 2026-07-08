@@ -53,9 +53,48 @@ const APPLE_ITEMS = {
   iphone: { name: "ไอโฟนเครื่องใหม่", img: "/characters/appleguy/appleguy_skill1.2.png" },
   promo:  { name: "ใบโปรโมทสินค้า", img: "/characters/appleguy/appleguy_skill1.3.jpg" },
 };
-const APPLE_ATK_MAX = 2;    // บัฟพลังโจมตีจากการมอบของ ซ้อนทับได้ไม่เกิน 2
+const APPLE_ATK_MAX = 1;    // บัฟพลังโจมตีจากการมอบของ ไม่สามารถซ้อนทับได้ (patch 1.9)
 // อัตราหลบขณะชิวๆครับน้องๆ: เริ่ม 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
 const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
+
+// ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
+//  ระบบสัญญา: ท่าไม้ตายยื่นข้อเสนอ -> เป้าหมายตอบรับ = เป็นคู่สัญญา (เกราะ +3 / โจมตี +1 ตลอดสัญญา)
+//  คู่สัญญาใช้งานครบทุก 3 เทิร์น -> ถามต่อสัญญา (จ่าย 4 แต้มคืนให้เจ้าของ / ปฏิเสธ = เจ็บ 2 ไม่สนเกราะ)
+const CONTRACT_FEE = 4;        // ค่าต่อสัญญา (แต้มสกิล) ส่งกลับให้เจ้าแห่งเน็ตบ้าน
+const CONTRACT_CYCLE = 3;      // ถามต่อสัญญาทุกๆ N เทิร์นของการใช้งาน
+const CONTRACT_ARMOR_BONUS = 3; // คู่สัญญา: เพดานเกราะ +3 (ฟื้นให้ทันทีตอนตอบรับ)
+const FIBER_CAP = 19;          // เสือนอนกิน: คู่สัญญาจั่วไม่แตก แต่แต้มไม่เกิน 19
+// บัฟที่ "กระชากสายแลน" ถอดออกชั่วคราว 1 เทิร์น (คืนให้ตอนจบเทิร์น — เทิร์นถัดไปกลับมามีผลต่อ)
+const UNPLUG_BUFFS = ["upg", "monster", "ginga", "absorb", "beam", "paradise", "ohger", "rachan",
+  "song", "golden", "spear", "humanity", "seal", "veil", "chill", "awaken", "vortarmor", "fourth", "fiber", "tiger"];
+
+// คู่สัญญาของเจ้าแห่งเน็ตบ้านคนนี้ (ยังมีชีวิตและลิงก์ตรงกันทั้ง 2 ฝั่ง)
+function contractPartnerOf(b) {
+  if (!b || !b.contractPartner) return null;
+  const t = players[b.contractPartner];
+  return (t && t.alive && t.contractWith === b.id) ? t : null;
+}
+// เจ้าแห่งเน็ตบ้านที่ผู้เล่นคนนี้ทำสัญญาด้วย (ยังมีชีวิต)
+function contractBoss(p) {
+  if (!p || !p.contractWith) return null;
+  const b = players[p.contractWith];
+  return (b && b.alive && b.contractPartner === p.id) ? b : null;
+}
+// บัฟคู่สัญญา (เกราะ +3 / โจมตี +1) ทำงานอยู่ไหม — โดนกระชากสายแลนถอดชั่วคราวได้
+function contractBuffActive(p) {
+  return !!contractBoss(p) && !((p.statuses && p.statuses.unplug) > 0);
+}
+// "ไม่ใช้งานต่อ": ฟื้นเลือดตัวเองไม่ได้ 1 เทิร์น (จากการปฏิเสธต่อสัญญา)
+function noHealActive(p) {
+  return !!p && ((p.statuses && p.statuses.nohealing) || 0) > 0;
+}
+// ฟื้นเลือดจริงแบบเคารพสถานะ "ไม่ใช้งานต่อ" — คืนจำนวนที่ฟื้นได้จริง
+function healHp(p, amount) {
+  if (noHealActive(p)) return 0;
+  const heal = Math.min(MAX_HP - p.hp, amount);
+  if (heal > 0) p.hp += heal;
+  return heal;
+}
 
 // ---------- ระบบกลางวัน/กลางคืน (patch 1.7) ----------
 //  เริ่มเกมเป็นกลางวันเสมอ สลับทุก 3 เทิร์น: รอบ 1-3 กลางวัน, 4-6 กลางคืน, 7-9 กลางวัน, ...
@@ -113,6 +152,8 @@ const TRANSFORMS = {
   // appleguyDodge: สกิลติดตัว Apple guy — หลบการถูกเลือกโจมตีสำเร็จระหว่างชิวๆครับน้องๆ
   //  (วีดีโอ 13 วิ เล่นซ้ำได้เรื่อยๆ แต่ขึ้นเฉพาะตอนอัตราหลบ 50%/25% — จบวีดีโอค่อยขึ้นสรุปผลการตี)
   appleguyDodge: { img: "/characters/appleguy/appleguy.jpg", video: "/characters/appleguy/appleguy_final.mp4", title: "ชิวๆครับน้องๆ", label: "หลบหลีกสบายใจ", seconds: 14, music: null, afterReveal: false },
+  // broadbandBill: สกิลติดตัวเจ้าแห่งเน็ตบ้าน — ขึ้นต้นเทิร์นที่คู่สัญญาต้องจ่ายค่าต่อสัญญา (วีดีโอ 6 วิ — ครั้งแรกต่อเกม ครั้งถัดไปแจ้งเตือนเล็กๆ)
+  broadbandBill: { img: "/characters/broadband_man/broadband_man.jpg", video: "/characters/broadband_man/broadband_man_final.mp4", title: "ชำระค่าบริการ", label: "สกิลติดตัวทำงาน", seconds: 7, music: null, afterReveal: false },
 };
 
 
@@ -167,16 +208,19 @@ function upgCap(p) {
   return (p.statuses && (p.statuses.ginga || 0) > 0) ? 19 : 16;
 }
 function scoreCap(p) {
-  // แต้มสูงสุดที่รับได้ก่อนล็อกไพ่อัตโนมัติ (UPG! = เพดานของมัน, ปกติ = 21)
-  return (p.statuses && p.statuses.upg) ? upgCap(p) : 21;
+  // แต้มสูงสุดที่รับได้ก่อนล็อกไพ่อัตโนมัติ (UPG! = เพดานของมัน, เสือนอนกิน (fiber) = 19, ปกติ = 21)
+  if (p.statuses && p.statuses.upg) return upgCap(p);
+  if (p.statuses && p.statuses.fiber) return FIBER_CAP;
+  return 21;
 }
 function scoreOf(p) {
   const raw = calculateScore(p.cards);
   if (p.statuses && p.statuses.upg) return Math.min(raw, upgCap(p));
+  if (p.statuses && p.statuses.fiber) return Math.min(raw, FIBER_CAP);
   return raw;
 }
 function bustedOf(p) {
-  if (p.statuses && p.statuses.upg) return false;
+  if (p.statuses && (p.statuses.upg || p.statuses.fiber)) return false;
   return calculateScore(p.cards) > 21;
 }
 
@@ -194,11 +238,13 @@ function songActive(p) {
 // ระหว่าง Everything For Humanity (ฟุจิมารุ) เพิ่ม +3
 // ระหว่างสกิลติดตัว 3 เอวา 13 (เลือด <= 3) เพิ่ม +1
 // ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
+// ระหว่างเป็นคู่สัญญาเจ้าแห่งเน็ตบ้าน (สนใจใช้บริการเราไหม) เพิ่ม +3
 function maxArmorOf(p) {
   return MAX_ARMOR
     + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0)
     + ((((p.statuses && p.statuses.humanity) || 0) > 0) ? 3 : 0)
     + ((((p.statuses && p.statuses.vortarmor) || 0) > 0) ? 1 : 0)
+    + (contractBuffActive(p) ? CONTRACT_ARMOR_BONUS : 0)
     + (eva3Active(p) ? 1 : 0);
 }
 // เรจูอาคมบัญชา คำสั่ง 1 (ฟุจิมารุ): อมตะ 1 เทิร์น — ไม่รับความเสียหายใดๆ
@@ -273,8 +319,8 @@ function gamblerChance(p, tier) {
 //  คืนรายละเอียดว่าฮีลครั้งนี้ลงช่องไหนเท่าไหร่ (ใช้แจ้งผลใน log ให้ชัด)
 function healOverflow(p, amount) {
   let left = amount;
-  const toHp = Math.min(left, MAX_HP - p.hp);
-  p.hp += toHp; left -= toHp;
+  const toHp = healHp(p, left); // "ไม่ใช้งานต่อ" = ฟื้นเลือดจริงไม่ได้ (ล้นไปเกราะ/เลือดชั่วคราวได้ตามปกติ)
+  left -= toHp;
   let toArmor = 0;
   if (left > 0) {
     toArmor = Math.min(left, Math.max(0, maxArmorOf(p) - p.armor));
@@ -389,7 +435,7 @@ function applyEffect(p, effect) {
 }
 function applyOne(p, e) {
   switch (e.type) {
-    case "heal": p.hp = Math.min(MAX_HP, p.hp + e.amount); break;
+    case "heal": healHp(p, e.amount); break;
     case "armor": p.armor = Math.min(maxArmorOf(p), p.armor + e.amount); break;
     case "points": addSkill(p, e.amount); break;
     case "shield": p.shield += e.amount || 1; break;
@@ -461,9 +507,19 @@ function resetCombat(p) {
   p.sunriseDrop = 0; // โอเบรอน: จำนวนเทิร์นที่พลังชีวิตจะลดลงเทิร์นละ 1 อัตโนมัติ (หลังโดนฮีล 5)
   p.sleepFresh = false; // หลับไหล: เทิร์นที่เพิ่งโดนกล่อมยังไม่เริ่มนับ/ยังโจมตีได้
   p.appleItem = "drink"; // Apple guy: ของส่งมอบที่เลือกอยู่ (ค่าเริ่มต้น เครื่องดื่มชูกำลัง)
-  p.appleGifts = {};     // Apple guy: ประวัติการมอบของ "targetId:item" (มอบซ้ำ = บัฟลด + ล้างประวัติชิ้นนั้น)
-  p.appleAtk = 0;        // Apple guy: บัฟพลังโจมตีจากการมอบของ (สูงสุด 2)
+  p.appleGifts = {};     // Apple guy: ประวัติการมอบของ "targetId:item" (มอบซ้ำ = บัฟหาย + ล้างประวัติชิ้นนั้น)
+  p.appleAtk = 0;        // Apple guy: บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ — สูงสุด 1)
   p.chillDodge = 100;    // Apple guy: อัตราหลบขณะชิวๆครับน้องๆ (%) — รีเซ็ตเมื่อเปิดท่าไม้ตายใหม่
+  // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
+  p.contractPartner = null; // เจ้าแห่งเน็ตบ้าน: id คู่สัญญาปัจจุบัน (มีได้ 1 คน)
+  p.contractWith = null;    // ฝั่งคู่สัญญา: id เจ้าแห่งเน็ตบ้านที่ทำสัญญาด้วย
+  p.contractOffer = null;   // ข้อเสนอที่ยื่นไว้ รอเป้าหมายตอบ (id เป้าหมาย)
+  p.contractTurns = 0;      // จำนวนเทิร์นที่คู่สัญญาใช้งานมาแล้ว (ครบทุก 3 = ถามต่อสัญญา)
+  p.renewPending = false;   // ฝั่งคู่สัญญา: กำลังถูกถามต่อสัญญาในเทิร์นนี้
+  p.skillDrain = 0;         // โดนปฏิเสธค่าปรับ: แต้มสกิลจบเทิร์นลด 1 (จำนวนเทิร์นที่เหลือ)
+  p.skillDrainPending = 0;  // ค่าปรับเริ่มนับเทิร์นถัดไป (ย้ายเข้า skillDrain ตอนเริ่มเทิร์นใหม่)
+  p.healNextTurn = 0;       // เสือนอนกิน: ฟื้นเลือด 1 หน่วยในเทิร์นถัดไป (กรณีไม่มีคู่สัญญา)
+  p.unplugHold = null;      // กระชากสายแลน: บัฟที่ถูกถอดชั่วคราว (คืนให้ตอนจบเทิร์น)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -495,7 +551,21 @@ function buildStateFor(viewerId) {
     ? { music: "temari_final_theme", at: anataMusicSeq }
     : activeSkillMusic();
   if (!sm && oberonBg) sm = { music: "oberon", at: oberonDevour }; // เพลงสกิล/ท่าไม้ตายอื่นยังทับได้
+  // ข้อเสนอ/คำถามต่อสัญญา (เจ้าแห่งเน็ตบ้าน) ที่รอ "ผู้ชม state คนนี้" ตอบ — โชว์เฉพาะช่วงจั่วการ์ด
+  const viewer = players[viewerId];
+  let contractOffer = null;
+  let renewAsk = null;
+  if (gameState === "PLAYING" && viewer && viewer.alive) {
+    const offerer = Object.values(players).find((o) => o.alive && o.contractOffer === viewerId);
+    if (offerer) contractOffer = { from: offerer.name, color: POSITION_COLORS[offerer.position] || "#9B4F96", img: "/characters/broadband_man/broadband_man_skill3.jpg" };
+    if (viewer.renewPending) {
+      const boss = contractBoss(viewer);
+      if (boss) renewAsk = { from: boss.name, fee: CONTRACT_FEE, color: POSITION_COLORS[boss.position] || "#9B4F96", img: "/characters/broadband_man/broadband_man.jpg" };
+    }
+  }
   return {
+    contractOffer, // ข้อเสนอสัญญาที่รอเราตอบ (สนใจใช้บริการเราไหม)
+    renewAsk,      // คำถามต่อสัญญาที่รอเราตอบ (ชำระค่าบริการ)
     gameState,
     timeLeft,
     roundNumber,
@@ -547,7 +617,11 @@ function buildStateFor(viewerId) {
         profit: p.profit || 0,      // แกมเบลอร์: บัฟกำไรเท่าตัวโว้ยสะสม
         sunriseDrop: p.sunriseDrop || 0, // โอเบรอน: จำนวนเทิร์นที่จะเสียเลือด 1/เทิร์นจากรุ่งอรุณแห่งวันใหม่
         appleItem: p.appleItem || "drink", // Apple guy: ของส่งมอบที่เลือกอยู่
-        appleAtk: p.appleAtk || 0,         // Apple guy: บัฟพลังโจมตีจากการมอบของ (สูงสุด 2)
+        appleAtk: p.appleAtk || 0,         // Apple guy: บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ)
+        contractPartnerId: p.contractPartner || null, // เจ้าแห่งเน็ตบ้าน: คู่สัญญาปัจจุบัน
+        contractWithId: p.contractWith || null,       // คู่สัญญา: ทำสัญญากับเจ้าแห่งเน็ตบ้านคนไหน
+        contractTurns: p.contractTurns || 0,          // จำนวนเทิร์นที่ใช้บริการมาแล้ว (ครบทุก 3 = ถามต่อสัญญา)
+        skillDrain: p.skillDrain || 0,                // ค่าปรับปฏิเสธข้อเสนอ: แต้มจบเทิร์นลด 1 (เทิร์นที่เหลือ)
         chillDodge: p.chillDodge != null ? p.chillDodge : 100, // Apple guy: อัตราหลบปัจจุบัน (%)
         reiju: p.reiju,       // ฟุจิมารุ: เรจูอาคมบัญชาคงเหลือ (UI พิเศษ reiju0-3.jpg)
         mageUses: p.mageUses, // จอมเวทย์ฝึกหัด: กดไปแล้วกี่ครั้งในเทิร์นนี้ (สูงสุด 3)
@@ -693,6 +767,11 @@ function dealRound() {
       p.statuses.noskill = Math.max(p.statuses.noskill || 0, Number(p.noSkillNext) || 1);
       p.noSkillNext = 0;
     }
+    // ค่าปรับปฏิเสธข้อเสนอ (เจ้าแห่งเน็ตบ้าน): แต้มจบเทิร์นลด 1 — เริ่มนับเทิร์นถัดไปจากที่ปฏิเสธ
+    if (p.skillDrainPending) {
+      p.skillDrain = Math.max(p.skillDrain || 0, p.skillDrainPending);
+      p.skillDrainPending = 0;
+    }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
     // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เสียพลังชีวิตเทิร์นละ 1 หน่วยแบบไม่สนเกราะ (รวม 2 เทิร์น)
@@ -726,16 +805,20 @@ function dealRound() {
     }
     // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
     if (p.mageHealNext > 0) {
-      const heal = Math.min(MAX_HP - p.hp, p.mageHealNext);
+      const heal = healHp(p, p.mageHealNext);
       if (heal > 0) {
-        p.hp += heal;
         lastLog.push(`🪄 ${p.name} จอมเวทย์ฝึกหัด — ฟื้นพลังชีวิต +${heal}`);
       }
       p.mageHealNext = 0;
     }
+    // เสือนอนกิน (เจ้าแห่งเน็ตบ้าน): ฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป (กรณีไม่มีคู่สัญญา)
+    if ((p.healNextTurn || 0) > 0) {
+      const heal = healHp(p, p.healNextTurn);
+      if (heal > 0) lastLog.push(`🐯 ${p.name} เสือนอนกิน — ฟื้นพลังชีวิต +${heal}`);
+      p.healNextTurn = 0;
+    }
     // การตื่นขึ้น (Lai Rhyme Goodfellow โอเบรอน): ฟื้นพลังชีวิตเทิร์นละ 1 หน่วย
-    if ((p.statuses.awaken || 0) > 0 && p.hp < MAX_HP) {
-      p.hp++;
+    if ((p.statuses.awaken || 0) > 0 && healHp(p, 1) > 0) {
       lastLog.push(`⏰ ${p.name} การตื่นขึ้น — ฟื้นพลังชีวิต +1`);
     }
     firePassive(p, "roundStart");
@@ -753,6 +836,20 @@ function dealRound() {
       p.locked = true;
       if (p.hp > 1) { p.hp--; p.dmgHp++; }
       lastLog.push(`💤 ${p.name} หลับไหลจากคำลวงของราชาภูติ — ขยับไม่ได้ (เหลืออีก ${p.statuses.sleep} เทิร์น)`);
+    }
+  }
+
+  // ชำระค่าบริการ (เจ้าแห่งเน็ตบ้าน): คู่สัญญาใช้งานครบทุกๆ 3 เทิร์น -> ขึ้นวีดีโอก่อน (ครั้งแรกต่อเกม
+  //  ครั้งถัดไปแจ้งเตือนเล็กๆ) แล้วถามคู่สัญญาว่าจะต่อสัญญาไหมระหว่างช่วงจั่วการ์ด
+  for (const b of alivePlayers()) {
+    if (b.characterId !== "broadband_man") continue;
+    const t = contractPartnerOf(b);
+    if (!t) continue;
+    b.contractTurns = (b.contractTurns || 0) + 1;
+    if (b.contractTurns % CONTRACT_CYCLE === 0) {
+      t.renewPending = true;
+      triggerCutscene(b, "broadbandBill");
+      lastLog.push(`📶 ${b.name} เรียกเก็บค่าบริการ — ${t.name} ต้องเลือกต่อสัญญา (${CONTRACT_FEE} แต้ม) หรือยกเลิกสัญญา`);
     }
   }
 
@@ -886,6 +983,21 @@ function useSkill(id, tier, targets, item) {
     if (!t || !t.alive || t.id === p.id) return;
     appleTarget = t;
   }
+  // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
+  const isTiger = p.characterId === "broadband_man" && tier === "basic";     // เสือนอนกิน
+  const isLan = p.characterId === "broadband_man" && tier === "secondary";   // กระชากสายแลน
+  const isOffer = p.characterId === "broadband_man" && tier === "ultimate";  // สนใจใช้บริการเราไหม
+  // กระชากสายแลน: ใช้ได้ก็ต่อเมื่อมีคู่สัญญาแล้ว
+  if (isLan && !contractPartnerOf(p)) return;
+  // สนใจใช้บริการเราไหม: ใช้ไม่ได้ระหว่างมีคู่สัญญา/มีข้อเสนอค้าง — เลือกเป้าหมาย 1 คน (คนอื่นเท่านั้น)
+  let offerTarget = null;
+  if (isOffer) {
+    if (contractPartnerOf(p) || p.contractOffer) return;
+    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
+    const t = tgs.length === 1 ? players[tgs[0]] : null;
+    if (!t || !t.alive || t.id === p.id) return;
+    offerTarget = t;
+  }
 
   if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
   // Ohger Finish: ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ ถึงจะใช้ได้ (+1 ความเสียหาย)
@@ -975,14 +1087,14 @@ function useSkill(id, tier, targets, item) {
   // ---------- เอวา 13: หอกแห่งแคสเซียส — หักเกราะตัวเอง 1 ฟื้นเลือด 1 ----------
   if (isCassius) {
     p.armor--;
-    p.hp = Math.min(MAX_HP, p.hp + 1);
+    healHp(p, 1);
     lastLog.push(`🗡️ ${p.name} หอกแห่งแคสเซียส — หักเกราะ 1 ฟื้นพลังชีวิต +1`);
   }
   // ---------- โอเบรอน: ม่านแห่งราตรี — บัฟหมู่ก่อนเปิดการ์ด ----------
   if (isVeil) {
     for (const o of alivePlayers()) {
       o.statuses.veil = Math.max(o.statuses.veil || 0, 2); // พลังโจมตี +1 คงอยู่ 2 เทิร์น (รวมตัวเอง)
-      o.hp = Math.min(MAX_HP, o.hp + 1);                   // ฟื้นพลังชีวิตทุกคน +1 (รวมตัวเอง)
+      healHp(o, 1);                                        // ฟื้นพลังชีวิตทุกคน +1 (รวมตัวเอง)
       o.armor = Math.min(maxArmorOf(o), o.armor + 1);      // ฟื้นเกราะทุกคน +1 (รวมตัวเอง)
       // ยามฟ้าสาง +2 ถาวร (สะสมสูงสุด 3) — คนที่กำลังหลับไหลจะไม่รับเพิ่ม (ผลก่อนหน้ายังไม่หมด)
       if (o.id !== p.id && !((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 2);
@@ -992,7 +1104,7 @@ function useSkill(id, tier, targets, item) {
   // ---------- โอเบรอน: รุ่งอรุณแห่งวันใหม่ — ฮีล 5 แลกกับเสียเลือด 1/เทิร์น 2 เทิร์น (ไม่สนเกราะ) ----------
   if (isSunrise && sunriseTarget) {
     const t = sunriseTarget;
-    t.hp = Math.min(MAX_HP, t.hp + 5);
+    healHp(t, 5);
     t.sunriseDrop = 2; // หลังจากนั้นลดลงรวม 2 หน่วย — หักเทิร์นละ 1 แบบไม่สนเกราะ (ไม่ถึงตาย ค้างที่ 1)
     // ยามฟ้าสาง +1 — ไม่ติดถ้าใช้กับตัวเอง หรือเป้าหมายกำลังหลับไหล (ผลก่อนหน้ายังไม่หมด)
     if (t.id !== p.id && !((t.statuses.sleep || 0) > 0)) t.statuses.dawn = Math.min(3, (t.statuses.dawn || 0) + 1);
@@ -1033,20 +1145,69 @@ function useSkill(id, tier, targets, item) {
       t.statuses.promo = 1;
       lastLog.push(`📢 ${p.name} เอาไปสิ — แปะใบโปรโมทสินค้าให้ ${t.name} (ทุกคนเห็นแต้มการ์ดตลอดเทิร์นนี้)`);
     }
-    // บัฟพลังโจมตี: มอบของไม่ซ้ำ (คน+ชิ้น) = +1 (สูงสุด 2)
-    //  มอบชิ้นเดิมให้คนเดิมซ้ำ = -1 และล้างประวัติชิ้นนั้น (มอบอีกครั้งจะได้บัฟกลับคืน)
+    // บัฟพลังโจมตี (patch 1.9): มอบของไม่ซ้ำ (คน+ชิ้น) = +1 (ไม่ซ้อนทับ — สูงสุด 1)
+    //  มอบชิ้นเดิมให้คนเดิมซ้ำ = บัฟหายไป และล้างประวัติชิ้นนั้น (มอบอีกครั้งจะได้บัฟกลับคืน)
     p.appleGifts = p.appleGifts || {};
     const giftKey = `${t.id}:${itemKey}`;
     if (p.appleGifts[giftKey]) {
       delete p.appleGifts[giftKey];
       p.appleAtk = Math.max(0, (p.appleAtk || 0) - 1);
-      lastLog.push(`🍎 ${p.name} มอบของชิ้นเดิมให้คนเดิมซ้ำ — พลังโจมตีจากการมอบของ -1 (เหลือ ${p.appleAtk})`);
+      lastLog.push(`🍎 ${p.name} มอบของชิ้นเดิมให้คนเดิมซ้ำ — บัฟพลังโจมตีจากการมอบของหายไป (ล้างประวัติชิ้นนั้น)`);
     } else {
       p.appleGifts[giftKey] = true;
       p.appleAtk = Math.min(APPLE_ATK_MAX, (p.appleAtk || 0) + 1);
-      lastLog.push(`🍎 ${p.name} พลังโจมตีจากการมอบของ +1 (รวม ${p.appleAtk})`);
+      lastLog.push(`🍎 ${p.name} พลังโจมตีจากการมอบของ +1 (ไม่ซ้อนทับ)`);
     }
     flashSuffix = ` — มอบ${it.name}ให้ ${t.name}`;
+  }
+  // ---------- เจ้าแห่งเน็ตบ้าน: เสือนอนกิน — แยกผลตามมี/ไม่มีคู่สัญญา (ทำงานพร้อมกันไม่ได้) ----------
+  if (isTiger) {
+    const t = contractPartnerOf(p);
+    if (t) {
+      // ข้อ 1: รักษาตัวเอง 2 หน่วย + คู่สัญญาจั่วการ์ดเทิร์นนี้ไม่มีทางแตก (แต้มไม่เกิน 19)
+      const heal = healHp(p, 2);
+      t.statuses.fiber = 1;
+      flashSuffix = ` — เลี้ยงดู ${t.name}`;
+      lastLog.push(`🐯 ${p.name} เสือนอนกิน — รักษาตัวเอง +${heal} และ ${t.name} จั่วการ์ดเทิร์นนี้ไม่มีทางแตก (แต้มไม่เกิน ${FIBER_CAP})`);
+    } else {
+      // ข้อ 2: ไม่มีคู่สัญญา — โจมตี +1 (2 เทิร์น) และฟื้นเลือด 1 หน่วยเทิร์นถัดไป
+      p.statuses.tiger = Math.max(p.statuses.tiger || 0, 2);
+      p.healNextTurn = Math.max(p.healNextTurn || 0, 1);
+      flashSuffix = " — นอนรอลูกค้า";
+      lastLog.push(`🐯 ${p.name} เสือนอนกิน — พลังโจมตี +1 (2 เทิร์น) และฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป`);
+    }
+  }
+  // ---------- เจ้าแห่งเน็ตบ้าน: กระชากสายแลน — ถอดบัฟคู่สัญญาชั่วคราว 1 เทิร์น + ดาเมจ 2 ----------
+  if (isLan) {
+    const t = contractPartnerOf(p);
+    // ถอดบัฟออกชั่วคราว (นับเทิร์นนี้) — เก็บไว้ใน unplugHold แล้วคืนให้ตอนจบเทิร์น
+    t.unplugHold = t.unplugHold || {};
+    const stripped = [];
+    for (const k of UNPLUG_BUFFS) {
+      if ((t.statuses[k] || 0) > 0) {
+        t.unplugHold[k] = Math.max(t.unplugHold[k] || 0, t.statuses[k]);
+        delete t.statuses[k];
+        stripped.push(k);
+      }
+    }
+    t.statuses.unplug = 1; // ระหว่างติด: บัฟคู่สัญญา (เกราะ +3 / โจมตี +1) ก็ไม่ทำงานด้วย
+    dealMixed(t, 2);
+    maybeBeatSave(t);
+    maybeBeatMode(t);
+    maybeEva3(t);
+    t.wasAttacked = true;
+    flashSuffix = ` — ใส่ ${t.name}`;
+    lastLog.push(`🔌 ${p.name} กระชากสายแลน — บัฟของ ${t.name} หายไปชั่วคราว 1 เทิร์น${stripped.length ? ` (ถอด ${stripped.length} บัฟ)` : ""} และรับความเสียหาย -2`);
+    if (t.alive && t.hp <= 0) {
+      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+    }
+  }
+  // ---------- เจ้าแห่งเน็ตบ้าน: สนใจใช้บริการเราไหม — ยื่นข้อเสนอ รอเป้าหมายตอบก่อนเปิดไพ่ ----------
+  if (isOffer && offerTarget) {
+    p.contractOffer = offerTarget.id;
+    flashSuffix = ` — ยื่นข้อเสนอให้ ${offerTarget.name}`;
+    lastLog.push(`📶 ${p.name} สนใจใช้บริการเราไหม — ยื่นข้อเสนอสัญญาให้ ${offerTarget.name} (ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ)`);
   }
   // ---------- Apple guy: ชิวๆครับน้องๆ — รีเซ็ตอัตราหลบเป็น 100% ----------
   if (st === "chill") {
@@ -1147,7 +1308,7 @@ function useReiju(id, command) {
     lastLog.push(`📜 ${p.name} เรจูอาคมบัญชา — เทิร์นนี้เป็นอมตะ ไม่ถูกเลือกโจมตี ไม่รับความเสียหายใดๆ (เหลือ ${p.reiju})`);
   } else if (cmd === 2) {
     if (Math.random() < 0.5) {
-      p.hp = MAX_HP;
+      healHp(p, MAX_HP);
       what = "ฟื้นพลังชีวิตเต็ม";
     } else {
       p.armor = maxArmorOf(p);
@@ -1167,10 +1328,96 @@ function useReiju(id, command) {
   });
   broadcastState();
 }
+// ---- ระบบสัญญา (เจ้าแห่งเน็ตบ้าน patch 1.9) ----
+// ตอบข้อเสนอสัญญา (สนใจใช้บริการเราไหม): ตอบรับ = เป็นคู่สัญญา / ปฏิเสธ (หรือไม่ตอบก่อนเปิดไพ่) = โดนค่าปรับ
+function resolveOffer(b, t, accept, timeout) {
+  if (!b) return;
+  b.contractOffer = null;
+  if (!t || !t.alive) return;
+  if (accept && b.alive) {
+    b.contractPartner = t.id;
+    t.contractWith = b.id;
+    b.contractTurns = 0;
+    // เพดานเกราะ +3 (ผ่าน contractBuffActive) พร้อมฟื้นเกราะให้ 3 หน่วยทันที
+    t.armor = Math.min(maxArmorOf(t), t.armor + CONTRACT_ARMOR_BONUS);
+    lastLog.push(`📶 ${t.name} ตอบรับข้อเสนอของ ${b.name} — เป็นคู่สัญญา! เกราะ +${CONTRACT_ARMOR_BONUS} และพลังโจมตี +1 ตลอดสัญญา`);
+    io.emit("skillFlash", { name: `สนใจใช้บริการเราไหม — ${t.name} ตอบรับสัญญา!`, img: "/characters/broadband_man/broadband_man_skill3.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
+  } else {
+    // ปฏิเสธ: เสียเลือด 1 ไม่สนเกราะ + แต้มสกิลจบเทิร์นลด 1 เป็นเวลา 3 เทิร์น (นับเทิร์นถัดไป)
+    dealDirect(t, 1);
+    maybeBeatSave(t);
+    maybeBeatMode(t);
+    maybeEva3(t);
+    t.skillDrainPending = 3;
+    lastLog.push(`📵 ${t.name} ${timeout ? "ไม่ตอบข้อเสนอ" : "ปฏิเสธข้อเสนอ"}ของ ${b.name} — เสียเลือด 1 ไม่สนเกราะ และแต้มสกิลจบเทิร์นลด 1 (3 เทิร์นถัดไป)`);
+    io.emit("skillFlash", { name: `สนใจใช้บริการเราไหม — ${t.name} ปฏิเสธ`, img: "/characters/broadband_man/broadband_man_skill3.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
+    if (t.alive && t.hp <= 0) {
+      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+    }
+  }
+}
+// ตอบคำถามต่อสัญญา (ชำระค่าบริการ): ต่อ = จ่าย 4 แต้มคืนเจ้าของ (ขาดเท่าไหร่รับความเสียหายแทน — สนใจเกราะ)
+//  ปฏิเสธ (หรือไม่ตอบก่อนเปิดไพ่) = เสียเลือด 2 ไม่สนเกราะ + "ไม่ใช้งานต่อ" ฟื้นเลือดตัวเองไม่ได้ 1 เทิร์น + สัญญาสิ้นสุด
+function resolveRenew(t, accept, timeout) {
+  if (!t) return;
+  t.renewPending = false;
+  const b = contractBoss(t);
+  if (!b) return; // เจ้าของสัญญาตาย/หายไปแล้ว
+  if (accept) {
+    const pay = Math.min(CONTRACT_FEE, t.skillPoints);
+    const shortfall = CONTRACT_FEE - pay;
+    t.skillPoints -= pay;
+    if (pay > 0) addSkill(b, pay);
+    if (shortfall > 0) {
+      dealMixed(t, shortfall);
+      maybeBeatSave(t);
+      maybeBeatMode(t);
+      maybeEva3(t);
+    }
+    lastLog.push(`📶 ${t.name} ต่อสัญญากับ ${b.name} — จ่ายแต้มสกิล ${pay} แต้ม${shortfall > 0 ? ` (ขาดอีก ${shortfall} รับเป็นความเสียหายแทน)` : ""}`);
+    io.emit("skillFlash", { name: `ชำระค่าบริการ — ${t.name} ต่อสัญญา (จ่าย ${pay} แต้ม)`, img: "/characters/broadband_man/broadband_man.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
+  } else {
+    dealDirect(t, 2);
+    maybeBeatSave(t);
+    maybeBeatMode(t);
+    maybeEva3(t);
+    t.statuses.nohealing = 1;
+    b.contractPartner = null;
+    b.contractTurns = 0;
+    t.contractWith = null;
+    lastLog.push(`📵 ${t.name} ${timeout ? "ไม่ตอบ" : "ปฏิเสธ"}การต่อสัญญากับ ${b.name} — เสียเลือด 2 ไม่สนเกราะ ติด "ไม่ใช้งานต่อ" (ฟื้นเลือดตัวเองไม่ได้ 1 เทิร์น) และสัญญาสิ้นสุด`);
+    io.emit("skillFlash", { name: `ชำระค่าบริการ — ${t.name} ยกเลิกสัญญา`, img: "/characters/broadband_man/broadband_man.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
+  }
+  if (t.alive && t.hp <= 0) {
+    t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+    lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+  }
+}
+// รับคำตอบจากเป้าหมาย (ตอบได้ระหว่างช่วงจั่วการ์ด แม้จะเปิดไพ่ไปแล้ว)
+function answerContract(id, accept) {
+  const p = players[id];
+  if (gameState !== "PLAYING" || !p || !p.alive) return;
+  if (p.renewPending) {
+    resolveRenew(p, accept, false);
+    broadcastState();
+    checkAllLocked();
+    return;
+  }
+  const b = Object.values(players).find((o) => o.alive && o.contractOffer === id);
+  if (!b) return;
+  resolveOffer(b, p, accept, false);
+  broadcastState();
+  checkAllLocked();
+}
 function checkAllLocked() {
   if (gameState !== "PLAYING") return;
   const c = alivePlayers();
-  if (c.length > 0 && c.every((p) => p.locked)) resolveRound();
+  // รอคำตอบข้อเสนอ/ต่อสัญญา (เจ้าแห่งเน็ตบ้าน) ก่อนเปิดไพ่อัตโนมัติ — หมดเวลาเฟสไพ่ = ถือว่าปฏิเสธ
+  const pendingAnswer =
+    c.some((p) => p.renewPending && contractBoss(p)) ||
+    c.some((p) => p.contractOffer && players[p.contractOffer] && players[p.contractOffer].alive);
+  if (c.length > 0 && c.every((p) => p.locked) && !pendingAnswer) resolveRound();
 }
 
 // ---- สรุปผล ----
@@ -1178,6 +1425,18 @@ function resolveRound() {
   clearPhaseTimer();
   for (const p of alivePlayers()) p.locked = true;
   anataMusicSeq = 0; // เพลง ANATA WAAAAAAAA จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
+
+  // ข้อเสนอ/คำถามต่อสัญญา (เจ้าแห่งเน็ตบ้าน) ที่ยังไม่ตอบเมื่อถึงเวลาเปิดไพ่ = ถือว่าปฏิเสธ
+  for (const p of Object.values(players)) {
+    if (p.contractOffer) {
+      if (p.alive) resolveOffer(p, players[p.contractOffer], false, true);
+      else p.contractOffer = null;
+    }
+    if (p.renewPending) {
+      if (p.alive) resolveRenew(p, false, true);
+      else p.renewPending = false;
+    }
+  }
 
   // ANATA WAAAAAAAA (เทมาริ): เปิดเผยเป้าหมาย + บังคับจั่วเพิ่ม 2 ใบหลังเปิดไพ่
   // ทำงานก่อนท่าไม้ตายอื่นเสมอ — ถ้าเป้าหมายแตกจากการบังคับจั่ว ท่าไม้ตายที่เพิ่งกดจะเป็นโมฆะ
@@ -1280,8 +1539,8 @@ function resolveRound() {
       // Absorb shield: ถ้าเป็นผู้แพ้แล้วเสียเกราะ ให้แปลงเกราะที่เสียกลับเป็นพลังชีวิต
       const armorLost = armorBefore - l.armor;
       if ((l.statuses.absorb || 0) > 0 && armorLost > 0) {
-        const heal = Math.min(MAX_HP - l.hp, armorLost);
-        if (heal > 0) { l.hp += heal; lastLog.push(`🛡️ ${l.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`); }
+        const heal = healHp(l, armorLost);
+        if (heal > 0) lastLog.push(`🛡️ ${l.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`);
       }
       // Beat Mode กันตาย: ทำงานทันทีแม้ความเสียหายถึงตายมาจากการแพ้จั่ว/แตก
       maybeBeatSave(l);
@@ -1493,7 +1752,7 @@ function doAttack(byId, targetId) {
     const rate = Math.max(CHILL_DODGE_MIN, Math.min(100, target.chillDodge != null ? target.chillDodge : 100));
     if (Math.random() * 100 < rate) {
       target.chillDodge = rate > 50 ? 50 : CHILL_DODGE_MIN;
-      target.hp = Math.min(MAX_HP, target.hp + 1); // หลบได้ ฟื้นพลังชีวิต 1 หน่วย
+      healHp(target, 1); // หลบได้ ฟื้นพลังชีวิต 1 หน่วย
       addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
       target.wasAttacked = true;
       lastLog.push(`🏖️ ${target.name} ชิวๆครับน้องๆ — หลบการโจมตีของ ${attacker.name} ได้! ฟื้นพลังชีวิต +1 (อัตราหลบเหลือ ${target.chillDodge}%)`);
@@ -1540,12 +1799,19 @@ function doAttack(byId, targetId) {
   //  ชนะจั่วก็ตีไม่เข้า เว้นแต่มีบัฟม่านแห่งราตรี (+1) — และร่างกลางวัน การโจมตีปกติติด "ยามฟ้าสาง" +1
   const oberonZero = attacker.characterId === "oberon" ? -1 : 0;
   const oberonDayAtk = attacker.characterId === "oberon" && !isNightRound(roundNumber);
-  // เอาไปสิ (Apple guy): บัฟพลังโจมตีจากการมอบของ (สูงสุด 2 — คงอยู่จนโดนลดจากการมอบซ้ำ)
+  // เอาไปสิ (Apple guy): บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ — คงอยู่จนหายจากการมอบซ้ำ)
   const appleAtk = attacker.characterId === "appleguy" ? (attacker.appleAtk || 0) : 0;
+  // เสือนอนกิน (เจ้าแห่งเน็ตบ้าน): พลังโจมตี +1 (2 เทิร์น — กรณีไม่มีคู่สัญญา)
+  const tigerAtk = (attacker.statuses.tiger || 0) > 0;
+  // คู่สัญญา (สนใจใช้บริการเราไหม): พลังโจมตี +1 ตลอดสัญญา (โดนกระชากสายแลนถอดชั่วคราวได้)
+  const partnerAtk = contractBuffActive(attacker);
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk; // Beam Magnum +2
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0); // Beam Magnum +2
   let dmg = base + ntdBonus;
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
+  // ชำระค่าบริการ (สกิลติดตัวเจ้าแห่งเน็ตบ้าน): คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1
+  const contractGuard = target.characterId === "broadband_man" && target.contractPartner === attacker.id && attacker.contractWith === target.id;
+  if (contractGuard) dmg = Math.max(0, dmg - 1);
 
   // Beam Magnum: หักกระสุน 1 นัดเมื่อได้โจมตีจริงเท่านั้น (ไม่นับถ้าเลือกแล้วไม่ได้ตี/แตกในเทิร์น)
   if (beam && (attacker.beamAmmo || 0) > 0) attacker.beamAmmo--;
@@ -1579,8 +1845,8 @@ function doAttack(byId, targetId) {
   // Absorb shield: เกราะที่เสียไปจากการถูกโจมตี แปลงกลับเป็นพลังชีวิต
   const armorLost = armorBefore - target.armor;
   if ((target.statuses.absorb || 0) > 0 && armorLost > 0) {
-    const heal = Math.min(MAX_HP - target.hp, armorLost);
-    if (heal > 0) { target.hp += heal; lastLog.push(`🛡️ ${target.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`); }
+    const heal = healHp(target, armorLost);
+    if (heal > 0) lastLog.push(`🛡️ ${target.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`);
   }
   // Beat Mode: ถ้าการโจมตีทำให้เลือดเหลือ < 3 -> เข้าประกายเขี้ยวปฏิปักษ์
   maybeBeatMode(target);
@@ -1644,6 +1910,9 @@ function doAttack(byId, targetId) {
   if (dawnApplied) addFx({ name: "การหลับไหลอันไม่สิ้นสุด (ยามฟ้าสาง +1)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (profitAtk > 0) addFx({ name: `กำไรเท่าตัวโว้ย +${profitAtk} (ทะลุเกราะ)`, img: "/characters/gambler/gambler_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (appleAtk > 0) addFx({ name: `เอาไปสิ +${appleAtk} (บัฟมอบของ)`, img: "/characters/appleguy/appleguy_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (tigerAtk) addFx({ name: "เสือนอนกิน +1", img: "/characters/broadband_man/broadband_man_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (partnerAtk) addFx({ name: "คู่สัญญา +1 (สนใจใช้บริการเราไหม)", img: "/characters/broadband_man/broadband_man_skill3.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (contractGuard) addFx({ name: "ชำระค่าบริการ (ความเสียหายลด 1)", img: "/characters/broadband_man/broadband_man.jpg", by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
   if (isRevenge) addFx({ name: "NT-D System แก้แค้น +1", img: TRANSFORMS.ntd.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (attackerBeat) addFx({ name: "ประกายเขี้ยวปฏิปักษ์ (ทะลุเกราะ)", img: OHGER_FORM, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
@@ -1675,6 +1944,14 @@ function endTurn() {
     (p) => p.alive && p.hp <= 0 && p.characterId === "eva13" && (p.statuses.fourth || 0) > 0
   );
 
+  // กระชากสายแลน (เจ้าแห่งเน็ตบ้าน): คืนบัฟที่ถูกถอดไว้ชั่วคราว — เทิร์นถัดไปกลับมามีผลต่อ
+  //  (คืนก่อนลูปลดเทิร์นสถานะ = บัฟถูกนับเวลาเทิร์นนี้ไปด้วยตามสเปค "นับเทิร์นนี้")
+  for (const p of Object.values(players)) {
+    if (!p.unplugHold) continue;
+    for (const [k, v] of Object.entries(p.unplugHold)) p.statuses[k] = Math.max(p.statuses[k] || 0, v);
+    p.unplugHold = null;
+  }
+
   for (const p of Object.values(players)) {
     for (const k of Object.keys(p.statuses || {})) {
       if (k === "rachan") continue; // สวมเกราะราชัน: ผลคงอยู่ถาวร ไม่ลดเทิร์น
@@ -1700,7 +1977,16 @@ function endTurn() {
 
   // จบเทิร์นรอบนั้น +1 — ช่วงกลางวันได้แต้มสกิลเพิ่มอีก +1 (ระบบกลางวัน/กลางคืน)
   const dayBonus = !isNightRound(roundNumber);
-  for (const p of alivePlayers()) addSkill(p, dayBonus ? 2 : 1);
+  for (const p of alivePlayers()) {
+    let gain = dayBonus ? 2 : 1;
+    // ค่าปรับปฏิเสธข้อเสนอ (เจ้าแห่งเน็ตบ้าน): แต้มสกิลหลังจบเทิร์นลด 1
+    if ((p.skillDrain || 0) > 0) {
+      gain = Math.max(0, gain - 1);
+      p.skillDrain--;
+      lastLog.push(`📵 ${p.name} ค่าปรับปฏิเสธข้อเสนอ — แต้มสกิลจบเทิร์นลด 1${p.skillDrain > 0 ? ` (เหลืออีก ${p.skillDrain} เทิร์น)` : ""}`);
+    }
+    addSkill(p, gain);
+  }
   if (dayBonus) lastLog.push("☀️ จบเทิร์นช่วงกลางวัน — ทุกคนได้แต้มสกิลเพิ่ม +1");
 
   // ชิวๆครับน้องๆ (Apple guy): จบเทิร์นได้แต้มสกิลเพิ่ม +1 จนกว่าจะถูกโจมตี
@@ -1753,6 +2039,20 @@ function endTurn() {
       p.ntdTarget = null;
       delete p.seen.ntd;
     }
+  }
+  // สัญญา (เจ้าแห่งเน็ตบ้าน): ฝ่ายใดฝ่ายหนึ่งตาย/หายไป -> สัญญาสิ้นสุด รอทำใหม่ได้
+  for (const p of Object.values(players)) {
+    if (p.contractPartner) {
+      const t = players[p.contractPartner];
+      if (!p.alive || !t || !t.alive || t.contractWith !== p.id) {
+        if (t && t.contractWith === p.id) { t.contractWith = null; t.renewPending = false; }
+        p.contractPartner = null;
+        p.contractTurns = 0;
+        if (p.alive || (t && t.alive)) lastLog.push(`📴 สัญญาของ ${p.name} สิ้นสุดลง`);
+      }
+    }
+    if (p.contractOffer && (!p.alive || !players[p.contractOffer] || !players[p.contractOffer].alive)) p.contractOffer = null;
+    if (p.contractWith && (!players[p.contractWith] || !players[p.contractWith].alive)) { p.contractWith = null; p.renewPending = false; }
   }
 
   // เล่นฉากระเบิด (ถ้ามี) ให้จบก่อน แล้วค่อยสรุปจบเกม/ขึ้นรอบถัดไป
@@ -1834,6 +2134,9 @@ io.on("connection", (socket) => {
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       sunriseDrop: 0, sleepFresh: false,
       appleItem: "drink", appleGifts: {}, appleAtk: 0, chillDodge: 100,
+      contractPartner: null, contractWith: null, contractOffer: null,
+      contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
+      healNextTurn: 0, unplugHold: null,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
@@ -1850,6 +2153,7 @@ io.on("connection", (socket) => {
   socket.on("lock", () => lock(socket.id));
   socket.on("useSkill", ({ tier, targets, item } = {}) => useSkill(socket.id, tier, targets, item));
   socket.on("useReiju", ({ command } = {}) => useReiju(socket.id, command));
+  socket.on("contractAnswer", ({ accept } = {}) => answerContract(socket.id, !!accept)); // เจ้าแห่งเน็ตบ้าน: ตอบข้อเสนอ/ต่อสัญญา
   socket.on("attack", ({ targetId } = {}) => doAttack(socket.id, targetId));
   socket.on("backToLobby", () => { if (gameState === "GAMEOVER") backToLobby(); });
 
