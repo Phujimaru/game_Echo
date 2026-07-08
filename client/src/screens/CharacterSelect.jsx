@@ -175,8 +175,9 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
               {/* auto-rows-fr = ทุกช่องสูงเท่ากัน ช่องที่คำอธิบายยาวจะเลื่อนดูในตัวเอง */}
               <div className="grid grid-cols-2 auto-rows-fr gap-3 flex-1 min-h-0">
                 <SkillTile label="สกิลติดตัว" skill={sel.passive} />
-                <SkillTile label="สกิลพื้นฐาน" skill={sel.basic} />
-                {/* โอเบรอน: สกิลรอง/ท่าไม้ตายสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
+                <SkillTile label={sel.basicNight ? "สกิลพื้นฐาน (กลางวัน)" : "สกิลพื้นฐาน"} skill={sel.basic} />
+                {sel.basicNight && <SkillTile label="สกิลพื้นฐาน (กลางคืน)" skill={sel.basicNight} />}
+                {/* โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
                 <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
                 <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />

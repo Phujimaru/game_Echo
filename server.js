@@ -54,19 +54,32 @@ const APPLE_ITEMS = {
   promo:  { name: "ใบโปรโมทสินค้า", img: "/characters/appleguy/appleguy_skill1.3.jpg" },
 };
 const APPLE_ATK_MAX = 1;    // บัฟพลังโจมตีจากการมอบของ ไม่สามารถซ้อนทับได้ (patch 1.9)
+const APPLE_GIVE_USES = 1;  // เอาไปสิ ใช้ได้จำกัด 1 ครั้ง (เติมจากสกิลติดตัวเมื่อหลบสำเร็จ — สะสมไม่ได้) (patch 1.9.1)
 // อัตราหลบขณะชิวๆครับน้องๆ: เริ่ม 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
 const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
 
+// ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+const KOTONE_COIN_MAX = 6;       // กระปุกออมสินน้องหมูน้อย เก็บ coin ได้สูงสุด
+const KOTONE_COIN_PER_DMG = 2;   // 2 coin = +1 ความเสียหายตอนโจมตี (ใช้แล้วเหรียญหมดไป)
+const KOTONE_SENA_CHANCE = 0.4;  // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ
+const KOTONE_CAUGHT_CHANCE = 0.2; // Part-time กลางวัน: โอกาสโดนโปรดิวเซอร์จับได้
+const KOTONE_STUN_CHANCE = 0.2;  // [โหมงานหนัก]: โอกาสสุ่มสตั้นต่อเทิร์น
+const KOTONE_SILENCE_TURNS = 2;  // ท่าไม้ตาย: ใบ้การใช้สกิลของทุกคน (Dance Lession +1)
+// [โหมงานหนัก] ทำงานอยู่ไหม (คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน)
+function overworkActive(p) {
+  return !!p && ((p.statuses && p.statuses.overwork) || 0) > 0;
+}
+
 // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
-//  ระบบสัญญา: ท่าไม้ตายยื่นข้อเสนอ -> เป้าหมายตอบรับ = เป็นคู่สัญญา (เกราะ +3 / โจมตี +1 ตลอดสัญญา)
+//  ระบบสัญญา: ท่าไม้ตายยื่นข้อเสนอ -> เป้าหมายตอบรับ = เป็นคู่สัญญา (เกราะ +1 / โจมตี +1 ตลอดสัญญา)
 //  คู่สัญญาใช้งานครบทุก 3 เทิร์น -> ถามต่อสัญญา (จ่าย 4 แต้มคืนให้เจ้าของ / ปฏิเสธ = เจ็บ 2 ไม่สนเกราะ)
 const CONTRACT_FEE = 4;        // ค่าต่อสัญญา (แต้มสกิล) ส่งกลับให้เจ้าแห่งเน็ตบ้าน
 const CONTRACT_CYCLE = 3;      // ถามต่อสัญญาทุกๆ N เทิร์นของการใช้งาน
-const CONTRACT_ARMOR_BONUS = 3; // คู่สัญญา: เพดานเกราะ +3 (ฟื้นให้ทันทีตอนตอบรับ)
+const CONTRACT_ARMOR_BONUS = 1; // คู่สัญญา: เพดานเกราะ +1 (ฟื้นให้ทันทีตอนตอบรับ) — patch 1.9.1 ลดจาก 3
 const FIBER_CAP = 19;          // เสือนอนกิน: คู่สัญญาจั่วไม่แตก แต่แต้มไม่เกิน 19
 // บัฟที่ "กระชากสายแลน" ถอดออกชั่วคราว 1 เทิร์น (คืนให้ตอนจบเทิร์น — เทิร์นถัดไปกลับมามีผลต่อ)
 const UNPLUG_BUFFS = ["upg", "monster", "ginga", "absorb", "beam", "paradise", "ohger", "rachan",
-  "song", "golden", "spear", "humanity", "seal", "veil", "chill", "awaken", "vortarmor", "fourth", "fiber", "tiger"];
+  "song", "golden", "spear", "humanity", "seal", "veil", "chill", "awaken", "vortarmor", "fourth", "fiber", "tiger", "fresh"];
 
 // คู่สัญญาของเจ้าแห่งเน็ตบ้านคนนี้ (ยังมีชีวิตและลิงก์ตรงกันทั้ง 2 ฝั่ง)
 function contractPartnerOf(b) {
@@ -154,6 +167,11 @@ const TRANSFORMS = {
   appleguyDodge: { img: "/characters/appleguy/appleguy.jpg", video: "/characters/appleguy/appleguy_final.mp4", title: "ชิวๆครับน้องๆ", label: "หลบหลีกสบายใจ", seconds: 14, music: null, afterReveal: false },
   // broadbandBill: สกิลติดตัวเจ้าแห่งเน็ตบ้าน — ขึ้นต้นเทิร์นที่คู่สัญญาต้องจ่ายค่าต่อสัญญา (วีดีโอ 6 วิ — ครั้งแรกต่อเกม ครั้งถัดไปแจ้งเตือนเล็กๆ)
   broadbandBill: { img: "/characters/broadband_man/broadband_man.jpg", video: "/characters/broadband_man/broadband_man_final.mp4", title: "ชำระค่าบริการ", label: "สกิลติดตัวทำงาน", seconds: 7, music: null, afterReveal: false },
+  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+  // kotoneSena: ข้อเสียสกิลติดตัว — เจอท่านประธานเซนะจัง (วีดีโอ 5 วิ ครั้งแรกต่อเกม ครั้งถัดไปแจ้งเตือนเล็กๆ)
+  kotoneSena: { img: "/characters/kotone/kotone.jpg", video: "/characters/kotone/kotone_passive.mp4", title: "ท่านประธานเซนะจัง!?", label: "สกิลติดตัวทำงาน", seconds: 6, music: null, afterReveal: false },
+  // kawaii: ท่าไม้ตายโคโตเนะ (หลังเปิดไพ่) — วีดีโอ 15 วิ
+  kawaii: { img: "/characters/kotone/kotone_skill3.jpg", video: "/characters/kotone/kotone_final.mp4", title: "SEKAI ICHI KAWAII WATASHI", label: "ปล่อยท่าไม้ตาย", seconds: 16, music: null, afterReveal: true },
 };
 
 
@@ -510,6 +528,13 @@ function resetCombat(p) {
   p.appleGifts = {};     // Apple guy: ประวัติการมอบของ "targetId:item" (มอบซ้ำ = บัฟหาย + ล้างประวัติชิ้นนั้น)
   p.appleAtk = 0;        // Apple guy: บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ — สูงสุด 1)
   p.chillDodge = 100;    // Apple guy: อัตราหลบขณะชิวๆครับน้องๆ (%) — รีเซ็ตเมื่อเปิดท่าไม้ตายใหม่
+  p.appleGiveUses = APPLE_GIVE_USES; // Apple guy: จำนวนใช้ เอาไปสิ (เติมจากสกิลติดตัวเมื่อหลบสำเร็จ — สะสมไม่ได้)
+  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+  p.coins = 0;            // กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6)
+  p.nightWork = 0;        // จำนวนครั้งที่ทำงาน Part-time ในเฟสกลางคืนนี้ (>1 = โหมงานหนัก)
+  p.overworkNext = false; // ติด [โหมงานหนัก] ตอนเริ่มเทิร์นถัดไป
+  p.senaNext = false;     // เจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
+  p.danceBuff = false;    // Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไป +1 เทิร์น
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   p.contractPartner = null; // เจ้าแห่งเน็ตบ้าน: id คู่สัญญาปัจจุบัน (มีได้ 1 คน)
   p.contractWith = null;    // ฝั่งคู่สัญญา: id เจ้าแห่งเน็ตบ้านที่ทำสัญญาด้วย
@@ -587,8 +612,8 @@ function buildStateFor(viewerId) {
       const promoShow = (p.statuses.promo || 0) > 0;
       const ch = CHAR_BY_ID[p.characterId] || {};
       const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost, img: s.img, ammo: s.ammo } : null);
-      // Apple guy: ปกสกิลพื้นฐานเปลี่ยนตามของส่งมอบที่เลือกอยู่
-      const basicPub = pub(ch.basic);
+      // สกิลพื้นฐานสลับกลางคืน (โคโตเนะ) + Apple guy: ปกสกิลพื้นฐานเปลี่ยนตามของส่งมอบที่เลือกอยู่
+      const basicPub = pub(nightNow && ch.basicNight ? ch.basicNight : ch.basic);
       if (basicPub && p.characterId === "appleguy") basicPub.img = (APPLE_ITEMS[p.appleItem] || APPLE_ITEMS.drink).img;
       return {
         id: p.id,
@@ -618,6 +643,9 @@ function buildStateFor(viewerId) {
         sunriseDrop: p.sunriseDrop || 0, // โอเบรอน: จำนวนเทิร์นที่จะเสียเลือด 1/เทิร์นจากรุ่งอรุณแห่งวันใหม่
         appleItem: p.appleItem || "drink", // Apple guy: ของส่งมอบที่เลือกอยู่
         appleAtk: p.appleAtk || 0,         // Apple guy: บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ)
+        appleGiveUses: p.appleGiveUses != null ? p.appleGiveUses : APPLE_GIVE_USES, // Apple guy: จำนวนใช้ เอาไปสิ คงเหลือ
+        coins: p.coins || 0,               // โคโตเนะ: coin ในกระปุกออมสิน (สูงสุด 6)
+        danceBuff: !!p.danceBuff,          // โคโตเนะ: บัฟ Dance Lession (ใบ้สกิลของท่าไม้ตาย +1 เทิร์น)
         contractPartnerId: p.contractPartner || null, // เจ้าแห่งเน็ตบ้าน: คู่สัญญาปัจจุบัน
         contractWithId: p.contractWith || null,       // คู่สัญญา: ทำสัญญากับเจ้าแห่งเน็ตบ้านคนไหน
         contractTurns: p.contractTurns || 0,          // จำนวนเทิร์นที่ใช้บริการมาแล้ว (ครบทุก 3 = ถามต่อสัญญา)
@@ -774,6 +802,15 @@ function dealRound() {
     }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
+    // [โหมงานหนัก] (โคโตเนะ): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้
+    if (p.overworkNext) {
+      p.overworkNext = false;
+      p.statuses.overwork = 1; // คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน (engine ไม่ลดเทิร์นสถานะนี้)
+      p.armor = 0;
+      p.shield = 0;
+      lastLog.push(`🥵 ${p.name} ติดสถานะ [โหมงานหนัก] — เกราะพังทั้งหมด ฟื้นเกราะไม่ได้ ใช้แต้มสกิลเพิ่ม 1 และเสี่ยงสตั้น 20% ทุกเทิร์น`);
+    }
+
     // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เสียพลังชีวิตเทิร์นละ 1 หน่วยแบบไม่สนเกราะ (รวม 2 เทิร์น)
     //  ผลด้านลบจากสกิลหักเลือดได้เรื่อยๆ แต่ห้ามตาย — ค้างที่พลังชีวิต 1 หน่วย
     if ((p.sunriseDrop || 0) > 0) {
@@ -800,7 +837,8 @@ function dealRound() {
 
     // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — จบเทิร์นช่วงกลางคืน: ฟื้นทุกเทิร์น
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน (prevNight = เทิร์นที่เพิ่งจบเป็นกลางคืนตามวงจรเดิม)
-    if (!p.armorLocked && (roundNumber % 2 === 0 || prevNight)) {
+    // [โหมงานหนัก] (โคโตเนะ): ฟื้นเกราะไม่ได้จนกว่าจะใช้ Sleeping time
+    if (!p.armorLocked && !overworkActive(p) && (roundNumber % 2 === 0 || prevNight)) {
       p.armor = Math.min(maxArmorOf(p), p.armor + 1);
     }
     // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
@@ -837,6 +875,39 @@ function dealRound() {
       if (p.hp > 1) { p.hp--; p.dmgHp++; }
       lastLog.push(`💤 ${p.name} หลับไหลจากคำลวงของราชาภูติ — ขยับไม่ได้ (เหลืออีก ${p.statuses.sleep} เทิร์น)`);
     }
+
+    // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+    // Sleeping time: หลับตลอดเฟสกลางคืน (ฟื้น 2/เทิร์น) — ถึงเช้าตื่นรับ [เช้าที่สดใส] 3 เทิร์น
+    if ((p.statuses.ksleep || 0) > 0) {
+      if (isNightRound(roundNumber)) {
+        p.locked = true;
+        const heal = healHp(p, 2);
+        lastLog.push(`😴 ${p.name} หลับพักผ่อนอยู่ — ฟื้นพลังชีวิต +${heal}`);
+      } else {
+        delete p.statuses.ksleep;
+        p.statuses.fresh = 3;
+        lastLog.push(`🌅 ${p.name} ตื่นนอนอย่างสดชื่น — ได้รับ [เช้าที่สดใส] 3 เทิร์น (แต้มสกิล +1 และโล่ +1 ทุกเทิร์น)`);
+      }
+    }
+    // [เช้าที่สดใส]: แต้มสกิล +1 และโล่ +1 ทุกเทิร์นที่ผลยังอยู่
+    if ((p.statuses.fresh || 0) > 0) {
+      addSkill(p, 1);
+      p.shield += 1;
+      lastLog.push(`🌅 ${p.name} เช้าที่สดใส — แต้มสกิล +1 และโล่ +1`);
+    }
+    // เจอท่านประธานเซนะจัง: เทิร์นนี้ทำอะไรไม่ได้เลย
+    if (p.senaNext) {
+      p.senaNext = false;
+      p.statuses.sena = 1;
+      p.locked = true;
+      lastLog.push(`🏃‍♀️ ${p.name} มัวแต่หลบหนีท่านประธานเซนะจัง — ทำอะไรไม่ได้เลยทั้งเทิร์น!`);
+    }
+    // [โหมงานหนัก]: สุ่มสตั้น 20% ต่อเทิร์น
+    if (overworkActive(p) && !p.locked && Math.random() < KOTONE_STUN_CHANCE) {
+      p.statuses.kstun = 1;
+      p.locked = true;
+      lastLog.push(`😵 ${p.name} หมดแรงจาก [โหมงานหนัก] — สตั้น ขยับไม่ได้ทั้งเทิร์น!`);
+    }
   }
 
   // ชำระค่าบริการ (เจ้าแห่งเน็ตบ้าน): คู่สัญญาใช้งานครบทุกๆ 3 เทิร์น -> ขึ้นวีดีโอก่อน (ครั้งแรกต่อเกม
@@ -855,6 +926,8 @@ function dealRound() {
 
   // สลับช่วงเวลากลางวัน/กลางคืน (ทุก 3 เทิร์น): โอเบรอนสลับร่างอัตโนมัติ
   const night = isNightRound(roundNumber);
+  // ตัวนับงานกะดึก (โคโตเนะ) รีเซ็ตเมื่อพ้นเฟสกลางคืน
+  if (!night) for (const p of Object.values(players)) p.nightWork = 0;
   if (!night && oberonDevour) {
     oberonDevour = 0; // ราตรีกลืนกิน หายไปเมื่อหมดกลางคืน
     lastLog.push("🌄 ราตรีกลืนกินจางหายไปพร้อมแสงแรกของวัน");
@@ -901,9 +974,10 @@ function useSkill(id, tier, targets, item) {
   const ch = CHAR_BY_ID[p.characterId];
   let skill = ch && ch[tier];
   if (!skill) return;
-  // โอเบรอน: ท่าไม้ตาย/สกิลรองสลับตามช่วงเวลา — กลางคืนใช้ Lie Like Vortigern / ฝันร้ายยามค่ำคืน แทน
+  // โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลา — กลางคืนใช้เวอร์ชันกลางคืนแทน
   if (tier === "ultimate" && ch.ultimateNight && isNightRound(roundNumber)) skill = ch.ultimateNight;
   if (tier === "secondary" && ch.secondaryNight && isNightRound(roundNumber)) skill = ch.secondaryNight;
+  if (tier === "basic" && ch.basicNight && isNightRound(roundNumber)) skill = ch.basicNight;
   if ((p.statuses.noskill || 0) > 0) return; // โดนหอกลองกินัสปัก: เทิร์นนี้ใช้สกิลไม่ได้
 
   // เวลาทอง (แกมเบลอร์): แต้มที่ใช้ของสกิลพื้นฐาน/สกิลรองลดครึ่งหนึ่ง
@@ -911,6 +985,8 @@ function useSkill(id, tier, targets, item) {
   const goldenOn = (p.statuses.golden || 0) > 0;
   let cost = skill.cost;
   if (isGambler && goldenOn && (tier === "basic" || tier === "secondary")) cost = Math.ceil(cost / 2);
+  // [โหมงานหนัก] (โคโตเนะ): ใช้แต้มสกิลเพิ่มขึ้น 1 แต้มทุกสกิล
+  if (p.characterId === "kotone" && overworkActive(p)) cost += 1;
   if (p.skillPoints < cost) return;
 
   const st = skill.effect && !Array.isArray(skill.effect) && skill.effect.type === "status" ? skill.effect.status : null;
@@ -975,13 +1051,34 @@ function useSkill(id, tier, targets, item) {
     nightmareTarget = t.id;
   }
   // เอาไปสิ (Apple guy สกิลรอง): เลือกผู้เล่น 1 คน (คนอื่นเท่านั้น) มอบของที่เลือกไว้ทันทีก่อนเปิดการ์ด
+  //  ใช้ได้จำนวนจำกัด 1 ครั้ง (เติมได้จากสกิลติดตัวเมื่อหลบสำเร็จ — สะสมไม่ได้) (patch 1.9.1)
   const isAppleGive = p.characterId === "appleguy" && tier === "secondary";
   let appleTarget = null;
   if (isAppleGive) {
+    if ((p.appleGiveUses || 0) <= 0) return;
     const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
     const t = tgs.length === 1 ? players[tgs[0]] : null;
     if (!t || !t.alive || t.id === p.id) return;
     appleTarget = t;
+  }
+  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+  const isKotone = p.characterId === "kotone";
+  const kotoneNight = isNightRound(roundNumber);
+  const isPartTime = isKotone && tier === "basic";                    // Part-time (กลางวัน/กะดึก)
+  const isDance = isKotone && tier === "secondary" && !kotoneNight;   // Dance Lession
+  const isKSleep = isKotone && tier === "secondary" && kotoneNight;   // Sleeping time
+  const isKawaii = isKotone && tier === "ultimate";                   // Sekai ichi kawaii watashi
+  if (isPartTime && !kotoneNight && overworkActive(p)) return;        // โหมงานหนัก: Part-time กลางวันใช้ไม่ได้
+  if (isPartTime && (p.statuses.caught || 0) > 0) return;             // โดนโปรดิวเซอร์จับได้: ใช้ไม่ได้ชั่วคราว
+  if (isDance && overworkActive(p)) return;                           // โหมงานหนัก: Dance Lession ใช้ไม่ได้
+  if (isKawaii && (overworkActive(p) || kotoneNight)) return;         // ท่าไม้ตาย: ใช้ไม่ได้ตอนกลางคืน/โหมงานหนัก
+  if (isKSleep && (p.statuses.ksleep || 0) > 0) return;               // หลับอยู่แล้ว กดซ้ำไม่ได้
+  let danceTarget = null;
+  if (isDance) {
+    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
+    const t = tgs.length === 1 ? players[tgs[0]] : null;
+    if (!t || !t.alive || t.id === p.id) return;
+    danceTarget = t;
   }
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   const isTiger = p.characterId === "broadband_man" && tier === "basic";     // เสือนอนกิน
@@ -1121,6 +1218,7 @@ function useSkill(id, tier, targets, item) {
   }
   // ---------- Apple guy: เอาไปสิ — มอบของที่เลือกให้เป้าหมายทันที + บัฟพลังโจมตี ----------
   if (isAppleGive && appleTarget) {
+    p.appleGiveUses = Math.max(0, (p.appleGiveUses || 0) - 1); // จำกัด 1 ครั้ง (เติมจากสกิลติดตัว)
     const t = appleTarget;
     const itemKey = p.appleItem || "drink";
     const it = APPLE_ITEMS[itemKey];
@@ -1160,6 +1258,55 @@ function useSkill(id, tier, targets, item) {
     }
     flashSuffix = ` — มอบ${it.name}ให้ ${t.name}`;
   }
+  // ---------- โคโตเนะ: Part-time — เสียเลือด 1 (ไม่ตาย) ได้ coin +1 ----------
+  if (isPartTime) {
+    if (p.hp > 1 || (p.tempHp || 0) > 0) loseHp(p);
+    const gained = Math.min(KOTONE_COIN_MAX, (p.coins || 0) + 1) - (p.coins || 0);
+    p.coins = (p.coins || 0) + gained;
+    flashSuffix = ` — coin +${gained} (มี ${p.coins}/${KOTONE_COIN_MAX})`;
+    lastLog.push(`🐷 ${p.name} Part-time — เสียพลังชีวิต 1 หน่วย ได้ coin +${gained} (สะสม ${p.coins}/${KOTONE_COIN_MAX})`);
+    if (kotoneNight) {
+      // ทำงานกะดึกมากกว่า 1 ครั้งในเฟสเดียวกัน -> เทิร์นถัดไปติด [โหมงานหนัก]
+      p.nightWork = (p.nightWork || 0) + 1;
+      if (p.nightWork > 1 && !overworkActive(p) && !p.overworkNext) {
+        p.overworkNext = true;
+        lastLog.push(`🥵 ${p.name} โหมงานกะดึกหนักเกินไป — เทิร์นถัดไปจะติดสถานะ [โหมงานหนัก]!`);
+      }
+    } else if (Math.random() < KOTONE_CAUGHT_CHANCE) {
+      // โดนโปรดิวเซอร์จับได้: ใช้ Part-time ไม่ได้ 2 เทิร์น (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
+      p.statuses.caught = 3;
+      lastLog.push(`🎬 ${p.name} โดนโปรดิวเซอร์จับได้! — ใช้ Part-time ไม่ได้ 2 เทิร์น`);
+    }
+  }
+  // ---------- โคโตเนะ: Dance Lession — เสียเลือด 1 ตีเป้าหมาย 2 + บัฟใบ้สกิลของท่าไม้ตาย +1 เทิร์น ----------
+  if (isDance && danceTarget) {
+    if (p.hp > 1 || (p.tempHp || 0) > 0) loseHp(p);
+    const t = danceTarget;
+    dealMixed(t, 2);
+    maybeBeatSave(t);
+    maybeBeatMode(t);
+    maybeEva3(t);
+    t.wasAttacked = true;
+    p.danceBuff = true;
+    flashSuffix = ` — ใส่ ${t.name}`;
+    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นใส่ ${t.name} -2 และผลใบ้สกิลของท่าไม้ตายครั้งถัดไป +1 เทิร์น`);
+    if (t.alive && t.hp <= 0) {
+      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+    }
+  }
+  // ---------- โคโตเนะ: Sleeping time — หลับตลอดเฟสกลางคืน + ลบ [โหมงานหนัก] ----------
+  if (isKSleep) {
+    p.statuses.ksleep = 1; // คงอยู่จนหมดกลางคืน (engine ไม่ลดเทิร์นสถานะนี้)
+    p.nightWork = 0;
+    p.overworkNext = false;
+    if (overworkActive(p)) {
+      delete p.statuses.overwork;
+      lastLog.push(`😌 ${p.name} ได้นอนพักเสียที — สถานะ [โหมงานหนัก] หายไป`);
+    }
+    const heal = healHp(p, 2);
+    lastLog.push(`😴 ${p.name} Sleeping time — หลับยาวตลอดเฟสกลางคืน (ฟื้น +${heal}/เทิร์น) ตื่นเช้ารับ [เช้าที่สดใส]`);
+  }
   // ---------- เจ้าแห่งเน็ตบ้าน: เสือนอนกิน — แยกผลตามมี/ไม่มีคู่สัญญา (ทำงานพร้อมกันไม่ได้) ----------
   if (isTiger) {
     const t = contractPartnerOf(p);
@@ -1177,7 +1324,7 @@ function useSkill(id, tier, targets, item) {
       lastLog.push(`🐯 ${p.name} เสือนอนกิน — พลังโจมตี +1 (2 เทิร์น) และฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป`);
     }
   }
-  // ---------- เจ้าแห่งเน็ตบ้าน: กระชากสายแลน — ถอดบัฟคู่สัญญาชั่วคราว 1 เทิร์น + ดาเมจ 2 ----------
+  // ---------- เจ้าแห่งเน็ตบ้าน: กระชากสายแลน — ถอดบัฟคู่สัญญาชั่วคราว 1 เทิร์น + ดาเมจ 1 ไม่สนเกราะ ----------
   if (isLan) {
     const t = contractPartnerOf(p);
     // ถอดบัฟออกชั่วคราว (นับเทิร์นนี้) — เก็บไว้ใน unplugHold แล้วคืนให้ตอนจบเทิร์น
@@ -1190,14 +1337,14 @@ function useSkill(id, tier, targets, item) {
         stripped.push(k);
       }
     }
-    t.statuses.unplug = 1; // ระหว่างติด: บัฟคู่สัญญา (เกราะ +3 / โจมตี +1) ก็ไม่ทำงานด้วย
-    dealMixed(t, 2);
+    t.statuses.unplug = 1; // ระหว่างติด: บัฟคู่สัญญา (เกราะ +1 / โจมตี +1) ก็ไม่ทำงานด้วย
+    dealDirect(t, 1); // ความเสียหาย 1 หน่วยแบบไม่สนเกราะ (patch 1.9.1 — เดิม 2 สนเกราะ)
     maybeBeatSave(t);
     maybeBeatMode(t);
     maybeEva3(t);
     t.wasAttacked = true;
     flashSuffix = ` — ใส่ ${t.name}`;
-    lastLog.push(`🔌 ${p.name} กระชากสายแลน — บัฟของ ${t.name} หายไปชั่วคราว 1 เทิร์น${stripped.length ? ` (ถอด ${stripped.length} บัฟ)` : ""} และรับความเสียหาย -2`);
+    lastLog.push(`🔌 ${p.name} กระชากสายแลน — บัฟของ ${t.name} หายไปชั่วคราว 1 เทิร์น${stripped.length ? ` (ถอด ${stripped.length} บัฟ)` : ""} และรับความเสียหาย -1 ไม่สนเกราะ`);
     if (t.alive && t.hp <= 0) {
       t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
       lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
@@ -1271,6 +1418,20 @@ function useSkill(id, tier, targets, item) {
       notifyTransform(p, "monster");
     }
     lastLog.push(`🦖 ${p.name} แปลงร่างไคจู Black King (MonsterLive)!`);
+  }
+
+  // ข้อเสียโคโตเนะ: 40% เมื่อใช้สกิลใดๆ จะเจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
+  //  (ครั้งแรกเล่นวีดีโอ kotone_passive.mp4 — ครั้งถัดไปแจ้งเตือนปกติ)
+  if (isKotone && Math.random() < KOTONE_SENA_CHANCE) {
+    p.senaNext = true;
+    lastLog.push(`😱 ${p.name} เจอท่านประธานเซนะจัง!! — หลบหนีสุดชีวิต เทิร์นถัดไปจะทำอะไรไม่ได้เลย`);
+    if (!p.cutsceneShown.kotoneSena) {
+      p.cutsceneShown.kotoneSena = true;
+      queueCutscene(p, "kotoneSena");
+      pausePlayingForCutscene(); // เล่นวีดีโอทันทีช่วงจั่วการ์ด (แบบ MonsterLive)
+    } else {
+      notifyTransform(p, "kotoneSena");
+    }
   }
 
   // สกิลช่วงจั่วการ์ด (instant): เด้งโชว์ทันทีบนกระดานของทุกคน ไม่ต้องรอเปิดไพ่/ไม่ตัดจอดำ
@@ -1638,6 +1799,23 @@ function afterResolve() {
           p.hp = 1;
           p.armor = Math.min(maxArmorOf(p), p.armor + 3);
         }
+        // Sekai ichi kawaii watashi (โคโตเนะ): ตัด coin ทั้งหมด — ตีทุกคน 1 หน่วย
+        //  และทุกคนถูกใบ้การใช้สกิล 2 เทิร์นนับจากเทิร์นถัดไป (มีบัฟ Dance Lession = 3 เทิร์น)
+        if (key === "kawaii") {
+          const silence = KOTONE_SILENCE_TURNS + (p.danceBuff ? 1 : 0);
+          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ผลใบ้สกิล +1 เทิร์น`);
+          p.danceBuff = false;
+          const coins = p.coins || 0;
+          p.coins = 0;
+          for (const o of alivePlayers()) {
+            if (o.id === p.id) continue;
+            dealMixed(o, 1);
+            maybeBeatSave(o);
+            o.noSkillNext = Math.max(o.noSkillNext || 0, silence);
+            o.wasAttacked = true;
+          }
+          lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก — ทุกคน -1 และตกหลุมรักจนใช้สกิลไม่ได้ ${silence} เทิร์น${coins > 0 ? ` (เท coin ทั้งหมด ${coins} เหรียญออกจากกระปุก)` : ""}`);
+        }
         // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย
         //  + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น) + ติด "ยามฟ้าสาง" +1 (คนหลับไม่ติดเพิ่ม)
         if (key === "lai") {
@@ -1720,6 +1898,16 @@ function afterSummary() {
     endTurn();
     return;
   }
+  // โคโตเนะ: หลับพักผ่อน (Sleeping time) / สตั้นจากโหมงานหนัก / หนีท่านประธานเซนะ — ไม่มีเทิร์นโจมตี
+  if (winner && winner.alive && (
+    ((winner.statuses.ksleep || 0) > 0 && isNightRound(roundNumber)) ||
+    (winner.statuses.kstun || 0) > 0 ||
+    (winner.statuses.sena || 0) > 0
+  )) {
+    lastLog.push(`💤 ${winner.name} ไม่อยู่ในสภาพจะโจมตีใคร — ไม่มีเทิร์นโจมตี`);
+    endTurn();
+    return;
+  }
   if (winner && winner.alive && !roundTiedWin) {
     const targets = attackableTargets(winner.id);
     if (targets.length > 0) {
@@ -1753,12 +1941,17 @@ function doAttack(byId, targetId) {
     if (Math.random() * 100 < rate) {
       target.chillDodge = rate > 50 ? 50 : CHILL_DODGE_MIN;
       healHp(target, 1); // หลบได้ ฟื้นพลังชีวิต 1 หน่วย
+      // หลบได้ ฟื้นฟูจำนวนการใช้งานสกิลรอง เอาไปสิ +1 ครั้ง (สะสมไม่ได้) (patch 1.9.1)
+      target.appleGiveUses = Math.min(APPLE_GIVE_USES, (target.appleGiveUses || 0) + 1);
       addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
       target.wasAttacked = true;
-      lastLog.push(`🏖️ ${target.name} ชิวๆครับน้องๆ — หลบการโจมตีของ ${attacker.name} ได้! ฟื้นพลังชีวิต +1 (อัตราหลบเหลือ ${target.chillDodge}%)`);
+      lastLog.push(`🏖️ ${target.name} ชิวๆครับน้องๆ — หลบการโจมตีของ ${attacker.name} ได้! ฟื้นพลังชีวิต +1 เติมเอาไปสิ +1 (อัตราหลบเหลือ ${target.chillDodge}%)`);
       // ฉากวิ่งหลบ: ขึ้นหลังจากฝั่งตรงข้ามกดตีแล้ว จบวีดีโอค่อยแสดงสรุปผลการตีตามปกติ
-      //  วีดีโอขึ้นซ้ำได้เรื่อยๆ แต่เฉพาะตอนอัตราหลบขณะนั้นเป็น 50% หรือ 25% เท่านั้น
-      if (rate <= 50) queueCutscene(target, "appleguyDodge");
+      //  ขึ้นเฉพาะตอนอัตราหลบขณะนั้นเป็น 25% และครั้งเดียวต่อเกมเท่านั้น (patch 1.9.1)
+      if (rate <= CHILL_DODGE_MIN && !target.cutsceneShown.appleguyDodge) {
+        target.cutsceneShown.appleguyDodge = true;
+        queueCutscene(target, "appleguyDodge");
+      }
       lastAttack = {
         byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
         targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
@@ -1805,9 +1998,20 @@ function doAttack(byId, targetId) {
   const tigerAtk = (attacker.statuses.tiger || 0) > 0;
   // คู่สัญญา (สนใจใช้บริการเราไหม): พลังโจมตี +1 ตลอดสัญญา (โดนกระชากสายแลนถอดชั่วคราวได้)
   const partnerAtk = contractBuffActive(attacker);
+  // กระปุกออมสินน้องหมูน้อย (โคโตเนะ): แปลง coin เป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)
+  let pigDmg = attacker.characterId === "kotone" ? Math.floor((attacker.coins || 0) / KOTONE_COIN_PER_DMG) : 0;
+  // [โหมงานหนัก] (โคโตเนะ): เมื่อถึงเฟสตอนเช้า พลังโจมตีเหลือ 0 เพราะพักผ่อนไม่พอ
+  const kotoneExhausted = attacker.characterId === "kotone" && overworkActive(attacker) && !isNightRound(roundNumber);
+  if (kotoneExhausted) pigDmg = 0; // ตีไม่เข้า — ไม่เสีย coin ฟรี
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0); // Beam Magnum +2
-  let dmg = base + ntdBonus;
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg; // Beam Magnum +2
+  if (kotoneExhausted) base = 0;
+  let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
+  if (pigDmg > 0) {
+    attacker.coins -= pigDmg * KOTONE_COIN_PER_DMG; // ทุบกระปุกจ่ายเป็นดาเมจ
+    lastLog.push(`🐷 ${attacker.name} ทุบกระปุกออมสินน้องหมูน้อย — ใช้ ${pigDmg * KOTONE_COIN_PER_DMG} coin เพิ่มความเสียหาย +${pigDmg} (เหลือ ${attacker.coins})`);
+  }
+  if (kotoneExhausted) lastLog.push(`🥱 ${attacker.name} พักผ่อนไม่พอจาก [โหมงานหนัก] — พลังโจมตีช่วงเช้าเหลือ 0`);
   if ((target.statuses.monster || 0) > 0) dmg = Math.max(0, dmg - 1);
   // ชำระค่าบริการ (สกิลติดตัวเจ้าแห่งเน็ตบ้าน): คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1
   const contractGuard = target.characterId === "broadband_man" && target.contractPartner === attacker.id && attacker.contractWith === target.id;
@@ -1911,6 +2115,8 @@ function doAttack(byId, targetId) {
   if (profitAtk > 0) addFx({ name: `กำไรเท่าตัวโว้ย +${profitAtk} (ทะลุเกราะ)`, img: "/characters/gambler/gambler_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (appleAtk > 0) addFx({ name: `เอาไปสิ +${appleAtk} (บัฟมอบของ)`, img: "/characters/appleguy/appleguy_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (tigerAtk) addFx({ name: "เสือนอนกิน +1", img: "/characters/broadband_man/broadband_man_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (pigDmg > 0) addFx({ name: `กระปุกออมสินน้องหมูน้อย +${pigDmg}`, img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (kotoneExhausted) addFx({ name: "โหมงานหนัก (พลังโจมตี 0)", img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (partnerAtk) addFx({ name: "คู่สัญญา +1 (สนใจใช้บริการเราไหม)", img: "/characters/broadband_man/broadband_man_skill3.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (contractGuard) addFx({ name: "ชำระค่าบริการ (ความเสียหายลด 1)", img: "/characters/broadband_man/broadband_man.jpg", by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   if (paradiseAtk && !isRevenge) addFx(skillByStatus(attacker, "paradise"), "atk");
@@ -1957,6 +2163,8 @@ function endTurn() {
       if (k === "rachan") continue; // สวมเกราะราชัน: ผลคงอยู่ถาวร ไม่ลดเทิร์น
       if (k === "dawn") continue;   // ยามฟ้าสาง (โอเบรอน): สแตคถาวร จนกว่า Vortigern จะล้าง
       if (k === "chill") continue;  // ชิวๆครับน้องๆ (Apple guy): คงอยู่จนกว่าจะถูกโจมตี ไม่ลดเทิร์น
+      if (k === "overwork") continue; // โหมงานหนัก (โคโตเนะ): คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน
+      if (k === "ksleep") continue;   // Sleeping time (โคโตเนะ): หลับจนหมดเฟสกลางคืน (ตื่นตอนเช้า)
       if (k === "mage") { delete p.statuses.mage; continue; } // จอมเวทย์ฝึกหัด: เก็บเป็นสแตค อยู่แค่ 1 เทิร์น
       // หลับไหล: เทิร์นที่เพิ่งโดนกล่อม ยังไม่เริ่มนับ (เริ่มหลับจริงเทิร์นถัดไป ครบตามจำนวนยามฟ้าสาง)
       if (k === "sleep" && p.sleepFresh) { p.sleepFresh = false; continue; }
@@ -1972,6 +2180,8 @@ function endTurn() {
       p.tempHpTurns--;
       if (p.tempHpTurns <= 0) { p.tempHp = 0; p.tempHpTurns = 0; }
     }
+    // [โหมงานหนัก] (โคโตเนะ): เกราะพังและฟื้นไม่ได้ — ล้างเกราะที่ได้มาระหว่างเทิร์นทิ้ง
+    if (overworkActive(p)) p.armor = 0;
     p.armor = Math.min(p.armor, maxArmorOf(p)); // กันเกราะเกินเพดาน
   }
 
@@ -2133,7 +2343,8 @@ io.on("connection", (socket) => {
       gamblerUses: GAMBLER_USES, profit: 0, tempHp: 0, tempHpTurns: 0, noSkillNext: 0,
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       sunriseDrop: 0, sleepFresh: false,
-      appleItem: "drink", appleGifts: {}, appleAtk: 0, chillDodge: 100,
+      appleItem: "drink", appleGifts: {}, appleAtk: 0, chillDodge: 100, appleGiveUses: APPLE_GIVE_USES,
+      coins: 0, nightWork: 0, overworkNext: false, senaNext: false, danceBuff: false,
       contractPartner: null, contractWith: null, contractOffer: null,
       contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
       healNextTurn: 0, unplugHold: null,

@@ -255,7 +255,7 @@ function CycleBanner({ c }) {
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
 // สถานะที่ผูกกับท่าไม้ตายของแต่ละตัวละคร — ใช้เช็คว่ากำลังมีผลอยู่ไหม (กดซ้ำไม่ได้จนกว่าจะหมดเวลา)
-const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity", gambler: "golden", eva13: "fourth", appleguy: "chill" };
+const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity", gambler: "golden", eva13: "fourth", appleguy: "chill", kotone: "kawaii" };
 
 // ---------- Apple guy: ของส่งมอบ 3 ชิ้น (สกิลพื้นฐาน เอาแบบนี้ได้ไหม เลือก -> สกิลรอง เอาไปสิ ส่งให้เป้าหมาย) ----------
 const APPLE_ITEMS = [
@@ -376,6 +376,14 @@ const STATUS_INFO = {
   tiger:     { icon: "🐯", label: "เสือนอนกิน", cls: "bg-echo-gold text-gray-900", desc: "เสือนอนกิน: พลังโจมตี +1 (และฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป)" },
   unplug:    { icon: "🔌", label: "สายหลุด", cls: "bg-echo-hp", desc: "กระชากสายแลน: บัฟหายไปชั่วคราวตลอดเทิร์นนี้ (กลับคืนในเทิร์นถัดไป)" },
   nohealing: { icon: "🚱", label: "ไม่ใช้งานต่อ", cls: "bg-echo-hp", desc: "ปฏิเสธการต่อสัญญา: ฟื้นเลือดตัวเองไม่ได้ 1 เทิร์น" },
+  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+  overwork:  { icon: "🥵", label: "โหมงานหนัก", cls: "bg-echo-hp", desc: "โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1 สุ่มสตั้น 20% ทุกเทิร์น เกราะพังทั้งหมดและฟื้นไม่ได้ พลังโจมตีช่วงเช้าเหลือ 0 — ลบล้างได้ด้วย Sleeping time ตอนกลางคืนเท่านั้น" },
+  fresh:     { icon: "🌅", label: "เช้าที่สดใส", cls: "bg-echo-gold text-gray-900", desc: "เช้าที่สดใส: ได้แต้มสกิล +1 และโล่ +1 ทุกเทิร์น ตามจำนวนเทิร์นที่เหลือ" },
+  ksleep:    { icon: "😴", label: "หลับพักผ่อน", cls: "bg-echo-cyan text-gray-900", desc: "Sleeping time: หลับตลอดเฟสกลางคืน ฟื้นพลังชีวิตเทิร์นละ 2 — ตื่นตอนเช้าจะได้รับ [เช้าที่สดใส]" },
+  sena:      { icon: "😱", label: "หนีเซนะ", cls: "bg-echo-hp", desc: "เจอท่านประธานเซนะจัง — มัวแต่หลบหนีจนทำอะไรไม่ได้เลยทั้งเทิร์นนี้" },
+  kstun:     { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "หมดแรงจาก [โหมงานหนัก] — เทิร์นนี้ขยับไม่ได้" },
+  caught:    { icon: "🎬", label: "โดนจับได้", cls: "bg-echo-hp", desc: "โดนโปรดิวเซอร์จับได้ — ใช้ Part-time ไม่ได้ตามจำนวนเทิร์นที่เหลือ" },
+  kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 1 หน่วย และทุกคนถูกใบ้การใช้สกิล" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
@@ -389,7 +397,9 @@ function statusEntries(p, full) {
   if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 3) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง (สูงสุด 2) ชามที่เหลือเป็นโล่" });
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
-  if (p.contractWithId) out.push({ key: "contract", v: 1, icon: "📶", label: "คู่สัญญา", cls: "bg-echo-cyan text-gray-900", desc: "สนใจใช้บริการเราไหม: เพดานเกราะ +3 และพลังโจมตี +1 ตลอดสัญญา — ทุก 3 เทิร์นต้องเลือกต่อสัญญา (4 แต้ม) หรือยกเลิก" });
+  if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
+  if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไปอยู่นานขึ้น +1 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
+  if (p.contractWithId) out.push({ key: "contract", v: 1, icon: "📶", label: "คู่สัญญา", cls: "bg-echo-cyan text-gray-900", desc: "สนใจใช้บริการเราไหม: เพดานเกราะ +1 และพลังโจมตี +1 ตลอดสัญญา — ทุก 3 เทิร์นต้องเลือกต่อสัญญา (4 แต้ม) หรือยกเลิก" });
   if (p.contractPartnerId) out.push({ key: "boss", v: 1, icon: "📶", label: "มีคู่สัญญา", cls: "bg-echo-gold text-gray-900", desc: "เจ้าแห่งเน็ตบ้าน: มีคู่สัญญาอยู่ 1 คน — คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1 หน่วย" });
   if ((p.skillDrain || 0) > 0) out.push({ key: "skillDrain", v: p.skillDrain, icon: "📵", label: "ค่าปรับ", cls: "bg-echo-hp", desc: "ปฏิเสธข้อเสนอสัญญา: แต้มสกิลหลังจบเทิร์นลด 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" });
   if ((p.statuses?.chill || 0) > 0) out.push({ key: "chillDodge", v: 1, icon: "💨", label: `หลบ ${p.chillDodge != null ? p.chillDodge : 100}%`, cls: "bg-echo-cyan text-gray-900", desc: "โอกาสหลบการถูกเลือกโจมตีขณะชิวๆครับน้องๆ — เริ่ม 100% หลบได้เหลือ 50% หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด" });
@@ -415,9 +425,14 @@ function StatusChips({ p, left }) {
   );
 }
 
-// ---------- หน้าต่างดูสถานะของผู้เล่น (แตะการ์ดผู้เล่นคนไหนก็ได้ตอนไม่ได้เลือกเป้า) ----------
+// ---------- หน้าต่างดูสถานะ + รายละเอียดสกิลของผู้เล่น (แตะการ์ดผู้เล่นคนไหนก็ได้ตอนไม่ได้เลือกเป้า) ----------
+//  patch 1.9.1: เพิ่มรายละเอียดสกิลตัวละครของฝั่งตรงข้ามให้กดดูได้จากหน้ากระดาน
 function StatusModal({ p, onClose }) {
   const items = statusEntries(p, true);
+  const ch = p.character;
+  const skillRows = ch
+    ? [["สกิลติดตัว", ch.passive], ["สกิลพื้นฐาน", ch.basic], ["สกิลรอง", ch.secondary], ["ท่าไม้ตาย", ch.ultimate]]
+    : [];
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -427,7 +442,7 @@ function StatusModal({ p, onClose }) {
           </div>
           <div className="min-w-0">
             <div className="text-lg font-black truncate" style={{ color: p.color }}>{p.name}</div>
-            <div className="text-sm opacity-80 truncate">{p.character?.name} — สถานะที่ติดอยู่ตอนนี้</div>
+            <div className="text-sm opacity-80 truncate">{p.character?.name} — สถานะ / รายละเอียดสกิล</div>
           </div>
         </div>
         {items.length === 0 ? (
@@ -440,6 +455,30 @@ function StatusModal({ p, onClose }) {
                 <span className="text-sm opacity-90 leading-snug">{it.desc}</span>
               </div>
             ))}
+          </div>
+        )}
+        {/* รายละเอียดสกิลตัวละคร (ดูของฝั่งตรงข้ามได้) */}
+        {skillRows.length > 0 && (
+          <div className="mt-3 border-t border-white/10 pt-2">
+            <div className="font-bold mb-1.5">สกิลของ {ch.name}</div>
+            {skillRows.map(([label, s], i) =>
+              s ? (
+                <div key={i} className="flex items-start gap-2 py-1.5 border-t border-white/5 first:border-t-0">
+                  {s.img ? (
+                    <img src={s.img} alt="" className="w-16 h-11 object-cover rounded-lg shrink-0 mt-0.5" />
+                  ) : (
+                    <span className="w-16 h-11 grid place-items-center text-xl shrink-0 bg-white/5 rounded-lg mt-0.5">✦</span>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex justify-between gap-2">
+                      <span className="font-bold text-sm">{label} · <span className="text-echo-gold">{s.name}</span></span>
+                      <span className="text-xs opacity-70 shrink-0">{s.cost != null ? `ใช้ ${s.cost}` : "ฟรี"}</span>
+                    </div>
+                    <div className="text-xs opacity-80 leading-snug">{s.desc}</div>
+                  </div>
+                </div>
+              ) : null
+            )}
           </div>
         )}
         <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
@@ -662,7 +701,7 @@ function ContractOfferModal({ offer, onAnswer }) {
           </div>
         </div>
         <div className="flex flex-col gap-2 text-sm">
-          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">✅ <b>ตอบรับ</b> — เพดานเกราะ +3 พร้อมฟื้นเกราะ 3 หน่วย และพลังโจมตี +1 คงอยู่ตลอดสัญญา (ทุก 3 เทิร์นจะถูกเรียกเก็บค่าต่อสัญญา 4 แต้ม)</div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">✅ <b>ตอบรับ</b> — เพดานเกราะ +1 พร้อมฟื้นเกราะ 1 หน่วย และพลังโจมตี +1 คงอยู่ตลอดสัญญา (ทุก 3 เทิร์นจะถูกเรียกเก็บค่าต่อสัญญา 4 แต้ม)</div>
           <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">❌ <b>ปฏิเสธ</b> — เสียพลังชีวิต 1 หน่วยไม่สนเกราะ และแต้มสกิลจบเทิร์นลด 1 เป็นเวลา 3 เทิร์น — ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ</div>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-3">
@@ -755,6 +794,7 @@ export default function Game({ state }) {
   const [appleOpen, setAppleOpen] = useState(false); // Apple guy: เมนูเลือกของส่งมอบ (สกิลพื้นฐาน)
   const [appleSel, setAppleSel] = useState(false);   // Apple guy: โหมดเลือกเป้าหมายเอาไปสิ (เลือกตัวเองไม่ได้)
   const [bbSel, setBbSel] = useState(false);         // เจ้าแห่งเน็ตบ้าน: โหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
+  const [ktSel, setKtSel] = useState(false);         // โคโตเนะ: โหมดเลือกเป้าหมาย Dance Lession (เลือกตัวเองไม่ได้)
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
@@ -823,6 +863,13 @@ export default function Game({ state }) {
   const isBroadband = ch?.id === "broadband_man";
   const lanLocked = isBroadband && !me?.contractPartnerId;    // กระชากสายแลน: ใช้ได้ก็ต่อเมื่อมีคู่สัญญาแล้ว
   const offerLocked = isBroadband && !!me?.contractPartnerId; // สนใจใช้บริการเราไหม: ใช้ไม่ได้ระหว่างมีคู่สัญญา
+  // ---------- ฟุจิตะ โคโตเนะ ----------
+  const isKotone = ch?.id === "kotone";
+  const overworkMe = !!(me && me.statuses?.overwork); // [โหมงานหนัก]: Part-time (กลางวัน)/Dance/ท่าไม้ตายใช้ไม่ได้ + แต้มสกิลแพงขึ้น 1
+  const ktBasicLocked = isKotone && (!!me?.statuses?.caught || (overworkMe && !nightNow)); // โดนโปรดิวเซอร์จับ / โหมงานหนักตอนกลางวัน
+  const ktSecLocked = isKotone && (nightNow ? !!me?.statuses?.ksleep : overworkMe);        // หลับอยู่แล้ว / โหมงานหนัก
+  const ktUltLocked = isKotone && (overworkMe || nightNow);                                // ท่าไม้ตายใช้ไม่ได้กลางคืน/โหมงานหนัก
+  const ktCost = (s) => (s ? s.cost + 1 : 0); // โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1
   // ANATA WAAAAAAAA: เลือกเป้าหมายได้เพียง 1 คน
   const aliveOthers = others.filter((p) => p.alive);
   const anataNeed = Math.min(1, aliveOthers.length);
@@ -865,8 +912,15 @@ export default function Game({ state }) {
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); setSkillOpen(false); return; }
     // เจ้าแห่งเน็ตบ้าน: ท่าไม้ตายเข้าโหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
     if (tier === "ultimate" && ch?.id === "broadband_man") { setBbSel(true); setSkillOpen(false); return; }
+    // โคโตเนะ: สกิลรองกลางวัน (Dance Lession) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
+    if (tier === "secondary" && ch?.id === "kotone" && !nightNow) { setKtSel(true); setSkillOpen(false); return; }
     socket.emit("useSkill", { tier });
     setSkillOpen(false);
+  };
+  // เลือกเป้าหมาย Dance Lession (โคโตเนะ) -> ส่งไป server ทันที
+  const pickKt = (id) => {
+    socket.emit("useSkill", { tier: "secondary", targets: [id] });
+    setKtSel(false);
   };
   // เลือกเป้าหมายยื่นข้อเสนอสัญญา (สนใจใช้บริการเราไหม) -> ส่งไป server ทันที
   const pickBb = (id) => {
@@ -917,6 +971,9 @@ export default function Game({ state }) {
   useEffect(() => {
     if (bbSel && (phase !== "PLAYING" || me?.skillUsed || done)) setBbSel(false);
   }, [bbSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
+    if (ktSel && (phase !== "PLAYING" || me?.skillUsed || done)) setKtSel(false);
+  }, [ktSel, phase, me?.skillUsed, done]);
   useEffect(() => {
     if (appleOpen && (phase !== "PLAYING" || done)) setAppleOpen(false);
   }, [appleOpen, phase, done]);
@@ -978,9 +1035,9 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || ktSel) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : ktSel ? pickKt(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
             />
           ))}
@@ -1019,6 +1076,12 @@ export default function Game({ state }) {
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-cyan animate-pulse">📶 แตะเลือกเป้าหมายยื่นข้อเสนอสัญญา</span>
             <button onClick={() => { clickSound(); setBbSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {ktSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-magenta animate-pulse">💃 แตะเลือกเป้าหมาย Dance Lession</span>
+            <button onClick={() => { clickSound(); setKtSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
 
@@ -1073,9 +1136,9 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked} onUse={skill} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked} onUse={skill} />
               </div>
               {noSkill && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
@@ -1102,7 +1165,7 @@ export default function Game({ state }) {
                     {me.atCap && <div className="text-center text-sm font-bold text-echo-gold mt-1">แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
-                  <div className="text-center text-lg font-bold py-2">{me.busted ? "แตก! 😢" : me.statuses?.sleep ? "หลับไหลอยู่ 💤" : "พร้อมแล้ว ✅"} รอเพื่อน...</div>
+                  <div className="text-center text-lg font-bold py-2">{me.busted ? "แตก! 😢" : me.statuses?.sleep || me.statuses?.ksleep ? "หลับไหลอยู่ 💤" : me.statuses?.sena ? "หนีเซนะอยู่ 🏃‍♀️" : me.statuses?.kstun ? "สตั้นอยู่ 😵" : "พร้อมแล้ว ✅"} รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
                   <div className="text-center text-lg font-bold py-2">{iAmAttacker ? "⚔️ แตะการ์ดคู่ต่อสู้ด้านบน!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"} เลือกเป้าหมาย...`}</div>
                 ) : !me.alive ? (
@@ -1229,9 +1292,9 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || ktSel) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : ktSel ? pickKt(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
         />
       ))}
@@ -1274,6 +1337,14 @@ export default function Game({ state }) {
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
           <span className="text-xl font-black text-echo-cyan animate-pulse bg-black/60 rounded-full px-5 py-1.5">📶 คลิกเลือกเป้าหมายยื่นข้อเสนอสัญญา</span>
           <button onClick={() => { clickSound(); setBbSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
+      {/* โหมดเลือกเป้าหมาย Dance Lession (โคโตเนะ) — เลือกได้เฉพาะคนอื่น */}
+      {ktSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-magenta animate-pulse bg-black/60 rounded-full px-5 py-1.5">💃 คลิกเลือกเป้าหมาย Dance Lession</span>
+          <button onClick={() => { clickSound(); setKtSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
 
@@ -1327,9 +1398,9 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked} onUse={skill} ammo={me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : undefined} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked} onUse={skill} />
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
@@ -1373,7 +1444,7 @@ export default function Game({ state }) {
                     {me.atCap && <div className="text-center text-xs font-bold text-echo-gold">แต้มเต็มแล้ว!<br />ใช้สกิล/เปิดไพ่ได้เลย</div>}
                   </>
                 ) : phase === "PLAYING" && me.alive && done ? (
-                  <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : me.statuses?.sleep ? "หลับไหลอยู่ 💤" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
+                  <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : me.statuses?.sleep || me.statuses?.ksleep ? "หลับไหลอยู่ 💤" : me.statuses?.sena ? "หนีเซนะอยู่ 🏃‍♀️" : me.statuses?.kstun ? "สตั้นอยู่ 😵" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
                   <div className="text-center text-base font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
                 ) : !me.alive ? (
