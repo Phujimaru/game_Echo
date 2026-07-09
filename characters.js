@@ -430,7 +430,7 @@ const CHARACTERS = [
   },
   {
     id: "aquarion",
-    name: "14 ปีกแห่งสุริยัน อควาเรียน",
+    name: "ปีกแห่งสุริยัน อควาเรียน",
     avatar: 13,
     difficulty: "extreme", // ความยากในการเล่นสูงสุด — กลุ่มแยกต่างหากบนหน้าเลือกตัวละคร
     img: "/characters/auqarion/select_profile.jpg", // โปรไฟล์หน้าเลือกตัว/ล็อบบี้ (ก่อนเลือกผู้นำ/รวมร่าง)
