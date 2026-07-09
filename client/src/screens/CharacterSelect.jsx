@@ -12,6 +12,7 @@ const DIFFICULTY_GROUPS = [
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["eva13", "temari"] },
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["gambler", "appleguy", "broadband_man"] },
+  { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["aquarion"] },
 ];
 // ตัวละครในกลุ่มความยากนั้น เรียงตาม order ที่กำหนด
 function charsInGroup(roster, g) {
@@ -218,6 +219,12 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
                 <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />
                 {sel.ultimateNight && <SkillTile label="ท่าไม้ตาย (กลางคืน)" skill={sel.ultimateNight} />}
+                {/* อควาเรียน: สกิลรอง "คืนร่าง" + ท่าไม้ตาย 4 แบบ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน) */}
+                {sel.secondaryRevert && <SkillTile label="สกิลรอง (คืนร่าง)" skill={sel.secondaryRevert} />}
+                {sel.ultimateSolar && <SkillTile label="ท่าไม้ตาย (โซล่า)" skill={sel.ultimateSolar} />}
+                {sel.ultimateMars && <SkillTile label="ท่าไม้ตาย (มาร์)" skill={sel.ultimateMars} />}
+                {sel.ultimateLuna && <SkillTile label="ท่าไม้ตาย (ลูน่า)" skill={sel.ultimateLuna} />}
+                {sel.ultimateGodwing && <SkillTile label="ท่าไม้ตาย (ปีกแห่งสุริยัน)" skill={sel.ultimateGodwing} />}
               </div>
             </div>
           </div>

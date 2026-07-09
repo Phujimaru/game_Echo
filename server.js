@@ -61,13 +61,18 @@ const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
 // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
 const KOTONE_COIN_MAX = 6;       // กระปุกออมสินน้องหมูน้อย เก็บ coin ได้สูงสุด
 const KOTONE_COIN_PER_DMG = 2;   // 2 coin = +1 ความเสียหายตอนโจมตี (ใช้แล้วเหรียญหมดไป)
-const KOTONE_SENA_CHANCE = 0.4;  // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ
-const KOTONE_CAUGHT_CHANCE = 0.2; // Part-time กลางวัน: โอกาสโดนโปรดิวเซอร์จับได้
+const KOTONE_SENA_BASE = 0.1;    // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ (ฐาน 10%)
+const KOTONE_SENA_PER_COIN2 = 0.1; // เพิ่มอีก 10% ทุกๆ 2 coin ที่มีอยู่ในกระปุก (patch 2.0)
+const KOTONE_CAUGHT_CHANCE = 0.1; // Part-time กลางวัน: โอกาสโดนโปรดิวเซอร์จับได้ (patch 2.0 — ลดจาก 20%)
 const KOTONE_STUN_CHANCE = 0.2;  // [โหมงานหนัก]: โอกาสสุ่มสตั้นต่อเทิร์น
 const KOTONE_SILENCE_TURNS = 2;  // ท่าไม้ตาย: ใบ้การใช้สกิลของทุกคน (Dance Lession +1)
 // [โหมงานหนัก] ทำงานอยู่ไหม (คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน)
 function overworkActive(p) {
   return !!p && ((p.statuses && p.statuses.overwork) || 0) > 0;
+}
+// โอกาสเจอท่านประธานเซนะจัง: ฐาน 10% + 10% ทุกๆ 2 coin ที่มีอยู่ในกระปุก (สูงสุด 40% ตอนมี 6 coin)
+function kotoneSenaChance(p) {
+  return KOTONE_SENA_BASE + KOTONE_SENA_PER_COIN2 * Math.floor((p.coins || 0) / 2);
 }
 
 // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
@@ -116,9 +121,56 @@ function healHp(p, amount) {
 const CYCLE_TURNS = 3;
 let cycleShift = 0;
 let nightResetPending = false; // ตั้งตอนกดท่าไม้ตาย 2 -> เริ่มนับกลางคืนใหม่ตั้งแต่เทิร์นถัดไป
+// แสงสว่างที่สรรค์สร้าง (อควาเรียน patch 2.0): บังคับกลางวันจนถึงรอบที่กำหนด (เขียนทับวงจรปกติชั่วคราว)
+let dayForceUntil = 0;
 function isNightRound(n) {
+  if (n <= dayForceUntil) return false;
   const m = n - cycleShift;
   return m > 0 && Math.floor((m - 1) / CYCLE_TURNS) % 2 === 1;
+}
+
+// ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
+const AQUA_LEADERS = {
+  apollo: { name: "อะพอลโล่ (โซล่า)", skillImg: "/characters/auqarion/skill1/apollo.jpg", profileImg: "/characters/auqarion/profile/apollo.jpg", fuseCover: "/characters/auqarion/skill2/skill2_solar.webp", fuseKey: "aquaFuseSolar", fuseProfile: "/characters/auqarion/profile/solar.jpg", ultimateKey: "ultimateSolar" },
+  sirius: { name: "ซิลิอุส (มาร์)", skillImg: "/characters/auqarion/skill1/sirius.jpg", profileImg: "/characters/auqarion/profile/sirius.jpg", fuseCover: "/characters/auqarion/skill2/skill2_mars.webp", fuseKey: "aquaFuseMars", fuseProfile: "/characters/auqarion/profile/mars.jpg", ultimateKey: "ultimateMars" },
+  rena: { name: "ลีน่า (ลูน่า)", skillImg: "/characters/auqarion/skill1/rena.jpg", profileImg: "/characters/auqarion/profile/rena.jpg", fuseCover: "/characters/auqarion/skill2/skill2_luna.webp", fuseKey: "aquaFuseLuna", fuseProfile: "/characters/auqarion/profile/luna.jpg", ultimateKey: "ultimateLuna" },
+};
+const AQUA_GODWING_PROFILE = "/characters/auqarion/profile/godwing.jpg";
+const AQUA_LIGHTDEW_MAX = 10;   // แสงละออง สะสมได้สูงสุด
+const AQUA_FUSE_DEW = 1;        // รวมร่างหุ่นศักดิ์สิทธิ์: แสงละออง +1
+const AQUA_REVERT_DEW = 2;      // คืนร่าง: แสงละออง +2
+const AQUA_GODWING_TURNS = 5;   // ปีกแห่งสุริยัน คงอยู่ 5 เทิร์น
+const AQUA_DAY_EXTEND = 5;      // ต่อเวลากลางวันเป็น 5 เทิร์น (นับจากเทิร์นที่เปิดใช้งาน)
+const AQUA_MARS_REFLECT_CHANCE = 0.3; // ดาบแห่งจุดจบ: โอกาสสะท้อนความเสียหายครึ่งหนึ่ง
+const AQUA_REVIVE_TURNS = 12;   // ไปยังพฤกษาแห่งชีวิต: ตายระหว่างสถานะนี้ -> ฟื้นคืนชีพใน 12 เทิร์น
+// ร่างที่รวมอยู่ตอนนี้: "apollo" | "sirius" | "rena" | null (ยังไม่รวมร่าง)
+function aquaForm(p) {
+  return (p && p.characterId === "aquarion" && p.fused) ? p.leader : null;
+}
+// สกิลติดตัว 1 แสงแห่งสุริยัน: ทำงานตอนอยู่ร่างโซล่า หรือปีกแห่งสุริยัน
+function aquaPassive1Active(p) {
+  return !!p && p.characterId === "aquarion" && (((p.statuses && p.statuses.godwing) || 0) > 0 || aquaForm(p) === "apollo");
+}
+// สกิลติดตัว 2 ดาบแห่งจุดจบ: ทำงานตอนอยู่ร่างมาร์ หรือปีกแห่งสุริยัน
+function aquaPassive2Active(p) {
+  return !!p && p.characterId === "aquarion" && (((p.statuses && p.statuses.godwing) || 0) > 0 || aquaForm(p) === "sirius");
+}
+// สกิลติดตัว 3 จันทราสยบ: ทำงานตอนอยู่ร่างลูน่า หรือปีกแห่งสุริยัน
+function aquaPassive3Active(p) {
+  return !!p && p.characterId === "aquarion" && (((p.statuses && p.statuses.godwing) || 0) > 0 || aquaForm(p) === "rena");
+}
+// สกิลติดตัว 4 แสงสว่างที่สรรค์สร้าง: แสงละอองครบ 10 + ร่างโซล่า + กลางวัน -> ปีกแห่งสุริยัน 5 เทิร์น
+function maybeGodwing(p) {
+  if (!p || !p.alive || p.characterId !== "aquarion") return;
+  if (((p.statuses && p.statuses.godwing) || 0) > 0) return;
+  if ((p.lightDew || 0) < AQUA_LIGHTDEW_MAX) return;
+  if (!p.fused || p.leader !== "apollo") return;
+  if (isNightRound(roundNumber)) return;
+  p.statuses.godwing = AQUA_GODWING_TURNS;
+  p.lightDew = 0;
+  dayForceUntil = Math.max(dayForceUntil, roundNumber + AQUA_DAY_EXTEND - 1);
+  lastLog.push(`🌟 ${p.name} แสงละอองเปี่ยมล้น — แสงสว่างที่สรรค์สร้าง! กลายเป็นปีกแห่งสุริยันเต็มรูปแบบ (5 เทิร์น)`);
+  triggerCutscene(p, "godwingForm");
 }
 
 // ร่างกลางวัน/กลางคืนของโอเบรอน (สลับอัตโนมัติตามช่วงเวลา)
@@ -172,6 +224,18 @@ const TRANSFORMS = {
   kotoneSena: { img: "/characters/kotone/kotone.jpg", video: "/characters/kotone/kotone_passive.mp4", title: "ท่านประธานเซนะจัง!?", label: "สกิลติดตัวทำงาน", seconds: 6, music: null, afterReveal: false },
   // kawaii: ท่าไม้ตายโคโตเนะ (หลังเปิดไพ่) — วีดีโอ 15 วิ
   kawaii: { img: "/characters/kotone/kotone_skill3.jpg", video: "/characters/kotone/kotone_final.mp4", title: "SEKAI ICHI KAWAII WATASHI", label: "ปล่อยท่าไม้ตาย", seconds: 16, music: null, afterReveal: true },
+  // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
+  // aquaFuseSolar/Mars/Luna: รวมร่างหุ่นศักดิ์สิทธิ์ (ทำงานก่อนเปิดไพ่ — เล่นทันทีตอนกดสกิล)
+  aquaFuseSolar: { img: AQUA_LEADERS.apollo.fuseProfile, video: "/characters/auqarion/skill2/solar.mp4", title: "โซล่า อควาเรียน", label: "รวมร่างหุ่นศักดิ์สิทธิ์", seconds: 14, music: null, afterReveal: false },
+  aquaFuseMars: { img: AQUA_LEADERS.sirius.fuseProfile, video: "/characters/auqarion/skill2/mars.mp4", title: "มาร์ อควาเรียน", label: "รวมร่างหุ่นศักดิ์สิทธิ์", seconds: 12, music: null, afterReveal: false },
+  aquaFuseLuna: { img: AQUA_LEADERS.rena.fuseProfile, video: "/characters/auqarion/skill2/luna.mp4", title: "ลูน่า อควาเรียน", label: "รวมร่างหุ่นศักดิ์สิทธิ์", seconds: 11, music: null, afterReveal: false },
+  // godwingForm: สกิลติดตัว 4 แสงสว่างที่สรรค์สร้าง (ทำงานก่อนเปิดไพ่ — เล่นทันทีตอนเข้าเงื่อนไข)
+  godwingForm: { img: AQUA_GODWING_PROFILE, video: "/characters/auqarion/skill2/godwing.mp4", title: "ปีกแห่งสุริยัน", label: "แสงสว่างที่สรรค์สร้าง", seconds: 10, music: null, afterReveal: false },
+  // ท่าไม้ตาย 4 แบบ (หลังเปิดไพ่): โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน — เลือกตามร่างที่รวมอยู่
+  solarburst: { img: "/characters/auqarion/skill3/skill3_solar.png", video: "/characters/auqarion/skill3/solar_final.mp4", title: "หมัดไร้ขอบเขต", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: true },
+  marssword: { img: "/characters/auqarion/skill3/skill3_mars.jpg", video: "/characters/auqarion/skill3/mars_final.mp4", title: "ดาบแห่งแสง", label: "ปล่อยท่าไม้ตาย", seconds: 8, music: null, afterReveal: true },
+  lunabow: { img: "/characters/auqarion/skill3/skill3_luna.jpg", video: "/characters/auqarion/skill3/luna_final.mp4", title: "ศรศักดิ์สิทธิ์", label: "ปล่อยท่าไม้ตาย", seconds: 11, music: null, afterReveal: true },
+  godtree: { img: "/characters/auqarion/skill3/skill3_godwing.jpg", video: "/characters/auqarion/skill3/godwing_final.mp4", title: "ไปยังพฤกษาแห่งชีวิต", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: "auqarion", afterReveal: true },
 };
 
 
@@ -367,6 +431,13 @@ function positionUsedByOther(pos, sid) {
 function displayImg(p) {
   // โอเบรอน: ร่างสลับตามช่วงเวลากลางวัน/กลางคืนเสมอ
   if (p.characterId === "oberon") return isNightRound(roundNumber) ? OBERON_NIGHT_IMG : OBERON_MORNING_IMG;
+  // อควาเรียน: ปีกแห่งสุริยัน > รวมร่าง (ตามผู้นำ) > เลือกผู้นำแล้วยังไม่รวมร่าง > โปรไฟล์เริ่มต้น
+  if (p.characterId === "aquarion") {
+    if ((p.statuses.godwing || 0) > 0) return AQUA_GODWING_PROFILE;
+    const leader = AQUA_LEADERS[p.leader || "apollo"];
+    if (p.fused) return leader.fuseProfile;
+    return leader.profileImg;
+  }
   if (p.seen && p.seen.beat) return OHGER_FORM;
   if (p.humanityActivated) return FUJIMARU_FINAL_IMG; // Everything For Humanity: คงร่างจนตาย
   // เอวา 13: Fourth Impact (ท่าไม้ตาย) > สกิลติดตัว 3 (เลือด <= 3)
@@ -391,8 +462,16 @@ function activeSkillMusic() {
     }
   }
   if (bestBeat) return bestBeat;
+  // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): เพลงอยู่เหนือเพลงสกิล/ท่าไม้ตายอื่นทั้งหมด (ยกเว้น Beat Mode)
+  let bestTree = null;
+  for (const p of alivePlayers()) {
+    if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) {
+      if (!bestTree || (p.transformAt || 0) > bestTree.at) bestTree = { music: "auqarion", at: p.transformAt || 0 };
+    }
+  }
+  if (bestTree) return bestTree;
   let best = null;
-  for (const key of ["ginga", "paradise", "rachan", "humanity", "golden", "fourth"]) {
+  for (const key of ["ginga", "paradise", "rachan", "humanity", "golden", "fourth", "solarburst", "marssword", "lunabow"]) {
     const t = TRANSFORMS[key];
     if (!t.music) continue;
     for (const p of alivePlayers()) {
@@ -545,6 +624,12 @@ function resetCombat(p) {
   p.skillDrainPending = 0;  // ค่าปรับเริ่มนับเทิร์นถัดไป (ย้ายเข้า skillDrain ตอนเริ่มเทิร์นใหม่)
   p.healNextTurn = 0;       // เสือนอนกิน: ฟื้นเลือด 1 หน่วยในเทิร์นถัดไป (กรณีไม่มีคู่สัญญา)
   p.unplugHold = null;      // กระชากสายแลน: บัฟที่ถูกถอดชั่วคราว (คืนให้ตอนจบเทิร์น)
+  // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
+  p.leader = "apollo";      // ผู้นำที่เลือกไว้ (apollo/sirius/rena) — กำหนดร่างที่จะรวมร่างด้วย
+  p.fused = false;          // กำลังรวมร่างหุ่นศักดิ์สิทธิ์อยู่ไหม
+  p.lightDew = 0;           // แสงละออง สะสม (สูงสุด 10)
+  p.reviveIn = 0;           // ไปยังพฤกษาแห่งชีวิต: จำนวนเทิร์นก่อนฟื้นคืนชีพ (0 = ไม่รอฟื้น)
+  p.pendingRevive = false;  // ตายขณะ godtree ยังอยู่ -> รอเช็คตอนจบเทิร์นว่าเกมจบไหม
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -572,6 +657,8 @@ function buildStateFor(viewerId) {
   // ราตรีกลืนกิน: เปิดเมื่อโอเบรอนใช้ท่าไม้ตาย 2 (Lie Like Vortigern) — ฉากหลังกลางคืนกลายเป็น
   //  วีดีโอ oberon_background.mp4 + เพลงประจำตัวเล่นค้าง และหายไปเมื่อหมดกลางคืน
   const oberonBg = nightNow && oberonDevour > 0;
+  // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ฉากหลังกลายเป็น backgroud_skillgod.jpg ระหว่างสถานะนี้มีผล
+  const godtreeBg = Object.values(players).some((p) => p.alive && p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0);
   let sm = (gameState === "PLAYING" && anataMusicSeq)
     ? { music: "temari_final_theme", at: anataMusicSeq }
     : activeSkillMusic();
@@ -596,6 +683,7 @@ function buildStateFor(viewerId) {
     roundNumber,
     cycle: nightNow ? "night" : "day", // กลางวัน/กลางคืน (สลับทุก 3 เทิร์น)
     oberonBg,
+    godtreeBg,
     maxPlayers: MAX_PLAYERS,
     youId: viewerId,
     attackerId: gameState === "ATTACK" ? attackerId : null,
@@ -615,6 +703,22 @@ function buildStateFor(viewerId) {
       // สกิลพื้นฐานสลับกลางคืน (โคโตเนะ) + Apple guy: ปกสกิลพื้นฐานเปลี่ยนตามของส่งมอบที่เลือกอยู่
       const basicPub = pub(nightNow && ch.basicNight ? ch.basicNight : ch.basic);
       if (basicPub && p.characterId === "appleguy") basicPub.img = (APPLE_ITEMS[p.appleItem] || APPLE_ITEMS.drink).img;
+      // อควาเรียน: ปกสกิลพื้นฐาน "เปลี่ยนหัวหน้า" เปลี่ยนตามผู้นำที่เลือกอยู่ + สกิลรอง/ท่าไม้ตายสลับตามร่าง
+      let secondaryPub = pub(nightNow && ch.secondaryNight ? ch.secondaryNight : ch.secondary);
+      let ultimatePub = pub(nightNow && ch.ultimateNight ? ch.ultimateNight : ch.ultimate);
+      if (ch.id === "aquarion") {
+        const leader = AQUA_LEADERS[p.leader || "apollo"];
+        if (basicPub) basicPub.img = leader.skillImg;
+        secondaryPub = pub(p.fused ? ch.secondaryRevert : ch.secondary);
+        if (secondaryPub && !p.fused) secondaryPub.img = leader.fuseCover;
+        ultimatePub = pub(
+          (p.statuses.godwing || 0) > 0 ? ch.ultimateGodwing
+          : (p.fused && p.leader === "sirius") ? ch.ultimateMars
+          : (p.fused && p.leader === "rena") ? ch.ultimateLuna
+          : (p.fused && p.leader === "apollo") ? ch.ultimateSolar
+          : null
+        );
+      }
       return {
         id: p.id,
         name: p.name,
@@ -646,6 +750,10 @@ function buildStateFor(viewerId) {
         appleGiveUses: p.appleGiveUses != null ? p.appleGiveUses : APPLE_GIVE_USES, // Apple guy: จำนวนใช้ เอาไปสิ คงเหลือ
         coins: p.coins || 0,               // โคโตเนะ: coin ในกระปุกออมสิน (สูงสุด 6)
         danceBuff: !!p.danceBuff,          // โคโตเนะ: บัฟ Dance Lession (ใบ้สกิลของท่าไม้ตาย +1 เทิร์น)
+        leader: p.leader || "apollo",      // อควาเรียน: ผู้นำที่เลือกอยู่ (apollo/sirius/rena)
+        fused: !!p.fused,                  // อควาเรียน: กำลังรวมร่างหุ่นศักดิ์สิทธิ์อยู่ไหม
+        lightDew: p.lightDew || 0,         // อควาเรียน: แสงละอองสะสม (สูงสุด 10)
+        reviveIn: p.reviveIn || 0,         // อควาเรียน: จำนวนเทิร์นก่อนฟื้นคืนชีพจากไปยังพฤกษาแห่งชีวิต
         contractPartnerId: p.contractPartner || null, // เจ้าแห่งเน็ตบ้าน: คู่สัญญาปัจจุบัน
         contractWithId: p.contractWith || null,       // คู่สัญญา: ทำสัญญากับเจ้าแห่งเน็ตบ้านคนไหน
         contractTurns: p.contractTurns || 0,          // จำนวนเทิร์นที่ใช้บริการมาแล้ว (ครบทุก 3 = ถามต่อสัญญา)
@@ -663,8 +771,8 @@ function buildStateFor(viewerId) {
           id: ch.id, name: nightNow && ch.nightName ? ch.nightName : ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
           basic: basicPub,
-          secondary: pub(nightNow && ch.secondaryNight ? ch.secondaryNight : ch.secondary),
-          ultimate: pub(nightNow && ch.ultimateNight ? ch.ultimateNight : ch.ultimate),
+          secondary: secondaryPub,
+          ultimate: ultimatePub,
         },
         dmgHp: p.dmgHp, dmgArmor: p.dmgArmor, gainedSkill: p.gainedSkill,
         wasAttacked: p.wasAttacked, isWinner: p.isWinner, isLoser: p.isLoser,
@@ -756,6 +864,7 @@ function startMatch() {
   cycleShift = 0;
   nightResetPending = false;
   oberonDevour = 0;
+  dayForceUntil = 0;
   dealRound();
 }
 
@@ -800,6 +909,18 @@ function dealRound() {
       p.skillDrain = Math.max(p.skillDrain || 0, p.skillDrainPending);
       p.skillDrainPending = 0;
     }
+    // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตายระหว่างสถานะนี้ -> ฟื้นคืนชีพหลัง 12 เทิร์น (ถ้าเกมยังไม่จบ)
+    if (!p.alive && p.reviveIn > 0) {
+      p.reviveIn--;
+      if (p.reviveIn <= 0) {
+        p.alive = true;
+        p.hp = 1; p.armor = 0; p.skillPoints = 0; p.shield = 0;
+        p.statuses = {}; p.seen = {};
+        p.fused = false; p.leader = "apollo"; p.lightDew = 0;
+        p.locked = false; p.busted = false; p.result = null;
+        lastLog.push(`🌳✨ ${p.name} ฟื้นคืนชีพจากพฤกษาแห่งชีวิต! (เลือด 1 เกราะ 0 แต้มสกิล 0)`);
+      }
+    }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
 
     // [โหมงานหนัก] (โคโตเนะ): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้
@@ -841,6 +962,11 @@ function dealRound() {
     if (!p.armorLocked && !overworkActive(p) && (roundNumber % 2 === 0 || prevNight)) {
       p.armor = Math.min(maxArmorOf(p), p.armor + 1);
     }
+    // คืนร่าง (อควาเรียน): ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น (ซ้อนกับการฟื้นเกราะปกติ) เป็นเวลา 3 เทิร์น
+    if ((p.statuses.godarmor || 0) > 0 && p.armor < maxArmorOf(p)) {
+      p.armor = Math.min(maxArmorOf(p), p.armor + 1);
+      lastLog.push(`🛡️ ${p.name} คืนร่าง — เกราะฟื้นเพิ่ม +1`);
+    }
     // จอมเวทย์ฝึกหัด (ฟุจิมารุ): ฟื้นพลังชีวิต 1 หน่วยตามจำนวนครั้งที่ใช้สกิลในเทิร์นก่อน
     if (p.mageHealNext > 0) {
       const heal = healHp(p, p.mageHealNext);
@@ -860,6 +986,29 @@ function dealRound() {
       lastLog.push(`⏰ ${p.name} การตื่นขึ้น — ฟื้นพลังชีวิต +1`);
     }
     firePassive(p, "roundStart");
+
+    // ---------- อควาเรียน: แสงสว่างที่สรรค์สร้าง (เช็คทุกรอบ เผื่อกลางวันเพิ่งเริ่มพร้อมแสงละอองเต็ม) ----------
+    maybeGodwing(p);
+    // ---------- อควาเรียน: ศรศักดิ์สิทธิ์ — พิษ ลดพลังชีวิตเป้าหมาย 1 หน่วยทุกเทิร์น ----------
+    if ((p.statuses.aquapoison || 0) > 0 && p.hp > 1) {
+      p.hp--; p.dmgHp++;
+      lastLog.push(`☠️ ${p.name} ติดพิษศรศักดิ์สิทธิ์ — เสียพลังชีวิต -1 (เหลืออีก ${p.statuses.aquapoison - 1} เทิร์น)`);
+    }
+    // ---------- อควาเรียน: ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ 1 (ไม่สนเกราะ) ทุกเทิร์น ----------
+    if ((p.statuses.godtree || 0) > 0) {
+      p.locked = true;
+      for (const o of alivePlayers()) {
+        if (o.id === p.id) continue;
+        dealDirect(o, 1);
+        maybeBeatSave(o);
+        maybeBeatMode(o);
+        maybeEva3(o);
+        o.wasAttacked = true;
+      }
+      if (p.hp > 1) { p.hp--; p.dmgHp++; }
+      p.armor = Math.min(maxArmorOf(p), p.armor + 2);
+      lastLog.push(`🌳 ${p.name} ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ -1 (ไม่สนเกราะ) ตัวเองเสียเลือด -1 (ไม่สนเกราะ) เกราะฟื้น +2`);
+    }
 
     p.cards = [];
     p.cards.push(drawCardFor(p));
@@ -939,6 +1088,15 @@ function dealRound() {
       if (night) triggerCutscene(p, "oberonNight"); // ครั้งแรกเล่นวีดีโอ morning_tonight.mp4 / ครั้งถัดไปแจ้งเตือนเล็กๆ
       else notifyTransform(p, "oberonDay");         // กลับร่างกลางวัน = แจ้งปกติ ไม่มีวีดีโอ
     }
+    // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด — กลางคืนมาเยือนแล้วผลสิ้นสุดลง
+    if (night) {
+      for (const p of alivePlayers()) {
+        if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) {
+          delete p.statuses.godtree;
+          lastLog.push(`🌳 ${p.name} กลางวันหมดลง — ไปยังพฤกษาแห่งชีวิตสิ้นสุด`);
+        }
+      }
+    }
   }
 
   gameState = "PLAYING";
@@ -969,10 +1127,30 @@ function lock(id) {
 }
 function useSkill(id, tier, targets, item) {
   const p = players[id];
-  if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
+  if (!p || !p.alive) return;
+  // อควาเรียน: ไปยังพฤกษาแห่งชีวิต — กดปุ่มท่าไม้ตายซ้ำเพื่อยกเลิกได้แม้กำลังล็อกอยู่ (ก่อนเปิดการ์ดเท่านั้น)
+  if (gameState === "PLAYING" && p.characterId === "aquarion" && tier === "ultimate" && (p.statuses.godtree || 0) > 0) {
+    delete p.statuses.godtree;
+    lastLog.push(`🌳 ${p.name} ยกเลิกไปยังพฤกษาแห่งชีวิต`);
+    io.emit("skillFlash", { name: "ไปยังพฤกษาแห่งชีวิต — ยกเลิก", img: TRANSFORMS.godtree.img, by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96" });
+    broadcastState();
+    return;
+  }
+  if (gameState !== "PLAYING" || p.locked) return;
   if (!["basic", "secondary", "ultimate"].includes(tier)) return;
   const ch = CHAR_BY_ID[p.characterId];
   let skill = ch && ch[tier];
+  // อควาเรียน: สกิลรองสลับ รวมร่าง/คืนร่าง — ท่าไม้ตายสลับตามร่างที่รวมอยู่ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน)
+  if (ch && ch.id === "aquarion") {
+    if (tier === "secondary") skill = p.fused ? ch.secondaryRevert : ch.secondary;
+    else if (tier === "ultimate") {
+      skill = (p.statuses.godwing || 0) > 0 ? ch.ultimateGodwing
+        : (p.fused && p.leader === "sirius") ? ch.ultimateMars
+        : (p.fused && p.leader === "rena") ? ch.ultimateLuna
+        : (p.fused && p.leader === "apollo") ? ch.ultimateSolar
+        : null;
+    }
+  }
   if (!skill) return;
   // โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลา — กลางคืนใช้เวอร์ชันกลางคืนแทน
   if (tier === "ultimate" && ch.ultimateNight && isNightRound(roundNumber)) skill = ch.ultimateNight;
@@ -1001,7 +1179,12 @@ function useSkill(id, tier, targets, item) {
   //  (ใช้แล้วยังเลือกใช้สกิลอื่นได้อีก 1 ครั้ง)
   const isApplePick = p.characterId === "appleguy" && tier === "basic";
   if (isApplePick && !APPLE_ITEMS[item]) return; // ต้องเลือกของที่มีจริงเท่านั้น
-  if (p.skillUsedRound && !mageRepeat && !gambleRepeat && !isApplePick) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  // เปลี่ยนหัวหน้า (อควาเรียน สกิลพื้นฐาน): เลือกผู้นำ — ไม่นับเป็นการใช้สกิลของเทิร์น (ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง)
+  const isAquaLeader = p.characterId === "aquarion" && tier === "basic";
+  if (isAquaLeader && !AQUA_LEADERS[item]) return; // ต้องเลือกผู้นำที่มีจริงเท่านั้น
+  const isAquaFuse = p.characterId === "aquarion" && tier === "secondary" && !p.fused;   // รวมร่างหุ่นศักดิ์สิทธิ์
+  const isAquaRevert = p.characterId === "aquarion" && tier === "secondary" && p.fused;  // คืนร่าง
+  if (p.skillUsedRound && !mageRepeat && !gambleRepeat && !isApplePick && !isAquaLeader) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
   if (isMage && (p.mageUses || 0) >= MAGE_USES_PER_TURN) return;
   // จอมเวทย์ฝึกหัด: ระหว่างเปิด Everything For Humanity ใช้ไม่ได้
   if (isMage && (p.statuses.humanity || 0) > 0) return;
@@ -1114,7 +1297,7 @@ function useSkill(id, tier, targets, item) {
   }
 
   p.skillPoints -= cost;
-  if (!isApplePick) p.skillUsedRound = true; // เอาแบบนี้ได้ไหม: ไม่นับเป็นการใช้สกิลของเทิร์น
+  if (!isApplePick && !isAquaLeader) p.skillUsedRound = true; // เอาแบบนี้ได้ไหม / เปลี่ยนหัวหน้า: ไม่นับเป็นการใช้สกิลของเทิร์น
   if (isPudding) p.puddingUses--; // นับใช้ Rainbow Pudding
 
   // ---------- Gambler the gambling: สกิลเสี่ยงโชค (จัดการใน engine โดยตรง) ----------
@@ -1215,6 +1398,31 @@ function useSkill(id, tier, targets, item) {
     p.appleItem = item;
     flashSuffix = ` — เลือก${APPLE_ITEMS[item].name}`;
     lastLog.push(`🍎 ${p.name} เอาแบบนี้ได้ไหม — เปลี่ยนของส่งมอบเป็น ${APPLE_ITEMS[item].name}`);
+  }
+  // ---------- อควาเรียน: เปลี่ยนหัวหน้า — เลือกผู้นำ + ฟื้นเลือด 1 ----------
+  if (isAquaLeader) {
+    p.leader = item;
+    healHp(p, 1);
+    flashSuffix = ` — เลือก${AQUA_LEADERS[item].name}`;
+    lastLog.push(`🌊 ${p.name} เปลี่ยนหัวหน้า — เลือก${AQUA_LEADERS[item].name} และฟื้นพลังชีวิต +1`);
+  }
+  // ---------- อควาเรียน: รวมร่างหุ่นศักดิ์สิทธิ์ — แสงละออง +1 + วีดีโอแปลงร่างตามผู้นำ ----------
+  if (isAquaFuse) {
+    p.fused = true;
+    p.lightDew = Math.min(AQUA_LIGHTDEW_MAX, (p.lightDew || 0) + AQUA_FUSE_DEW);
+    const leader = AQUA_LEADERS[p.leader || "apollo"];
+    lastLog.push(`✨ ${p.name} รวมร่างหุ่นศักดิ์สิทธิ์ — กลายเป็น${leader.name.replace(/\s*\(|\)/g, " ").trim()} (แสงละออง ${p.lightDew}/${AQUA_LIGHTDEW_MAX})`);
+    triggerCutscene(p, leader.fuseKey);
+    maybeGodwing(p);
+    if (cutsceneQueue.length) pausePlayingForCutscene();
+  }
+  // ---------- อควาเรียน: คืนร่าง — เกราะ +1 + ฟื้นฟูเกราะเพิ่ม 3 เทิร์น + แสงละออง +2 ----------
+  if (isAquaRevert) {
+    p.fused = false;
+    p.armor = Math.min(maxArmorOf(p), p.armor + 1);
+    p.statuses.godarmor = Math.max(p.statuses.godarmor || 0, 4); // ฟื้นเกราะเพิ่ม +1/เทิร์น 3 เทิร์น (+1 ชดเชยการลดสถานะตอนจบเทิร์น)
+    p.lightDew = Math.min(AQUA_LIGHTDEW_MAX, (p.lightDew || 0) + AQUA_REVERT_DEW);
+    lastLog.push(`🛡️ ${p.name} คืนร่าง — เกราะ +1 และฟื้นฟูเกราะเพิ่ม 3 เทิร์น (แสงละออง ${p.lightDew}/${AQUA_LIGHTDEW_MAX})`);
   }
   // ---------- Apple guy: เอาไปสิ — มอบของที่เลือกให้เป้าหมายทันที + บัฟพลังโจมตี ----------
   if (isAppleGive && appleTarget) {
@@ -1422,7 +1630,7 @@ function useSkill(id, tier, targets, item) {
 
   // ข้อเสียโคโตเนะ: 40% เมื่อใช้สกิลใดๆ จะเจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
   //  (ครั้งแรกเล่นวีดีโอ kotone_passive.mp4 — ครั้งถัดไปแจ้งเตือนปกติ)
-  if (isKotone && Math.random() < KOTONE_SENA_CHANCE) {
+  if (isKotone && Math.random() < kotoneSenaChance(p)) {
     p.senaNext = true;
     lastLog.push(`😱 ${p.name} เจอท่านประธานเซนะจัง!! — หลบหนีสุดชีวิต เทิร์นถัดไปจะทำอะไรไม่ได้เลย`);
     if (!p.cutsceneShown.kotoneSena) {
@@ -1641,6 +1849,11 @@ function resolveRound() {
     addSkill(w, 1); // ชนะเป็นคนแรก (ใกล้ 21 สุด / เท่ากับ 21) +1
     firePassive(w, "win");
     if (tied.length > 1) lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name} (เสมอ ไม่มีเทิร์นโจมตี)`);
+    // ดาบแห่งจุดจบ (อควาเรียน): ชนะพร้อมมีผู้เล่นอื่นไพ่แตกในเทิร์นนั้น -> พลังโจมตี +1 (เทิร์นนี้)
+    if (aquaPassive2Active(w) && combatants.some((c) => c.id !== w.id && bustedOf(c))) {
+      w.statuses.marssurge = 1;
+      lastLog.push(`🗡️ ${w.name} ดาบแห่งจุดจบ — มีผู้เล่นอื่นไพ่แตก พลังโจมตี +1`);
+    }
   }
 
   if (best !== worst) {
@@ -1902,7 +2115,8 @@ function afterSummary() {
   if (winner && winner.alive && (
     ((winner.statuses.ksleep || 0) > 0 && isNightRound(roundNumber)) ||
     (winner.statuses.kstun || 0) > 0 ||
-    (winner.statuses.sena || 0) > 0
+    (winner.statuses.sena || 0) > 0 ||
+    (winner.statuses.godtree || 0) > 0
   )) {
     lastLog.push(`💤 ${winner.name} ไม่อยู่ในสภาพจะโจมตีใคร — ไม่มีเทิร์นโจมตี`);
     endTurn();
@@ -2003,9 +2217,22 @@ function doAttack(byId, targetId) {
   // [โหมงานหนัก] (โคโตเนะ): เมื่อถึงเฟสตอนเช้า พลังโจมตีเหลือ 0 เพราะพักผ่อนไม่พอ
   const kotoneExhausted = attacker.characterId === "kotone" && overworkActive(attacker) && !isNightRound(roundNumber);
   if (kotoneExhausted) pigDmg = 0; // ตีไม่เข้า — ไม่เสีย coin ฟรี
+  // ---------- อควาเรียน: สกิลติดตัว 1/2/3 (แสงแห่งสุริยัน / ดาบแห่งจุดจบ / จันทราสยบ) ----------
+  let aquaAtk = 0;
+  let aquaZero = false; // จันทราสยบ กลางวัน: พลังโจมตีเหลือ 0 (แต่โจมตีได้ฟื้นเลือด 1)
+  if (attacker.characterId === "aquarion") {
+    const aquaNight = isNightRound(roundNumber);
+    if (aquaPassive1Active(attacker) && !aquaNight) aquaAtk += 1; // แสงแห่งสุริยัน: กลางวัน +1
+    if (aquaPassive3Active(attacker)) {
+      if (aquaNight) aquaAtk += 1; // จันทราสยบ: กลางคืน +1
+      else aquaZero = true;        // จันทราสยบ: กลางวันเหลือ 0
+    }
+    if ((attacker.statuses.marssurge || 0) > 0) aquaAtk += 1; // ดาบแห่งจุดจบ: ชนะเทิร์นที่มีคนไพ่แตก
+  }
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg; // Beam Magnum +2
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk; // Beam Magnum +2
   if (kotoneExhausted) base = 0;
+  if (aquaZero) base = 0;
   let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
   if (pigDmg > 0) {
     attacker.coins -= pigDmg * KOTONE_COIN_PER_DMG; // ทุบกระปุกจ่ายเป็นดาเมจ
@@ -2020,6 +2247,13 @@ function doAttack(byId, targetId) {
   // Beam Magnum: หักกระสุน 1 นัดเมื่อได้โจมตีจริงเท่านั้น (ไม่นับถ้าเลือกแล้วไม่ได้ตี/แตกในเทิร์น)
   if (beam && (attacker.beamAmmo || 0) > 0) attacker.beamAmmo--;
 
+  // ดาบแห่งแสง (อควาเรียน ท่าไม้ตายร่างมาร์): ลดเกราะเป้าหมายก่อน 1 หน่วย แล้วจึงสร้างความเสียหาย
+  const marsswordAtk = (attacker.statuses.marssword || 0) > 0;
+  if (marsswordAtk && target.armor > 0) {
+    target.armor--;
+    lastLog.push(`⚔️ ดาบแห่งแสง! ${attacker.name} ลดเกราะ ${target.name} -1 ก่อนโจมตี`);
+  }
+
   const attackerBeat = beatActive(attacker); // Beat Mode: การโจมตีเป็นความเสียหายจริง ไม่สนเกราะ
   const hpBefore = target.hp;
   const armorBefore = target.armor;
@@ -2029,6 +2263,29 @@ function doAttack(byId, targetId) {
   if (profitAtk > 0) {
     attacker.profit = 0; // บัฟกำไรหมดไปเมื่อได้ตี
     lastLog.push(`💰 ${attacker.name} กำไรเท่าตัวโว้ย — โจมตี +${profitAtk} ทะลุเกราะ! (บัฟหมดลง)`);
+  }
+  // จันทราสยบ (อควาเรียน กลางวันร่างลูน่า): พลังโจมตีเหลือ 0 แต่ยังได้โจมตี -> ฟื้นเลือด 1
+  if (aquaZero) {
+    const heal = healHp(attacker, 1);
+    if (heal > 0) lastLog.push(`🌙 ${attacker.name} จันทราสยบ — พลังโจมตีเหลือ 0 แต่ยังได้โจมตี ฟื้นพลังชีวิต +${heal}`);
+  }
+  // ศรศักดิ์สิทธิ์ (อควาเรียน ท่าไม้ตายร่างลูน่า): ติดพิษ ลดพลังชีวิตเป้าหมาย 1 หน่วยทุกเทิร์น 2 เทิร์น
+  if ((attacker.statuses.lunabow || 0) > 0 && target.alive) {
+    target.statuses.aquapoison = Math.max(target.statuses.aquapoison || 0, 3); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
+    lastLog.push(`☠️ ศรศักดิ์สิทธิ์! ${target.name} ติดพิษ เสียพลังชีวิต 1 หน่วยทุกเทิร์น (2 เทิร์น)`);
+  }
+  // ดาบแห่งจุดจบ (อควาเรียน ร่างมาร์/ปีกแห่งสุริยัน): 30% สะท้อนความเสียหายครึ่งหนึ่งกลับผู้โจมตี (ดาเมจ 1 สะท้อนไม่ได้)
+  let aquaReflect = 0;
+  if (aquaPassive2Active(target) && dmg > 1 && Math.random() < AQUA_MARS_REFLECT_CHANCE) {
+    aquaReflect = Math.floor(dmg / 2);
+    if (aquaReflect > 0 && attacker.alive) {
+      dealMixed(attacker, aquaReflect);
+      maybeBeatSave(attacker);
+      maybeBeatMode(attacker);
+      maybeEva3(attacker);
+      attacker.wasAttacked = true;
+      lastLog.push(`🗡️ ดาบแห่งจุดจบ! ${target.name} สะท้อนความเสียหาย -${aquaReflect} กลับให้ ${attacker.name}`);
+    }
   }
   // หอกลองกินัส: โจมตีโดนเป้าหมาย -> มีโอกาส 20/80 ที่เทิร์นถัดมาเป้าหมายจะใช้สกิลไม่ได้
   //  (สกิลติดตัว 3 เอวาทำงาน = โอกาสเพิ่มเป็น 50/50)
@@ -2076,6 +2333,17 @@ function doAttack(byId, targetId) {
       splashHit.push(o);
     }
     if (splashHit.length) lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -1`);
+  }
+  // หมัดไร้ขอบเขต (อควาเรียน ท่าไม้ตายร่างโซล่า): ตีหมู่ — คนที่ไม่ใช่เป้าหมายเสียเกราะ 1 หน่วย
+  if ((attacker.statuses.solarburst || 0) > 0) {
+    const splashHit = [];
+    for (const o of alivePlayers()) {
+      if (o.id === attacker.id || o.id === target.id) continue;
+      dealArmorOnly(o, 1);
+      o.wasAttacked = true;
+      splashHit.push(o);
+    }
+    if (splashHit.length) lastLog.push(`หมัดไร้ขอบเขต! ${attacker.name} ตีหมู่ — ผู้เล่นอื่นเสียเกราะ -1`);
   }
 
   // การหลับไหลอันไม่สิ้นสุด (โอเบรอน patch 1.7.6): ยามกลางวัน การโจมตีปกติติด "ยามฟ้าสาง" +1 แก่เป้าหมาย
@@ -2126,12 +2394,19 @@ function doAttack(byId, targetId) {
   if (shieldBefore > target.shield) addFx({ name: "โล่ป้องกัน (กันความเสียหาย)", img: null, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   if ((target.statuses.absorb || 0) > 0 && armorLost > 0) addFx(skillByStatus(target, "absorb"), "def");
   if (beatSaveFired) addFx({ name: "ประกายเขี้ยวปฏิปักษ์ (กันตาย)", img: OHGER_FORM, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
+  // อควาเรียน
+  if (aquaAtk > 0) addFx({ name: `พลังโจมตี +${aquaAtk} (สกิลติดตัว)`, img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (aquaZero) addFx({ name: "จันทราสยบ (พลังโจมตี 0)", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if ((attacker.statuses.solarburst || 0) > 0) addFx(skillByStatus(attacker, "solarburst"), "atk");
+  if (marsswordAtk) addFx(skillByStatus(attacker, "marssword"), "atk");
+  if ((attacker.statuses.lunabow || 0) > 0) addFx(skillByStatus(attacker, "lunabow"), "atk");
+  if (aquaReflect > 0) addFx({ name: `ดาบแห่งจุดจบ — สะท้อน -${aquaReflect}`, img: displayImg(target), by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
 
   // อนิเมชันบอกว่าใครตีใคร
   lastAttack = {
     byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
     targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
-    dmg, aoe: ginga, revenge: isRevenge, skills: fxSkills,
+    dmg, aoe: ginga || (attacker.statuses.solarburst || 0) > 0, revenge: isRevenge, skills: fxSkills,
   };
   gameState = "ATTACKING";
   // มีข้อมูลสกิลให้อ่าน -> ยืดเวลาอนิเมชันให้อ่านทัน
@@ -2165,6 +2440,7 @@ function endTurn() {
       if (k === "chill") continue;  // ชิวๆครับน้องๆ (Apple guy): คงอยู่จนกว่าจะถูกโจมตี ไม่ลดเทิร์น
       if (k === "overwork") continue; // โหมงานหนัก (โคโตเนะ): คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน
       if (k === "ksleep") continue;   // Sleeping time (โคโตเนะ): หลับจนหมดเฟสกลางคืน (ตื่นตอนเช้า)
+      if (k === "godtree") continue; // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด/ยกเลิกเอง ไม่ลดเทิร์น
       if (k === "mage") { delete p.statuses.mage; continue; } // จอมเวทย์ฝึกหัด: เก็บเป็นสแตค อยู่แค่ 1 เทิร์น
       // หลับไหล: เทิร์นที่เพิ่งโดนกล่อม ยังไม่เริ่มนับ (เริ่มหลับจริงเทิร์นถัดไป ครบตามจำนวนยามฟ้าสาง)
       if (k === "sleep" && p.sleepFresh) { p.sleepFresh = false; continue; }
@@ -2217,6 +2493,8 @@ function endTurn() {
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
+      // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตายขณะสถานะนี้ยังอยู่ -> รอฟื้นคืนชีพ (เช็คว่าเกมจบไหมด้านล่าง)
+      if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) p.pendingRevive = true;
       p.hp = 0; p.alive = false; p.result = "dead";
       lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
     }
@@ -2238,8 +2516,23 @@ function endTurn() {
     // เช็คคนตายจากแรงระเบิดอีกรอบ
     for (const p of Object.values(players)) {
       if (p.alive && p.hp <= 0) {
+        if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) p.pendingRevive = true;
         p.hp = 0; p.alive = false; p.result = "dead";
         lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+      }
+    }
+  }
+  // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตั้งเวลาฟื้นคืนชีพ 12 เทิร์น ก็ต่อเมื่อเกมยังไม่จบ (เหลือผู้เล่นอื่นอย่างน้อย 2 คน)
+  {
+    const revivers = Object.values(players).filter((p) => p.pendingRevive);
+    if (revivers.length) {
+      const stillAliveNow = alivePlayers().length;
+      for (const p of revivers) {
+        p.pendingRevive = false;
+        if (stillAliveNow >= 2) {
+          p.reviveIn = AQUA_REVIVE_TURNS;
+          lastLog.push(`🌳 ${p.name} ร่างสลายไปกับพฤกษาแห่งชีวิต — จะฟื้นคืนชีพใน ${AQUA_REVIVE_TURNS} เทิร์น หากเกมยังไม่จบ`);
+        }
       }
     }
   }
@@ -2294,6 +2587,7 @@ function backToLobby() {
   cycleShift = 0;
   nightResetPending = false;
   oberonDevour = 0;
+  dayForceUntil = 0;
   lastLog = [];
   cutsceneQueue = [];
   cutsceneInfo = null;
@@ -2348,6 +2642,7 @@ io.on("connection", (socket) => {
       contractPartner: null, contractWith: null, contractOffer: null,
       contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
       healNextTurn: 0, unplugHold: null,
+      leader: "apollo", fused: false, lightDew: 0, reviveIn: 0,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };

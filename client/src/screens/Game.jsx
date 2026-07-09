@@ -202,7 +202,7 @@ function TransformNotice({ n }) {
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
 //  ระหว่าง Lie Like Vortigern (โอเบรอน) ฉากหลังกลางคืนกลายเป็นวีดีโอ oberon_background.mp4 (เฟดเข้า)
-function GameBackground({ cycle, oberonBg }) {
+function GameBackground({ cycle, oberonBg, godtreeBg }) {
   const night = cycle === "night";
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -222,6 +222,13 @@ function GameBackground({ cycle, oberonBg }) {
         <video
           src="/characters/oberon/oberon_background.mp4"
           autoPlay loop muted playsInline
+          className="absolute inset-0 w-full h-full object-cover bg-fade-in"
+        />
+      )}
+      {godtreeBg && (
+        <img
+          src="/characters/auqarion/backgroud_skillgod.jpg"
+          alt=""
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
       )}
@@ -687,6 +694,39 @@ function AppleItemModal({ me, onPick, onClose }) {
   );
 }
 
+// ---------- เปลี่ยนหัวหน้า (อควาเรียน สกิลพื้นฐาน): เมนูเลือกผู้นำ ----------
+//  ใช้ 2 แต้ม ฟื้นเลือด 1 หน่วย — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง — กำหนดร่างที่จะรวมร่างด้วยสกิลรอง
+const AQUA_LEADERS = [
+  { key: "apollo", name: "อะพอลโล่ (โซล่า)", img: "/characters/auqarion/skill1/apollo.jpg" },
+  { key: "sirius", name: "ซิลิอุส (มาร์)", img: "/characters/auqarion/skill1/sirius.jpg" },
+  { key: "rena", name: "ลีน่า (ลูน่า)", img: "/characters/auqarion/skill1/rena.jpg" },
+];
+function AquaLeaderModal({ me, onPick, onClose }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-gold">🌊 เปลี่ยนหัวหน้า — เลือกผู้นำ</div>
+        <div className="text-sm opacity-80 mb-3">กำหนดร่างที่จะรวมร่างด้วยสกิลรอง "รวมร่างหุ่นศักดิ์สิทธิ์" (ใช้ 2 แต้ม ฟื้นเลือด +1 — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง)</div>
+        <div className="flex flex-col gap-2">
+          {AQUA_LEADERS.map((it) => (
+            <button
+              key={it.key}
+              onClick={() => { clickSound(); onPick(it.key); }}
+              className={`text-left flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
+                me.leader === it.key ? "bg-echo-gold/20 border-echo-gold" : "bg-white/5 hover:bg-white/15 border-white/15"
+              }`}
+            >
+              <img src={it.img} alt="" className="w-14 h-14 object-cover rounded-lg shrink-0" />
+              <div className="font-bold text-echo-gold">{it.name}{me.leader === it.key ? " · เลือกอยู่" : ""}</div>
+            </button>
+          ))}
+        </div>
+        <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- สนใจใช้บริการเราไหม (เจ้าแห่งเน็ตบ้าน): ข้อเสนอสัญญา — เป้าหมายเลือกตอบรับ/ปฏิเสธ ----------
 //  ไม่ตอบก่อนเปิดไพ่ = ถือว่าปฏิเสธ (โดนค่าปรับตามปกติ)
 function ContractOfferModal({ offer, onAnswer }) {
@@ -792,6 +832,7 @@ export default function Game({ state }) {
   const [dawnSel, setDawnSel] = useState(false); // โอเบรอน: โหมดเลือกเป้าหมายรุ่งอรุณแห่งวันใหม่ (เลือกตัวเองได้)
   const [nightSel, setNightSel] = useState(false); // โอเบรอน: โหมดเลือกเป้าหมายฝันร้ายยามค่ำคืน (เลือกตัวเองไม่ได้)
   const [appleOpen, setAppleOpen] = useState(false); // Apple guy: เมนูเลือกของส่งมอบ (สกิลพื้นฐาน)
+  const [aquaOpen, setAquaOpen] = useState(false);   // อควาเรียน: เมนูเลือกผู้นำ (สกิลพื้นฐาน)
   const [appleSel, setAppleSel] = useState(false);   // Apple guy: โหมดเลือกเป้าหมายเอาไปสิ (เลือกตัวเองไม่ได้)
   const [bbSel, setBbSel] = useState(false);         // เจ้าแห่งเน็ตบ้าน: โหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
   const [ktSel, setKtSel] = useState(false);         // โคโตเนะ: โหมดเลือกเป้าหมาย Dance Lession (เลือกตัวเองไม่ได้)
@@ -818,8 +859,21 @@ export default function Game({ state }) {
   const nightNow = state.cycle === "night";
   // ท่าไม้ตายกำลังมีผลอยู่: กดซ้ำไม่ได้จนกว่าจะหมดเวลา (สวมเกราะราชันถาวร = กดซ้ำไม่ได้อีกเลย)
   //  โอเบรอน: กลางวันเช็ค lai / กลางคืนเช็ค vortigern
-  const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai") : ULTIMATE_STATUS[ch?.id];
+  // อควาเรียน: ท่าไม้ตายสลับตามร่างที่รวมอยู่ (โซล่า/มาร์/ลูน่า) หรือปีกแห่งสุริยัน (ไปยังพฤกษาแห่งชีวิต)
+  const aquaUltStatusKey = (p) => {
+    if (!p) return null;
+    if ((p.statuses?.godwing || 0) > 0) return "godtree";
+    if (p.fused && p.leader === "sirius") return "marssword";
+    if (p.fused && p.leader === "rena") return "lunabow";
+    if (p.fused && p.leader === "apollo") return "solarburst";
+    return null;
+  };
+  const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai") : ch?.id === "aquarion" ? aquaUltStatusKey(me) : ULTIMATE_STATUS[ch?.id];
   const ultimateActive = !!(me && me.statuses && me.statuses[ultStatusKey]);
+  // ไปยังพฤกษาแห่งชีวิต: กดปุ่มท่าไม้ตายซ้ำได้เพื่อยกเลิก แม้ล็อกอยู่ (server อนุญาตแม้ระหว่าง locked)
+  const aquaCancelable = ch?.id === "aquarion" && !!me?.statuses?.godtree;
+  // ท่าไม้ตายอควาเรียนใช้ไม่ได้จนกว่าจะรวมร่าง
+  const aquaUltLocked = ch?.id === "aquarion" && !me?.fused;
   // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
   const monsterMe = !!(me && ch?.id === "hikaru" && me.statuses?.monster);
   // Ohger Finish (คุวากาตะ): ต้องมีทั้งสวมเกราะราชัน และ ประกายเขี้ยวปฏิปักษ์ (+1 ความเสียหาย)
@@ -859,6 +913,7 @@ export default function Game({ state }) {
   const veilLocked = isOberon && !!me?.statuses?.veil;
   // ---------- Apple guy ----------
   const isApple = ch?.id === "appleguy"; // สกิลพื้นฐานไม่นับเป็นการใช้สกิลของเทิร์น (ใช้แล้วยังใช้สกิลอื่นได้)
+  const isAquarion = ch?.id === "aquarion"; // เปลี่ยนหัวหน้า (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน
   // ---------- เจ้าแห่งเน็ตบ้าน ----------
   const isBroadband = ch?.id === "broadband_man";
   const lanLocked = isBroadband && !me?.contractPartnerId;    // กระชากสายแลน: ใช้ได้ก็ต่อเมื่อมีคู่สัญญาแล้ว
@@ -910,6 +965,8 @@ export default function Game({ state }) {
     // Apple guy: สกิลพื้นฐานเปิดเมนูเลือกของส่งมอบ / สกิลรองเข้าโหมดเลือกเป้าหมายมอบของ
     if (tier === "basic" && ch?.id === "appleguy") { setAppleOpen(true); setSkillOpen(false); return; }
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); setSkillOpen(false); return; }
+    // อควาเรียน: สกิลพื้นฐานเปิดเมนูเลือกผู้นำ
+    if (tier === "basic" && ch?.id === "aquarion") { setAquaOpen(true); setSkillOpen(false); return; }
     // เจ้าแห่งเน็ตบ้าน: ท่าไม้ตายเข้าโหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
     if (tier === "ultimate" && ch?.id === "broadband_man") { setBbSel(true); setSkillOpen(false); return; }
     // โคโตเนะ: สกิลรองกลางวัน (Dance Lession) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
@@ -931,6 +988,11 @@ export default function Game({ state }) {
   const pickAppleItem = (key) => {
     socket.emit("useSkill", { tier: "basic", item: key });
     setAppleOpen(false);
+  };
+  // เลือกผู้นำ (เปลี่ยนหัวหน้า) -> ส่งไป server ทันที
+  const pickAquaLeader = (key) => {
+    socket.emit("useSkill", { tier: "basic", item: key });
+    setAquaOpen(false);
   };
   // เลือกเป้าหมายมอบของ (เอาไปสิ) -> ส่งไป server ทันที
   const pickGive = (id) => {
@@ -977,6 +1039,9 @@ export default function Game({ state }) {
   useEffect(() => {
     if (appleOpen && (phase !== "PLAYING" || done)) setAppleOpen(false);
   }, [appleOpen, phase, done]);
+  useEffect(() => {
+    if (aquaOpen && (phase !== "PLAYING" || done)) setAquaOpen(false);
+  }, [aquaOpen, phase, done]);
   // แบนเนอร์สลับกลางวัน/กลางคืน: เด้งเมื่อ cycle เปลี่ยนระหว่างแมตช์ แล้วหายเอง
   useEffect(() => {
     if (prevCycle.current && state.cycle && prevCycle.current !== state.cycle) {
@@ -1015,7 +1080,7 @@ export default function Game({ state }) {
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
-        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} />
+        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} />
         {/* แถบบน: รอบ + เวลา (เว้นขวาให้ปุ่มเสียง) */}
         <div className="shrink-0 flex flex-col items-center gap-1 pt-2 px-14 min-h-[40px]">
           {(phase === "PLAYING" || phase === "ATTACK") && (
@@ -1136,9 +1201,9 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
                 <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked} onUse={skill} />
+                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked)} onUse={skill} />
               </div>
               {noSkill && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
@@ -1248,6 +1313,7 @@ export default function Game({ state }) {
         {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
         {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
         {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
+        {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
         {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
         {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
         {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
@@ -1262,7 +1328,7 @@ export default function Game({ state }) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} />
+      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} />
       <div
         className="relative overflow-hidden"
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
@@ -1398,9 +1464,9 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
                   <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked} onUse={skill} />
+                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked)} onUse={skill} />
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
@@ -1535,6 +1601,7 @@ export default function Game({ state }) {
       {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
       {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
       {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
+        {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
       {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
       {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
       {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
