@@ -217,7 +217,8 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 {/* โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
                 <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
-                <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />
+                {/* อควาเรียน: ไม่มีท่าไม้ตายกลาง — ใช้ 4 ท่าตามร่างด้านล่างแทน */}
+                {!sel.ultimateSolar && <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />}
                 {sel.ultimateNight && <SkillTile label="ท่าไม้ตาย (กลางคืน)" skill={sel.ultimateNight} />}
                 {/* อควาเรียน: สกิลรอง "คืนร่าง" + ท่าไม้ตาย 4 แบบ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน) */}
                 {sel.secondaryRevert && <SkillTile label="สกิลรอง (คืนร่าง)" skill={sel.secondaryRevert} />}

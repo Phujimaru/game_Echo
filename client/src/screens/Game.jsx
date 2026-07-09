@@ -391,6 +391,15 @@ const STATUS_INFO = {
   kstun:     { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "หมดแรงจาก [โหมงานหนัก] — เทิร์นนี้ขยับไม่ได้" },
   caught:    { icon: "🎬", label: "โดนจับได้", cls: "bg-echo-hp", desc: "โดนโปรดิวเซอร์จับได้ — ใช้ Part-time ไม่ได้ตามจำนวนเทิร์นที่เหลือ" },
   kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 1 หน่วย และทุกคนถูกใบ้การใช้สกิล" },
+  // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
+  solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
+  marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
+  lunabow:    { icon: "🏹", label: "ศรศักดิ์สิทธิ์", cls: "bg-echo-magenta", desc: "ศรศักดิ์สิทธิ์: โจมตีตามปกติ และติดพิษเป้าหมาย เสียเลือด 1 หน่วยทุกเทิร์น 2 เทิร์น" },
+  godtree:    { icon: "🌳", label: "พฤกษาแห่งชีวิต", cls: "bg-echo-gold text-gray-900", desc: "ไปยังพฤกษาแห่งชีวิต: ทำอะไรไม่ได้เลย — ทุกคนเจ็บ 1 (ไม่สนเกราะ) ทุกเทิร์น ตัวเองเสียเลือด 1/เทิร์น (ต่ำสุด 1) เกราะฟื้น +2/เทิร์น — กดท่าไม้ตายซ้ำเพื่อยกเลิก หรือหมดลงเมื่อสิ้นกลางวัน — ตายระหว่างนี้จะฟื้นคืนชีพใน 12 เทิร์น" },
+  godwing:    { icon: "🌟", label: "ปีกแห่งสุริยัน", cls: "bg-echo-gold text-gray-900", desc: "ปีกแห่งสุริยัน: เปิดสกิลติดตัว 1-3 พร้อมกัน ไม่รับความเสียหายจากแพ้จั่ว/ไพ่แตก และต่อเวลากลางวันเป็น 5 เทิร์น" },
+  godarmor:   { icon: "🛡️", label: "คืนร่าง", cls: "bg-echo-armor", desc: "คืนร่าง: ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น ตามจำนวนเทิร์นที่เหลือ" },
+  aquapoison: { icon: "☠️", label: "พิษศร", cls: "bg-echo-hp", desc: "พิษศรศักดิ์สิทธิ์: เสียพลังชีวิต 1 หน่วยทุกเทิร์น (ไม่ถึงตาย — ค้างที่ 1) ตามจำนวนเทิร์นที่เหลือ" },
+  marssurge:  { icon: "🗡️", label: "ดาบแห่งจุดจบ", cls: "bg-echo-gold text-gray-900", desc: "ดาบแห่งจุดจบ: ชนะเทิร์นที่มีผู้เล่นอื่นไพ่แตก — พลังโจมตี +1 หน่วยในเทิร์นนี้" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
@@ -406,6 +415,8 @@ function statusEntries(p, full) {
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
   if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไปอยู่นานขึ้น +1 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
+  if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 10) — ครบ 10 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
+  if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
   if (p.contractWithId) out.push({ key: "contract", v: 1, icon: "📶", label: "คู่สัญญา", cls: "bg-echo-cyan text-gray-900", desc: "สนใจใช้บริการเราไหม: เพดานเกราะ +1 และพลังโจมตี +1 ตลอดสัญญา — ทุก 3 เทิร์นต้องเลือกต่อสัญญา (4 แต้ม) หรือยกเลิก" });
   if (p.contractPartnerId) out.push({ key: "boss", v: 1, icon: "📶", label: "มีคู่สัญญา", cls: "bg-echo-gold text-gray-900", desc: "เจ้าแห่งเน็ตบ้าน: มีคู่สัญญาอยู่ 1 คน — คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1 หน่วย" });
   if ((p.skillDrain || 0) > 0) out.push({ key: "skillDrain", v: p.skillDrain, icon: "📵", label: "ค่าปรับ", cls: "bg-echo-hp", desc: "ปฏิเสธข้อเสนอสัญญา: แต้มสกิลหลังจบเทิร์นลด 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" });

@@ -131,10 +131,17 @@ function isNightRound(n) {
 
 // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
 const AQUA_LEADERS = {
-  apollo: { name: "อะพอลโล่ (โซล่า)", skillImg: "/characters/auqarion/skill1/apollo.jpg", profileImg: "/characters/auqarion/profile/apollo.jpg", fuseCover: "/characters/auqarion/skill2/skill2_solar.webp", fuseKey: "aquaFuseSolar", fuseProfile: "/characters/auqarion/profile/solar.jpg", ultimateKey: "ultimateSolar" },
-  sirius: { name: "ซิลิอุส (มาร์)", skillImg: "/characters/auqarion/skill1/sirius.jpg", profileImg: "/characters/auqarion/profile/sirius.jpg", fuseCover: "/characters/auqarion/skill2/skill2_mars.webp", fuseKey: "aquaFuseMars", fuseProfile: "/characters/auqarion/profile/mars.jpg", ultimateKey: "ultimateMars" },
-  rena: { name: "ลีน่า (ลูน่า)", skillImg: "/characters/auqarion/skill1/rena.jpg", profileImg: "/characters/auqarion/profile/rena.jpg", fuseCover: "/characters/auqarion/skill2/skill2_luna.webp", fuseKey: "aquaFuseLuna", fuseProfile: "/characters/auqarion/profile/luna.jpg", ultimateKey: "ultimateLuna" },
+  apollo: { name: "อะพอลโล่ (โซล่า)", pilotName: "อะพอลโล่", robotName: "โซล่า อควาเรียน", skillImg: "/characters/auqarion/skill1/apollo.jpg", profileImg: "/characters/auqarion/profile/apollo.jpg", fuseCover: "/characters/auqarion/skill2/skill2_solar.webp", fuseKey: "aquaFuseSolar", fuseProfile: "/characters/auqarion/profile/solar.jpg", ultimateKey: "ultimateSolar" },
+  sirius: { name: "ซิลิอุส (มาร์)", pilotName: "ซิลิอุส", robotName: "มาร์ อควาเรียน", skillImg: "/characters/auqarion/skill1/sirius.jpg", profileImg: "/characters/auqarion/profile/sirius.jpg", fuseCover: "/characters/auqarion/skill2/skill2_mars.webp", fuseKey: "aquaFuseMars", fuseProfile: "/characters/auqarion/profile/mars.jpg", ultimateKey: "ultimateMars" },
+  rena: { name: "ลีน่า (ลูน่า)", pilotName: "ลีน่า", robotName: "ลูน่า อควาเรียน", skillImg: "/characters/auqarion/skill1/rena.jpg", profileImg: "/characters/auqarion/profile/rena.jpg", fuseCover: "/characters/auqarion/skill2/skill2_luna.webp", fuseKey: "aquaFuseLuna", fuseProfile: "/characters/auqarion/profile/luna.jpg", ultimateKey: "ultimateLuna" },
 };
+const AQUA_GODWING_NAME = "ปีกแห่งสุริยัน อควาเรียน";
+// ชื่อที่แสดงในเกม: ก่อนรวมร่าง = ชื่อผู้นำ / รวมร่างแล้ว = ชื่อหุ่น / ปีกแห่งสุริยัน = ร่างสุดท้าย
+function aquaDisplayName(p) {
+  if ((p.statuses && p.statuses.godwing) > 0) return AQUA_GODWING_NAME;
+  const leader = AQUA_LEADERS[p.leader || "apollo"];
+  return p.fused ? leader.robotName : leader.pilotName;
+}
 const AQUA_GODWING_PROFILE = "/characters/auqarion/profile/godwing.jpg";
 const AQUA_LIGHTDEW_MAX = 10;   // แสงละออง สะสมได้สูงสุด
 const AQUA_FUSE_DEW = 1;        // รวมร่างหุ่นศักดิ์สิทธิ์: แสงละออง +1
@@ -361,6 +368,13 @@ function maybeBeatSave(p) {
   lastLog.push(`🛡️⚡ ${p.name} ประกายเขี้ยวปฏิปักษ์ — รอดจากความเสียหายถึงตาย! (กันตายได้ครั้งเดียว)`);
   return true;
 }
+// ตายกลางเทิร์น (เลือดหมดจากสกิล/ผลสถานะ): ตกรอบทันที — อควาเรียนที่ตายขณะไปยังพฤกษาแห่งชีวิต
+//  จะติดธงรอฟื้นคืนชีพ (ตั้งเวลา 12 เทิร์นตอนจบเทิร์น ถ้าเกมยังไม่จบ)
+function instantDeath(p) {
+  if (p.characterId === "aquarion" && ((p.statuses && p.statuses.godtree) || 0) > 0) p.pendingRevive = true;
+  p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
+}
+
 // ---------- เอวานเกเลี่ยน หมายเลข 13 ----------
 // สกิลติดตัว 3 อย่าให้ฉันทำแแบบนี้เลย: เลือด <= 3 = ทำงาน (ห้ามจั่วของสกิลรอง +1 เทิร์น, เพดานเกราะ +1)
 function eva3Active(p) {
@@ -431,8 +445,9 @@ function positionUsedByOther(pos, sid) {
 function displayImg(p) {
   // โอเบรอน: ร่างสลับตามช่วงเวลากลางวัน/กลางคืนเสมอ
   if (p.characterId === "oberon") return isNightRound(roundNumber) ? OBERON_NIGHT_IMG : OBERON_MORNING_IMG;
-  // อควาเรียน: ปีกแห่งสุริยัน > รวมร่าง (ตามผู้นำ) > เลือกผู้นำแล้วยังไม่รวมร่าง > โปรไฟล์เริ่มต้น
+  // อควาเรียน: ในล็อบบี้ใช้ select_profile — ลงสนามแล้ว ปีกแห่งสุริยัน > รวมร่าง (ตามผู้นำ) > โปรไฟล์ผู้นำ
   if (p.characterId === "aquarion") {
+    if (gameState === "LOBBY") return p.img;
     if ((p.statuses.godwing || 0) > 0) return AQUA_GODWING_PROFILE;
     const leader = AQUA_LEADERS[p.leader || "apollo"];
     if (p.fused) return leader.fuseProfile;
@@ -549,7 +564,8 @@ function firePassive(p, trigger) {
 function skillByStatus(p, status) {
   const ch = CHAR_BY_ID[p.characterId];
   if (!ch) return null;
-  for (const tier of ["basic", "secondary", "secondaryNight", "ultimate", "ultimateNight"]) {
+  for (const tier of ["basic", "secondary", "secondaryNight", "ultimate", "ultimateNight",
+    "secondaryRevert", "ultimateSolar", "ultimateMars", "ultimateLuna", "ultimateGodwing"]) {
     const s = ch[tier];
     if (s && s.effect && !Array.isArray(s.effect) && s.effect.type === "status" && s.effect.status === status) {
       return { name: s.name, img: s.img || null, by: p.name, color: POSITION_COLORS[p.position] || "#888" };
@@ -711,12 +727,12 @@ function buildStateFor(viewerId) {
         if (basicPub) basicPub.img = leader.skillImg;
         secondaryPub = pub(p.fused ? ch.secondaryRevert : ch.secondary);
         if (secondaryPub && !p.fused) secondaryPub.img = leader.fuseCover;
+        // ท่าไม้ตายสลับตามร่าง — ยังไม่รวมร่างโชว์ท่าของผู้นำที่เลือกไว้ (ปุ่มล็อกฝั่ง client จนกว่าจะรวมร่าง)
         ultimatePub = pub(
           (p.statuses.godwing || 0) > 0 ? ch.ultimateGodwing
-          : (p.fused && p.leader === "sirius") ? ch.ultimateMars
-          : (p.fused && p.leader === "rena") ? ch.ultimateLuna
-          : (p.fused && p.leader === "apollo") ? ch.ultimateSolar
-          : null
+          : p.leader === "sirius" ? ch.ultimateMars
+          : p.leader === "rena" ? ch.ultimateLuna
+          : ch.ultimateSolar
         );
       }
       return {
@@ -768,7 +784,10 @@ function buildStateFor(viewerId) {
         statuses: show ? { ...p.statuses, ...(p.ntdTarget ? { ntd: 1 } : {}) } : publicStatuses(p),
         character: {
           // โอเบรอน: กลางคืนสลับชื่อ + สกิลรอง/ท่าไม้ตายเป็นเวอร์ชันกลางคืน (ฝันร้ายยามค่ำคืน / Lie Like Vortigern)
-          id: ch.id, name: nightNow && ch.nightName ? ch.nightName : ch.name,
+          // อควาเรียน: ลงสนามเป็นชื่อผู้นำ รวมร่างแล้วเป็นชื่อหุ่น (ปีกแห่งสุริยันตอนร่างสุดท้าย)
+          id: ch.id,
+          // อควาเรียน: ล็อบบี้โชว์ชื่อเต็ม — ลงสนามเป็นชื่อผู้นำ/หุ่นตามร่าง
+          name: ch.id === "aquarion" ? (gameState === "LOBBY" ? ch.name : aquaDisplayName(p)) : nightNow && ch.nightName ? ch.nightName : ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
           basic: basicPub,
           secondary: secondaryPub,
@@ -994,22 +1013,6 @@ function dealRound() {
       p.hp--; p.dmgHp++;
       lastLog.push(`☠️ ${p.name} ติดพิษศรศักดิ์สิทธิ์ — เสียพลังชีวิต -1 (เหลืออีก ${p.statuses.aquapoison - 1} เทิร์น)`);
     }
-    // ---------- อควาเรียน: ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ 1 (ไม่สนเกราะ) ทุกเทิร์น ----------
-    if ((p.statuses.godtree || 0) > 0) {
-      p.locked = true;
-      for (const o of alivePlayers()) {
-        if (o.id === p.id) continue;
-        dealDirect(o, 1);
-        maybeBeatSave(o);
-        maybeBeatMode(o);
-        maybeEva3(o);
-        o.wasAttacked = true;
-      }
-      if (p.hp > 1) { p.hp--; p.dmgHp++; }
-      p.armor = Math.min(maxArmorOf(p), p.armor + 2);
-      lastLog.push(`🌳 ${p.name} ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ -1 (ไม่สนเกราะ) ตัวเองเสียเลือด -1 (ไม่สนเกราะ) เกราะฟื้น +2`);
-    }
-
     p.cards = [];
     p.cards.push(drawCardFor(p));
     p.cards.push(drawCardFor(p));
@@ -1023,6 +1026,27 @@ function dealRound() {
       p.locked = true;
       if (p.hp > 1) { p.hp--; p.dmgHp++; }
       lastLog.push(`💤 ${p.name} หลับไหลจากคำลวงของราชาภูติ — ขยับไม่ได้ (เหลืออีก ${p.statuses.sleep} เทิร์น)`);
+    }
+
+    // ---------- อควาเรียน: ไปยังพฤกษาแห่งชีวิต — ทำอะไรไม่ได้เลย + ทุกคนเจ็บ 1 (ไม่สนเกราะ) ทุกเทิร์น ----------
+    //  (ต้องล็อกหลังแจกไพ่ — แจกไพ่รีเซ็ต locked = false)
+    if ((p.statuses.godtree || 0) > 0) {
+      p.locked = true;
+      for (const o of alivePlayers()) {
+        if (o.id === p.id) continue;
+        dealDirect(o, 1);
+        maybeBeatSave(o);
+        maybeBeatMode(o);
+        maybeEva3(o);
+        o.wasAttacked = true;
+        if (o.alive && o.hp <= 0) {
+          instantDeath(o);
+          lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
+        }
+      }
+      if (p.hp > 1) { p.hp--; p.dmgHp++; }
+      p.armor = Math.min(maxArmorOf(p), p.armor + 2);
+      lastLog.push(`🌳 ${p.name} ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ -1 (ไม่สนเกราะ) ตัวเองเสียเลือด -1 (ไม่สนเกราะ) เกราะฟื้น +2`);
     }
 
     // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
@@ -1323,7 +1347,7 @@ function useSkill(id, tier, targets, item) {
         lastLog.push(`🎰 ${p.name} วอสก้าหน่อยน้อง — ดวงกุด เสียพลังชีวิต -1`);
         // ผลสกิลตัวเองทำให้เลือดหมด -> ตายทันที ไม่ต้องรอจบเทิร์น
         if (p.hp <= 0) {
-          p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
+          instantDeath(p);
           lastLog.push(`💀 ${p.name} เสี่ยงดวงจนสิ้นลม — ตกรอบทันที!`);
         }
       }
@@ -1411,7 +1435,8 @@ function useSkill(id, tier, targets, item) {
     p.fused = true;
     p.lightDew = Math.min(AQUA_LIGHTDEW_MAX, (p.lightDew || 0) + AQUA_FUSE_DEW);
     const leader = AQUA_LEADERS[p.leader || "apollo"];
-    lastLog.push(`✨ ${p.name} รวมร่างหุ่นศักดิ์สิทธิ์ — กลายเป็น${leader.name.replace(/\s*\(|\)/g, " ").trim()} (แสงละออง ${p.lightDew}/${AQUA_LIGHTDEW_MAX})`);
+    flashSuffix = ` — ${leader.robotName}`;
+    lastLog.push(`✨ ${p.name} รวมร่างหุ่นศักดิ์สิทธิ์ — กลายเป็น ${leader.robotName} (แสงละออง ${p.lightDew}/${AQUA_LIGHTDEW_MAX})`);
     triggerCutscene(p, leader.fuseKey);
     maybeGodwing(p);
     if (cutsceneQueue.length) pausePlayingForCutscene();
@@ -1443,7 +1468,7 @@ function useSkill(id, tier, targets, item) {
       maybeEva3(t);
       lastLog.push(`📱 ${p.name} เอาไปสิ — มอบไอโฟนเครื่องใหม่ให้ ${t.name} (เกราะ +2 / เสียเลือด 1 ไม่สนเกราะ)`);
       if (t.alive && t.hp <= 0) {
-        t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+        instantDeath(t);
         lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
       }
     } else {
@@ -1499,7 +1524,7 @@ function useSkill(id, tier, targets, item) {
     flashSuffix = ` — ใส่ ${t.name}`;
     lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นใส่ ${t.name} -2 และผลใบ้สกิลของท่าไม้ตายครั้งถัดไป +1 เทิร์น`);
     if (t.alive && t.hp <= 0) {
-      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      instantDeath(t);
       lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
     }
   }
@@ -1554,7 +1579,7 @@ function useSkill(id, tier, targets, item) {
     flashSuffix = ` — ใส่ ${t.name}`;
     lastLog.push(`🔌 ${p.name} กระชากสายแลน — บัฟของ ${t.name} หายไปชั่วคราว 1 เทิร์น${stripped.length ? ` (ถอด ${stripped.length} บัฟ)` : ""} และรับความเสียหาย -1 ไม่สนเกราะ`);
     if (t.alive && t.hp <= 0) {
-      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      instantDeath(t);
       lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
     }
   }
@@ -1644,8 +1669,11 @@ function useSkill(id, tier, targets, item) {
 
   // สกิลช่วงจั่วการ์ด (instant): เด้งโชว์ทันทีบนกระดานของทุกคน ไม่ต้องรอเปิดไพ่/ไม่ตัดจอดำ
   if (skill.instant) {
-    // Apple guy: ป้ายเด้งของสกิลพื้นฐานโชว์รูปของที่เลือก
-    const flashImg = isApplePick ? APPLE_ITEMS[item].img : (skill.img || null);
+    // Apple guy: ป้ายเด้งของสกิลพื้นฐานโชว์รูปของที่เลือก / อควาเรียน: โชว์รูปตามผู้นำที่เลือกอยู่
+    const flashImg = isApplePick ? APPLE_ITEMS[item].img
+      : isAquaLeader ? AQUA_LEADERS[item].skillImg
+      : isAquaFuse ? AQUA_LEADERS[p.leader || "apollo"].fuseCover
+      : (skill.img || null);
     io.emit("skillFlash", { name: skill.name + flashSuffix, img: flashImg, by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96" });
   }
   // จำสกิลที่ใช้ในรอบ (ท่าไม้ตายมี cutscene ของตัวเอง / สกิลหลังเปิดไพ่ไปโชว์ตอนโจมตี)
@@ -1721,7 +1749,7 @@ function resolveOffer(b, t, accept, timeout) {
     lastLog.push(`📵 ${t.name} ${timeout ? "ไม่ตอบข้อเสนอ" : "ปฏิเสธข้อเสนอ"}ของ ${b.name} — เสียเลือด 1 ไม่สนเกราะ และแต้มสกิลจบเทิร์นลด 1 (3 เทิร์นถัดไป)`);
     io.emit("skillFlash", { name: `สนใจใช้บริการเราไหม — ${t.name} ปฏิเสธ`, img: "/characters/broadband_man/broadband_man_skill3.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
     if (t.alive && t.hp <= 0) {
-      t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+      instantDeath(t);
       lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
     }
   }
@@ -1759,7 +1787,7 @@ function resolveRenew(t, accept, timeout) {
     io.emit("skillFlash", { name: `ชำระค่าบริการ — ${t.name} ยกเลิกสัญญา`, img: "/characters/broadband_man/broadband_man.jpg", by: b.name, color: POSITION_COLORS[b.position] || "#9B4F96" });
   }
   if (t.alive && t.hp <= 0) {
-    t.hp = 0; t.alive = false; t.result = "dead"; t.locked = true;
+    instantDeath(t);
     lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
   }
 }
@@ -1900,6 +1928,13 @@ function resolveRound() {
         lastLog.push(`🌑 ${l.name} ทุกอย่างไร้ความหมาย — ไม่รับความเสียหายจากการแพ้`);
         continue;
       }
+      if ((l.statuses.godwing || 0) > 0) {
+        // ปีกแห่งสุริยัน (อควาเรียน): ไม่โดนความเสียหายจากการ์ดแตกหรือแพ้จั่ว
+        addSkill(l, 1);
+        firePassive(l, "lose");
+        lastLog.push(`🌟 ${l.name} ปีกแห่งสุริยัน — ไม่รับความเสียหายจากการแพ้/ไพ่แตก`);
+        continue;
+      }
       const armorBefore = l.armor;
       // การหลับไหลอันไม่สิ้นสุด: ติดทั้งการตื่นขึ้น + ยามฟ้าสาง -> ดาเมจแตก/แพ้ +1
       // และล้าง "การตื่นขึ้น" ออก 1 หน่วยทุกครั้งที่เกิดผล
@@ -1948,7 +1983,7 @@ function resolveRound() {
   //  -> ตกรอบและระเบิดทันที ไม่ต้องรอจบเทิร์น (เลือดเหลือ 0 แล้ว ไม่ควรรอโดนตีอีกรอบ)
   for (const e of combatants) {
     if (!(e.alive && e.hp <= 0 && e.characterId === "eva13" && (e.statuses.fourth || 0) > 0)) continue;
-    e.hp = 0; e.alive = false; e.result = "dead"; e.locked = true;
+    instantDeath(e);
     lastLog.push(`💀 ${e.name} เลือดจริงหมด ตกรอบ!`);
     lastLog.push(`💥 ${e.name} ไม่สามารถแก้ไขอะไรได้อีกแล้ว — ทุกสิ่งทุกอย่างไร้ความหมาย! ระเบิดใส่ทุกคน -${EVA_BLAST_DMG}`);
     for (const o of alivePlayers()) {
@@ -1963,7 +1998,7 @@ function resolveRound() {
     // คนที่โดนแรงระเบิดจนเลือดหมด ตกรอบทันทีเช่นกัน
     for (const o of Object.values(players)) {
       if (o.alive && o.hp <= 0) {
-        o.hp = 0; o.alive = false; o.result = "dead"; o.locked = true;
+        instantDeath(o);
         lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
       }
     }
@@ -2445,7 +2480,14 @@ function endTurn() {
       // หลับไหล: เทิร์นที่เพิ่งโดนกล่อม ยังไม่เริ่มนับ (เริ่มหลับจริงเทิร์นถัดไป ครบตามจำนวนยามฟ้าสาง)
       if (k === "sleep" && p.sleepFresh) { p.sleepFresh = false; continue; }
       p.statuses[k]--;
-      if (p.statuses[k] <= 0) delete p.statuses[k];
+      if (p.statuses[k] <= 0) {
+        delete p.statuses[k];
+        // ปีกแห่งสุริยันจบลง (อควาเรียน): ล้างแสงละอองที่สะสมออกทั้งหมด
+        if (k === "godwing" && p.characterId === "aquarion") {
+          p.lightDew = 0;
+          lastLog.push(`🌟 ${p.name} ผลปีกแห่งสุริยันจบลง — แสงละอองถูกล้างออก`);
+        }
+      }
     }
     for (const k of Object.keys(p.seen || {})) {
       if (k === "ntd" || k === "beat" || k === "eva3") continue; // NT-D คงอยู่จนแก้แค้น / Beat Mode ถาวร / eva3 เปิดปิดตามเลือด
