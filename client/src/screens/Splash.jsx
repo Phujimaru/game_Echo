@@ -33,7 +33,7 @@ export default function Splash({ onEnter }) {
         </h1>
         <p className="mt-4 text-white font-bold text-base sm:text-lg flex gap-8">
           <span>By Phujim@ru</span>
-          <span>เวอร์ชัน 1.9.1</span>
+          <span>เวอร์ชัน 2.0</span>
         </p>
       </div>
 
