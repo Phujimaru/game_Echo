@@ -10,6 +10,9 @@
 const FILES = {
   main_home: "/theme_song/main_home.mp3",
   card_prepare_turn: "/theme_song/card_prepare_turn.mp3",
+  new_morning: "/theme_song/new_morning.mp3", // เพลงช่วงกลางวัน (patch พิเศษ)
+  new_night: "/theme_song/new_night.mp3",     // เพลงช่วงกลางคืน (patch พิเศษ)
+  shrade: "/characters/shrade_elan/shrade_theme.mp3", // เพลงระหว่างชาร์จ แด่เพื่อนรักของฉัน (ชเรด เอลัน)
   ginga: "/characters/hikaru/ginga_song.mp3",
   unicorn: "/characters/banagher/unicorn_song.mp3",
   final_normal: "/characters/kuwagata/final_normal.mp3", // เพลงระหว่างสวมเกราะราชัน

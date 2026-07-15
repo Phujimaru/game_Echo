@@ -31,8 +31,8 @@ const ATTACK_TIME = 15;
 const TRANSITION_TIME = 3;
 const ATTACKFX_TIME = 3;  // อนิเมชันบอกว่าใครตีใคร
 
-const MAX_HP = 5;       // เลือดจริงพื้นฐาน
-const MAX_ARMOR = 2;
+const MAX_HP = 7;       // เลือดจริงพื้นฐาน (patch พิเศษ — เดิม 5)
+const MAX_ARMOR = 3;    // เกราะเริ่มต้น (patch พิเศษ — เดิม 2)
 const MAX_SKILL = 8;
 const BEAM_AMMO = 2;    // กระสุน Beam Magnum ต่อเกม (บานาจ)
 const PUDDING_USES = 2; // Rainbow Pudding ใช้ได้ต่อเกม (คุวากาตะ)
@@ -62,17 +62,28 @@ const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
 const KOTONE_COIN_MAX = 6;       // กระปุกออมสินน้องหมูน้อย เก็บ coin ได้สูงสุด
 const KOTONE_COIN_PER_DMG = 2;   // 2 coin = +1 ความเสียหายตอนโจมตี (ใช้แล้วเหรียญหมดไป)
 const KOTONE_SENA_BASE = 0.1;    // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ (ฐาน 10%)
-const KOTONE_SENA_PER_COIN2 = 0.1; // เพิ่มอีก 10% ทุกๆ 2 coin ที่มีอยู่ในกระปุก (patch 2.0)
-const KOTONE_CAUGHT_CHANCE = 0.1; // Part-time กลางวัน: โอกาสโดนโปรดิวเซอร์จับได้ (patch 2.0 — ลดจาก 20%)
+const KOTONE_SENA_PER_COIN = 0.1; // เพิ่มอีก 10% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (patch พิเศษ — เดิมทุก 2 coin)
+const KOTONE_CAUGHT_CHANCE = 0.2; // Part-time กลางวัน: โอกาสโดนโปรดิวเซอร์จับได้ (patch พิเศษ — เพิ่มจาก 10%)
 const KOTONE_STUN_CHANCE = 0.2;  // [โหมงานหนัก]: โอกาสสุ่มสตั้นต่อเทิร์น
-const KOTONE_SILENCE_TURNS = 2;  // ท่าไม้ตาย: ใบ้การใช้สกิลของทุกคน (Dance Lession +1)
+const KOTONE_SILENCE_TURNS = 1;  // ท่าไม้ตาย: ใบ้การใช้สกิลของทุกคน (Dance Lession +1) (patch พิเศษ — ลดจาก 2)
+const KOTONE_KAWAII_DMG = 2;     // ท่าไม้ตาย: ความเสียหายใส่ทุกคน (patch พิเศษ — เพิ่มจาก 1, Dance Lession +1)
 // [โหมงานหนัก] ทำงานอยู่ไหม (คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน)
 function overworkActive(p) {
   return !!p && ((p.statuses && p.statuses.overwork) || 0) > 0;
 }
-// โอกาสเจอท่านประธานเซนะจัง: ฐาน 10% + 10% ทุกๆ 2 coin ที่มีอยู่ในกระปุก (สูงสุด 40% ตอนมี 6 coin)
+// โอกาสเจอท่านประธานเซนะจัง: ฐาน 10% + 10% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (สูงสุด 70% ตอนมี 6 coin)
 function kotoneSenaChance(p) {
-  return KOTONE_SENA_BASE + KOTONE_SENA_PER_COIN2 * Math.floor((p.coins || 0) / 2);
+  return KOTONE_SENA_BASE + KOTONE_SENA_PER_COIN * (p.coins || 0);
+}
+// Sleeping time: ถูกโจมตีระหว่างหลับ = สะดุ้งตื่นทันที + ติด [โหมงานหนัก] เพราะนอนไม่พอ (patch พิเศษ)
+function maybeWakeKotone(t) {
+  if (!t || !t.alive || t.characterId !== "kotone") return;
+  if (!((t.statuses && t.statuses.ksleep) > 0)) return;
+  delete t.statuses.ksleep;
+  t.statuses.overwork = 1; // คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน (engine ไม่ลดเทิร์นสถานะนี้)
+  t.armor = 0;
+  t.shield = 0;
+  lastLog.push(`😫 ${t.name} ถูกปลุกกลางดึกเพราะโดนโจมตี — ตื่นทันทีและติดสถานะ [โหมงานหนัก] เพราะนอนไม่พอ!`);
 }
 
 // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
@@ -123,10 +134,28 @@ let cycleShift = 0;
 let nightResetPending = false; // ตั้งตอนกดท่าไม้ตาย 2 -> เริ่มนับกลางคืนใหม่ตั้งแต่เทิร์นถัดไป
 // แสงสว่างที่สรรค์สร้าง (อควาเรียน patch 2.0): บังคับกลางวันจนถึงรอบที่กำหนด (เขียนทับวงจรปกติชั่วคราว)
 let dayForceUntil = 0;
+// เสียงไพเราะที่กึกก้อง (ชเรด เอลัน): ใช้ท่าไม้ตาย 1 ตอนกลางคืน -> กลางคืนถาวรจนกว่าชเรดจะหมดสภาพต่อสู้
+//  (เช็คจากธง shradeNight บนตัวผู้เล่นที่ยังมีชีวิต — ตายแล้ววงจรกลางวัน/กลางคืนกลับมาปกติ)
+function shradeNightActive() {
+  return Object.values(players).some((p) => p.alive && p.shradeNight);
+}
 function isNightRound(n) {
+  if (shradeNightActive()) return true; // ราตรีถาวรของชเรด อยู่เหนือทุกวงจร
   if (n <= dayForceUntil) return false;
   const m = n - cycleShift;
   return m > 0 && Math.floor((m - 1) / CYCLE_TURNS) % 2 === 1;
+}
+
+// ---------- ชเรด เอลัน (patch พิเศษ) ----------
+const SHRADE_MELODY_MAX = 5;    // ท่วงทำนอง สะสมได้สูงสุด (ครบ 5 ถึงใช้ท่าไม้ตาย 1 ได้)
+const SHRADE_ATK_BONUS = 2;     // ร่างอควาเรียน สปาด้า: พลังโจมตีพื้นฐาน +2 ถาวร
+const SHRADE_CHARGE_TURNS = 3;  // แด่เพื่อนรักของฉัน: ชาร์จ 3 เทิร์น (เสียเลือดเทิร์นละ 1)
+const SHRADE_BLAST_DMG = 5;     // แด่เพื่อนรักของฉัน: ความเสียหายใส่ทุกคนบนสนามเมื่อครบกำหนด
+const SHRADE_SPADA_IMG = "/characters/shrade_elan/profile/spada.webp"; // ร่างสปาด้า (ถาวร)
+const SHRADE_SPADA_NAME = "อควาเรียน สปาด้า";
+// กำลังชาร์จแด่เพื่อนรักของฉันอยู่ไหม (จั่วเพิ่ม/ใช้สกิลอื่นไม่ได้ แต่ชนะจั่วยังตีได้)
+function shradeCharging(p) {
+  return !!p && ((p.statuses && p.statuses.shradecharge) || 0) > 0;
 }
 
 // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
@@ -238,6 +267,17 @@ const TRANSFORMS = {
   aquaFuseLuna: { img: AQUA_LEADERS.rena.fuseProfile, video: "/characters/auqarion/skill2/luna.mp4", title: "ลูน่า อควาเรียน", label: "รวมร่างหุ่นศักดิ์สิทธิ์", seconds: 11, music: null, afterReveal: false },
   // godwingForm: สกิลติดตัว 4 แสงสว่างที่สรรค์สร้าง (ทำงานก่อนเปิดไพ่ — เล่นทันทีตอนเข้าเงื่อนไข)
   godwingForm: { img: AQUA_GODWING_PROFILE, video: "/characters/auqarion/skill2/godwing.mp4", title: "ปีกแห่งสุริยัน", label: "แสงสว่างที่สรรค์สร้าง", seconds: 10, music: null, afterReveal: false },
+  // ---------- ชเรด เอลัน (patch พิเศษ) ----------
+  // shradeMoon: สกิลรอง แสงจันทร์ส่องวิญญาณ (ก่อนเปิดไพ่ — เล่นทันทีตอนกดสกิล) วีดีโอ 4.1 วิ
+  shradeMoon: { img: "/characters/shrade_elan/skill2/shrade_skill2.jpg", video: "/characters/shrade_elan/skill2/shrade_skill2.mp4", title: "แสงจันทร์ส่องวิญญาณ", label: "ใช้สกิล", seconds: 5, music: null, afterReveal: false },
+  // shradeForm: ท่าไม้ตาย 1 รวมร่างทำนองเพลง (ก่อนเปิดไพ่ — แปลงร่างสปาด้าถาวร) วีดีโอ 20 วิ
+  shradeForm: { img: SHRADE_SPADA_IMG, video: "/characters/shrade_elan/skill3/shrade_final.mp4", title: "รวมร่างทำนองเพลง", label: "ปล่อยท่าไม้ตาย", seconds: 20, music: null, afterReveal: false },
+  // shradeCharge: ท่าไม้ตาย 2 แด่เพื่อนรักของฉัน — วีดีโอเริ่มชาร์จ 10 วิ (เพลง shrade_theme ค้างระหว่างชาร์จ)
+  shradeCharge: { img: "/characters/shrade_elan/skill3/shrade_skill3.2.jpg", video: "/characters/shrade_elan/skill3/shrade_final2.1.mp4", title: "แด่เพื่อนรักของฉัน", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: "shrade", afterReveal: false },
+  // shradeBlast: แด่เพื่อนรักของฉัน ครบ 3 เทิร์น — วีดีโอสุดท้าย 15 วิ แล้วระเบิดใส่ทุกคน 5 หน่วย
+  shradeBlast: { img: SHRADE_SPADA_IMG, video: "/characters/shrade_elan/skill3/shrade_final2.2.mp4", title: "แด่เพื่อนรักของฉัน", label: "บทเพลงบรรเลงจบ", seconds: 15, music: null, afterReveal: false },
+  // shradePassive: สกิลติดตัว เสียงไพเราะที่กึกก้อง — เข้ากลางคืนพร้อมท่วงทำนองครบ 5 วีดีโอ 11 วิ
+  shradePassive: { img: "/characters/shrade_elan/profile/shrade_elan.jpg", video: "/characters/shrade_elan/shrade_passive.mp4", title: "เสียงไพเราะที่กึกก้อง", label: "สกิลติดตัวทำงาน", seconds: 11, music: null, afterReveal: false },
   // ท่าไม้ตาย 4 แบบ (หลังเปิดไพ่): โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน — เลือกตามร่างที่รวมอยู่
   solarburst: { img: "/characters/auqarion/skill3/skill3_solar.png", video: "/characters/auqarion/skill3/solar_final.mp4", title: "หมัดไร้ขอบเขต", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: true },
   marssword: { img: "/characters/auqarion/skill3/skill3_mars.jpg", video: "/characters/auqarion/skill3/mars_final.mp4", title: "ดาบแห่งแสง", label: "ปล่อยท่าไม้ตาย", seconds: 8, music: null, afterReveal: true },
@@ -445,6 +485,8 @@ function positionUsedByOther(pos, sid) {
 function displayImg(p) {
   // โอเบรอน: ร่างสลับตามช่วงเวลากลางวัน/กลางคืนเสมอ
   if (p.characterId === "oberon") return isNightRound(roundNumber) ? OBERON_NIGHT_IMG : OBERON_MORNING_IMG;
+  // ชเรด เอลัน: รวมร่างทำนองเพลงแล้ว = ร่างอควาเรียน สปาด้า ถาวร
+  if (p.characterId === "shrade_elan" && p.shradeForm) return SHRADE_SPADA_IMG;
   // อควาเรียน: ในล็อบบี้ใช้ select_profile — ลงสนามแล้ว ปีกแห่งสุริยัน > รวมร่าง (ตามผู้นำ) > โปรไฟล์ผู้นำ
   if (p.characterId === "aquarion") {
     if (gameState === "LOBBY") return p.img;
@@ -477,6 +519,14 @@ function activeSkillMusic() {
     }
   }
   if (bestBeat) return bestBeat;
+  // แด่เพื่อนรักของฉัน (ชเรด เอลัน): เพลง shrade_theme เล่นค้างตลอดช่วงชาร์จ (รองจาก Beat Mode)
+  let bestShrade = null;
+  for (const p of alivePlayers()) {
+    if (shradeCharging(p)) {
+      if (!bestShrade || (p.transformAt || 0) > bestShrade.at) bestShrade = { music: "shrade", at: p.transformAt || 0 };
+    }
+  }
+  if (bestShrade) return bestShrade;
   // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): เพลงอยู่เหนือเพลงสกิล/ท่าไม้ตายอื่นทั้งหมด (ยกเว้น Beat Mode)
   let bestTree = null;
   for (const p of alivePlayers()) {
@@ -646,6 +696,9 @@ function resetCombat(p) {
   p.lightDew = 0;           // แสงละออง สะสม (สูงสุด 10)
   p.reviveIn = 0;           // ไปยังพฤกษาแห่งชีวิต: จำนวนเทิร์นก่อนฟื้นคืนชีพ (0 = ไม่รอฟื้น)
   p.pendingRevive = false;  // ตายขณะ godtree ยังอยู่ -> รอเช็คตอนจบเทิร์นว่าเกมจบไหม
+  // ---------- ชเรด เอลัน (patch พิเศษ) ----------
+  p.shradeForm = false;     // รวมร่างทำนองเพลงแล้ว (อควาเรียน สปาด้า — ถาวร โจมตี +2)
+  p.shradeNight = false;    // ใช้ท่าไม้ตาย 1 ตอนกลางคืน -> ราตรีถาวรจนกว่าจะหมดสภาพต่อสู้
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -675,6 +728,8 @@ function buildStateFor(viewerId) {
   const oberonBg = nightNow && oberonDevour > 0;
   // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ฉากหลังกลายเป็น backgroud_skillgod.jpg ระหว่างสถานะนี้มีผล
   const godtreeBg = Object.values(players).some((p) => p.alive && p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0);
+  // ราตรีถาวรของชเรด เอลัน: ฉากหลังกลายเป็น change_fill.jpg จนกว่าชเรดจะหมดสภาพต่อสู้
+  const shradeBg = shradeNightActive();
   let sm = (gameState === "PLAYING" && anataMusicSeq)
     ? { music: "temari_final_theme", at: anataMusicSeq }
     : activeSkillMusic();
@@ -700,6 +755,7 @@ function buildStateFor(viewerId) {
     cycle: nightNow ? "night" : "day", // กลางวัน/กลางคืน (สลับทุก 3 เทิร์น)
     oberonBg,
     godtreeBg,
+    shradeBg, // ราตรีถาวรของชเรด เอลัน (ฉากหลัง change_fill.jpg)
     maxPlayers: MAX_PLAYERS,
     youId: viewerId,
     attackerId: gameState === "ATTACK" ? attackerId : null,
@@ -717,7 +773,7 @@ function buildStateFor(viewerId) {
       const ch = CHAR_BY_ID[p.characterId] || {};
       const pub = (s) => (s ? { name: s.name, desc: s.desc, cost: s.cost, img: s.img, ammo: s.ammo } : null);
       // สกิลพื้นฐานสลับกลางคืน (โคโตเนะ) + Apple guy: ปกสกิลพื้นฐานเปลี่ยนตามของส่งมอบที่เลือกอยู่
-      const basicPub = pub(nightNow && ch.basicNight ? ch.basicNight : ch.basic);
+      let basicPub = pub(nightNow && ch.basicNight ? ch.basicNight : ch.basic);
       if (basicPub && p.characterId === "appleguy") basicPub.img = (APPLE_ITEMS[p.appleItem] || APPLE_ITEMS.drink).img;
       // อควาเรียน: ปกสกิลพื้นฐาน "เปลี่ยนหัวหน้า" เปลี่ยนตามผู้นำที่เลือกอยู่ + สกิลรอง/ท่าไม้ตายสลับตามร่าง
       let secondaryPub = pub(nightNow && ch.secondaryNight ? ch.secondaryNight : ch.secondary);
@@ -734,6 +790,11 @@ function buildStateFor(viewerId) {
           : p.leader === "rena" ? ch.ultimateLuna
           : ch.ultimateSolar
         );
+      }
+      // ชเรด เอลัน: หลังรวมร่าง — สกิลพื้นฐานเปลี่ยนเป็นเวอร์ชันสปาด้า และปุ่มท่าไม้ตายเป็น แด่เพื่อนรักของฉัน
+      if (ch.id === "shrade_elan" && p.shradeForm) {
+        basicPub = pub(ch.basic2);
+        ultimatePub = pub(ch.ultimate2);
       }
       return {
         id: p.id,
@@ -768,6 +829,7 @@ function buildStateFor(viewerId) {
         danceBuff: !!p.danceBuff,          // โคโตเนะ: บัฟ Dance Lession (ใบ้สกิลของท่าไม้ตาย +1 เทิร์น)
         leader: p.leader || "apollo",      // อควาเรียน: ผู้นำที่เลือกอยู่ (apollo/sirius/rena)
         fused: !!p.fused,                  // อควาเรียน: กำลังรวมร่างหุ่นศักดิ์สิทธิ์อยู่ไหม
+        shradeForm: !!p.shradeForm,        // ชเรด เอลัน: รวมร่างทำนองเพลงแล้ว (อควาเรียน สปาด้า — ถาวร)
         lightDew: p.lightDew || 0,         // อควาเรียน: แสงละอองสะสม (สูงสุด 10)
         reviveIn: p.reviveIn || 0,         // อควาเรียน: จำนวนเทิร์นก่อนฟื้นคืนชีพจากไปยังพฤกษาแห่งชีวิต
         contractPartnerId: p.contractPartner || null, // เจ้าแห่งเน็ตบ้าน: คู่สัญญาปัจจุบัน
@@ -787,7 +849,9 @@ function buildStateFor(viewerId) {
           // อควาเรียน: ลงสนามเป็นชื่อผู้นำ รวมร่างแล้วเป็นชื่อหุ่น (ปีกแห่งสุริยันตอนร่างสุดท้าย)
           id: ch.id,
           // อควาเรียน: ล็อบบี้โชว์ชื่อเต็ม — ลงสนามเป็นชื่อผู้นำ/หุ่นตามร่าง
-          name: ch.id === "aquarion" ? (gameState === "LOBBY" ? ch.name : aquaDisplayName(p)) : nightNow && ch.nightName ? ch.nightName : ch.name,
+          name: ch.id === "aquarion" ? (gameState === "LOBBY" ? ch.name : aquaDisplayName(p))
+            : ch.id === "shrade_elan" && p.shradeForm ? SHRADE_SPADA_NAME
+            : nightNow && ch.nightName ? ch.nightName : ch.name,
           passive: ch.passive ? { name: ch.passive.name, desc: ch.passive.desc } : null,
           basic: basicPub,
           secondary: secondaryPub,
@@ -963,6 +1027,17 @@ function dealRound() {
       }
     }
 
+    // แด่เพื่อนรักของฉัน (ชเรด เอลัน): ระหว่างชาร์จเสียเลือดเทิร์นละ 1 หน่วย (ไม่ทะลุเกราะ)
+    //  จะไม่ลดเลือดเมื่อเลือดเหลือ 2 หน่วยหรือต่ำกว่า (โล่/เกราะยังรับแทนได้ตามปกติ)
+    if (shradeCharging(p)) {
+      if (p.shield > 0 || p.armor > 0 || (p.tempHp || 0) > 0 || p.hp > 2) {
+        damageSoft(p);
+        lastLog.push(`🎻 ${p.name} บรรเลงบทเพลงสุดท้าย — เสียพลัง 1 หน่วย (เหลืออีก ${p.statuses.shradecharge} เทิร์นจะปลดปล่อย)`);
+      } else {
+        lastLog.push(`🎻 ${p.name} บรรเลงบทเพลงสุดท้าย — เลือดเหลือ ${p.hp} จึงไม่ลดต่อ (เหลืออีก ${p.statuses.shradecharge} เทิร์นจะปลดปล่อย)`);
+      }
+    }
+
     // เครื่องดื่มชูกำลัง (Apple guy): เพิ่มแต้มสกิล 1 แต่เสียพลัง 1 หน่วยต่อเทิร์น
     //  ความเสียหายธรรมดา (โดนโล่/เกราะก่อน ไม่เจาะเกราะ) และไม่ถึงตาย — เลือดค้างที่ 1
     if ((p.statuses.energy || 0) > 0) {
@@ -1038,6 +1113,7 @@ function dealRound() {
         maybeBeatSave(o);
         maybeBeatMode(o);
         maybeEva3(o);
+        maybeWakeKotone(o);
         o.wasAttacked = true;
         if (o.alive && o.hp <= 0) {
           instantDeath(o);
@@ -1112,6 +1188,14 @@ function dealRound() {
       if (night) triggerCutscene(p, "oberonNight"); // ครั้งแรกเล่นวีดีโอ morning_tonight.mp4 / ครั้งถัดไปแจ้งเตือนเล็กๆ
       else notifyTransform(p, "oberonDay");         // กลับร่างกลางวัน = แจ้งปกติ ไม่มีวีดีโอ
     }
+    // เสียงไพเราะที่กึกก้อง (ชเรด เอลัน): เข้ากลางคืนพร้อมท่วงทำนองครบ 5 -> เล่นวีดีโอเปิดตัว
+    if (night) {
+      for (const p of alivePlayers()) {
+        if (p.characterId !== "shrade_elan" || p.shradeForm) continue;
+        if ((p.statuses.melody || 0) >= SHRADE_MELODY_MAX) triggerCutscene(p, "shradePassive");
+        lastLog.push(`🎻 ${p.name} เสียงไพเราะที่กึกก้อง — ราตรีปลดล็อกท่าไม้ตาย รวมร่างทำนองเพลง`);
+      }
+    }
     // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด — กลางคืนมาเยือนแล้วผลสิ้นสุดลง
     if (night) {
       for (const p of alivePlayers()) {
@@ -1134,6 +1218,7 @@ function hit(id) {
   const p = players[id];
   if (gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if ((p.statuses.nodraw || 0) > 0) return; // อิ่มทงคัสสึเกิน: เทิร์นนี้จั่วเพิ่มไม่ได้
+  if (shradeCharging(p)) return; // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ดเพิ่มไม่ได้
   if (scoreOf(p) >= scoreCap(p)) return; // แต้มเต็มเพดาน (เช่น 21 พอดี) = จั่วไม่ได้ รอผู้ใช้ใช้สกิล/เปิดไพ่เอง
   p.cards.push(drawCardFor(p));
   p.busted = bustedOf(p);
@@ -1162,8 +1247,15 @@ function useSkill(id, tier, targets, item) {
   }
   if (gameState !== "PLAYING" || p.locked) return;
   if (!["basic", "secondary", "ultimate"].includes(tier)) return;
+  if (shradeCharging(p)) return; // แด่เพื่อนรักของฉัน: ระหว่างชาร์จใช้สกิลอื่นไม่ได้
   const ch = CHAR_BY_ID[p.characterId];
   let skill = ch && ch[tier];
+  // ชเรด เอลัน: หลังรวมร่าง — สกิลพื้นฐานเปลี่ยนเป็นเวอร์ชันสปาด้า (4 แต้ม ฟื้นเลือดอย่างเดียว)
+  //  และปุ่มท่าไม้ตายถูกแทนที่ด้วย แด่เพื่อนรักของฉัน
+  if (ch && ch.id === "shrade_elan") {
+    if (tier === "basic" && p.shradeForm) skill = ch.basic2;
+    if (tier === "ultimate") skill = p.shradeForm ? ch.ultimate2 : ch.ultimate;
+  }
   // อควาเรียน: สกิลรองสลับ รวมร่าง/คืนร่าง — ท่าไม้ตายสลับตามร่างที่รวมอยู่ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน)
   if (ch && ch.id === "aquarion") {
     if (tier === "secondary") skill = p.fused ? ch.secondaryRevert : ch.secondary;
@@ -1280,12 +1372,23 @@ function useSkill(id, tier, targets, item) {
   if (isDance && overworkActive(p)) return;                           // โหมงานหนัก: Dance Lession ใช้ไม่ได้
   if (isKawaii && (overworkActive(p) || kotoneNight)) return;         // ท่าไม้ตาย: ใช้ไม่ได้ตอนกลางคืน/โหมงานหนัก
   if (isKSleep && (p.statuses.ksleep || 0) > 0) return;               // หลับอยู่แล้ว กดซ้ำไม่ได้
-  let danceTarget = null;
-  if (isDance) {
+  // Dance Lession (patch พิเศษ): ใช้ใส่ตัวเองเท่านั้น — ไม่ต้องเลือกเป้าหมายอีกต่อไป
+  // ---------- ชเรด เอลัน (patch พิเศษ) ----------
+  const isShrade = p.characterId === "shrade_elan";
+  const isShradeBasic = isShrade && tier === "basic";                        // เชิญรับฟัง
+  const isShradeMoon = isShrade && tier === "secondary";                     // แสงจันทร์ส่องวิญญาณ
+  const isShradeForm = isShrade && tier === "ultimate" && !p.shradeForm;     // รวมร่างทำนองเพลง
+  const isShradeFinal = isShrade && tier === "ultimate" && p.shradeForm;     // แด่เพื่อนรักของฉัน
+  if (isShradeForm) {
+    if (!isNightRound(roundNumber)) return;                     // ปลดล็อกเฉพาะช่วงกลางคืน (สกิลติดตัว)
+    if ((p.statuses.melody || 0) < SHRADE_MELODY_MAX) return;   // ต้องมีท่วงทำนองครบ 5
+  }
+  let shradeMoonTarget = null;
+  if (isShradeMoon) {
     const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
     const t = tgs.length === 1 ? players[tgs[0]] : null;
     if (!t || !t.alive || t.id === p.id) return;
-    danceTarget = t;
+    shradeMoonTarget = t;
   }
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   const isTiger = p.characterId === "broadband_man" && tier === "basic";     // เสือนอนกิน
@@ -1511,22 +1614,12 @@ function useSkill(id, tier, targets, item) {
       lastLog.push(`🎬 ${p.name} โดนโปรดิวเซอร์จับได้! — ใช้ Part-time ไม่ได้ 2 เทิร์น`);
     }
   }
-  // ---------- โคโตเนะ: Dance Lession — เสียเลือด 1 ตีเป้าหมาย 2 + บัฟใบ้สกิลของท่าไม้ตาย +1 เทิร์น ----------
-  if (isDance && danceTarget) {
+  // ---------- โคโตเนะ: Dance Lession (patch พิเศษ) — ใช้ใส่ตัวเองเท่านั้น: เสียเลือด 1
+  //  บัฟท่าไม้ตายครั้งถัดไป: ความเสียหาย +1 และผลใบ้สกิล +1 เทิร์น ----------
+  if (isDance) {
     if (p.hp > 1 || (p.tempHp || 0) > 0) loseHp(p);
-    const t = danceTarget;
-    dealMixed(t, 2);
-    maybeBeatSave(t);
-    maybeBeatMode(t);
-    maybeEva3(t);
-    t.wasAttacked = true;
     p.danceBuff = true;
-    flashSuffix = ` — ใส่ ${t.name}`;
-    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นใส่ ${t.name} -2 และผลใบ้สกิลของท่าไม้ตายครั้งถัดไป +1 เทิร์น`);
-    if (t.alive && t.hp <= 0) {
-      instantDeath(t);
-      lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
-    }
+    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นอย่างหนัก: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 และผลใบ้สกิล +1 เทิร์น`);
   }
   // ---------- โคโตเนะ: Sleeping time — หลับตลอดเฟสกลางคืน + ลบ [โหมงานหนัก] ----------
   if (isKSleep) {
@@ -1539,6 +1632,45 @@ function useSkill(id, tier, targets, item) {
     }
     const heal = healHp(p, 2);
     lastLog.push(`😴 ${p.name} Sleeping time — หลับยาวตลอดเฟสกลางคืน (ฟื้น +${heal}/เทิร์น) ตื่นเช้ารับ [เช้าที่สดใส]`);
+  }
+  // ---------- ชเรด เอลัน: เชิญรับฟัง — ฟื้นเลือด 1 (+ท่วงทำนอง +1 เฉพาะร่างปกติ) ----------
+  if (isShradeBasic) {
+    healHp(p, 1);
+    if (!p.shradeForm) {
+      p.statuses.melody = Math.min(SHRADE_MELODY_MAX, (p.statuses.melody || 0) + 1);
+      flashSuffix = ` — ท่วงทำนอง ${p.statuses.melody}/${SHRADE_MELODY_MAX}`;
+      lastLog.push(`🎻 ${p.name} เชิญรับฟัง — ฟื้นพลังชีวิต +1 และท่วงทำนอง +1 (สะสม ${p.statuses.melody}/${SHRADE_MELODY_MAX})`);
+    } else {
+      lastLog.push(`🎻 ${p.name} เชิญรับฟัง — ฟื้นพลังชีวิต +1`);
+    }
+  }
+  // ---------- ชเรด เอลัน: แสงจันทร์ส่องวิญญาณ — เปิดแต้มการ์ดเป้าหมายให้ทุกคนบนสนามเห็น ----------
+  if (isShradeMoon && shradeMoonTarget) {
+    const t = shradeMoonTarget;
+    t.statuses.promo = 1; // กลไกเดียวกับใบโปรโมทสินค้า: ทุกคนเห็นแต้มการ์ดตลอดเทิร์นนี้
+    flashSuffix = ` — ส่องวิญญาณ ${t.name}`;
+    lastLog.push(`🌕 ${p.name} แสงจันทร์ส่องวิญญาณ — แต้มการ์ดของ ${t.name} ถูกเปิดเผยให้ทุกคนเห็นตลอดเทิร์นนี้`);
+    triggerCutscene(p, "shradeMoon"); // ครั้งแรกเล่นวีดีโอ shrade_skill2.mp4 / ครั้งถัดไปแจ้งเตือนเล็กๆ
+    if (cutsceneQueue.length) pausePlayingForCutscene();
+  }
+  // ---------- ชเรด เอลัน: รวมร่างทำนองเพลง — ร่างอควาเรียน สปาด้า ถาวร + ราตรีถาวร ----------
+  if (isShradeForm) {
+    p.shradeForm = true;
+    p.shradeNight = true; // ราตรีถาวรจนกว่าชเรดจะหมดสภาพต่อสู้ (ฉากหลังเปลี่ยนเป็น change_fill.jpg)
+    delete p.statuses.melody; // ท่วงทำนองถูกหลอมรวมเป็นบทเพลง
+    p.transformAt = ++transformCounter;
+    flashSuffix = ` — ${SHRADE_SPADA_NAME}`;
+    lastLog.push(`🎼 ${p.name} รวมร่างทำนองเพลง — กลายเป็น ${SHRADE_SPADA_NAME}! พลังโจมตีพื้นฐาน +${SHRADE_ATK_BONUS} ถาวร และราตรีจะคงอยู่ตลอดไป`);
+    triggerCutscene(p, "shradeForm");
+    if (cutsceneQueue.length) pausePlayingForCutscene();
+  }
+  // ---------- ชเรด เอลัน: แด่เพื่อนรักของฉัน — เริ่มชาร์จ 3 เทิร์น (เพลง shrade_theme ค้างระหว่างชาร์จ) ----------
+  if (isShradeFinal) {
+    p.statuses.shradecharge = SHRADE_CHARGE_TURNS + 1; // +1 ชดเชยการลดสถานะตอนจบเทิร์น
+    p.transformAt = ++transformCounter;
+    lastLog.push(`🎻 ${p.name} แด่เพื่อนรักของฉัน — เริ่มบรรเลงบทเพลงสุดท้าย! อีก ${SHRADE_CHARGE_TURNS} เทิร์นจะปลดปล่อย (ระหว่างนี้จั่ว/ใช้สกิลไม่ได้)`);
+    triggerCutscene(p, "shradeCharge"); // เล่นวีดีโอ shrade_final2.1.mp4 ทันที
+    if (cutsceneQueue.length) pausePlayingForCutscene();
   }
   // ---------- เจ้าแห่งเน็ตบ้าน: เสือนอนกิน — แยกผลตามมี/ไม่มีคู่สัญญา (ทำงานพร้อมกันไม่ได้) ----------
   if (isTiger) {
@@ -1575,6 +1707,7 @@ function useSkill(id, tier, targets, item) {
     maybeBeatSave(t);
     maybeBeatMode(t);
     maybeEva3(t);
+    maybeWakeKotone(t);
     t.wasAttacked = true;
     flashSuffix = ` — ใส่ ${t.name}`;
     lastLog.push(`🔌 ${p.name} กระชากสายแลน — บัฟของ ${t.name} หายไปชั่วคราว 1 เทิร์น${stripped.length ? ` (ถอด ${stripped.length} บัฟ)` : ""} และรับความเสียหาย -1 ไม่สนเกราะ`);
@@ -1992,6 +2125,7 @@ function resolveRound() {
       maybeBeatSave(o);
       maybeBeatMode(o);
       maybeEva3(o);
+      maybeWakeKotone(o);
       o.wasAttacked = true;
     }
     triggerCutscene(e, "evaboom");
@@ -2028,6 +2162,7 @@ function afterResolve() {
     maybeBeatSave(t);
     maybeBeatMode(t);
     maybeEva3(t);
+    maybeWakeKotone(t);
     t.wasAttacked = true;
     lastLog.push(`🌘 ฝันร้ายยามค่ำคืน! ${p.name} เล่นงาน ${t.name} -${dmg}${sleeping ? " (เป้าหมายหลับไหล +2)" : ""}`);
   }
@@ -2051,18 +2186,20 @@ function afterResolve() {
         //  และทุกคนถูกใบ้การใช้สกิล 2 เทิร์นนับจากเทิร์นถัดไป (มีบัฟ Dance Lession = 3 เทิร์น)
         if (key === "kawaii") {
           const silence = KOTONE_SILENCE_TURNS + (p.danceBuff ? 1 : 0);
-          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ผลใบ้สกิล +1 เทิร์น`);
+          const kdmg = KOTONE_KAWAII_DMG + (p.danceBuff ? 1 : 0); // Dance Lession: ความเสียหาย +1
+          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ความเสียหาย +1 และผลใบ้สกิล +1 เทิร์น`);
           p.danceBuff = false;
           const coins = p.coins || 0;
           p.coins = 0;
           for (const o of alivePlayers()) {
             if (o.id === p.id) continue;
-            dealMixed(o, 1);
+            dealMixed(o, kdmg);
             maybeBeatSave(o);
+            maybeWakeKotone(o);
             o.noSkillNext = Math.max(o.noSkillNext || 0, silence);
             o.wasAttacked = true;
           }
-          lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก — ทุกคน -1 และตกหลุมรักจนใช้สกิลไม่ได้ ${silence} เทิร์น${coins > 0 ? ` (เท coin ทั้งหมด ${coins} เหรียญออกจากกระปุก)` : ""}`);
+          lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก — ทุกคน -${kdmg} และตกหลุมรักจนใช้สกิลไม่ได้ ${silence} เทิร์น${coins > 0 ? ` (เท coin ทั้งหมด ${coins} เหรียญออกจากกระปุก)` : ""}`);
         }
         // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย
         //  + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น) + ติด "ยามฟ้าสาง" +1 (คนหลับไม่ติดเพิ่ม)
@@ -2071,6 +2208,7 @@ function afterResolve() {
             if (o.id === p.id) continue;
             dealDirect(o, 1);
             maybeBeatSave(o);
+            maybeWakeKotone(o);
             o.statuses.awaken = Math.max(o.statuses.awaken || 0, 2); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
             if (!((o.statuses.sleep || 0) > 0)) o.statuses.dawn = Math.min(3, (o.statuses.dawn || 0) + 1);
             o.wasAttacked = true;
@@ -2264,8 +2402,10 @@ function doAttack(byId, targetId) {
     }
     if ((attacker.statuses.marssurge || 0) > 0) aquaAtk += 1; // ดาบแห่งจุดจบ: ชนะเทิร์นที่มีคนไพ่แตก
   }
+  // รวมร่างทำนองเพลง (ชเรด เอลัน): ร่างอควาเรียน สปาด้า พลังโจมตีพื้นฐาน +2 ถาวร
+  const shradeAtk = (attacker.characterId === "shrade_elan" && attacker.shradeForm) ? SHRADE_ATK_BONUS : 0;
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk; // Beam Magnum +2
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk; // Beam Magnum +2
   if (kotoneExhausted) base = 0;
   if (aquaZero) base = 0;
   let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
@@ -2336,6 +2476,7 @@ function doAttack(byId, targetId) {
   // Beat Mode กันตาย (ครั้งเดียวต่อเกม): ทำงานทันทีเมื่อความเสียหายถึงตาย — ไม่ต้องอยู่ใน Beat Mode ก่อน
   //  หลังกันตายทำงาน -> เกราะจะไม่ฟื้นคืน + ภูมิดาเมจจากการแพ้ (แต่ครั้งต่อไปจะตายปกติ)
   const beatSaveFired = maybeBeatSave(target);
+  maybeWakeKotone(target); // โคโตเนะหลับอยู่โดนโจมตี = สะดุ้งตื่น + ติด [โหมงานหนัก]
   target.wasAttacked = true;
   addSkill(target, 1); // โดนเลือกโจมตีจากผู้ชนะรอบนั้น +1
   // Absorb shield: เกราะที่เสียไปจากการถูกโจมตี แปลงกลับเป็นพลังชีวิต
@@ -2436,6 +2577,7 @@ function doAttack(byId, targetId) {
   if (marsswordAtk) addFx(skillByStatus(attacker, "marssword"), "atk");
   if ((attacker.statuses.lunabow || 0) > 0) addFx(skillByStatus(attacker, "lunabow"), "atk");
   if (aquaReflect > 0) addFx({ name: `ดาบแห่งจุดจบ — สะท้อน -${aquaReflect}`, img: displayImg(target), by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
+  if (shradeAtk > 0) addFx({ name: `รวมร่างทำนองเพลง +${shradeAtk}`, img: SHRADE_SPADA_IMG, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
 
   // อนิเมชันบอกว่าใครตีใคร
   lastAttack = {
@@ -2460,6 +2602,12 @@ function endTurn() {
     (p) => p.alive && p.hp <= 0 && p.characterId === "eva13" && (p.statuses.fourth || 0) > 0
   );
 
+  // แด่เพื่อนรักของฉัน (ชเรด เอลัน): ชาร์จจะครบกำหนดเมื่อจบเทิร์นนี้ (เหลือ 1 ก่อนลดสถานะ)
+  //  — เก็บไว้ก่อนลูปลดเทิร์นสถานะ แล้วปลดปล่อยหลังเช็คคนตายรอบแรก (ตายก่อนปลดปล่อย = ไม่ระเบิด)
+  const shradeBlasts = Object.values(players).filter(
+    (p) => p.alive && p.characterId === "shrade_elan" && (p.statuses.shradecharge || 0) === 1
+  );
+
   // กระชากสายแลน (เจ้าแห่งเน็ตบ้าน): คืนบัฟที่ถูกถอดไว้ชั่วคราว — เทิร์นถัดไปกลับมามีผลต่อ
   //  (คืนก่อนลูปลดเทิร์นสถานะ = บัฟถูกนับเวลาเทิร์นนี้ไปด้วยตามสเปค "นับเทิร์นนี้")
   for (const p of Object.values(players)) {
@@ -2476,6 +2624,7 @@ function endTurn() {
       if (k === "overwork") continue; // โหมงานหนัก (โคโตเนะ): คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน
       if (k === "ksleep") continue;   // Sleeping time (โคโตเนะ): หลับจนหมดเฟสกลางคืน (ตื่นตอนเช้า)
       if (k === "godtree") continue; // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด/ยกเลิกเอง ไม่ลดเทิร์น
+      if (k === "melody") continue;  // ท่วงทำนอง (ชเรด เอลัน): สแตคถาวร สะสมจนครบ 5 เพื่อรวมร่าง
       // ปีกแห่งสุริยัน (อควาเรียน): ระหว่างท่าไม้ตายไปยังพฤกษาแห่งชีวิตทำงาน ร่างไม่มีวันหมด
       //  (คงอยู่จนกว่าผลท่าไม้ตายจะจบลงหรือตาย — ค่อยกลับมานับเทิร์นต่อ)
       if (k === "godwing" && (p.statuses.godtree || 0) > 0) continue;
@@ -2573,6 +2722,37 @@ function endTurn() {
         p.hp = 0; p.alive = false; p.result = "dead";
         lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
       }
+    }
+  }
+  // แด่เพื่อนรักของฉัน (ชเรด เอลัน): ครบ 3 เทิร์น — เล่นวีดีโอสุดท้าย แล้วระเบิดใส่ทุกคนบนสนาม 5 หน่วย
+  //  จากนั้นชเรดจบชีวิตลงตามไป — หากทุกคนตายเพราะท่านี้หมดก่อน ชเรดถือว่าเป็นผู้ชนะ (ไม่ตายตาม)
+  for (const s of shradeBlasts) {
+    if (!s.alive) continue; // ตายไปก่อนจะได้ปลดปล่อย = ท่าไม้ตายไม่ระเบิด
+    lastLog.push(`🎻💥 ${s.name} แด่เพื่อนรักของฉัน — บทเพลงบรรเลงจบ! ระเบิดใส่ทุกคนบนสนาม -${SHRADE_BLAST_DMG}`);
+    triggerCutscene(s, "shradeBlast");
+    for (const o of alivePlayers()) {
+      if (o.id === s.id) continue;
+      dealMixed(o, SHRADE_BLAST_DMG);
+      maybeBeatSave(o);
+      maybeBeatMode(o);
+      maybeEva3(o);
+      maybeWakeKotone(o);
+      o.wasAttacked = true;
+    }
+    // คนที่โดนบทเพลงจนเลือดหมด ตกรอบทันที
+    for (const o of Object.values(players)) {
+      if (o.alive && o.hp <= 0) {
+        if (o.characterId === "aquarion" && (o.statuses.godtree || 0) > 0) o.pendingRevive = true;
+        o.hp = 0; o.alive = false; o.result = "dead";
+        lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
+      }
+    }
+    const othersLeft = alivePlayers().filter((o) => o.id !== s.id);
+    if (othersLeft.length === 0) {
+      lastLog.push(`👑 ${s.name} บทเพลงกวาดล้างทุกคนบนสนาม — ชเรดคือผู้ชนะ!`);
+    } else {
+      s.hp = 0; s.alive = false; s.result = "dead";
+      lastLog.push(`🎻 ${s.name} จบชีวิตลงพร้อมบทเพลงสุดท้าย... ลาก่อนเพื่อนรัก`);
     }
   }
   // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตั้งเวลาฟื้นคืนชีพ 12 เทิร์น ก็ต่อเมื่อเกมยังไม่จบ (เหลือผู้เล่นอื่นอย่างน้อย 2 คน)
@@ -2696,6 +2876,7 @@ io.on("connection", (socket) => {
       contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
       healNextTurn: 0, unplugHold: null,
       leader: "apollo", fused: false, lightDew: 0, reviveIn: 0,
+      shradeForm: false, shradeNight: false,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };

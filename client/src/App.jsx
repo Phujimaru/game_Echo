@@ -49,12 +49,15 @@ export default function App() {
   // ---------- เพลงพื้นหลัง + เสียงเปลี่ยนเทิร์น ----------
   const prevPhase = useRef(null);
   const prevInMatch = useRef(false);
+  const prevCycle = useRef(null); // ช่วงเวลาเดิม (day/night) — เปลี่ยนเมื่อไหร่ เพลงประจำช่วงต้องเริ่มใหม่จากต้น
+  const cycleSeq = useRef(0);     // seq เพลงกลางวัน/กลางคืน: +1 ทุกครั้งที่สลับช่วงเวลา -> เริ่มเพลงใหม่
   const phase = stage === "connected" && state ? state.gameState : null;
+  const cycle = stage === "connected" && state ? state.cycle : null;
   const skillMusic = stage === "connected" && state ? state.skillMusic : null;
   const skillMusicSeq = stage === "connected" && state ? state.skillMusicSeq : 0;
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
-    // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: card_prepare_turn | อื่นๆ: main_home
+    // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: เพลงกลางวัน/กลางคืน | อื่นๆ: main_home
     const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" || phase === "TRANSITION";
     const inMatch = battle || phase === "CUTSCENE";
 
@@ -63,9 +66,18 @@ export default function App() {
     if (inMatch !== prevInMatch.current) resetMusicPositions();
     prevInMatch.current = inMatch;
 
+    // เพลงกลางวัน/กลางคืน (patch พิเศษ): กลางวัน = new_morning | กลางคืน = new_night
+    //  สลับช่วงเวลาเมื่อไหร่ seq ขยับ -> กลับมาช่วงเดิมอีกครั้งเพลงจะเริ่มใหม่จากต้น (ไม่เล่นต่อจากจุดเดิม)
+    if (inMatch && cycle && prevCycle.current !== cycle) {
+      if (prevCycle.current) cycleSeq.current++;
+      prevCycle.current = cycle;
+    }
+    if (!inMatch) prevCycle.current = null;
+
     if (phase === "CUTSCENE") stopMusic();
     else if (skillMusic) playMusic(skillMusic, skillMusicSeq); // seq เปลี่ยน = การเปิดร่างใหม่ -> เริ่มเพลงใหม่
-    else playMusic(battle ? "card_prepare_turn" : "main_home");
+    else if (battle) playMusic(cycle === "night" ? "new_night" : "new_morning", cycleSeq.current);
+    else playMusic("main_home");
 
     // เปลี่ยนจาก "เลือกการ์ด" ไปสรุปผล -> เสียง trun_change (ยกเว้นเข้า cutscene)
     if (prevPhase.current === "PLAYING" && phase && phase !== "PLAYING" && phase !== "CUTSCENE") {
@@ -74,7 +86,7 @@ export default function App() {
     // เข้าเฟสโจมตี -> เสียง attack
     if (prevPhase.current !== "ATTACKING" && phase === "ATTACKING") playSfx("attack");
     prevPhase.current = phase;
-  }, [stage, phase, skillMusic, skillMusicSeq]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq]);
 
   const goCharacter = (n, pos) => {
     setName(n);
