@@ -243,7 +243,7 @@ function maybeBardDim(p, live) {
   p.statuses[kind] = BARD_DIM_TURNS + 1; // +1 ชดเชยการลดสถานะตอนจบเทิร์น
   p.transformAt = ++transformCounter;
   if (kind === "bloodDim") {
-    lastLog.push(`❤️🌅 ${p.name} เปิดมิติมายาบรรเลงโลหิต! (3 เทิร์น — นับเป็นตอนเช้า) ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น / Bard ไม่จำกัดโน้ตและต้านสถานะผิดปกติ`);
+    lastLog.push(`❤️🌅 ${p.name} เปิดมิติมายาบรรเลงโลหิต! (3 เทิร์น — นับเป็นตอนเช้า) ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น / Bard ต้านสถานะผิดปกติ`);
   } else {
     lastLog.push(`💚🌑 ${p.name} เปิดมิติมายาบรรเลงวิญญาณ! (3 เทิร์น — นับเป็นตอนกลางคืน)`);
     for (const o of alivePlayers()) {
@@ -344,7 +344,7 @@ function shradeCharging(p) {
 // "โลหิตคือทำนอง วิญญาณคือบทกวี และทุกชีวิตล้วนเป็นเพียงโน้ตตัวหนึ่งในบทเพลงอันนิรันด์"
 const BARD_MAX_SKILL = 9;         // Crescendo: พลังงานสูงสุด 9 (ตัวอื่น 8)
 const BARD_NOTES_PER_TURN = 3;    // จำกัด 3 โน้ตต่อเทิร์น (มิติโลหิต = ไม่จำกัด)
-const BARD_NOTE_COST = 1;         // ค่าใช้พลังงานต่อโน้ต
+const BARD_NOTE_COST = 2;         // ค่าใช้พลังงานต่อโน้ต (patch พิเศษ — เพิ่มจาก 1)
 const BARD_NOTE_FREE_CHANCE = 0.2; // โอกาส 20% ที่จะไม่เสียพลังงานเมื่อใช้โน้ต
 const BARD_SECTION_MAX = 5;       // ท่อนทำนองสะสมครบ 5 ชั้น -> เปิดมิติมายาบรรเลง
 const BARD_DIM_TURNS = 3;         // มิติมายาบรรเลงคงอยู่ 3 เทิร์น
@@ -1529,8 +1529,8 @@ function useSkill(id, tier, targets, item) {
     if (tier === "ultimate") return; // ช่องประพันธ์เพลง — ไม่ใช่ปุ่มสกิล
     if ((p.statuses.noskill || 0) > 0) return;
     if (p.bardPending) return; // ต้องเลือกเป้าหมายบทเพลงที่ค้างอยู่ก่อน
-    const unlimited = (p.statuses.bloodDim || 0) > 0; // มิติโลหิต: ไม่จำกัดโน้ตต่อเทิร์น
-    if (!unlimited && (p.bardNotesUsed || 0) >= BARD_NOTES_PER_TURN) return;
+    // จำกัด 3 โน้ตต่อเทิร์นเสมอ (patch พิเศษ — มิติโลหิตก็ไม่ยกเว้นแล้ว)
+    if ((p.bardNotesUsed || 0) >= BARD_NOTES_PER_TURN) return;
     if (p.skillPoints < BARD_NOTE_COST) return;
     const free = Math.random() < BARD_NOTE_FREE_CHANCE; // 20% ไม่เสียพลังงาน
     if (!free) p.skillPoints -= BARD_NOTE_COST;
@@ -1922,7 +1922,7 @@ function useSkill(id, tier, targets, item) {
   if (isDance) {
     if (p.hp > 1 || (p.tempHp || 0) > 0) loseHp(p);
     p.danceBuff = true;
-    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นอย่างหนัก: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 และผลใบ้สกิล +1 เทิร์น`);
+    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นอย่างหนัก: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 และผลใบ้สกิล +2 เทิร์น`);
   }
   // ---------- โคโตเนะ: Sleeping time — หลับตลอดเฟสกลางคืน + ลบ [โหมงานหนัก] ----------
   if (isKSleep) {
@@ -2530,9 +2530,9 @@ function afterResolve() {
         // Sekai ichi kawaii watashi (โคโตเนะ): ตัด coin ทั้งหมด — ตีทุกคน 1 หน่วย
         //  และทุกคนถูกใบ้การใช้สกิล 2 เทิร์นนับจากเทิร์นถัดไป (มีบัฟ Dance Lession = 3 เทิร์น)
         if (key === "kawaii") {
-          const silence = KOTONE_SILENCE_TURNS + (p.danceBuff ? 1 : 0);
+          const silence = KOTONE_SILENCE_TURNS + (p.danceBuff ? 2 : 0); // Dance Lession: ใบ้สกิล +2 เทิร์น (patch พิเศษ)
           const kdmg = KOTONE_KAWAII_DMG + (p.danceBuff ? 1 : 0); // Dance Lession: ความเสียหาย +1
-          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ความเสียหาย +1 และผลใบ้สกิล +1 เทิร์น`);
+          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ความเสียหาย +1 และผลใบ้สกิล +2 เทิร์น`);
           p.danceBuff = false;
           const coins = p.coins || 0;
           p.coins = 0;

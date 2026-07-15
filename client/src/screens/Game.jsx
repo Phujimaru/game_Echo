@@ -418,7 +418,7 @@ const STATUS_INFO = {
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   encore:    { icon: "🔁", label: "Encore", cls: "bg-echo-cyan text-gray-900", desc: "Encore: บรรเลงทำนองครั้งถัดไปทำงานซ้ำอีก 1 ครั้ง" },
-  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ไม่จำกัดโน้ตต่อเทิร์นและต้านสถานะผิดปกติ" },
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ต้านสถานะผิดปกติ" },
   soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): ทุกการบรรเลงทำนอง Bard ฟื้น HP +1 และสุ่มทำความเสียหาย 1 แก่ผู้เล่น 1 คน" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
@@ -443,7 +443,7 @@ function statusEntries(p, full) {
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
-  if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไปอยู่นานขึ้น +1 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
+  if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 และผลใบ้สกิลอยู่นานขึ้น +2 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
   if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 5) — ครบ 5 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
   if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
   // Bard: ท่อนทำนองสะสม + โน้ตในช่องประพันธ์เพลง (ทุกคนเห็นได้)
@@ -871,7 +871,6 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo, cost }) 
 //  แสดงโน้ต ❤️/💚 ที่เติมไว้ 3 ช่อง — ครบ 3 บรรเลงทำนองเองแล้วล้างช่องเพื่อเริ่มบทเพลงใหม่
 function BardComposeSlot({ me }) {
   const notes = me.bardNotes || [];
-  const unlimited = (me.statuses?.bloodDim || 0) > 0;
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-gold/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
@@ -887,7 +886,7 @@ function BardComposeSlot({ me }) {
         ))}
       </div>
       <div className="text-sm sm:text-base font-bold text-center leading-tight">
-        ประพันธ์เพลง · {unlimited ? "ไม่จำกัดโน้ต 🎶" : `โน้ต ${me.bardNotesUsed || 0}/3 เทิร์นนี้`}
+        ประพันธ์เพลง · โน้ต {me.bardNotesUsed || 0}/3 เทิร์นนี้
       </div>
     </div>
   );
@@ -1000,9 +999,8 @@ export default function Game({ state }) {
   const isBard = ch?.id === "bard";
   const bardPending = isBard && phase === "PLAYING" ? me?.bardPending : null; // บทเพลงรอเลือกเป้าหมาย
   const bardNeed = bardPending?.need || 0;
-  const bardUnlimited = !!me?.statuses?.bloodDim; // มิติโลหิต: ไม่จำกัดโน้ตต่อเทิร์น
-  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / โน้ตครบ 3 ครั้งในเทิร์นนี้ (นอกมิติโลหิต)
-  const bardNoteLocked = isBard && (!!me?.bardPending || (!bardUnlimited && (me?.bardNotesUsed || 0) >= 3));
+  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบ 3 ครั้งในเทิร์นนี้แล้ว (จำกัดเสมอ ทุกกรณี)
+  const bardNoteLocked = isBard && (!!me?.bardPending || (me?.bardNotesUsed || 0) >= 3);
   // ---------- ชเรด เอลัน ----------
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)
