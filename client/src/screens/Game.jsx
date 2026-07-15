@@ -202,7 +202,7 @@ function TransformNotice({ n }) {
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
 //  ระหว่าง Lie Like Vortigern (โอเบรอน) ฉากหลังกลางคืนกลายเป็นวีดีโอ oberon_background.mp4 (เฟดเข้า)
-function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg }) {
+function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg }) {
   const night = cycle === "night";
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -218,10 +218,18 @@ function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg }) {
         className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[3000ms] ease-in-out"
         style={{ opacity: night ? 1 : 0 }}
       />
-      {/* ราตรีถาวรของชเรด เอลัน (รวมร่างทำนองเพลง): ฉากหลังกลายเป็น change_fill.jpg */}
+      {/* ราตรีของชเรด เอลัน (ร่างสปาด้า): ทุกค่ำคืน ฉากหลังกลายเป็น change_fill.jpg */}
       {shradeBg && (
         <img
           src="/characters/shrade_elan/change_fill.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover bg-fade-in"
+        />
+      )}
+      {/* มิติมายาบรรเลง (Bard): โลหิต = ตอนเช้า / วิญญาณ = ตอนกลางคืน (ทับฉากหลังอื่นทั้งหมด) */}
+      {bardBg && (
+        <img
+          src={bardBg === "blood" ? "/characters/bard/bard_bg_blood.png" : "/characters/bard/bard_bg_soul.png"}
           alt=""
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
@@ -401,7 +409,17 @@ const STATUS_INFO = {
   kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 2 หน่วย (บัฟ Dance Lession = 3) และทุกคนถูกใบ้การใช้สกิล" },
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   melody:    { icon: "🎵", label: "ท่วงทำนอง", cls: "bg-echo-cyan text-gray-900", desc: "ท่วงทำนอง: สะสมจากสกิล เชิญรับฟัง (สูงสุด 5) — ครบ 5 ตอนกลางคืนจะใช้ท่าไม้ตาย รวมร่างทำนองเพลง ได้" },
-  shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — เสียเลือด 1/เทิร์น (ไม่ทะลุเกราะ ไม่ลดต่ำกว่า 2) จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 5 หน่วย แล้วชเรดจบชีวิตลง" },
+  shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 5 หน่วย แล้วชเรดจบชีวิตลง" },
+  moonmark:  { icon: "🌕", label: "จันทร์ส่อง", cls: "bg-echo-magenta", desc: "แสงจันทร์ส่องวิญญาณ (สปาด้า): หากไพ่แตกในเทิร์นนี้ จะรับความเสียหาย 1 หน่วยทันที" },
+  // ---------- Bard : คีตกวี (patch 2.2) ----------
+  resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "Sanctuary Hymn: ต้านสถานะผิดปกติ (หลับ/สตั้น/ใบ้สกิล/พิษ/ขัดแย้ง) ตามจำนวนเทิร์นที่เหลือ" },
+  guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "Harmony: ความเสียหายจากการถูกโจมตีลดลง 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
+  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "Fate's Prelude: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก" },
+  linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
+  discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
+  encore:    { icon: "🔁", label: "Encore", cls: "bg-echo-cyan text-gray-900", desc: "Encore: บรรเลงทำนองครั้งถัดไปทำงานซ้ำอีก 1 ครั้ง" },
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ไม่จำกัดโน้ตต่อเทิร์นและต้านสถานะผิดปกติ" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): ทุกการบรรเลงทำนอง Bard ฟื้น HP +1 และสุ่มทำความเสียหาย 1 แก่ผู้เล่น 1 คน" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -426,8 +444,12 @@ function statusEntries(p, full) {
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
   if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไปอยู่นานขึ้น +1 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
-  if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 10) — ครบ 10 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
+  if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 5) — ครบ 5 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
   if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
+  // Bard: ท่อนทำนองสะสม + โน้ตในช่องประพันธ์เพลง (ทุกคนเห็นได้)
+  if ((p.bloodSection || 0) > 0) out.push({ key: "bloodSection", v: p.bloodSection, icon: "❤️", label: "ท่อนโลหิต", cls: "bg-echo-hp", desc: "ท่อนทำนองแห่งโลหิต: สะสมจากการบรรเลงเพลงสาย Crimson — ครบ 5 ชั้น เปิดมิติมายาบรรเลงโลหิต 3 เทิร์น" });
+  if ((p.soulSection || 0) > 0) out.push({ key: "soulSection", v: p.soulSection, icon: "💚", label: "ท่อนวิญญาณ", cls: "bg-echo-magenta", desc: "ท่อนทำนองแห่งวิญญาณ: สะสมจากการบรรเลงเพลงสาย Jade — ครบ 5 ชั้น เปิดมิติมายาบรรเลงวิญญาณ 3 เทิร์น" });
+  if ((p.bardNotes || []).length > 0) out.push({ key: "bardNotes", v: 1, icon: "🎼", label: p.bardNotes.map((n) => (n === "R" ? "❤️" : "💚")).join(""), cls: "bg-echo-cyan text-gray-900", desc: "ช่องประพันธ์เพลง: โน้ตที่เติมไว้ — ครบ 3 โน้ตจะบรรเลงทำนองตามลำดับโน้ตทันที" });
   if (p.contractWithId) out.push({ key: "contract", v: 1, icon: "📶", label: "คู่สัญญา", cls: "bg-echo-cyan text-gray-900", desc: "สนใจใช้บริการเราไหม: เพดานเกราะ +1 และพลังโจมตี +1 ตลอดสัญญา — ทุก 3 เทิร์นต้องเลือกต่อสัญญา (4 แต้ม) หรือยกเลิก" });
   if (p.contractPartnerId) out.push({ key: "boss", v: 1, icon: "📶", label: "มีคู่สัญญา", cls: "bg-echo-gold text-gray-900", desc: "เจ้าแห่งเน็ตบ้าน: มีคู่สัญญาอยู่ 1 คน — คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1 หน่วย" });
   if ((p.skillDrain || 0) > 0) out.push({ key: "skillDrain", v: p.skillDrain, icon: "📵", label: "ค่าปรับ", cls: "bg-echo-hp", desc: "ปฏิเสธข้อเสนอสัญญา: แต้มสกิลหลังจบเทิร์นลด 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" });
@@ -845,6 +867,32 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo, cost }) 
   );
 }
 
+// ---------- Bard : คีตกวี — ช่องประพันธ์เพลง (แทนที่ช่องท่าไม้ตาย) ----------
+//  แสดงโน้ต ❤️/💚 ที่เติมไว้ 3 ช่อง — ครบ 3 บรรเลงทำนองเองแล้วล้างช่องเพื่อเริ่มบทเพลงใหม่
+function BardComposeSlot({ me }) {
+  const notes = me.bardNotes || [];
+  const unlimited = (me.statuses?.bloodDim || 0) > 0;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-gold/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className={`rounded-xl grid place-items-center text-2xl sm:text-3xl border ${
+              notes[i] ? "bg-white/15 border-echo-gold/70 pop-in" : "bg-white/5 border-white/15"
+            }`}
+          >
+            {notes[i] === "R" ? "❤️" : notes[i] === "J" ? "💚" : <span className="opacity-25">♪</span>}
+          </div>
+        ))}
+      </div>
+      <div className="text-sm sm:text-base font-bold text-center leading-tight">
+        ประพันธ์เพลง · {unlimited ? "ไม่จำกัดโน้ต 🎶" : `โน้ต ${me.bardNotesUsed || 0}/3 เทิร์นนี้`}
+      </div>
+    </div>
+  );
+}
+
 export default function Game({ state }) {
   const [skillOpen, setSkillOpen] = useState(false);
   const [showChar, setShowChar] = useState(false);
@@ -858,6 +906,7 @@ export default function Game({ state }) {
   const [appleSel, setAppleSel] = useState(false);   // Apple guy: โหมดเลือกเป้าหมายเอาไปสิ (เลือกตัวเองไม่ได้)
   const [bbSel, setBbSel] = useState(false);         // เจ้าแห่งเน็ตบ้าน: โหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
   const [shSel, setShSel] = useState(false);         // ชเรด เอลัน: โหมดเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ (เลือกตัวเองไม่ได้)
+  const [bardSel, setBardSel] = useState([]);        // Bard: เป้าหมายบทเพลงที่เลือกไว้ (บทเพลงต้องการ 1-2 คน)
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
@@ -947,6 +996,13 @@ export default function Game({ state }) {
   const ktSecLocked = isKotone && (nightNow ? !!me?.statuses?.ksleep : overworkMe);        // หลับอยู่แล้ว / โหมงานหนัก
   const ktUltLocked = isKotone && (overworkMe || nightNow);                                // ท่าไม้ตายใช้ไม่ได้กลางคืน/โหมงานหนัก
   const ktCost = (s) => (s ? s.cost + 1 : 0); // โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1
+  // ---------- Bard : คีตกวี ----------
+  const isBard = ch?.id === "bard";
+  const bardPending = isBard && phase === "PLAYING" ? me?.bardPending : null; // บทเพลงรอเลือกเป้าหมาย
+  const bardNeed = bardPending?.need || 0;
+  const bardUnlimited = !!me?.statuses?.bloodDim; // มิติโลหิต: ไม่จำกัดโน้ตต่อเทิร์น
+  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / โน้ตครบ 3 ครั้งในเทิร์นนี้ (นอกมิติโลหิต)
+  const bardNoteLocked = isBard && (!!me?.bardPending || (!bardUnlimited && (me?.bardNotesUsed || 0) >= 3));
   // ---------- ชเรด เอลัน ----------
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)
@@ -1008,6 +1064,29 @@ export default function Game({ state }) {
     socket.emit("useSkill", { tier: "secondary", targets: [id] });
     setShSel(false);
   };
+  // เลือกเป้าหมายบทเพลง (Bard) — ครบจำนวนที่บทเพลงต้องการแล้วส่งไป server ทันที
+  const pickBard = (id) => {
+    if (!bardPending) return;
+    const next = bardSel.includes(id) ? bardSel.filter((x) => x !== id) : [...bardSel, id];
+    if (next.length >= bardNeed) {
+      socket.emit("bardTarget", { targets: next });
+      setBardSel([]);
+    } else setBardSel(next);
+  };
+  // บทเพลงถูกยืนยัน/หมดเวลาแล้ว -> ล้างเป้าหมายที่เลือกค้าง
+  useEffect(() => {
+    if (!bardPending) setBardSel([]);
+  }, [bardPending]);
+  // เสียงประกอบ Bard: เติมโน้ตตามช่องที่ 1-3 / บรรเลงทำนอง (Crimson=1, Jade=2, Encore=3)
+  useEffect(() => {
+    const onBardSfx = (e) => {
+      if (!e) return;
+      if (e.kind === "note") playSfx(`bard_note${Math.min(3, Math.max(1, e.idx || 1))}`);
+      else if (e.kind === "perform") playSfx(`bard_melody${Math.min(3, Math.max(1, e.sound || 1))}`);
+    };
+    socket.on("bardSfx", onBardSfx);
+    return () => socket.off("bardSfx", onBardSfx);
+  }, []);
   // เลือกเป้าหมายยื่นข้อเสนอสัญญา (สนใจใช้บริการเราไหม) -> ส่งไป server ทันที
   const pickBb = (id) => {
     socket.emit("useSkill", { tier: "ultimate", targets: [id] });
@@ -1109,7 +1188,7 @@ export default function Game({ state }) {
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
-        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} />
+        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} />
         {/* แถบบน: รอบ + เวลา (เว้นขวาให้ปุ่มเสียง) */}
         <div className="shrink-0 flex flex-col items-center gap-1 pt-2 px-14 min-h-[40px]">
           {(phase === "PLAYING" || phase === "ATTACK") && (
@@ -1129,9 +1208,9 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || !!bardPending) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
             />
           ))}
@@ -1176,6 +1255,14 @@ export default function Game({ state }) {
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-cyan animate-pulse">🌕 แตะเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ</span>
             <button onClick={() => { clickSound(); setShSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {bardPending && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-gold animate-pulse">🎼 แตะเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
+            {bardPending.allowSelf && (
+              <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            )}
           </div>
         )}
 
@@ -1230,9 +1317,9 @@ export default function Game({ state }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || shCharging || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
               </div>
               {noSkill && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
@@ -1358,7 +1445,7 @@ export default function Game({ state }) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} />
+      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} />
       <div
         className="relative overflow-hidden"
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
@@ -1388,9 +1475,9 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || !!bardPending) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
         />
       ))}
@@ -1444,6 +1531,16 @@ export default function Game({ state }) {
         </div>
       )}
 
+      {/* โหมดเลือกเป้าหมายบทเพลง (Bard) — บทเพลงประพันธ์เสร็จแล้ว รอเป้าหมาย (ไม่เลือก = สุ่มตอนเปิดไพ่) */}
+      {bardPending && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎼 คลิกเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
+          {bardPending.allowSelf && (
+            <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          )}
+        </div>
+      )}
+
       {/* ---------- แผงตัวเรา (ล่างกลาง) ---------- */}
       {me && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[min(96%,860px)]">
@@ -1494,9 +1591,9 @@ export default function Game({ state }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || me.skillUsed || shCharging || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                  <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                  {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>

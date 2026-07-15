@@ -13,6 +13,14 @@ const FILES = {
   new_morning: "/theme_song/new_morning.mp3", // เพลงช่วงกลางวัน (patch พิเศษ)
   new_night: "/theme_song/new_night.mp3",     // เพลงช่วงกลางคืน (patch พิเศษ)
   shrade: "/characters/shrade_elan/shrade_theme.mp3", // เพลงระหว่างชาร์จ แด่เพื่อนรักของฉัน (ชเรด เอลัน)
+  bard_dim: "/characters/bard/bard_dim_theme.mp3",    // BGM ระหว่างมิติมายาบรรเลง (Bard — วนลูป 3 เทิร์น)
+  bard_note1: "/characters/bard/bard_note1.mp3",      // เสียงเติมโน้ตช่องที่ 1 (Bard)
+  bard_note2: "/characters/bard/bard_note2.mp3",      // เสียงเติมโน้ตช่องที่ 2
+  bard_note3: "/characters/bard/bard_note3.mp3",      // เสียงเติมโน้ตช่องที่ 3
+  bard_note4: "/characters/bard/bard_note4.mp3",      // เสียงเติมโน้ต (สำรอง)
+  bard_melody1: "/characters/bard/bard_melody1.mp3",  // เสียงบรรเลงทำนอง สาย Crimson
+  bard_melody2: "/characters/bard/bard_melody2.mp3",  // เสียงบรรเลงทำนอง สาย Jade
+  bard_melody3: "/characters/bard/bard_melody3.mp3",  // เสียงบรรเลงทำนอง Encore ทำงานซ้ำ
   ginga: "/characters/hikaru/ginga_song.mp3",
   unicorn: "/characters/banagher/unicorn_song.mp3",
   final_normal: "/characters/kuwagata/final_normal.mp3", // เพลงระหว่างสวมเกราะราชัน
