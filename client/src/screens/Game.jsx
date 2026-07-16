@@ -50,8 +50,16 @@ function Cutscene({ cs }) {
         <div className="cut-title glitch text-4xl sm:text-6xl font-black" data-text={cs.title}>{cs.title}</div>
       </div>
       <div className="absolute bottom-[9%] inset-x-0 flex flex-col items-center gap-3">
-        <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4" style={{ borderColor: cs.color, "--cut-color": cs.color }}>
-          <img src={cs.img} alt="" className="w-full h-full object-cover" />
+        <div className="flex items-center gap-3">
+          <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4" style={{ borderColor: cs.color, "--cut-color": cs.color }}>
+            <img src={cs.img} alt="" className="w-full h-full object-cover" />
+          </div>
+          {/* ภาพที่สอง (เช่น แม้แต่พระเจ้าก็จะฆ่าให้ดู — ภาพสกิลท่าไม้ตาย + ภาพเจ้าของท่าที่โดน) */}
+          {cs.img2 && (
+            <div className="cut-portrait cut-glow rounded-2xl overflow-hidden w-28 h-28 sm:w-36 sm:h-36 border-4" style={{ borderColor: cs.color, "--cut-color": cs.color }}>
+              <img src={cs.img2} alt="" className="w-full h-full object-cover" />
+            </div>
+          )}
         </div>
         <div className="text-2xl sm:text-3xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
           <span style={{ color: cs.color }}>{cs.name}</span> {cs.label || "ปล่อยท่าไม้ตาย"}!
@@ -75,9 +83,11 @@ function AttackFx({ a }) {
             <span className="font-bold text-base sm:text-lg" style={{ color: a.byColor }}>{a.byName}</span>
           </div>
           <div className="text-center">
-            <div className="text-4xl sm:text-5xl">{a.dodge ? "💨" : "⚔️"}</div>
+            <div className="text-4xl sm:text-5xl">{a.dodge ? "💨" : a.kill ? "💀" : "⚔️"}</div>
             {a.dodge ? (
               <div className="text-3xl sm:text-4xl font-black text-echo-cyan drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">หลบพ้น!</div>
+            ) : a.kill ? (
+              <div className="text-3xl sm:text-4xl font-black text-echo-hp drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">สังหาร!</div>
             ) : (
               <div className="text-4xl sm:text-5xl font-black text-echo-hp drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">-{a.dmg}</div>
             )}
@@ -202,7 +212,7 @@ function TransformNotice({ n }) {
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
 //  ระหว่าง Lie Like Vortigern (โอเบรอน) ฉากหลังกลางคืนกลายเป็นวีดีโอ oberon_background.mp4 (เฟดเข้า)
-function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg }) {
+function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg, shikiBg }) {
   const night = cycle === "night";
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -248,6 +258,14 @@ function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg }) {
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
       )}
+      {/* ฉันมองเห็นมันแล้ว (ชิกิ): ซ้อน shiki_fill.png ทับฉากหลังปัจจุบันระหว่างท่าไม้ตายทำงาน */}
+      {shikiBg && (
+        <img
+          src="/characters/shiki/shiki_fill.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover bg-fade-in"
+        />
+      )}
       <div className="absolute inset-0 bg-black/25" />
     </div>
   );
@@ -278,7 +296,7 @@ function CycleBanner({ c }) {
 const PHASE_NAMES = { PLAYING: "🎴 สุ่มการ์ด", ATTACK: "⚔️ โจมตี" };
 
 // สถานะที่ผูกกับท่าไม้ตายของแต่ละตัวละคร — ใช้เช็คว่ากำลังมีผลอยู่ไหม (กดซ้ำไม่ได้จนกว่าจะหมดเวลา)
-const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity", gambler: "golden", eva13: "fourth", appleguy: "chill", kotone: "kawaii" };
+const ULTIMATE_STATUS = { hikaru: "ginga", kuwagata: "rachan", banagher: "paradise", temari: "anata", fujimaru: "humanity", gambler: "golden", eva13: "fourth", appleguy: "chill", kotone: "kawaii", shiki: "deatheye" };
 
 // ---------- Apple guy: ของส่งมอบ 3 ชิ้น (สกิลพื้นฐาน เอาแบบนี้ได้ไหม เลือก -> สกิลรอง เอาไปสิ ส่งให้เป้าหมาย) ----------
 const APPLE_ITEMS = [
@@ -417,9 +435,13 @@ const STATUS_INFO = {
   fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "Fate's Prelude: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก" },
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  encore:    { icon: "🔁", label: "Encore", cls: "bg-echo-cyan text-gray-900", desc: "Encore: บรรเลงทำนองครั้งถัดไปทำงานซ้ำอีก 1 ครั้ง" },
+  evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "Encore: หลบหลีก +100% ในการโดนโจมตี 1 ครั้งถัดไป (หมดผลเมื่อถูกเลือกโจมตี)" },
   bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ต้านสถานะผิดปกติ" },
-  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): ทุกการบรรเลงทำนอง Bard ฟื้น HP +1 และสุ่มทำความเสียหาย 1 แก่ผู้เล่น 1 คน" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): คีตกวีไม่จำกัดโน้ตต่อเทิร์น ต้านสถานะผิดปกติ และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยกับผู้เล่นทุกคน จนกว่ามิติจะสิ้นสุด" },
+  // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+  knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
+  deathline: { icon: "🩸", label: "เส้นตาย", cls: "bg-echo-hp", desc: "เส้นตาย (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ (+2/ครั้ง) — ครบ 10 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด)" },
+  deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นตายครบ 10 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -869,8 +891,10 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo, cost }) 
 
 // ---------- Bard : คีตกวี — ช่องประพันธ์เพลง (แทนที่ช่องท่าไม้ตาย) ----------
 //  แสดงโน้ต ❤️/💚 ที่เติมไว้ 3 ช่อง — ครบ 3 บรรเลงทำนองเองแล้วล้างช่องเพื่อเริ่มบทเพลงใหม่
+//  patch 2.0.5: จำกัด 2 โน้ตต่อเทิร์น — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ต
 function BardComposeSlot({ me }) {
   const notes = me.bardNotes || [];
+  const soulDimOn = (me.statuses?.soulDim || 0) > 0;
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-gold/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
@@ -886,7 +910,7 @@ function BardComposeSlot({ me }) {
         ))}
       </div>
       <div className="text-sm sm:text-base font-bold text-center leading-tight">
-        ประพันธ์เพลง · โน้ต {me.bardNotesUsed || 0}/3 เทิร์นนี้
+        {soulDimOn ? "ประพันธ์เพลง · มิติวิญญาณ ไม่จำกัดโน้ต" : `ประพันธ์เพลง · โน้ต ${me.bardNotesUsed || 0}/2 เทิร์นนี้`}
       </div>
     </div>
   );
@@ -905,6 +929,7 @@ export default function Game({ state }) {
   const [appleSel, setAppleSel] = useState(false);   // Apple guy: โหมดเลือกเป้าหมายเอาไปสิ (เลือกตัวเองไม่ได้)
   const [bbSel, setBbSel] = useState(false);         // เจ้าแห่งเน็ตบ้าน: โหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
   const [shSel, setShSel] = useState(false);         // ชเรด เอลัน: โหมดเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ (เลือกตัวเองไม่ได้)
+  const [skSel, setSkSel] = useState(false);         // ชิกิ: โหมดเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ? (เลือกตัวเองไม่ได้)
   const [bardSel, setBardSel] = useState([]);        // Bard: เป้าหมายบทเพลงที่เลือกไว้ (บทเพลงต้องการ 1-2 คน)
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
@@ -999,8 +1024,10 @@ export default function Game({ state }) {
   const isBard = ch?.id === "bard";
   const bardPending = isBard && phase === "PLAYING" ? me?.bardPending : null; // บทเพลงรอเลือกเป้าหมาย
   const bardNeed = bardPending?.need || 0;
-  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบ 3 ครั้งในเทิร์นนี้แล้ว (จำกัดเสมอ ทุกกรณี)
-  const bardNoteLocked = isBard && (!!me?.bardPending || (me?.bardNotesUsed || 0) >= 3);
+  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบ 2 ครั้งในเทิร์นนี้แล้ว
+  //  (patch 2.0.5 — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ตต่อเทิร์น)
+  const bardSoulDim = isBard && (me?.statuses?.soulDim || 0) > 0;
+  const bardNoteLocked = isBard && (!!me?.bardPending || (!bardSoulDim && (me?.bardNotesUsed || 0) >= 2));
   // ---------- ชเรด เอลัน ----------
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)
@@ -1054,6 +1081,8 @@ export default function Game({ state }) {
     // ชเรด เอลัน: สกิลรอง (แสงจันทร์ส่องวิญญาณ) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
     //  (Dance Lession โคโตเนะ ใช้ใส่ตัวเองเท่านั้นแล้ว — ไม่ต้องเลือกเป้าหมาย)
     if (tier === "secondary" && ch?.id === "shrade_elan") { setShSel(true); setSkillOpen(false); return; }
+    // เรียวกิ ชิกิ: สกิลรอง (นายมีฝีมือแค่ไหนหรอ?) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
+    if (tier === "secondary" && ch?.id === "shiki") { setSkSel(true); setSkillOpen(false); return; }
     socket.emit("useSkill", { tier });
     setSkillOpen(false);
   };
@@ -1061,6 +1090,11 @@ export default function Game({ state }) {
   const pickSh = (id) => {
     socket.emit("useSkill", { tier: "secondary", targets: [id] });
     setShSel(false);
+  };
+  // เลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ? (ชิกิ) -> ส่งไป server ทันที
+  const pickSk = (id) => {
+    socket.emit("useSkill", { tier: "secondary", targets: [id] });
+    setSkSel(false);
   };
   // เลือกเป้าหมายบทเพลง (Bard) — ครบจำนวนที่บทเพลงต้องการแล้วส่งไป server ทันที
   const pickBard = (id) => {
@@ -1143,6 +1177,9 @@ export default function Game({ state }) {
     if (shSel && (phase !== "PLAYING" || me?.skillUsed || done)) setShSel(false);
   }, [shSel, phase, me?.skillUsed, done]);
   useEffect(() => {
+    if (skSel && (phase !== "PLAYING" || me?.skillUsed || done)) setSkSel(false);
+  }, [skSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
     if (appleOpen && (phase !== "PLAYING" || done)) setAppleOpen(false);
   }, [appleOpen, phase, done]);
   useEffect(() => {
@@ -1186,7 +1223,7 @@ export default function Game({ state }) {
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
-        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} />
+        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} />
         {/* แถบบน: รอบ + เวลา (เว้นขวาให้ปุ่มเสียง) */}
         <div className="shrink-0 flex flex-col items-center gap-1 pt-2 px-14 min-h-[40px]">
           {(phase === "PLAYING" || phase === "ATTACK") && (
@@ -1206,9 +1243,9 @@ export default function Game({ state }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || !!bardPending) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || !!bardPending) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
             />
           ))}
@@ -1253,6 +1290,12 @@ export default function Game({ state }) {
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-cyan animate-pulse">🌕 แตะเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ</span>
             <button onClick={() => { clickSound(); setShSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {skSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-hp animate-pulse">🔪 แตะเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ?</span>
+            <button onClick={() => { clickSound(); setSkSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
         {bardPending && (
@@ -1443,7 +1486,7 @@ export default function Game({ state }) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} />
+      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} />
       <div
         className="relative overflow-hidden"
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
@@ -1473,9 +1516,9 @@ export default function Game({ state }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || !!bardPending) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || !!bardPending) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
         />
       ))}
@@ -1526,6 +1569,14 @@ export default function Game({ state }) {
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
           <span className="text-xl font-black text-echo-cyan animate-pulse bg-black/60 rounded-full px-5 py-1.5">🌕 คลิกเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ</span>
           <button onClick={() => { clickSound(); setShSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
+      {/* โหมดเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ? (ชิกิ) — เลือกได้เฉพาะคนอื่น */}
+      {skSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">🔪 คลิกเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ?</span>
+          <button onClick={() => { clickSound(); setSkSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
 

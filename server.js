@@ -109,7 +109,7 @@ function maybeMoonBurst(p) {
 // ============================================================
 //  Bard : คีตกวี — ระบบประพันธ์เพลง / บรรเลงทำนอง / มิติมายาบรรเลง
 // ============================================================
-// ครบ 3 โน้ต -> หาบทเพลงตามลำดับโน้ต — ต้องเลือกเป้าหมายก่อน (ยกเว้น Encore บรรเลงทันที)
+// ครบ 3 โน้ต -> หาบทเพลงตามลำดับโน้ต — ต้องเลือกเป้าหมายก่อนเสมอ (patch 2.0.5: ทุกบทเพลงมีเป้าหมาย)
 function bardCompose(p, live) {
   const pattern = (p.bardNotes || []).join("");
   p.bardNotes = [];
@@ -131,64 +131,57 @@ function bardCompose(p, live) {
   }
   bardPerform(p, pattern, [], live);
 }
-// บรรเลงทำนอง: ใช้ผลบทเพลง + ท่อนทำนองตามสาย + พลังงาน +1 — Encore ค้างอยู่ = ทำงานซ้ำ 2 ครั้ง
+// บรรเลงทำนอง: ใช้ผลบทเพลง + ท่อนทำนองตามสาย + พลังงาน +1
 //  live = บรรเลงระหว่างช่วงจั่วการ์ด (เปิดมิติแล้วพักเกมเล่นวีดีโอได้) / false = บรรเลงตอนเปิดไพ่ (สุ่มเป้า)
 function bardPerform(p, pattern, targets, live) {
   const song = BARD_SONGS[pattern];
   if (!song || !p.alive) return;
   const isCrimson = song.song === "crimson";
-  let times = 1;
-  if (pattern !== "JJJ" && (p.statuses.encore || 0) > 0) {
-    delete p.statuses.encore;
-    times = 2;
-    lastLog.push(`🎼✨ Encore! ${song.name} ทำงานซ้ำ 2 ครั้ง`);
-  }
-  for (let i = 0; i < times; i++) {
-    applyBardSong(p, pattern, targets);
-    if (isCrimson) p.bloodSection = Math.min(BARD_SECTION_MAX, (p.bloodSection || 0) + 1);
-    else p.soulSection = Math.min(BARD_SECTION_MAX, (p.soulSection || 0) + 1);
-  }
+  applyBardSong(p, pattern, targets);
+  if (isCrimson) p.bloodSection = Math.min(BARD_SECTION_MAX, (p.bloodSection || 0) + 1);
+  else p.soulSection = Math.min(BARD_SECTION_MAX, (p.soulSection || 0) + 1);
   addSkill(p, 1); // บรรเลงทำนองสำเร็จ ได้รับพลังงาน +1
-  // เสียงบรรเลง: Encore ซ้ำสอง = 03 / สาย Crimson = 01 / สาย Jade = 02
-  io.emit("bardSfx", { kind: "perform", sound: times > 1 ? 3 : isCrimson ? 1 : 2 });
-  io.emit("skillFlash", { name: `🎼 บรรเลงทำนอง — ${song.name}${times > 1 ? " x2 (Encore)" : ""}`, img: isCrimson ? BARD_CRIMSON_IMG : BARD_JADE_IMG, by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96" });
+  // เสียงบรรเลง: สาย Crimson = 01 / สาย Jade = 02
+  io.emit("bardSfx", { kind: "perform", sound: isCrimson ? 1 : 2 });
+  io.emit("skillFlash", { name: `🎼 บรรเลงทำนอง — ${song.name}`, img: isCrimson ? BARD_CRIMSON_IMG : BARD_JADE_IMG, by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96" });
   lastLog.push(`🎼 ${p.name} บรรเลงทำนอง ${song.name}! พลังงาน +1 (โลหิต ${p.bloodSection || 0}/${BARD_SECTION_MAX} · วิญญาณ ${p.soulSection || 0}/${BARD_SECTION_MAX})`);
-  // มิติมายาบรรเลงวิญญาณ: ทุกการบรรเลง — Bard ฟื้น HP +1 และสุ่มทำดาเมจ 1 แก่ผู้เล่น 1 คน
+  // มิติมายาบรรเลงวิญญาณ (patch 2.0.5): ทุกครั้งที่เกิดการบรรเลงทำนอง — คีตกวีทำดาเมจ 1 กับผู้เล่นทุกคน
   if ((p.statuses.soulDim || 0) > 0) {
-    const heal = healHp(p, 1);
-    const pool = alivePlayers().filter((o) => o.id !== p.id);
-    if (pool.length) {
-      const t = pool[Math.floor(Math.random() * pool.length)];
-      dealMixed(t, 1);
+    for (const t of alivePlayers()) {
+      if (t.id === p.id) continue;
+      dealMixed(t, BARD_SOUL_PERFORM_DMG);
       maybeBeatSave(t);
       maybeBeatMode(t);
       maybeEva3(t);
       maybeWakeKotone(t);
       t.wasAttacked = true;
-      lastLog.push(`💚🌑 มิติมายาบรรเลงวิญญาณ — ${p.name} ฟื้น HP +${heal} และทำนองบาดวิญญาณ ${t.name} -1`);
       if (t.alive && t.hp <= 0) {
         instantDeath(t);
         lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
       }
     }
+    lastLog.push(`💚🌑 มิติมายาบรรเลงวิญญาณ — ทำนองของ ${p.name} บาดวิญญาณผู้เล่นทุกคน -${BARD_SOUL_PERFORM_DMG}`);
   }
   maybeBardDim(p, live);
 }
-// ผลของบทเพลงแต่ละแบบ (ทำงานซ้ำได้จาก Encore)
+// ผลของบทเพลงแต่ละแบบ (patch 2.0.5 — สลับผังบทเพลงใหม่)
 function applyBardSong(p, pattern, targets) {
   const ts = (targets || []).map((id) => players[id]).filter((t) => t && t.alive);
   const t = ts[0];
   switch (pattern) {
-    case "RRR": // Sanctuary Hymn: ต้านสถานะผิดปกติ 3 เทิร์น
+    case "RRR": // Encore: หลบหลีก +100% ในการโดนโจมตี 1 ครั้งถัดไป
       if (!t) return;
-      t.statuses.resist = Math.max(t.statuses.resist || 0, 4); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
-      lastLog.push(`🎼🛡️ Sanctuary Hymn — ${t.name} ต้านสถานะผิดปกติ 3 เทิร์น`);
+      t.statuses.evade = 1; // ไม่ลดเทิร์น — หมดไปเมื่อถูกเลือกโจมตีครั้งถัดไป
+      lastLog.push(`🎼💨 Encore — ${t.name} จะหลบหลีกการโดนโจมตี 1 ครั้งถัดไป (100%)`);
       break;
-    case "RRJ": // Harmony: คุ้มครอง -1 ดาเมจ 3 เทิร์น
+    case "RRJ": { // Silent Cadence: ขโมยพลังงาน 2 มาเป็นของตัวเอง
       if (!t) return;
-      t.statuses.guard = Math.max(t.statuses.guard || 0, 4);
-      lastLog.push(`🎼💗 Harmony — ${t.name} ได้รับการคุ้มครอง (-1 ดาเมจ) 3 เทิร์น`);
+      const steal = Math.min(BARD_STEAL_ENERGY, t.skillPoints);
+      t.skillPoints -= steal;
+      if (steal > 0) addSkill(p, steal);
+      lastLog.push(`🎼🤫 Silent Cadence — ${p.name} ขโมยพลังงาน ${steal} หน่วยจาก ${t.name}`);
       break;
+    }
     case "RJR": // Fate's Prelude: โชคลาภในการจั่วไพ่ครั้งถัดไป
       if (!t) return;
       t.statuses.fortune = 1; // ไม่ลดเทิร์น — หมดไปเมื่อจั่วไพ่ครั้งถัดไป
@@ -201,9 +194,10 @@ function applyBardSong(p, pattern, targets) {
       addSkill(t, 1);
       lastLog.push(`🎼💖 Rejuvenation — ${t.name} ฟื้น HP +1 เกราะ +1 พลังงาน +1`);
       break;
-    case "JJJ": // Encore: บรรเลงทำนองครั้งถัดไปทำงานซ้ำอีก 1 ครั้ง
-      p.statuses.encore = 1; // ไม่ลดเทิร์น — หมดไปเมื่อบรรเลงครั้งถัดไป
-      lastLog.push(`🎼🔁 Encore — บรรเลงทำนองครั้งถัดไปของ ${p.name} จะทำงานซ้ำอีก 1 ครั้ง`);
+    case "JJJ": // Sanctuary Hymn: ต้านสถานะผิดปกติ 3 เทิร์น
+      if (!t) return;
+      t.statuses.resist = Math.max(t.statuses.resist || 0, 4); // +1 ชดเชยการลดสถานะตอนจบเทิร์น
+      lastLog.push(`🎼🛡️ Sanctuary Hymn — ${t.name} ต้านสถานะผิดปกติ 3 เทิร์น`);
       break;
     case "JJR": // Resonance: เชื่อมผล 2 คน 3 เทิร์น
       if (ts.length < 2) return;
@@ -222,14 +216,11 @@ function applyBardSong(p, pattern, targets) {
       t.statuses.discord = Math.max(t.statuses.discord || 0, 4);
       lastLog.push(`🎼⚡ Discord — ${t.name} ติดสถานะขัดแย้ง (+1 ดาเมจที่ได้รับ) 3 เทิร์น`);
       break;
-    case "RJJ": { // Silent Cadence: ขโมยพลังงาน 2 มาเป็นของตัวเอง
+    case "RJJ": // Harmony: คุ้มครอง -1 ดาเมจ 3 เทิร์น
       if (!t) return;
-      const steal = Math.min(BARD_STEAL_ENERGY, t.skillPoints);
-      t.skillPoints -= steal;
-      if (steal > 0) addSkill(p, steal);
-      lastLog.push(`🎼🤫 Silent Cadence — ${p.name} ขโมยพลังงาน ${steal} หน่วยจาก ${t.name}`);
+      t.statuses.guard = Math.max(t.statuses.guard || 0, 4);
+      lastLog.push(`🎼💗 Harmony — ${t.name} ได้รับการคุ้มครอง (-1 ดาเมจ) 3 เทิร์น`);
       break;
-    }
   }
 }
 // ท่อนทำนองครบ 5 ชั้น -> เปิดมิติมายาบรรเลง 3 เทิร์น (โลหิตมาก่อนถ้าครบพร้อมกัน)
@@ -245,21 +236,9 @@ function maybeBardDim(p, live) {
   if (kind === "bloodDim") {
     lastLog.push(`❤️🌅 ${p.name} เปิดมิติมายาบรรเลงโลหิต! (3 เทิร์น — นับเป็นตอนเช้า) ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น / Bard ต้านสถานะผิดปกติ`);
   } else {
-    lastLog.push(`💚🌑 ${p.name} เปิดมิติมายาบรรเลงวิญญาณ! (3 เทิร์น — นับเป็นตอนกลางคืน)`);
-    for (const o of alivePlayers()) {
-      if (o.id === p.id) continue;
-      dealMixed(o, BARD_SOUL_OPEN_DMG);
-      maybeBeatSave(o);
-      maybeBeatMode(o);
-      maybeEva3(o);
-      maybeWakeKotone(o);
-      o.wasAttacked = true;
-      if (o.alive && o.hp <= 0) {
-        instantDeath(o);
-        lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
-      }
-    }
-    lastLog.push(`💚🌑 มิติมายาบรรเลงวิญญาณ — ผู้เล่นทุกคน (ยกเว้น ${p.name}) รับความเสียหาย -${BARD_SOUL_OPEN_DMG}`);
+    // patch 2.0.5: มิติวิญญาณไม่ตีตอนเปิดแล้ว — ไม่จำกัดโน้ตต่อเทิร์น + ต้านสถานะผิดปกติ
+    //  และทุกการบรรเลงทำนอง ตีทุกคน 1 หน่วย จนกว่ามิติจะสิ้นสุด
+    lastLog.push(`💚🌑 ${p.name} เปิดมิติมายาบรรเลงวิญญาณ! (3 เทิร์น — นับเป็นตอนกลางคืน) ไม่จำกัดโน้ตต่อเทิร์น ต้านสถานะผิดปกติ และทุกการบรรเลงตีทุกคน -${BARD_SOUL_PERFORM_DMG}`);
   }
   // วีดีโอเปิดมิติ เล่นเต็มทุกครั้ง (ไม่ใช่ครั้งเดียวต่อเกม) — บรรเลงตอนเปิดไพ่ให้เข้าคิวรอ afterResolve เล่นให้
   queueCutscene(p, "bardDim");
@@ -343,36 +322,38 @@ function shradeCharging(p) {
 // ---------- Bard : คีตกวี (patch 2.2) ----------
 // "โลหิตคือทำนอง วิญญาณคือบทกวี และทุกชีวิตล้วนเป็นเพียงโน้ตตัวหนึ่งในบทเพลงอันนิรันด์"
 const BARD_MAX_SKILL = 9;         // Crescendo: พลังงานสูงสุด 9 (ตัวอื่น 8)
-const BARD_NOTES_PER_TURN = 3;    // จำกัด 3 โน้ตต่อเทิร์น (มิติโลหิต = ไม่จำกัด)
-const BARD_NOTE_COST = 2;         // ค่าใช้พลังงานต่อโน้ต (patch พิเศษ — เพิ่มจาก 1)
+const BARD_NOTES_PER_TURN = 2;    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5 — มิติวิญญาณ = ไม่จำกัด)
+const BARD_NOTE_COST = 1;         // ค่าใช้พลังงานต่อโน้ต (patch 2.0.5 — ลดจาก 2)
 const BARD_NOTE_FREE_CHANCE = 0.2; // โอกาส 20% ที่จะไม่เสียพลังงานเมื่อใช้โน้ต
 const BARD_SECTION_MAX = 5;       // ท่อนทำนองสะสมครบ 5 ชั้น -> เปิดมิติมายาบรรเลง
 const BARD_DIM_TURNS = 3;         // มิติมายาบรรเลงคงอยู่ 3 เทิร์น
-const BARD_SOUL_OPEN_DMG = 2;     // มิติวิญญาณ: ทุกคน (ยกเว้น Bard) รับดาเมจทันทีตอนเปิด
+const BARD_SOUL_PERFORM_DMG = 1;  // มิติวิญญาณ (patch 2.0.5): ทุกการบรรเลง Bard ตีทุกคน 1 หน่วย
 const BARD_STEAL_ENERGY = 2;      // Silent Cadence: ขโมยพลังงาน
 const BARD_PROFILE_IMG = "/characters/bard/bard_profile.jpg";
 const BARD_CRIMSON_IMG = "/characters/bard/bard_crimson.png";
 const BARD_JADE_IMG = "/characters/bard/bard_jade.png";
 // บทเพลงทั้ง 8 (R = ❤️ Crimson, J = 💚 Jade) — need = จำนวนเป้าหมาย, allowSelf = เลือกตัวเองได้
+// (patch 2.0.5: สลับผังบทเพลงใหม่ — สายเพลงนับจากโน้ตเสียงข้างมาก)
 const BARD_SONGS = {
-  RRR: { name: "Sanctuary Hymn", song: "crimson", need: 1, allowSelf: true },   // ต้านสถานะผิดปกติ 3 เทิร์น
-  RRJ: { name: "Harmony", song: "crimson", need: 1, allowSelf: true },          // คุ้มครอง -1 ดาเมจ 3 เทิร์น
+  RRR: { name: "Encore", song: "crimson", need: 1, allowSelf: true },           // หลบหลีก +100% โดนโจมตี 1 ครั้งถัดไป
+  RRJ: { name: "Silent Cadence", song: "crimson", need: 1, allowSelf: false },  // ขโมยพลังงาน 2
   RJR: { name: "Fate's Prelude", song: "crimson", need: 1, allowSelf: true },   // โชคลาภในการจั่วครั้งถัดไป
   JRR: { name: "Rejuvenation", song: "crimson", need: 1, allowSelf: true },     // HP +1 / เกราะ +1 / พลังงาน +1
-  JJJ: { name: "Encore", song: "jade", need: 0, allowSelf: false },             // บรรเลงครั้งถัดไปทำงานซ้ำ
+  JJJ: { name: "Sanctuary Hymn", song: "jade", need: 1, allowSelf: true },      // ต้านสถานะผิดปกติ 3 เทิร์น
   JJR: { name: "Resonance", song: "jade", need: 2, allowSelf: true },           // เชื่อมผล 3 เทิร์น
   JRJ: { name: "Discord", song: "jade", need: 1, allowSelf: false },            // ขัดแย้ง +1 ดาเมจ 3 เทิร์น
-  RJJ: { name: "Silent Cadence", song: "jade", need: 1, allowSelf: false },     // ขโมยพลังงาน 2
+  RJJ: { name: "Harmony", song: "jade", need: 1, allowSelf: true },             // คุ้มครอง -1 ดาเมจ 3 เทิร์น
 };
 // พลังงานสูงสุดของผู้เล่น (Bard = 9)
 function maxSkillOf(p) {
   return (p && p.characterId === "bard") ? BARD_MAX_SKILL : MAX_SKILL;
 }
-// ต้านสถานะผิดปกติ: จาก Sanctuary Hymn หรือระหว่าง Bard อยู่ในมิติมายาบรรเลงโลหิต
+// ต้านสถานะผิดปกติ: จาก Sanctuary Hymn หรือระหว่าง Bard อยู่ในมิติมายาบรรเลง (โลหิต/วิญญาณ)
 function resistActive(p) {
   if (!p) return false;
   if (((p.statuses && p.statuses.resist) || 0) > 0) return true;
-  return p.characterId === "bard" && ((p.statuses && p.statuses.bloodDim) || 0) > 0;
+  return p.characterId === "bard" &&
+    (((p.statuses && p.statuses.bloodDim) || 0) > 0 || ((p.statuses && p.statuses.soulDim) || 0) > 0);
 }
 // มิติมายาบรรเลงที่เปิดอยู่บนสนาม: "day" (โลหิต) | "night" (วิญญาณ) | null
 function bardDimCycle() {
@@ -383,6 +364,13 @@ function bardDimCycle() {
   }
   return null;
 }
+
+// ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+const SHIKI_DEATHLINE_MAX = 10;  // เส้นตายสะสมถึง 10 -> โจมตีปกติระหว่างท่าไม้ตาย = สังหารทันที
+const SHIKI_DEATHLINE_GAIN = 2;  // เปิดไพ่แล้วแต้มเท่ากับชิกิ -> ติดเส้นตาย +2 (ถาวร)
+const SHIKI_KNIFE_HEAL = 3;      // มีดพก: การโจมตีปกติฟื้นเลือดให้ตัวเอง 3 หน่วย (2 เทิร์น)
+const SHIKI_PROFILE_IMG = "/characters/shiki/shiki.jpg";
+const SHIKI_DEATH_IMG = "/characters/shiki/shiki_death.jpg"; // ร่างระหว่างท่าไม้ตาย ฉันมองเห็นมันแล้ว
 
 // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
 const AQUA_LEADERS = {
@@ -508,6 +496,11 @@ const TRANSFORMS = {
   // bardDim: เปิดมิติมายาบรรเลง (ท่อนทำนองครบ 5) — วีดีโอ 7 วิ แล้วฉากหลัง/เพลงเปลี่ยนตามสายมิติ
   //  (เล่นวีดีโอเต็มทุกครั้งที่เปิดมิติ — ไม่ใช้ triggerCutscene แบบครั้งเดียวต่อเกม)
   bardDim: { img: BARD_PROFILE_IMG, video: "/characters/bard/bard_dim.mp4", title: "มิติมายาบรรเลง", label: "สกิลติดตัวทำงาน", seconds: 8, music: "bard_dim", afterReveal: false },
+  // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+  // shikiKill: เนตรมารแห่งความมรณะ — เป้าหมายเส้นตายครบ 10 ถูกโจมตีปกติระหว่างท่าไม้ตาย (เล่นก่อนสังหารทุกครั้ง)
+  shikiKill: { img: SHIKI_DEATH_IMG, video: "/characters/shiki/shiki_skill3_hit.mp4", title: "ฉันมองเห็นมันแล้ว", label: "สังหารด้วยเนตรมาร", seconds: 10, music: null, afterReveal: false },
+  // shikiSeal: แม้แต่พระเจ้าก็จะฆ่าให้ดู — เล่นแทนที่ท่าไม้ตายของเป้าหมายสกิลรองที่ถูกทำให้ไร้ผล
+  shikiSeal: { img: SHIKI_PROFILE_IMG, video: "/characters/shiki/shiki_passive2.mp4", title: "แม้แต่พระเจ้าก็จะฆ่าให้ดู", label: "ท่าไม้ตายถูกทำให้ไร้ผล", seconds: 10, music: null, afterReveal: false },
   // ท่าไม้ตาย 4 แบบ (หลังเปิดไพ่): โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน — เลือกตามร่างที่รวมอยู่
   solarburst: { img: "/characters/auqarion/skill3/skill3_solar.png", video: "/characters/auqarion/skill3/solar_final.mp4", title: "หมัดไร้ขอบเขต", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: true },
   marssword: { img: "/characters/auqarion/skill3/skill3_mars.jpg", video: "/characters/auqarion/skill3/mars_final.mp4", title: "ดาบแห่งแสง", label: "ปล่อยท่าไม้ตาย", seconds: 8, music: null, afterReveal: true },
@@ -717,6 +710,8 @@ function displayImg(p) {
   if (p.characterId === "oberon") return isNightRound(roundNumber) ? OBERON_NIGHT_IMG : OBERON_MORNING_IMG;
   // ชเรด เอลัน: รวมร่างทำนองเพลงแล้ว = ร่างอควาเรียน สปาด้า ถาวร
   if (p.characterId === "shrade_elan" && p.shradeForm) return SHRADE_SPADA_IMG;
+  // เรียวกิ ชิกิ: ระหว่างท่าไม้ตาย ฉันมองเห็นมันแล้ว = ภาพสถานะท่าไม้ตาย
+  if (p.characterId === "shiki" && (p.statuses.deatheye || 0) > 0) return SHIKI_DEATH_IMG;
   // อควาเรียน: ในล็อบบี้ใช้ select_profile — ลงสนามแล้ว ปีกแห่งสุริยัน > รวมร่าง (ตามผู้นำ) > โปรไฟล์ผู้นำ
   if (p.characterId === "aquarion") {
     if (gameState === "LOBBY") return p.img;
@@ -773,6 +768,14 @@ function activeSkillMusic() {
     }
   }
   if (bestTree) return bestTree;
+  // ฉันมองเห็นมันแล้ว (ชิกิ): เพลง shiki_theme เล่นค้างระหว่างท่าไม้ตายทำงาน
+  let bestShiki = null;
+  for (const p of alivePlayers()) {
+    if (p.characterId === "shiki" && (p.statuses.deatheye || 0) > 0) {
+      if (!bestShiki || (p.transformAt || 0) > bestShiki.at) bestShiki = { music: "shiki", at: p.transformAt || 0 };
+    }
+  }
+  if (bestShiki) return bestShiki;
   let best = null;
   for (const key of ["ginga", "paradise", "rachan", "humanity", "golden", "fourth", "solarburst", "marssword", "lunabow"]) {
     const t = TRANSFORMS[key];
@@ -861,6 +864,43 @@ function skillByStatus(p, status) {
   }
   return null;
 }
+// หาแต้มที่ใช้ของท่าไม้ตายจาก status — ใช้คืนแต้มตอนท่าไม้ตายถูกทำให้ไร้ผล (ชิกิ)
+function ultimateCostByStatus(p, status) {
+  const ch = CHAR_BY_ID[p.characterId];
+  if (!ch) return 0;
+  for (const tier of ["ultimate", "ultimateNight", "ultimate2",
+    "ultimateSolar", "ultimateMars", "ultimateLuna", "ultimateGodwing"]) {
+    const s = ch[tier];
+    if (s && s.effect && !Array.isArray(s.effect) && s.effect.type === "status" && s.effect.status === status) {
+      return s.cost || 0;
+    }
+  }
+  return 0;
+}
+// แม้แต่พระเจ้าก็จะฆ่าให้ดู (สกิลติดตัว 2 ชิกิ): เป้าหมายของสกิลรองกำลังจะออกท่าไม้ตายในเทิร์นเปิดการ์ด
+//  -> ทำให้ไร้ผลเหมือนไม่มีอะไรเกิดขึ้น (คืนแต้มให้เป้าหมายในเทิร์นถัดไป) และเล่นวีดีโอแทนที่ท่าไม้ตายนั้น
+//  โดยโชว์ทั้งภาพสกิลท่าไม้ตายที่โดน และภาพของเจ้าของท่า
+function shikiSealUltimate(p, status) {
+  delete p.statuses[status];
+  p.shikiSealed = false;
+  const info = skillByStatus(p, status); // ชื่อ + รูปท่าไม้ตายที่ถูกปิด
+  const cost = ultimateCostByStatus(p, status);
+  p.refundNext = (p.refundNext || 0) + cost;
+  const s = players[p.shikiSealBy];
+  const t = TRANSFORMS.shikiSeal;
+  lastLog.push(`👁️🗡️ แม้แต่พระเจ้าก็จะฆ่าให้ดู — ท่าไม้ตาย${info ? ` ${info.name}` : ""} ของ ${p.name} ถูกทำให้ไร้ผล!${cost > 0 ? ` (คืนแต้ม ${cost} ในเทิร์นถัดไป)` : ""}`);
+  cutsceneQueue.push({
+    seconds: t.seconds,
+    info: {
+      playerId: p.id, name: p.name,
+      img: info && info.img ? info.img : displayImg(p), // ภาพสกิลท่าไม้ตายที่โดน
+      img2: displayImg(p),                              // ภาพของเจ้าของท่าที่โดน
+      color: POSITION_COLORS[(s || p).position] || "#9B4F96",
+      video: t.video, title: t.title, label: t.label,
+    },
+  });
+}
+
 // ไพ่แตกก่อนเปิดไพ่ = ท่าไม้ตายที่เพิ่งกดในเทิร์นนี้ใช้งานไม่ได้ (แต้มสกิลที่จ่ายไปเสียฟรี)
 function voidUltimateOnBust(p) {
   for (const key of Object.keys(TRANSFORMS)) {
@@ -944,6 +984,10 @@ function resetCombat(p) {
   p.bloodSection = 0;       // ท่อนทำนองแห่งโลหิต (ครบ 5 = มิติมายาบรรเลงโลหิต)
   p.soulSection = 0;        // ท่อนทำนองแห่งวิญญาณ (ครบ 5 = มิติมายาบรรเลงวิญญาณ)
   p.linkedWith = null;      // Resonance: id ผู้เล่นที่ถูกเชื่อมผลด้วย
+  // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+  p.shikiSealed = false;    // ถูกสกิลรองชิกิเลือกในเทิร์นนี้ — ท่าไม้ตายเทิร์นเปิดการ์ดนี้เป็นโมฆะ
+  p.shikiSealBy = null;     // id ชิกิผู้ใช้สกิลรอง (ใช้ระบายสี cutscene)
+  p.refundNext = 0;         // แต้มท่าไม้ตายที่ถูกทำให้ไร้ผล — คืนให้ตอนเริ่มเทิร์นถัดไป
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -975,6 +1019,8 @@ function buildStateFor(viewerId) {
   const godtreeBg = Object.values(players).some((p) => p.alive && p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0);
   // ราตรีถาวรของชเรด เอลัน: ฉากหลังกลายเป็น change_fill.jpg จนกว่าชเรดจะหมดสภาพต่อสู้
   const shradeBg = shradeBgActive(); // กลางคืน + มีชเรดร่างสปาด้า = ฉากหลังราตรีของชเรด
+  // ฉันมองเห็นมันแล้ว (ชิกิ): ภาพ shiki_fill.png ซ้อนทับฉากหลังปัจจุบันระหว่างท่าไม้ตายทำงาน
+  const shikiBg = Object.values(players).some((p) => p.alive && p.characterId === "shiki" && (p.statuses.deatheye || 0) > 0);
   // มิติมายาบรรเลง (Bard): ฉากหลังเปลี่ยนตามสายมิติ "blood" | "soul" | null
   const bardCycleNow = bardDimCycle();
   const bardBg = bardCycleNow === "day" ? "blood" : bardCycleNow === "night" ? "soul" : null;
@@ -1005,6 +1051,7 @@ function buildStateFor(viewerId) {
     godtreeBg,
     shradeBg, // ราตรีของชเรด เอลัน (ฉากหลัง change_fill.jpg — ทุกค่ำคืนที่ยังอยู่ในร่างสปาด้า)
     bardBg,   // มิติมายาบรรเลง (Bard): "blood" | "soul" | null
+    shikiBg,  // ฉันมองเห็นมันแล้ว (ชิกิ): ซ้อน shiki_fill.png ทับฉากหลังปัจจุบัน
     maxPlayers: MAX_PLAYERS,
     youId: viewerId,
     attackerId: gameState === "ATTACK" ? attackerId : null,
@@ -1229,10 +1276,12 @@ function dealRound() {
     resetRoundDisplay(p);
     p.shield = 0;
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
-    p.bardNotesUsed = 0;      // Bard: นับโน้ตใหม่ทุกเทิร์น (จำกัด 2 — มิติโลหิตไม่จำกัด)
+    p.bardNotesUsed = 0;      // Bard: นับโน้ตใหม่ทุกเทิร์น (จำกัด 2 — มิติวิญญาณไม่จำกัด)
     p.mageUses = 0;           // จอมเวทย์ฝึกหัด: นับใหม่ทุกเทิร์น (กดได้ 3 ครั้งต่อเทิร์น)
     p.anataTargets = null;
     p.nightmareTarget = null;
+    p.shikiSealed = false;    // ธงแม้แต่พระเจ้าก็จะฆ่าให้ดู (ชิกิ) มีผลเฉพาะเทิร์นที่ถูกเลือก
+    p.shikiSealBy = null;
     // ห้ามจั่วการ์ดเพิ่มที่ตั้งไว้จากเทิร์นก่อน (ทงคัสสึ / กำไรเท่าตัวโว้ย) — noDrawNext เป็นจำนวนเทิร์น
     if (p.noDrawNext) {
       p.statuses.nodraw = Math.max(p.statuses.nodraw || 0, Number(p.noDrawNext) || 1);
@@ -1261,6 +1310,13 @@ function dealRound() {
       }
     }
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; continue; }
+
+    // แม้แต่พระเจ้าก็จะฆ่าให้ดู (ชิกิ): คืนแต้มท่าไม้ตายที่ถูกทำให้ไร้ผลจากเทิร์นก่อน
+    if ((p.refundNext || 0) > 0) {
+      addSkill(p, p.refundNext);
+      lastLog.push(`👁️ ${p.name} ได้รับแต้มสกิลคืน +${p.refundNext} จากท่าไม้ตายที่ถูกทำให้ไร้ผล`);
+      p.refundNext = 0;
+    }
 
     // [โหมงานหนัก] (โคโตเนะ): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้
     if (p.overworkNext) {
@@ -1529,8 +1585,9 @@ function useSkill(id, tier, targets, item) {
     if (tier === "ultimate") return; // ช่องประพันธ์เพลง — ไม่ใช่ปุ่มสกิล
     if ((p.statuses.noskill || 0) > 0) return;
     if (p.bardPending) return; // ต้องเลือกเป้าหมายบทเพลงที่ค้างอยู่ก่อน
-    // จำกัด 3 โน้ตต่อเทิร์นเสมอ (patch พิเศษ — มิติโลหิตก็ไม่ยกเว้นแล้ว)
-    if ((p.bardNotesUsed || 0) >= BARD_NOTES_PER_TURN) return;
+    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5) — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ต
+    const soulDimOn = (p.statuses.soulDim || 0) > 0;
+    if (!soulDimOn && (p.bardNotesUsed || 0) >= BARD_NOTES_PER_TURN) return;
     if (p.skillPoints < BARD_NOTE_COST) return;
     const free = Math.random() < BARD_NOTE_FREE_CHANCE; // 20% ไม่เสียพลังงาน
     if (!free) p.skillPoints -= BARD_NOTE_COST;
@@ -1540,7 +1597,7 @@ function useSkill(id, tier, targets, item) {
     p.bardNotes.push(note);
     io.emit("bardSfx", { kind: "note", idx: p.bardNotes.length }); // เสียงเติมโน๊ตตามช่องที่ 1-3
     io.emit("skillFlash", {
-      name: `${note === "R" ? "Crimson ❤️" : "Jade 💚"} — โน้ตช่องที่ ${p.bardNotes.length}/3${free ? " (พรสวรรค์ ไม่เสียพลังงาน)" : ""}`,
+      name: `${note === "R" ? "Crimson ❤️" : "Jade 💚"} — โน้ตช่องที่ ${p.bardNotes.length}/3${soulDimOn ? " (มิติวิญญาณ ไม่จำกัดโน้ต)" : ""}${free ? " (พรสวรรค์ ไม่เสียพลังงาน)" : ""}`,
       img: note === "R" ? BARD_CRIMSON_IMG : BARD_JADE_IMG,
       by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96",
     });
@@ -1692,6 +1749,15 @@ function useSkill(id, tier, targets, item) {
     const t = tgs.length === 1 ? players[tgs[0]] : null;
     if (!t || !t.alive || t.id === p.id) return;
     shradeMoonTarget = t;
+  }
+  // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+  const isShikiCopy = p.characterId === "shiki" && tier === "secondary"; // นายมีฝีมือแค่ไหนหรอ?
+  let shikiCopyTarget = null;
+  if (isShikiCopy) {
+    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
+    const t = tgs.length === 1 ? players[tgs[0]] : null;
+    if (!t || !t.alive || t.id === p.id) return;
+    shikiCopyTarget = t;
   }
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   const isTiger = p.characterId === "broadband_man" && tier === "basic";     // เสือนอนกิน
@@ -2038,6 +2104,48 @@ function useSkill(id, tier, targets, item) {
     p.chillDodge = 100;
     lastLog.push(`🏖️ ${p.name} ชิวๆครับน้องๆ — หลบหนีอย่างสบายใจ (จบเทิร์นได้แต้มสกิล +1 จนกว่าจะถูกโจมตี)`);
   }
+  // ---------- ชิกิ: นายมีฝีมือแค่ไหนหรอ? — แต้มจั่วการ์ดเท่ากับเป้าหมาย + เป้าหมายห้ามจั่ว ----------
+  //  เป้าหมายไพ่แตกไปแล้ว = เป็นแค่การสร้างความเสียหาย 1 หน่วยแทน
+  //  และติดธงสกิลติดตัว 2 แม้แต่พระเจ้าก็จะฆ่าให้ดู: ท่าไม้ตายของเป้าหมายในเทิร์นเปิดการ์ดนี้เป็นโมฆะ
+  if (isShikiCopy && shikiCopyTarget) {
+    const t = shikiCopyTarget;
+    if (bustedOf(t)) {
+      dealMixed(t, 1);
+      maybeBeatSave(t);
+      maybeBeatMode(t);
+      maybeEva3(t);
+      maybeWakeKotone(t);
+      t.wasAttacked = true;
+      flashSuffix = ` — ${t.name} ไพ่แตกไปแล้ว`;
+      lastLog.push(`🔪 ${p.name} นายมีฝีมือแค่ไหนหรอ? — ${t.name} ไพ่แตกไปแล้ว จึงเป็นแค่ความเสียหาย -1`);
+      if (t.alive && t.hp <= 0) {
+        instantDeath(t);
+        lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+      }
+    } else {
+      // แต้มจั่วการ์ดของตัวเองเท่ากับเป้าหมายทันที — สร้างมือการ์ดใหม่ที่รวมแต้มเท่ากับแต้มจริง
+      // ของเป้าหมาย (กันเคสเป้าหมายมีเพดานแต้มพิเศษ เช่น UPG ที่แต้มดิบเกิน 21 แต่ไม่แตก)
+      const want = scoreOf(t);
+      const hand = [];
+      let left = want;
+      for (let v = 10; v >= 1 && left > 0; v--) {
+        if (v <= left) { hand.push({ value: v }); left -= v; }
+      }
+      p.cards = hand.length ? hand : t.cards.map((c) => ({ ...c }));
+      p.busted = false;
+      t.statuses.nodraw = Math.max(t.statuses.nodraw || 0, 1); // เป้าหมายจั่วการ์ดเพิ่มไม่ได้ในเทิร์นนี้
+      t.shikiSealed = true;
+      t.shikiSealBy = p.id;
+      flashSuffix = ` — วัดฝีมือ ${t.name}`;
+      lastLog.push(`🔪 ${p.name} นายมีฝีมือแค่ไหนหรอ? — ทำให้แต้มจั่วการ์ดเท่ากับ ${t.name} และ ${t.name} จั่วการ์ดเพิ่มไม่ได้ในเทิร์นนี้`);
+    }
+  }
+  // ---------- ชิกิ: ฉันมองเห็นมันแล้ว — เปิดเนตรมารแห่งความมรณะ 3 เทิร์น ----------
+  //  (เพลง shiki_theme + ฉากหลังซ้อน shiki_fill.png + ร่างเปลี่ยนเป็น shiki_death.jpg)
+  if (st === "deatheye") {
+    p.transformAt = ++transformCounter;
+    lastLog.push(`👁️ ${p.name} ฉันมองเห็นมันแล้ว — เนตรมารแห่งความมรณะเปิดขึ้น 3 เทิร์น! (เส้นตายครบ ${SHIKI_DEATHLINE_MAX} = สังหารทันที)`);
+  }
 
   // จอมเวทย์ฝึกหัด (ฟุจิมารุ): สแตคดาเมจแพ้จั่ว/แตก +1 ต่อครั้ง (1 เทิร์น) + ฟื้นเลือดเทิร์นถัดไปตามจำนวนครั้ง
   if (isMage) {
@@ -2319,6 +2427,13 @@ function resolveRound() {
   for (const u of alivePlayers()) {
     if (!u.anataTargets || !u.anataTargets.length) continue;
     if (bustedOf(u)) { u.anataTargets = null; continue; } // ผู้ใช้แตกเอง (โมฆะไปแล้วใน voidUltimateOnBust)
+    // แม้แต่พระเจ้าก็จะฆ่าให้ดู (ชิกิ): ผู้ใช้ถูกสกิลรองชิกิเลือกไว้ -> ท่าไม้ตายเป็นโมฆะ
+    if (u.shikiSealed) {
+      shikiSealUltimate(u, "anata");
+      u.anataTargets = null;
+      anataMusicSeq = 0;
+      continue;
+    }
     for (const tid of u.anataTargets) {
       const t = players[tid];
       if (!t || !t.alive) continue;
@@ -2438,6 +2553,18 @@ function resolveRound() {
   }
   for (const p of combatants) if (!p.result) p.result = "safe";
 
+  // สกิลติดตัว เนตรมารแห่งความมรณะ (ชิกิ patch 2.0.5): เปิดไพ่แล้วแต้มเท่ากับผู้เล่นอื่น
+  //  (เกิดขึ้นแบบหมู่ได้) -> ผู้เล่นคนนั้นติดสถานะ "เส้นตาย" +2 แบบถาวร
+  for (const s of combatants) {
+    if (s.characterId !== "shiki" || bustedOf(s)) continue;
+    for (const o of combatants) {
+      if (o.id === s.id || bustedOf(o)) continue;
+      if (scoreOf(o) !== scoreOf(s)) continue;
+      o.statuses.deathline = (o.statuses.deathline || 0) + SHIKI_DEATHLINE_GAIN;
+      lastLog.push(`🩸 เนตรมารแห่งความมรณะ — ${o.name} แต้มเท่ากับ ${s.name} ติดเส้นตาย +${SHIKI_DEATHLINE_GAIN} (สะสม ${o.statuses.deathline}/${SHIKI_DEATHLINE_MAX})`);
+    }
+  }
+
   // สกิลติดตัว หิวอะโปรดิวเซอร์ (เทมาริ patch 1.7.6): เป้าหมาย ANATA WAAAAAAAA แพ้หรือไพ่แตก
   // -> โดนขิงจนช้ำ รับความเสียหายตามโบนัส Song for you เท่านั้น (ไม่นับพลังโจมตีปกติ — สูงสุด 2)
   // ต่อให้เทมาริไม่ชนะ/แพ้ในตานั้นก็ตาม — และฉากของสกิลนี้ขึ้นก่อนทุกท่าไม้ตาย
@@ -2517,6 +2644,11 @@ function afterResolve() {
     for (const key of Object.keys(TRANSFORMS)) {
       if (!TRANSFORMS[key].afterReveal) continue;
       if ((p.statuses[key] || 0) > 0 && !p.seen[key]) {
+        // แม้แต่พระเจ้าก็จะฆ่าให้ดู (ชิกิ): เป้าหมายสกิลรองที่กำลังจะออกท่าไม้ตายเทิร์นนี้ -> โมฆะ
+        if (p.shikiSealed) {
+          shikiSealUltimate(p, key);
+          continue;
+        }
         p.seen[key] = true;
         p.transformAt = ++transformCounter;
         // สวมเกราะราชัน: เพิ่มแค่เพดานเกราะ +3 (ไม่ฟื้นเกราะให้ — เกราะที่มีคงเดิม รอฟื้นฟูเองต้นรอบ)
@@ -2667,6 +2799,54 @@ function doAttack(byId, targetId) {
   if (!attacker || !target || !target.alive || target.id === attacker.id) return;
   if (sealActive(target)) return; // เรจูอาคมบัญชา (อมตะ): เลือกโจมตีไม่ได้
   clearPhaseTimer();
+
+  // Encore (Bard patch 2.0.5): เป้าหมายมีสถานะหลบหลีก — หลบการโดนโจมตี 1 ครั้งถัดไป 100%
+  if ((target.statuses.evade || 0) > 0) {
+    delete target.statuses.evade;
+    addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
+    target.wasAttacked = true;
+    lastLog.push(`💨 Encore! ${target.name} หลบหลีกการโจมตีของ ${attacker.name} ได้ (100%) — ผลหลบหลีกหมดลง`);
+    lastAttack = {
+      byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
+      targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
+      dmg: 0, dodge: true,
+      skills: [{ name: "Encore (หลบหลีก 100%)", img: BARD_CRIMSON_IMG, by: target.name, color: POSITION_COLORS[target.position] || "#888", side: "def" }],
+    };
+    gameState = "ATTACKING";
+    startPhaseTimer(ATTACKFX_TIME, endTurn);
+    broadcastState();
+    return;
+  }
+
+  // ---------- ชิกิ: ฉันมองเห็นมันแล้ว — เป้าหมายเส้นตายครบ 10 = สังหารทันที (บังคับตาย) ----------
+  //  เล่นวีดีโอ shiki_skill3_hit.mp4 ก่อนสังหาร — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที
+  const shikiEye = attacker.characterId === "shiki" && (attacker.statuses.deatheye || 0) > 0;
+  if (shikiEye && (target.statuses.deathline || 0) >= SHIKI_DEATHLINE_MAX) {
+    queueCutscene(attacker, "shikiKill"); // เล่นวีดีโอก่อนสังหารทุกครั้ง
+    delete target.statuses.deathline;
+    delete attacker.statuses.deatheye; // จัดการได้แล้ว 1 คน — ท่าไม้ตายปิดลงทันที
+    // มีดพก: ยังเป็นการโจมตีปกติ — ฟื้นเลือดให้ตัวเองตามปกติ
+    if ((attacker.statuses.knife || 0) > 0) {
+      const heal = healHp(attacker, SHIKI_KNIFE_HEAL);
+      if (heal > 0) lastLog.push(`🔪 ${attacker.name} มีดพก — ฟื้นพลังชีวิต +${heal}`);
+    }
+    instantDeath(target);
+    target.wasAttacked = true;
+    lastLog.push(`👁️💀 เนตรมารแห่งความมรณะ! ${attacker.name} มองเห็นเส้นตายของ ${target.name} — สังหารทันที (บังคับตาย)!`);
+    lastLog.push(`👁️ ${attacker.name} จัดการเป้าหมายได้แล้ว — ฉันมองเห็นมันแล้ว ปิดลงทันที`);
+    lastAttack = {
+      byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
+      targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
+      dmg: 0, kill: true,
+      skills: [{ name: "ฉันมองเห็นมันแล้ว — สังหารทันที", img: "/characters/shiki/shiki_skill3.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888", side: "atk" }],
+    };
+    runCutsceneQueue(() => {
+      gameState = "ATTACKING";
+      startPhaseTimer(ATTACKFX_TIME + 2, endTurn);
+      broadcastState();
+    });
+    return;
+  }
 
   // สกิลติดตัว Apple guy (ชิวๆ ไม่โดนหรอกครับ): ขณะชิวๆครับน้องๆ ทำงาน มีโอกาสหลบการถูกเลือกโจมตี
   //  เริ่มต้น 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
@@ -2868,6 +3048,21 @@ function doAttack(byId, targetId) {
   maybeBeatMode(target);
   // สกิลติดตัว 3 เอวา 13: ถ้าการโจมตีทำให้เลือดเหลือ <= 3
   maybeEva3(target);
+  // มีดพก (ชิกิ): การโจมตีปกติฟื้นเลือดให้ตัวเอง 3 หน่วย (คงอยู่ 2 เทิร์น)
+  const knifeAtk = attacker.characterId === "shiki" && (attacker.statuses.knife || 0) > 0;
+  let knifeHeal = 0;
+  if (knifeAtk) {
+    knifeHeal = healHp(attacker, SHIKI_KNIFE_HEAL);
+    lastLog.push(`🔪 ${attacker.name} มีดพก — ฟื้นพลังชีวิต +${knifeHeal}`);
+  }
+  // เนตรมารแห่งความมรณะ (ชิกิ): โจมตีปกติระหว่างท่าไม้ตายทำงาน (แต่เส้นตายยังไม่ถึง 10)
+  //  -> เส้นตายของเป้าหมายถูกลบออกทั้งหมด เริ่มนับใหม่ (นับเป็นรายคน)
+  let deathlineReset = false;
+  if (shikiEye && (target.statuses.deathline || 0) > 0) {
+    delete target.statuses.deathline;
+    deathlineReset = true;
+    lastLog.push(`👁️ เนตรมารแห่งความมรณะ — เส้นตายของ ${target.name} ถูกลบออกทั้งหมด เริ่มนับใหม่`);
+  }
   if (isRevenge) {
     attacker.ntdTarget = null;
     delete attacker.seen.ntd;
@@ -2958,6 +3153,9 @@ function doAttack(byId, targetId) {
   if (aquaReflect > 0) addFx({ name: `ดาบแห่งจุดจบ — สะท้อน -${aquaReflect}`, img: displayImg(target), by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   if (shradeAtk > 0) addFx({ name: `รวมร่างทำนองเพลง +${shradeAtk}`, img: SHRADE_SPADA_IMG, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (shradeDayOff) addFx({ name: "รวมร่างทำนองเพลง (ตอนเช้า — โบนัสโจมตีไม่ทำงาน)", img: SHRADE_SPADA_IMG, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  // เรียวกิ ชิกิ
+  if (knifeAtk) addFx({ name: `มีดพก (ฟื้นเลือด +${knifeHeal})`, img: "/characters/shiki/shiki_skill1.webp", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (deathlineReset) addFx({ name: "เนตรมารแห่งความมรณะ (เส้นตายถูกรีเซ็ต)", img: SHIKI_DEATH_IMG, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   // Bard: คุ้มครอง / ขัดแย้ง / เชื่อมผล
   if (bardGuard) addFx({ name: "Harmony — คุ้มครอง (ความเสียหายลด 1)", img: BARD_CRIMSON_IMG, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   if (bardDiscord) addFx({ name: "Discord — ขัดแย้ง (+1 ดาเมจ)", img: BARD_JADE_IMG, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "atk");
@@ -3010,7 +3208,8 @@ function endTurn() {
       if (k === "godtree") continue; // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด/ยกเลิกเอง ไม่ลดเทิร์น
       if (k === "melody") continue;  // ท่วงทำนอง (ชเรด เอลัน): สแตคถาวร สะสมจนครบ 5 เพื่อรวมร่าง
       if (k === "fortune") continue; // โชคลาภ (Bard): คงอยู่จนกว่าจะจั่วไพ่ครั้งถัดไป
-      if (k === "encore") continue;  // Encore (Bard): คงอยู่จนกว่าจะบรรเลงทำนองครั้งถัดไป
+      if (k === "evade") continue;   // Encore (Bard patch 2.0.5): หลบหลีก คงอยู่จนกว่าจะถูกเลือกโจมตีครั้งถัดไป
+      if (k === "deathline") continue; // เส้นตาย (ชิกิ): สแตคถาวร จนกว่าจะถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย
       // ปีกแห่งสุริยัน (อควาเรียน): ระหว่างท่าไม้ตายไปยังพฤกษาแห่งชีวิตทำงาน ร่างไม่มีวันหมด
       //  (คงอยู่จนกว่าผลท่าไม้ตายจะจบลงหรือตาย — ค่อยกลับมานับเทิร์นต่อ)
       if (k === "godwing" && (p.statuses.godtree || 0) > 0) continue;
@@ -3273,6 +3472,7 @@ io.on("connection", (socket) => {
       shradeForm: false,
       bardNotes: [], bardNotesUsed: 0, bardPending: null,
       bloodSection: 0, soulSection: 0, linkedWith: null,
+      shikiSealed: false, shikiSealBy: null, refundNext: 0,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
