@@ -436,12 +436,12 @@ const STATUS_INFO = {
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "Encore: หลบหลีก +100% ในการโดนโจมตี 1 ครั้งถัดไป (หมดผลเมื่อถูกเลือกโจมตี)" },
-  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ต้านสถานะผิดปกติ" },
-  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): คีตกวีไม่จำกัดโน้ตต่อเทิร์น ต้านสถานะผิดปกติ และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยกับผู้เล่นทุกคน จนกว่ามิติจะสิ้นสุด" },
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ต้านสถานะผิดปกติ และกดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยกับผู้เล่นทุกคน จนกว่ามิติจะสิ้นสุด" },
   // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
   knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  deathline: { icon: "🩸", label: "เส้นตาย", cls: "bg-echo-hp", desc: "เส้นตาย (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ (+2/ครั้ง) — ครบ 10 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด)" },
-  deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นตายครบ 10 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
+  deathline: { icon: "🩸", label: "เส้นตาย", cls: "bg-echo-hp", desc: "เส้นตาย (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ (+2/ครั้ง) — ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด)" },
+  deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นตายครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -891,10 +891,10 @@ function SkillSlot({ label, tier, skill, points, disabled, onUse, ammo, cost }) 
 
 // ---------- Bard : คีตกวี — ช่องประพันธ์เพลง (แทนที่ช่องท่าไม้ตาย) ----------
 //  แสดงโน้ต ❤️/💚 ที่เติมไว้ 3 ช่อง — ครบ 3 บรรเลงทำนองเองแล้วล้างช่องเพื่อเริ่มบทเพลงใหม่
-//  patch 2.0.5: จำกัด 2 โน้ตต่อเทิร์น — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ต
+//  patch 2.0.5.1: จำกัด 2 โน้ตต่อเทิร์น — ระหว่างมิติมายาบรรเลง (โลหิต/วิญญาณ) กดได้สูงสุด 9 ครั้งต่อเทิร์น
 function BardComposeSlot({ me }) {
   const notes = me.bardNotes || [];
-  const soulDimOn = (me.statuses?.soulDim || 0) > 0;
+  const dimOn = (me.statuses?.soulDim || 0) > 0 || (me.statuses?.bloodDim || 0) > 0;
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-gold/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
@@ -910,7 +910,7 @@ function BardComposeSlot({ me }) {
         ))}
       </div>
       <div className="text-sm sm:text-base font-bold text-center leading-tight">
-        {soulDimOn ? "ประพันธ์เพลง · มิติวิญญาณ ไม่จำกัดโน้ต" : `ประพันธ์เพลง · โน้ต ${me.bardNotesUsed || 0}/2 เทิร์นนี้`}
+        {dimOn ? `ประพันธ์เพลง · มิติมายาบรรเลง โน้ต ${me.bardNotesUsed || 0}/9` : `ประพันธ์เพลง · โน้ต ${me.bardNotesUsed || 0}/2 เทิร์นนี้`}
       </div>
     </div>
   );
@@ -1024,10 +1024,10 @@ export default function Game({ state }) {
   const isBard = ch?.id === "bard";
   const bardPending = isBard && phase === "PLAYING" ? me?.bardPending : null; // บทเพลงรอเลือกเป้าหมาย
   const bardNeed = bardPending?.need || 0;
-  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบ 2 ครั้งในเทิร์นนี้แล้ว
-  //  (patch 2.0.5 — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ตต่อเทิร์น)
-  const bardSoulDim = isBard && (me?.statuses?.soulDim || 0) > 0;
-  const bardNoteLocked = isBard && (!!me?.bardPending || (!bardSoulDim && (me?.bardNotesUsed || 0) >= 2));
+  // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบลิมิตของเทิร์นนี้แล้ว
+  //  (patch 2.0.5.1 — ระหว่างมิติมายาบรรเลงทั้งสองแบบ ไม่ติดลิมิต 2 แต่กดได้สูงสุด 9 ครั้งต่อเทิร์น)
+  const bardDimOn = isBard && ((me?.statuses?.soulDim || 0) > 0 || (me?.statuses?.bloodDim || 0) > 0);
+  const bardNoteLocked = isBard && (!!me?.bardPending || (me?.bardNotesUsed || 0) >= (bardDimOn ? 9 : 2));
   // ---------- ชเรด เอลัน ----------
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)

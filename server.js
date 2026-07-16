@@ -234,11 +234,11 @@ function maybeBardDim(p, live) {
   p.statuses[kind] = BARD_DIM_TURNS + 1; // +1 ชดเชยการลดสถานะตอนจบเทิร์น
   p.transformAt = ++transformCounter;
   if (kind === "bloodDim") {
-    lastLog.push(`❤️🌅 ${p.name} เปิดมิติมายาบรรเลงโลหิต! (3 เทิร์น — นับเป็นตอนเช้า) ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น / Bard ต้านสถานะผิดปกติ`);
+    lastLog.push(`❤️🌅 ${p.name} เปิดมิติมายาบรรเลงโลหิต! (3 เทิร์น — นับเป็นตอนเช้า) ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น / Bard ต้านสถานะผิดปกติ / กดโน้ตได้สูงสุด ${BARD_DIM_NOTES_PER_TURN} ครั้งต่อเทิร์น`);
   } else {
-    // patch 2.0.5: มิติวิญญาณไม่ตีตอนเปิดแล้ว — ไม่จำกัดโน้ตต่อเทิร์น + ต้านสถานะผิดปกติ
+    // patch 2.0.5: มิติวิญญาณไม่ตีตอนเปิดแล้ว — ต้านสถานะผิดปกติ + กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น
     //  และทุกการบรรเลงทำนอง ตีทุกคน 1 หน่วย จนกว่ามิติจะสิ้นสุด
-    lastLog.push(`💚🌑 ${p.name} เปิดมิติมายาบรรเลงวิญญาณ! (3 เทิร์น — นับเป็นตอนกลางคืน) ไม่จำกัดโน้ตต่อเทิร์น ต้านสถานะผิดปกติ และทุกการบรรเลงตีทุกคน -${BARD_SOUL_PERFORM_DMG}`);
+    lastLog.push(`💚🌑 ${p.name} เปิดมิติมายาบรรเลงวิญญาณ! (3 เทิร์น — นับเป็นตอนกลางคืน) กดโน้ตได้สูงสุด ${BARD_DIM_NOTES_PER_TURN} ครั้งต่อเทิร์น ต้านสถานะผิดปกติ และทุกการบรรเลงตีทุกคน -${BARD_SOUL_PERFORM_DMG}`);
   }
   // วีดีโอเปิดมิติ เล่นเต็มทุกครั้ง (ไม่ใช่ครั้งเดียวต่อเกม) — บรรเลงตอนเปิดไพ่ให้เข้าคิวรอ afterResolve เล่นให้
   queueCutscene(p, "bardDim");
@@ -322,13 +322,14 @@ function shradeCharging(p) {
 // ---------- Bard : คีตกวี (patch 2.2) ----------
 // "โลหิตคือทำนอง วิญญาณคือบทกวี และทุกชีวิตล้วนเป็นเพียงโน้ตตัวหนึ่งในบทเพลงอันนิรันด์"
 const BARD_MAX_SKILL = 9;         // Crescendo: พลังงานสูงสุด 9 (ตัวอื่น 8)
-const BARD_NOTES_PER_TURN = 2;    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5 — มิติวิญญาณ = ไม่จำกัด)
+const BARD_NOTES_PER_TURN = 2;    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5)
+const BARD_DIM_NOTES_PER_TURN = 9; // ระหว่างมิติมายาบรรเลง (โลหิต/วิญญาณ): ไม่ติดลิมิต 2 — กดสกิลได้สูงสุด 9 ครั้งต่อเทิร์น
 const BARD_NOTE_COST = 1;         // ค่าใช้พลังงานต่อโน้ต (patch 2.0.5 — ลดจาก 2)
 const BARD_NOTE_FREE_CHANCE = 0.2; // โอกาส 20% ที่จะไม่เสียพลังงานเมื่อใช้โน้ต
 const BARD_SECTION_MAX = 5;       // ท่อนทำนองสะสมครบ 5 ชั้น -> เปิดมิติมายาบรรเลง
 const BARD_DIM_TURNS = 3;         // มิติมายาบรรเลงคงอยู่ 3 เทิร์น
 const BARD_SOUL_PERFORM_DMG = 1;  // มิติวิญญาณ (patch 2.0.5): ทุกการบรรเลง Bard ตีทุกคน 1 หน่วย
-const BARD_STEAL_ENERGY = 2;      // Silent Cadence: ขโมยพลังงาน
+const BARD_STEAL_ENERGY = 1;      // Silent Cadence: ขโมยพลังงาน (patch 2.0.5.1 — ลดจาก 2)
 const BARD_PROFILE_IMG = "/characters/bard/bard_profile.jpg";
 const BARD_CRIMSON_IMG = "/characters/bard/bard_crimson.png";
 const BARD_JADE_IMG = "/characters/bard/bard_jade.png";
@@ -366,7 +367,7 @@ function bardDimCycle() {
 }
 
 // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
-const SHIKI_DEATHLINE_MAX = 10;  // เส้นตายสะสมถึง 10 -> โจมตีปกติระหว่างท่าไม้ตาย = สังหารทันที
+const SHIKI_DEATHLINE_MAX = 6;   // เส้นตายสะสมถึง 6 -> โจมตีปกติระหว่างท่าไม้ตาย = สังหารทันที (patch 2.0.5.1 — ลดจาก 10)
 const SHIKI_DEATHLINE_GAIN = 2;  // เปิดไพ่แล้วแต้มเท่ากับชิกิ -> ติดเส้นตาย +2 (ถาวร)
 const SHIKI_KNIFE_HEAL = 3;      // มีดพก: การโจมตีปกติฟื้นเลือดให้ตัวเอง 3 หน่วย (2 เทิร์น)
 const SHIKI_PROFILE_IMG = "/characters/shiki/shiki.jpg";
@@ -1585,9 +1586,10 @@ function useSkill(id, tier, targets, item) {
     if (tier === "ultimate") return; // ช่องประพันธ์เพลง — ไม่ใช่ปุ่มสกิล
     if ((p.statuses.noskill || 0) > 0) return;
     if (p.bardPending) return; // ต้องเลือกเป้าหมายบทเพลงที่ค้างอยู่ก่อน
-    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5) — ระหว่างมิติมายาบรรเลงวิญญาณ ไม่จำกัดโน้ต
-    const soulDimOn = (p.statuses.soulDim || 0) > 0;
-    if (!soulDimOn && (p.bardNotesUsed || 0) >= BARD_NOTES_PER_TURN) return;
+    // จำกัด 2 โน้ตต่อเทิร์น (patch 2.0.5) — ระหว่างมิติมายาบรรเลง (โลหิต/วิญญาณ) ไม่ติดลิมิต 2
+    //  แต่กดสกิลได้สูงสุด 9 ครั้งต่อเทิร์น (patch 2.0.5.1)
+    const dimOn = (p.statuses.soulDim || 0) > 0 || (p.statuses.bloodDim || 0) > 0;
+    if ((p.bardNotesUsed || 0) >= (dimOn ? BARD_DIM_NOTES_PER_TURN : BARD_NOTES_PER_TURN)) return;
     if (p.skillPoints < BARD_NOTE_COST) return;
     const free = Math.random() < BARD_NOTE_FREE_CHANCE; // 20% ไม่เสียพลังงาน
     if (!free) p.skillPoints -= BARD_NOTE_COST;
@@ -1597,7 +1599,7 @@ function useSkill(id, tier, targets, item) {
     p.bardNotes.push(note);
     io.emit("bardSfx", { kind: "note", idx: p.bardNotes.length }); // เสียงเติมโน๊ตตามช่องที่ 1-3
     io.emit("skillFlash", {
-      name: `${note === "R" ? "Crimson ❤️" : "Jade 💚"} — โน้ตช่องที่ ${p.bardNotes.length}/3${soulDimOn ? " (มิติวิญญาณ ไม่จำกัดโน้ต)" : ""}${free ? " (พรสวรรค์ ไม่เสียพลังงาน)" : ""}`,
+      name: `${note === "R" ? "Crimson ❤️" : "Jade 💚"} — โน้ตช่องที่ ${p.bardNotes.length}/3${dimOn ? " (มิติมายาบรรเลง)" : ""}${free ? " (พรสวรรค์ ไม่เสียพลังงาน)" : ""}`,
       img: note === "R" ? BARD_CRIMSON_IMG : BARD_JADE_IMG,
       by: p.name, color: POSITION_COLORS[p.position] || "#9B4F96",
     });
@@ -1794,6 +1796,30 @@ function useSkill(id, tier, targets, item) {
 
   p.skillPoints -= cost;
   if (!isApplePick && !isAquaLeader) p.skillUsedRound = true; // เอาแบบนี้ได้ไหม / เปลี่ยนหัวหน้า: ไม่นับเป็นการใช้สกิลของเทิร์น
+
+  // ---------- แม้แต่พระเจ้าก็จะฆ่าให้ดู (ชิกิ patch 2.0.5.1): ส่งผลทันทีเมื่อเป้าหมายเปิดท่าไม้ตาย ----------
+  //  ไม่ว่าท่าจะทำงานก่อนหรือหลังเปิดการ์ด — โมฆะทันทีตั้งแต่ตอนกด (คืนแต้มให้ในเทิร์นถัดไป)
+  //  และเล่นวีดีโอแทนที่ทันที โดยโชว์ภาพสกิลท่าไม้ตาย + ภาพเจ้าของท่าที่โดน
+  if (tier === "ultimate" && p.shikiSealed) {
+    p.shikiSealed = false;
+    p.refundNext = (p.refundNext || 0) + cost;
+    const sealer = players[p.shikiSealBy];
+    const tSeal = TRANSFORMS.shikiSeal;
+    lastLog.push(`👁️🗡️ แม้แต่พระเจ้าก็จะฆ่าให้ดู — ท่าไม้ตาย ${skill.name} ของ ${p.name} ถูกทำให้ไร้ผลทันทีที่เปิด! (คืนแต้ม ${cost} ในเทิร์นถัดไป)`);
+    cutsceneQueue.push({
+      seconds: tSeal.seconds,
+      info: {
+        playerId: p.id, name: p.name,
+        img: skill.img || displayImg(p), // ภาพสกิลท่าไม้ตายที่โดน
+        img2: displayImg(p),             // ภาพของเจ้าของท่าที่โดน
+        color: POSITION_COLORS[(sealer || p).position] || "#9B4F96",
+        video: tSeal.video, title: tSeal.title, label: tSeal.label,
+      },
+    });
+    pausePlayingForCutscene();
+    return;
+  }
+
   if (isPudding) p.puddingUses--; // นับใช้ Rainbow Pudding
 
   // ---------- Gambler the gambling: สกิลเสี่ยงโชค (จัดการใน engine โดยตรง) ----------
