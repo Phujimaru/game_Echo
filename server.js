@@ -498,9 +498,9 @@ const TRANSFORMS = {
   bardDim: { img: BARD_PROFILE_IMG, video: "/characters/bard/bard_dim.mp4", title: "มิติมายาบรรเลง", label: "สกิลติดตัวทำงาน", seconds: 8, music: "bard_dim", afterReveal: false },
   // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
   // shikiKill: เนตรมารแห่งความมรณะ — เป้าหมายเส้นตายครบ 10 ถูกโจมตีปกติระหว่างท่าไม้ตาย (เล่นก่อนสังหารทุกครั้ง)
-  shikiKill: { img: SHIKI_DEATH_IMG, video: "/characters/shiki/shiki_skill3_hit.mp4", title: "ฉันมองเห็นมันแล้ว", label: "สังหารด้วยเนตรมาร", seconds: 10, music: null, afterReveal: false },
+  shikiKill: { img: SHIKI_DEATH_IMG, video: "/characters/shiki/shiki_skill3_hit.mp4", title: "ฉันมองเห็นมันแล้ว", label: "สังหารด้วยเนตรมาร", seconds: 18, music: null, afterReveal: false }, // วีดีโอ 17 วิ
   // shikiSeal: แม้แต่พระเจ้าก็จะฆ่าให้ดู — เล่นแทนที่ท่าไม้ตายของเป้าหมายสกิลรองที่ถูกทำให้ไร้ผล
-  shikiSeal: { img: SHIKI_PROFILE_IMG, video: "/characters/shiki/shiki_passive2.mp4", title: "แม้แต่พระเจ้าก็จะฆ่าให้ดู", label: "ท่าไม้ตายถูกทำให้ไร้ผล", seconds: 10, music: null, afterReveal: false },
+  shikiSeal: { img: SHIKI_PROFILE_IMG, video: "/characters/shiki/shiki_passive2.mp4", title: "แม้แต่พระเจ้าก็จะฆ่าให้ดู", label: "ท่าไม้ตายถูกทำให้ไร้ผล", seconds: 19, music: null, afterReveal: false }, // วีดีโอ 18 วิ
   // ท่าไม้ตาย 4 แบบ (หลังเปิดไพ่): โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน — เลือกตามร่างที่รวมอยู่
   solarburst: { img: "/characters/auqarion/skill3/skill3_solar.png", video: "/characters/auqarion/skill3/solar_final.mp4", title: "หมัดไร้ขอบเขต", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: true },
   marssword: { img: "/characters/auqarion/skill3/skill3_mars.jpg", video: "/characters/auqarion/skill3/mars_final.mp4", title: "ดาบแห่งแสง", label: "ปล่อยท่าไม้ตาย", seconds: 8, music: null, afterReveal: true },
