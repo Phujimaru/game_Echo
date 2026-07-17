@@ -419,7 +419,7 @@ const STATUS_INFO = {
   ntd:       { icon: "⚡", label: "NT-D", cls: "bg-echo-hp", desc: "NT-D System: การโจมตีสวนกลับคนที่ตีเราล่าสุด +1 หน่วย" },
   ohger:     { icon: "👑", label: "Ohger", cls: "bg-echo-gold text-gray-900", desc: "Ohger Finish: การโจมตีเทิร์นนี้ +1 หน่วย" },
   rachan:    { icon: "🛡️", label: "ราชัน", cls: "bg-echo-armor", desc: "สวมเกราะราชัน: เพดานเกราะ +3 ถาวร" },
-  song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: พลังขิงตามชามที่ใช้ (2 ชาม = +1) — มีผลเฉพาะสกิลติดตัวโดนขิง (ขิงแบบไม่สนเกราะ)" },
+  song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: พลังขิงตามชามที่ใช้ (1 ชาม = +1) — มีผลเฉพาะสกิลติดตัวโดนขิง (ขิงแบบไม่สนเกราะ)" },
   anata:     { icon: "🎤", label: "ANATA", cls: "bg-echo-gold text-gray-900", desc: "ANATA WAAAAAAAA: เป้าหมายลับจะถูกบังคับจั่ว 2 ใบหลังเปิดไพ่" },
   mage:      { icon: "🪄", label: "จอมเวทย์", cls: "bg-echo-cyan text-gray-900", desc: "จอมเวทย์ฝึกหัด: ความเสียหายจากการแพ้/แตกเทิร์นนี้ +1 ต่อสแตค (ฟื้นเลือดคืนเทิร์นหน้า)" },
   humanity:  { icon: "✨", label: "EFH", cls: "bg-echo-gold text-gray-900", desc: "Everything For Humanity: โจมตี +4 เกราะ +3 และกันดาเมจแพ้/แตก — ผลจบแล้วตัวละครตาย" },
@@ -461,18 +461,19 @@ const STATUS_INFO = {
   // ---------- Bard : คีตกวี (patch 2.2) ----------
   resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "Sanctuary Hymn: ต้านสถานะผิดปกติ (หลับ/สตั้น/ใบ้สกิล/พิษ/ขัดแย้ง) ตามจำนวนเทิร์นที่เหลือ" },
   guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "Harmony: ความเสียหายจากการถูกโจมตีลดลง 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก (ซ้อนทับได้ — หมดไปทีละ 1 ต่อการจั่ว)" },
+  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก (ซ้อนทับได้สูงสุด 3 — หมดไปทีละ 1 ต่อการจั่ว)" },
+  empower:   { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "Rejuvenation: การโจมตีครั้งถัดไป +1 ดาเมจ (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี)" },
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "Encore: หลบหลีก +100% ในการโดนโจมตี 1 ครั้งถัดไป (หมดผลเมื่อถูกเลือกโจมตี)" },
-  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น — ตอนเปิดมิติ ผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดขัดแย้ง +1 ดาเมจ 3 เทิร์น และคีตกวีได้โชคลาภในการจั่วไพ่ 5 ครั้งถัดไป" },
+  evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "หลบหลีก: หลบการโดนโจมตี 100% (ซ้อนทับได้สูงสุด 3 — หมดไปทีละ 1 เมื่อถูกเลือกโจมตี)" },
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น — ตอนเปิดมิติ ผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดขัดแย้ง +1 ดาเมจ 3 เทิร์น และคีตกวีได้โชคลาภ 3 ครั้ง กับหลบหลีก 3 ครั้ง" },
   soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด" },
   // ---------- เรียวกิ ชิกิ (patch 2.0.6) ----------
   knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2: ถูกโจมตีปกติระหว่างความตายที่โรยรา มีโอกาสถูกสังหาร 10% ต่อ 1 หน่วย (สะสมได้สูงสุด 8)" },
+  deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2: ถูกโจมตีปกติระหว่างความตายที่โรยรา มีโอกาสถูกสังหาร 10% ต่อ 1 หน่วย (สะสมได้สูงสุด 6 = 60%)" },
   deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นชีวิตครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
-  wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา: ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ สูงสุด 8) — โจมตีปกติมีโอกาสสังหารทันที 10% ต่อเส้นชีวิต 1 หน่วย — สังหารได้ 1 คน ท่าจบลงและลบเส้นชีวิตที่สะสมช่วงท่าไม้ตายออกให้ทุกคน" },
-  godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ?: ชิกิพร้อมยกเลิกท่าไม้ตายของผู้เล่นอื่น 1 คน 1 ครั้ง — ผู้เล่นอื่นคนแรกที่กดท่าไม้ตายระหว่างนี้จะถูกยกเลิกทันที (แต้มสกิลเสียฟรี) ตามจำนวนเทิร์นที่เหลือ" },
+  wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา: ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ) — ท่าไม้ตายแจกได้สูงสุด 3 หน่วยต่อคน (รวมแหล่งปกติสูงสุด 6 = 60%) — โจมตีปกติมีโอกาสสังหารทันที 10% ต่อเส้นชีวิต 1 หน่วย — เมื่อท่าจบลง (สังหารสำเร็จ/หมดเวลา) เส้นชีวิตส่วนที่ท่าแจกไปถูกลบออกจากทุกคน" },
+  godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ?: ชิกิพร้อมยกเลิกท่าไม้ตายของผู้เล่นอื่น 1 คน 1 ครั้ง (2 เทิร์น — ผลยังอยู่กดสกิลซ้ำไม่ได้) — ผู้เล่นอื่นคนแรกที่กดท่าไม้ตายระหว่างนี้จะถูกยกเลิกทันที (แต้มสกิลเสียฟรี) และหากเจ้าของท่าไม้ตายที่มีผลอยู่ก่อนแล้วมาโจมตีชิกิ จะถูกยกเลิกท่าแบบย้อนหลังทันที" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -492,7 +493,7 @@ function statusEntries(p, full) {
     out.push({ key: k, v, ...info });
   }
   if ((p.sunriseDrop || 0) > 0) out.push({ key: "sunriseDrop", v: p.sunriseDrop, icon: "🌄", label: "แสงรุ่งอรุณ", cls: "bg-echo-hp", desc: "ผลรุ่งอรุณแห่งวันใหม่: เสียพลังชีวิต 1/เทิร์นแบบไม่สนเกราะ ตามจำนวนเทิร์นที่เหลือ" });
-  if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 6) — ใช้กับ Song for you: 2 ชาม = +1 พลังขิง (ชามเศษเป็นโล่) และล้างสถานะผิดปกติทั้งหมด" });
+  if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 4) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง และล้างสถานะผิดปกติทั้งหมด" });
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
@@ -1068,6 +1069,9 @@ export default function Game({ state, lowQ }) {
   const shCharging = !!(me && me.statuses?.shradecharge);
   // รวมร่างทำนองเพลง: ใช้ได้เฉพาะกลางคืน + ท่วงทำนองครบ 5 (หลังรวมร่างปุ่มเปลี่ยนเป็น แด่เพื่อนรักของฉัน)
   const shUltLocked = isShrade && !me?.shradeForm && (!nightNow || (me?.statuses?.melody || 0) < 5);
+  // ---------- เรียวกิ ชิกิ ----------
+  // นายมีฝีมือแค่ไหนหรอ?: ผลยกเลิกท่าไม้ตายยังอยู่ — กดสกิลรองซ้ำไม่ได้ (patch 2.0.6.1)
+  const skSecLocked = ch?.id === "shiki" && !!me?.statuses?.godslay;
   // ANATA WAAAAAAAA: เลือกเป้าหมายได้เพียง 1 คน
   const aliveOthers = others.filter((p) => p.alive);
   const anataNeed = Math.min(1, aliveOthers.length);
@@ -1395,7 +1399,7 @@ export default function Game({ state, lowQ }) {
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
                 <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
                 {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
               </div>
               {noSkill && phase === "PLAYING" && !done && (
@@ -1678,7 +1682,7 @@ export default function Game({ state, lowQ }) {
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
                   {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
