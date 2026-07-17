@@ -189,6 +189,27 @@ function SkillFlash({ f }) {
   );
 }
 
+// ---------- โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — แจ้งเตือนแทน แต่ยังรอเวลาเท่าวีดีโอจริง ----------
+//  ผู้เล่นที่เปิดโหมดนี้จะเห็นแค่ว่าใครเปิดท่าไม้ตาย/สกิลอะไร พร้อมนับถอยหลังรอคนอื่นดูวีดีโอจบ
+function CutsceneSkipNotice({ cs, timeLeft }) {
+  return (
+    <div className="fixed top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none px-3 max-w-full">
+      <div className="pop-in flex items-center gap-3 bg-black/85 rounded-2xl px-4 py-2.5 border-2 text-hard" style={{ borderColor: cs.color }}>
+        {cs.img ? (
+          <img src={cs.img} alt="" className="w-16 h-16 object-cover rounded-xl border-2 shrink-0" style={{ borderColor: cs.color }} />
+        ) : (
+          <span className="text-2xl">✦</span>
+        )}
+        <div className="text-left leading-tight">
+          <div className="text-lg font-black" style={{ color: cs.color }}>{cs.name} {cs.label || "ปล่อยท่าไม้ตาย"}!</div>
+          <div className="text-sm font-bold text-echo-gold">{cs.title}</div>
+          <div className="text-xs opacity-80 mt-0.5">🎬 โหมดประหยัด — รอผู้เล่นอื่นดูวีดีโอให้จบ ({timeLeft} วิ)</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- แจ้งเตือนแปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป): การ์ดเล็กๆ ไม่หยุดเกม ----------
 function TransformNotice({ n }) {
   return (
@@ -259,10 +280,18 @@ function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg, shikiBg 
         />
       )}
       {/* ฉันมองเห็นมันแล้ว (ชิกิ): ซ้อน shiki_fill.png ทับฉากหลังปัจจุบันระหว่างท่าไม้ตายทำงาน */}
-      {shikiBg && (
+      {shikiBg === "eye" && (
         <img
           src="/characters/shiki/shiki_fill.png"
           alt=""
+          className="absolute inset-0 w-full h-full object-cover bg-fade-in"
+        />
+      )}
+      {/* ความตายที่โรยรา (ชิกิ patch 2.0.6): ฉากหลังกลายเป็นวีดีโอ shiki_fill2.mp4 ระหว่างท่าไม้ตาย 2 ทำงาน */}
+      {shikiBg === "wither" && (
+        <video
+          src="/characters/shiki/shiki_fill2.mp4"
+          autoPlay loop muted playsInline
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
       )}
@@ -390,7 +419,7 @@ const STATUS_INFO = {
   ntd:       { icon: "⚡", label: "NT-D", cls: "bg-echo-hp", desc: "NT-D System: การโจมตีสวนกลับคนที่ตีเราล่าสุด +1 หน่วย" },
   ohger:     { icon: "👑", label: "Ohger", cls: "bg-echo-gold text-gray-900", desc: "Ohger Finish: การโจมตีเทิร์นนี้ +1 หน่วย" },
   rachan:    { icon: "🛡️", label: "ราชัน", cls: "bg-echo-armor", desc: "สวมเกราะราชัน: เพดานเกราะ +3 ถาวร" },
-  song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: พลังขิงตามชามที่ใช้ (1 ชาม = +1 สูงสุด 2) — มีผลเฉพาะสกิลติดตัวโดนขิง" },
+  song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: พลังขิงตามชามที่ใช้ (2 ชาม = +1) — มีผลเฉพาะสกิลติดตัวโดนขิง (ขิงแบบไม่สนเกราะ)" },
   anata:     { icon: "🎤", label: "ANATA", cls: "bg-echo-gold text-gray-900", desc: "ANATA WAAAAAAAA: เป้าหมายลับจะถูกบังคับจั่ว 2 ใบหลังเปิดไพ่" },
   mage:      { icon: "🪄", label: "จอมเวทย์", cls: "bg-echo-cyan text-gray-900", desc: "จอมเวทย์ฝึกหัด: ความเสียหายจากการแพ้/แตกเทิร์นนี้ +1 ต่อสแตค (ฟื้นเลือดคืนเทิร์นหน้า)" },
   humanity:  { icon: "✨", label: "EFH", cls: "bg-echo-gold text-gray-900", desc: "Everything For Humanity: โจมตี +4 เกราะ +3 และกันดาเมจแพ้/แตก — ผลจบแล้วตัวละครตาย" },
@@ -418,13 +447,13 @@ const STATUS_INFO = {
   unplug:    { icon: "🔌", label: "สายหลุด", cls: "bg-echo-hp", desc: "กระชากสายแลน: บัฟหายไปชั่วคราวตลอดเทิร์นนี้ (กลับคืนในเทิร์นถัดไป)" },
   nohealing: { icon: "🚱", label: "ไม่ใช้งานต่อ", cls: "bg-echo-hp", desc: "ปฏิเสธการต่อสัญญา: ฟื้นเลือดตัวเองไม่ได้ 1 เทิร์น" },
   // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
-  overwork:  { icon: "🥵", label: "โหมงานหนัก", cls: "bg-echo-hp", desc: "โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1 สุ่มสตั้น 20% ทุกเทิร์น เกราะพังทั้งหมดและฟื้นไม่ได้ พลังโจมตีช่วงเช้าเหลือ 0 — คงอยู่ 3 เทิร์น หรือลบก่อนได้ด้วย Sleeping time ตอนกลางคืน" },
+  overwork:  { icon: "🥵", label: "โหมงานหนัก", cls: "bg-echo-hp", desc: "โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1 สุ่มสตั้น 10% ทุกเทิร์น เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้ พลังโจมตีช่วงเช้าเหลือ 0 — คงอยู่ 3 เทิร์น และลบล้างได้ด้วย Sleeping time (สกิลรอง 2) เท่านั้น" },
   fresh:     { icon: "🌅", label: "เช้าที่สดใส", cls: "bg-echo-gold text-gray-900", desc: "เช้าที่สดใส: ได้แต้มสกิล +1 และโล่ +1 ทุกเทิร์น ตามจำนวนเทิร์นที่เหลือ" },
   ksleep:    { icon: "😴", label: "หลับพักผ่อน", cls: "bg-echo-cyan text-gray-900", desc: "Sleeping time: หลับตลอดเฟสกลางคืน ฟื้นพลังชีวิตเทิร์นละ 2 — ตื่นตอนเช้าจะได้รับ [เช้าที่สดใส]" },
   sena:      { icon: "😱", label: "หนีเซนะ", cls: "bg-echo-hp", desc: "เจอท่านประธานเซนะจัง — มัวแต่หลบหนีจนทำอะไรไม่ได้เลยทั้งเทิร์นนี้" },
   kstun:     { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "หมดแรงจาก [โหมงานหนัก] — เทิร์นนี้ขยับไม่ได้" },
   caught:    { icon: "🎬", label: "โดนจับได้", cls: "bg-echo-hp", desc: "โดนโปรดิวเซอร์จับได้ — ใช้ Part-time ไม่ได้ตามจำนวนเทิร์นที่เหลือ" },
-  kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 2 หน่วย (บัฟ Dance Lession = 3) และทุกคนถูกใบ้การใช้สกิล" },
+  kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 1 หน่วย (บัฟ Dance Lession = 2) และทุกคนถูกใบ้การใช้สกิล 3 เทิร์น" },
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   melody:    { icon: "🎵", label: "ท่วงทำนอง", cls: "bg-echo-cyan text-gray-900", desc: "ท่วงทำนอง: สะสมจากสกิล เชิญรับฟัง (สูงสุด 5) — ครบ 5 ตอนกลางคืนจะใช้ท่าไม้ตาย รวมร่างทำนองเพลง ได้" },
   shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 5 หน่วย แล้วชเรดจบชีวิตลง" },
@@ -432,16 +461,18 @@ const STATUS_INFO = {
   // ---------- Bard : คีตกวี (patch 2.2) ----------
   resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "Sanctuary Hymn: ต้านสถานะผิดปกติ (หลับ/สตั้น/ใบ้สกิล/พิษ/ขัดแย้ง) ตามจำนวนเทิร์นที่เหลือ" },
   guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "Harmony: ความเสียหายจากการถูกโจมตีลดลง 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "Fate's Prelude: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก" },
+  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก (ซ้อนทับได้ — หมดไปทีละ 1 ต่อการจั่ว)" },
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "Encore: หลบหลีก +100% ในการโดนโจมตี 1 ครั้งถัดไป (หมดผลเมื่อถูกเลือกโจมตี)" },
-  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): ทุกคนฟื้นพลังงาน +1 ทุกเทิร์น — Bard ต้านสถานะผิดปกติ และกดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น" },
-  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยกับผู้เล่นทุกคน จนกว่ามิติจะสิ้นสุด" },
-  // ---------- เรียวกิ ชิกิ (patch 2.0.5) ----------
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น — ตอนเปิดมิติ ผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดขัดแย้ง +1 ดาเมจ 3 เทิร์น และคีตกวีได้โชคลาภในการจั่วไพ่ 5 ครั้งถัดไป" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด" },
+  // ---------- เรียวกิ ชิกิ (patch 2.0.6) ----------
   knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  deathline: { icon: "🩸", label: "เส้นตาย", cls: "bg-echo-hp", desc: "เส้นตาย (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ (+2/ครั้ง) — ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด)" },
-  deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นตายครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
+  deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมถาวรจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2: ถูกโจมตีปกติระหว่างความตายที่โรยรา มีโอกาสถูกสังหาร 10% ต่อ 1 หน่วย (สะสมได้สูงสุด 8)" },
+  deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นชีวิตครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
+  wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา: ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ สูงสุด 8) — โจมตีปกติมีโอกาสสังหารทันที 10% ต่อเส้นชีวิต 1 หน่วย — สังหารได้ 1 คน ท่าจบลงและลบเส้นชีวิตที่สะสมช่วงท่าไม้ตายออกให้ทุกคน" },
+  godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ?: ชิกิพร้อมยกเลิกท่าไม้ตายของผู้เล่นอื่น 1 คน 1 ครั้ง — ผู้เล่นอื่นคนแรกที่กดท่าไม้ตายระหว่างนี้จะถูกยกเลิกทันที (แต้มสกิลเสียฟรี) ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -461,11 +492,11 @@ function statusEntries(p, full) {
     out.push({ key: k, v, ...info });
   }
   if ((p.sunriseDrop || 0) > 0) out.push({ key: "sunriseDrop", v: p.sunriseDrop, icon: "🌄", label: "แสงรุ่งอรุณ", cls: "bg-echo-hp", desc: "ผลรุ่งอรุณแห่งวันใหม่: เสียพลังชีวิต 1/เทิร์นแบบไม่สนเกราะ ตามจำนวนเทิร์นที่เหลือ" });
-  if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 3) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง (สูงสุด 2) ชามที่เหลือเป็นโล่" });
+  if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 6) — ใช้กับ Song for you: 2 ชาม = +1 พลังขิง (ชามเศษเป็นโล่) และล้างสถานะผิดปกติทั้งหมด" });
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
-  if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 และผลใบ้สกิลอยู่นานขึ้น +2 เทิร์น (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
+  if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
   if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 5) — ครบ 5 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
   if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
   // Bard: ท่อนทำนองสะสม + โน้ตในช่องประพันธ์เพลง (ทุกคนเห็นได้)
@@ -916,7 +947,7 @@ function BardComposeSlot({ me }) {
   );
 }
 
-export default function Game({ state }) {
+export default function Game({ state, lowQ }) {
   const [skillOpen, setSkillOpen] = useState(false);
   const [showChar, setShowChar] = useState(false);
   const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
@@ -963,7 +994,10 @@ export default function Game({ state }) {
     if (p.fused && p.leader === "apollo") return "solarburst";
     return null;
   };
-  const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai") : ch?.id === "aquarion" ? aquaUltStatusKey(me) : ULTIMATE_STATUS[ch?.id];
+  const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai")
+    : ch?.id === "aquarion" ? aquaUltStatusKey(me)
+    : ch?.id === "shiki" ? (me?.shikiUlt === "wither" ? "wither" : "deatheye")
+    : ULTIMATE_STATUS[ch?.id];
   const ultimateActive = !!(me && me.statuses && me.statuses[ultStatusKey]);
   // ไปยังพฤกษาแห่งชีวิต: กดปุ่มท่าไม้ตายซ้ำได้เพื่อยกเลิก แม้ล็อกอยู่ (server อนุญาตแม้ระหว่าง locked)
   const aquaCancelable = ch?.id === "aquarion" && !!me?.statuses?.godtree;
@@ -1018,7 +1052,7 @@ export default function Game({ state }) {
   const overworkMe = !!(me && me.statuses?.overwork); // [โหมงานหนัก]: Part-time (กลางวัน)/Dance/ท่าไม้ตายใช้ไม่ได้ + แต้มสกิลแพงขึ้น 1
   const ktBasicLocked = isKotone && (!!me?.statuses?.caught || (overworkMe && !nightNow)); // โดนโปรดิวเซอร์จับ / โหมงานหนักตอนกลางวัน
   const ktSecLocked = isKotone && (nightNow ? !!me?.statuses?.ksleep : overworkMe);        // หลับอยู่แล้ว / โหมงานหนัก
-  const ktUltLocked = isKotone && (overworkMe || nightNow);                                // ท่าไม้ตายใช้ไม่ได้กลางคืน/โหมงานหนัก
+  const ktUltLocked = isKotone && (overworkMe || nightNow || (me?.coins || 0) < 3);        // ท่าไม้ตายใช้ไม่ได้กลางคืน/โหมงานหนัก/coin ไม่ถึง 3
   const ktCost = (s) => (s ? s.cost + 1 : 0); // โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1
   // ---------- Bard : คีตกวี ----------
   const isBard = ch?.id === "bard";
@@ -1212,8 +1246,10 @@ export default function Game({ state }) {
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
   //  ยกเว้นฉากประกาศเปลี่ยนร่าง (announce) -> แสดงกระดานเกมตามปกติ + เอฟเฟกต์ทับ (ไม่ตัดจอดำ)
+  //  โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอ — แสดงกระดาน + แจ้งเตือนว่าใครเปิดท่าไม้ตาย รอเวลาเท่าวีดีโอจริง
   const csAnnounce = phase === "CUTSCENE" && state.cutscene && state.cutscene.announce ? state.cutscene : null;
-  if (phase === "CUTSCENE" && state.cutscene && !csAnnounce) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
+  const csSkipped = lowQ && phase === "CUTSCENE" && state.cutscene && !csAnnounce ? state.cutscene : null;
+  if (phase === "CUTSCENE" && state.cutscene && !csAnnounce && !lowQ) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
 
   // ============================================================
   //  โหมดมือถือแนวตั้ง (< 768px): layout เฉพาะโทรศัพท์ ไม่ย่อจากจอคอม
@@ -1445,6 +1481,7 @@ export default function Game({ state }) {
         {/* ---------- overlay ที่ใช้ร่วมกับจอคอม ---------- */}
         {phase === "ATTACKING" && state.attack && <AttackFx a={state.attack} />}
         {csAnnounce && <TransformAnnounce key={csAnnounce.id} cs={csAnnounce} />}
+        {csSkipped && <CutsceneSkipNotice key={csSkipped.id} cs={csSkipped} timeLeft={state.timeLeft} />}
         {flash && <SkillFlash key={flash.id} f={flash} />}
         {notice && <TransformNotice key={notice.id} n={notice} />}
         {cycleFx && <CycleBanner key={cycleFx.id} c={cycleFx} />}
@@ -1747,6 +1784,9 @@ export default function Game({ state }) {
 
       {/* ---------- ประกาศเปลี่ยนร่าง: กระดานยังโชว์อยู่ + ระเบิด/เสียงแปลงร่างเล่นให้จบ ---------- */}
       {csAnnounce && <TransformAnnounce key={csAnnounce.id} cs={csAnnounce} />}
+
+      {/* ---------- โหมดประหยัด: ข้ามวีดีโอคัตซีน — แจ้งเตือนว่าใครเปิดท่าไม้ตาย + รอเวลาเท่าวีดีโอจริง ---------- */}
+      {csSkipped && <CutsceneSkipNotice key={csSkipped.id} cs={csSkipped} timeLeft={state.timeLeft} />}
 
       {/* ---------- สกิลช่วงจั่วการ์ด เด้งทันที ---------- */}
       {flash && <SkillFlash key={flash.id} f={flash} />}

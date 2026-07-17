@@ -15,6 +15,17 @@ export default function App() {
   const [taken, setTaken] = useState([]);
   const [name, setName] = useState("");
   const [position, setPosition] = useState(null);
+  // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอท่าไม้ตาย/คัตซีน — เห็นแค่แจ้งเตือน แต่ยังต้องรอผู้เล่นอื่นดูจบ
+  const [lowQ, setLowQ] = useState(() => {
+    try { return localStorage.getItem("echo_lowq") === "1"; } catch { return false; }
+  });
+  const toggleLowQ = () => {
+    setLowQ((v) => {
+      const next = !v;
+      try { localStorage.setItem("echo_lowq", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     const onState = (s) => setState(s);
@@ -74,9 +85,10 @@ export default function App() {
     }
     if (!inMatch) prevCycle.current = null;
 
-    if (phase === "CUTSCENE") stopMusic();
+    // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
+    if (phase === "CUTSCENE" && !lowQ) stopMusic();
     else if (skillMusic) playMusic(skillMusic, skillMusicSeq); // seq เปลี่ยน = การเปิดร่างใหม่ -> เริ่มเพลงใหม่
-    else if (battle) playMusic(cycle === "night" ? "new_night" : "new_morning", cycleSeq.current);
+    else if (battle || phase === "CUTSCENE") playMusic(cycle === "night" ? "new_night" : "new_morning", cycleSeq.current);
     else playMusic("main_home");
 
     // เปลี่ยนจาก "เลือกการ์ด" ไปสรุปผล -> เสียง trun_change (ยกเว้นเข้า cutscene)
@@ -86,15 +98,16 @@ export default function App() {
     // เข้าเฟสโจมตี -> เสียง attack
     if (prevPhase.current !== "ATTACKING" && phase === "ATTACKING") playSfx("attack");
     prevPhase.current = phase;
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ]);
 
   const goCharacter = (n, pos) => {
     setName(n);
     setPosition(pos);
     setStage("character");
   };
-  const confirmCharacter = (characterId) =>
-    socket.emit("join", { name, position, characterId });
+  // extra: ตัวเลือกเพิ่มเติมตอนเลือกตัว (เช่น ชิกิ: shikiUlt = "deatheye" | "wither")
+  const confirmCharacter = (characterId, extra) =>
+    socket.emit("join", { name, position, characterId, ...(extra || {}) });
 
   let screen;
   if (stage === "splash") screen = <Splash onEnter={() => setStage("setup")} />;
@@ -113,8 +126,8 @@ export default function App() {
   else if (!state)
     screen = <div className="min-h-screen grid place-items-center text-lg opacity-70">กำลังเชื่อมต่อ...</div>;
   else if (state.gameState === "LOBBY")
-    screen = <Lobby state={state} onBack={() => { socket.emit("leave"); setStage("character"); }} />;
-  else screen = <Game state={state} />;
+    screen = <Lobby state={state} lowQ={lowQ} onToggleLowQ={toggleLowQ} onBack={() => { socket.emit("leave"); setStage("character"); }} />;
+  else screen = <Game state={state} lowQ={lowQ} />;
 
   return (
     <>

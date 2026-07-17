@@ -4,7 +4,7 @@ import { socket } from "../socket";
 import { clickSound } from "../audio";
 
 // หน้าที่ 5: ห้องรอ
-export default function Lobby({ state, onBack }) {
+export default function Lobby({ state, onBack, lowQ, onToggleLowQ }) {
   const count = state.players.length;
 
   return (
@@ -38,6 +38,23 @@ export default function Lobby({ state, onBack }) {
           </div>
         ))}
       </div>
+
+      {/* โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอท่าไม้ตาย/คัตซีน — เห็นแค่การแจ้งเตือนแทน
+          แต่ยังต้องรอผู้เล่นอื่นที่เปิดวีดีโอดูให้จบอยู่ดี (จับเวลาที่ server) */}
+      <button
+        onClick={() => { clickSound(); onToggleLowQ && onToggleLowQ(); }}
+        className={`rounded-2xl border-2 px-5 py-3 text-left max-w-md transition ${
+          lowQ ? "border-echo-gold bg-echo-gold/15" : "border-white/20 bg-white/5 hover:bg-white/10"
+        }`}
+      >
+        <div className="font-bold">
+          🎬 โหมดประหยัด (ข้ามวีดีโอ): <span className={lowQ ? "text-echo-gold" : "opacity-70"}>{lowQ ? "เปิดอยู่" : "ปิดอยู่"}</span>
+        </div>
+        <div className="text-xs opacity-70 mt-1">
+          ข้ามวีดีโอท่าไม้ตาย/ฉากคัตซีน — จะเห็นแค่การแจ้งเตือนว่าใครเปิดท่าไม้ตายแทน
+          (แต่ยังต้องรอผู้เล่นคนอื่นดูวีดีโอให้จบอยู่ดี)
+        </div>
+      </button>
 
       <div className="flex gap-3 flex-wrap justify-center mt-2">
         <Button variant="ghost" onClick={() => { clickSound(); onBack && onBack(); }}>

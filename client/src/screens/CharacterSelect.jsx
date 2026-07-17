@@ -66,6 +66,8 @@ function SkillTile({ label, skill }) {
 
 export default function CharacterSelect({ roster, position, name, onConfirm, onBack }) {
   const [picked, setPicked] = useState(null);
+  // ชิกิ (patch 2.0.6): เลือกท่าไม้ตายที่จะใช้ได้ — "deatheye" (ฉันมองเห็นมันแล้ว) | "wither" (ความตายที่โรยรา)
+  const [shikiUlt, setShikiUlt] = useState("deatheye");
   const color = POSITION_COLORS[position] || "#9B4F96";
   const sel = roster.find((c) => c.id === picked);
   // roster เรียงตามกลุ่มความยาก (ง่าย -> กลาง -> ยาก -> เอาฮา) — ตัวที่ไม่มีกลุ่มต่อท้าย
@@ -77,7 +79,7 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
   const selGroup = sel ? DIFFICULTY_GROUPS.find((g) => g.key === (sel.difficulty || "easy")) : null;
 
   const pick = (id) => { clickSound(); setPicked(id); };
-  const confirm = () => { clickSound(); if (picked) onConfirm(picked); };
+  const confirm = () => { clickSound(); if (picked) onConfirm(picked, picked === "shiki" ? { shikiUlt } : undefined); };
   const back = () => { clickSound(); onBack(); };
   const reselect = () => { clickSound(); setPicked(null); };
 
@@ -218,7 +220,41 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
                 {/* อควาเรียน: ไม่มีท่าไม้ตายกลาง — ใช้ 4 ท่าตามร่างด้านล่างแทน */}
-                {!sel.ultimateSolar && <SkillTile label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : "ท่าไม้ตาย"} skill={sel.ultimate} />}
+                {!sel.ultimateSolar && (
+                  <SkillTile
+                    label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : sel.id === "shiki" ? "ท่าไม้ตาย 1" : "ท่าไม้ตาย"}
+                    skill={sel.ultimate}
+                  />
+                )}
+                {/* ชิกิ (patch 2.0.6): ท่าไม้ตาย 2 ความตายที่โรยรา — เลือกใช้ได้ 1 ท่าต่อเกม */}
+                {sel.id === "shiki" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2" skill={sel.ultimate2} />}
+                {sel.id === "shiki" && sel.ultimate2 && (
+                  <div className="col-span-2 rounded-2xl bg-white/5 border border-white/15 px-4 py-3">
+                    <div className="font-bold text-echo-gold mb-2">👁️ เลือกท่าไม้ตายที่จะใช้ในเกมนี้ (เลือกได้ 1 ท่า)</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => { clickSound(); setShikiUlt("deatheye"); }}
+                        className={`rounded-xl border-2 px-3 py-2 font-bold transition ${
+                          shikiUlt === "deatheye" ? "border-echo-gold bg-echo-gold/20 text-echo-gold" : "border-white/20 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        ท่า 1 · ฉันมองเห็นมันแล้ว{shikiUlt === "deatheye" ? " ✓" : ""}
+                      </button>
+                      <button
+                        onClick={() => { clickSound(); setShikiUlt("wither"); }}
+                        className={`rounded-xl border-2 px-3 py-2 font-bold transition ${
+                          shikiUlt === "wither" ? "border-echo-gold bg-echo-gold/20 text-echo-gold" : "border-white/20 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        ท่า 2 · ความตายที่โรยรา{shikiUlt === "wither" ? " ✓" : ""}
+                      </button>
+                    </div>
+                    <div className="text-xs opacity-75 mt-2 leading-snug">
+                      เลือกท่า 2: สกิลติดตัวจะมอบ "เส้นชีวิต" น้อยลงเหลือ 1 หน่วยต่อครั้ง (จาก 2) และให้ได้สูงสุด 3 หน่วย
+                      — แต่ท่าไม้ตาย 2 จะแจกเส้นชีวิตเพิ่มได้ทุกเทิร์น สูงสุด 8 หน่วยต่อคน
+                    </div>
+                  </div>
+                )}
                 {sel.ultimateNight && <SkillTile label="ท่าไม้ตาย (กลางคืน)" skill={sel.ultimateNight} />}
                 {/* อควาเรียน: สกิลรอง "คืนร่าง" + ท่าไม้ตาย 4 แบบ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน) */}
                 {sel.secondaryRevert && <SkillTile label="สกิลรอง (คืนร่าง)" skill={sel.secondaryRevert} />}
