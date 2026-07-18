@@ -605,11 +605,12 @@ function oguriAddStamina(p, n) {
 }
 
 // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2) ----------
-//  สกิลติดตัว: ถูกโจมตี/ถูกใช้สกิลใส่ = ลบล้างผลนั้น (คูลดาวน์ 1 เทิร์น) / รีเจนแต้มสกิลเพิ่ม +1
+//  สกิลติดตัว: ถูกโจมตี/ถูกใช้สกิลใส่ = ลบล้างผลนั้น (คูลดาวน์ 2 เทิร์น — patch 2.0.8.3) / รีเจนแต้มสกิลเพิ่ม +1
 //  / แต้มสกิลถูกซ่อนจากผู้เล่นอื่น / โจมตีธรรมดาไม่ได้เลย
-//  ท่าไม้ตาย Wonder of U: ทำงานอัตโนมัติเมื่อถูกโจมตี/ถูกใช้สกิลใส่ หากแต้มสกิลถึง 6
+//  ท่าไม้ตาย Wonder of U: ทำงานอัตโนมัติเมื่อถูกโจมตี/ถูกใช้สกิลใส่ หากแต้มสกิลถึง 8
 //  -> ผู้ไล่ล่าติด [Calamity] (สะสม 3): บังคับจั่วเพิ่มตามเลเวล + ดาเมจตามเลเวลทุก 2 เทิร์น นาน 6 เทิร์น
-const WOU_COST = 6;          // Wonder of U: แต้มสกิลที่ใช้ต่อการทำงานอัตโนมัติ 1 ครั้ง
+const WOU_COST = 8;          // Wonder of U: แต้มสกิลที่ใช้ต่อการทำงานอัตโนมัติ 1 ครั้ง (patch 2.0.8.3 — เพิ่มจาก 6)
+const WOU_GUARD_CD = 2;      // สกิลติดตัวลบล้าง: คูลดาวน์ 2 เทิร์น (patch 2.0.8.3 — เพิ่มจาก 1)
 const CALAMITY_MAX = 3;      // [Calamity] สะสมสูงสุด 3 ระดับ
 const CALAMITY_TURNS = 6;    // [Calamity] คงอยู่ 6 เทิร์น (รีเฟรชเมื่อโดนซ้ำ)
 const OBLADA_TURNS = 6;      // สิ่งแปลกปลอม (Obla Di, Obla Da): ดาเมจ 1 ทุก 2 เทิร์น นาน 6 เทิร์น
@@ -640,15 +641,15 @@ function maybeWonderOfU(t, by) {
   applyCalamity(by);
   triggerCutscene(t, "wonderofu"); // ครั้งแรกเล่นวีดีโอเต็ม + เพลง / ครั้งถัดไปแจ้งเตือนเล็กๆ
 }
-// สกิลติดตัวซาโตรุ: การโจมตี/สกิลที่พุ่งเข้าใส่ถูกลบล้าง (คูลดาวน์ 1 เทิร์น) + เช็ค Wonder of U เสมอ
+// สกิลติดตัวซาโตรุ: การโจมตี/สกิลที่พุ่งเข้าใส่ถูกลบล้าง (คูลดาวน์ 2 เทิร์น) + เช็ค Wonder of U เสมอ
 //  คืน { negated } — ผู้เรียกข้ามการใส่ผลสกิล/ดาเมจเมื่อ negated เป็น true (แต้มที่จ่ายไปเสียฟรี)
 function satoruOnTargeted(t, by, what) {
   if (!t || !t.alive || t.characterId !== "satoru" || !by || by.id === t.id) return { negated: false };
   let negated = false;
-  if (!t.wouGuardUsed) {
-    t.wouGuardUsed = true;
+  if ((t.wouGuardCd || 0) <= 0) {
+    t.wouGuardCd = WOU_GUARD_CD; // ลบล้างแล้วติดคูลดาวน์ 2 เทิร์น (ลดลงตอนเริ่มเทิร์นใหม่)
     negated = true;
-    lastLog.push(`🚫 ${t.name} — อย่าได้ไล่ตามหัวหน้า... ${what}ของ ${by.name} ถูกลบล้าง! (คูลดาวน์ 1 เทิร์น)`);
+    lastLog.push(`🚫 ${t.name} — อย่าได้ไล่ตามหัวหน้า... ${what}ของ ${by.name} ถูกลบล้าง! (คูลดาวน์ ${WOU_GUARD_CD} เทิร์น)`);
   }
   maybeWonderOfU(t, by);
   return { negated };
@@ -1321,7 +1322,7 @@ function resetCombat(p) {
   p.staggerNext = 0;        // ติดชะงักตอนเริ่มเทิร์นถัดไป (จาก The Beat of Victory)
   // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2) ----------
   p.maxHpPenalty = 0;       // Locacaca fruit: Max HP ที่ถูกลดถาวร (ของทุกคน — โดนผลไม้ได้)
-  p.wouGuardUsed = false;   // สกิลติดตัวลบล้าง — คูลดาวน์ 1 เทิร์น
+  p.wouGuardCd = 0;         // สกิลติดตัวลบล้าง — คูลดาวน์ 2 เทิร์นต่อการใช้ (patch 2.0.8.3)
   p.calamityDraw = 0;       // [Calamity]: จำนวนไพ่ที่ถูกบังคับจั่วตอนเริ่มเทิร์นถัดไป
   p.locaOffer = null;       // ข้อเสนอผลโลกากากาที่ยื่นไว้ รอเป้าหมายตอบ (id เป้าหมาย)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
@@ -1638,7 +1639,7 @@ function dealRound() {
     p.shield = 0;
     p.skillUsedRound = false; // เทิร์นใหม่ ใช้สกิลได้อีก 1 อัน
     p.drawBlessed = false;    // พรแห่งการจั่ว (patch 2.0.8): เกิดได้ใหม่ทุกเทิร์น
-    p.wouGuardUsed = false;   // ซาโตรุ (patch 2.0.8.2): สกิลติดตัวลบล้าง — คูลดาวน์ 1 เทิร์น
+    if ((p.wouGuardCd || 0) > 0) p.wouGuardCd--; // ซาโตรุ (patch 2.0.8.3): คูลดาวน์ลบล้างลดลงทุกต้นเทิร์น (2 เทิร์นต่อการใช้)
     p.bardNotesUsed = 0;      // Bard: นับโน้ตใหม่ทุกเทิร์น (จำกัด 2 — มิติวิญญาณไม่จำกัด)
     p.mageUses = 0;           // จอมเวทย์ฝึกหัด: นับใหม่ทุกเทิร์น (กดได้ 3 ครั้งต่อเทิร์น)
     p.anataTargets = null;
@@ -4399,7 +4400,7 @@ io.on("connection", (socket) => {
       bloodSection: 0, soulSection: 0, linkedWith: null,
       shikiUlt: shikiUlt === "wither" ? "wither" : "deatheye", witherAdded: 0,
       stamina: OGURI_STAMINA_START, oguriZoneTurns: 0, staggerNext: 0,
-      maxHpPenalty: 0, wouGuardUsed: false, calamityDraw: 0, locaOffer: null,
+      maxHpPenalty: 0, wouGuardCd: 0, calamityDraw: 0, locaOffer: null,
       dmgHp: 0, dmgArmor: 0, gainedSkill: 0,
       wasAttacked: false, isWinner: false, isLoser: false,
     };
