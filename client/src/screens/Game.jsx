@@ -397,11 +397,16 @@ function Stats({ p, center }) {
   return (
     <div className={center ? "flex flex-col items-center gap-1" : ""}>
       <LifeBar p={p} />
-      <div className="flex gap-0.5 mt-1">
-        {Array.from({ length: p.maxSkill }, (_, i) => (
-          <span key={i} className={`w-3.5 h-3.5 rounded-[3px] ${i < p.skillPoints ? "bg-echo-gold" : "bg-white/15 border border-white/20"}`} />
-        ))}
-      </div>
+      {p.skillPoints < 0 ? (
+        // ซาโตรุ (patch 2.0.8.2): แต้มสกิลถูกซ่อนจากผู้เล่นอื่น
+        <div className="mt-1 text-xs font-black text-echo-gold opacity-90" title="แต้มสกิลถูกซ่อน (สกิลติดตัวซาโตรุ)">🌩️ ???</div>
+      ) : (
+        <div className="flex gap-0.5 mt-1">
+          {Array.from({ length: p.maxSkill }, (_, i) => (
+            <span key={i} className={`w-3.5 h-3.5 rounded-[3px] ${i < p.skillPoints ? "bg-echo-gold" : "bg-white/15 border border-white/20"}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -452,28 +457,49 @@ const STATUS_INFO = {
   ksleep:    { icon: "😴", label: "หลับพักผ่อน", cls: "bg-echo-cyan text-gray-900", desc: "Sleeping time: หลับตลอดเฟสกลางคืน ฟื้นพลังชีวิตเทิร์นละ 2 — ตื่นตอนเช้าจะได้รับ [เช้าที่สดใส]" },
   sena:      { icon: "😱", label: "หนีเซนะ", cls: "bg-echo-hp", desc: "เจอท่านประธานเซนะจัง — มัวแต่หลบหนีจนทำอะไรไม่ได้เลยทั้งเทิร์นนี้" },
   kstun:     { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "หมดแรงจาก [โหมงานหนัก] — เทิร์นนี้ขยับไม่ได้" },
-  caught:    { icon: "🎬", label: "โดนจับได้", cls: "bg-echo-hp", desc: "โดนโปรดิวเซอร์จับได้ — ใช้ Part-time ไม่ได้ตามจำนวนเทิร์นที่เหลือ" },
   kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 1 หน่วย (บัฟ Dance Lession = 2) และทุกคนถูกใบ้การใช้สกิล 3 เทิร์น" },
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   melody:    { icon: "🎵", label: "ท่วงทำนอง", cls: "bg-echo-cyan text-gray-900", desc: "ท่วงทำนอง: สะสมจากสกิล เชิญรับฟัง (สูงสุด 5) — ครบ 5 ตอนกลางคืนจะใช้ท่าไม้ตาย รวมร่างทำนองเพลง ได้" },
   shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 5 หน่วย แล้วชเรดจบชีวิตลง" },
   moonmark:  { icon: "🌕", label: "จันทร์ส่อง", cls: "bg-echo-magenta", desc: "แสงจันทร์ส่องวิญญาณ (สปาด้า): หากไพ่แตกในเทิร์นนี้ จะรับความเสียหาย 1 หน่วยทันที" },
+  // ---------- สถานะพื้นฐาน universal (patch 2.0.8) ----------
+  freecast:  { icon: "🎁", label: "พรแห่งการจั่ว", cls: "bg-echo-gold text-gray-900", desc: "พรแห่งการจั่ว: ใช้สกิลครั้งถัดไปไม่เสียแต้มสกิล (คงอยู่จนกว่าจะได้ใช้)" },
+  stun:      { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "สตั้น: ไม่สามารถทำอะไรได้จนจบเทิร์นหรือจนกว่าดีบัฟจะหมดเวลา" },
+  weak:      { icon: "🥀", label: "อ่อนแอ", cls: "bg-echo-hp", desc: "อ่อนแอ: ดาเมจที่ทำได้ลดลงตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
+  fragile:   { icon: "💔", label: "เปราะบาง", cls: "bg-echo-hp", desc: "เปราะบาง: ดาเมจที่ได้รับเพิ่มขึ้นตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
+  might:     { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "เสริมพลัง: ดาเมจที่ทำได้เพิ่มขึ้นตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
+  spellflow: { icon: "🌀", label: "กระแสเวท", cls: "bg-echo-cyan text-gray-900", desc: "กระแสเวท: การใช้สกิลทุกชนิดใช้พลังงานลดลงตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
+  spellburden: { icon: "⛓️", label: "ภาระเวท", cls: "bg-echo-hp", desc: "ภาระเวท: การใช้สกิลทุกชนิดใช้พลังงานเพิ่มขึ้นตามจำนวนที่ระบุ (ไม่เกิน 8) ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- Bard : คีตกวี (patch 2.2) ----------
-  resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "Sanctuary Hymn: ต้านสถานะผิดปกติ (หลับ/สตั้น/ใบ้สกิล/พิษ/ขัดแย้ง) ตามจำนวนเทิร์นที่เหลือ" },
-  guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "Harmony: ความเสียหายจากการถูกโจมตีลดลง 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
+  resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "ต้านสถานะผิดปกติ: ล้างและต้านทานดีบัฟพื้นฐาน (ขัดแย้ง/หลับไหล/สตั้น/ห้ามจั่ว/ห้ามใช้สกิล/พิษ/อ่อนแอ/เปราะบาง/ภาระเวท) ตามจำนวนเทิร์นที่เหลือ — ดีบัฟที่ยังไม่เกิดผลทันที (ยามฟ้าสาง/เส้นชีวิต) ถูกล้างจะลดลงทีละ 1 หน่วย" },
+  guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "คุ้มครอง: ความเสียหายจากการถูกโจมตีลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1) ตามจำนวนเทิร์นที่เหลือ" },
   fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก (ซ้อนทับได้สูงสุด 3 — หมดไปทีละ 1 ต่อการจั่ว)" },
   empower:   { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "Rejuvenation: การโจมตีครั้งถัดไป +1 ดาเมจ (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี)" },
-  linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "Resonance: ถูกเชื่อมผลกับผู้เล่นอีกคน — ฝ่ายหนึ่งถูกโจมตี อีกฝ่ายรับความเสียหาย 1 หน่วยตาม" },
+  linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "เชื่อมผล: การเพิ่ม-ลด HP ถูกแชร์ให้คู่เชื่อมเท่ากัน (ฝ่ายหนึ่งฮีล อีกฝ่ายฮีลตาม / ฝ่ายหนึ่งเสียเลือดจริง อีกฝ่ายเสียตาม) ตามจำนวนเทิร์นที่เหลือ" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "หลบหลีก: หลบการโดนโจมตี 100% (ซ้อนทับได้สูงสุด 3 — หมดไปทีละ 1 เมื่อถูกเลือกโจมตี)" },
-  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น — ตอนเปิดมิติ ผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดขัดแย้ง +1 ดาเมจ 3 เทิร์น และคีตกวีได้โชคลาภ 3 ครั้ง กับหลบหลีก 3 ครั้ง" },
-  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): Bard ต้านสถานะผิดปกติ กดโน้ตได้สูงสุด 9 ครั้งต่อเทิร์น และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด" },
+  evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "หลบหลีก: หลบการโดนโจมตีตาม % ที่ระบุ (ไม่ระบุ = 100%) — ซ้อนทับได้สูงสุด 3 หมดไปทีละ 1 เมื่อถูกเลือกโจมตี" },
+  bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): กดโน้ตได้สูงสุด 6 ครั้งต่อเทิร์น — ตอนเปิดมิติ คีตกวีได้ต้านสถานะผิดปกติ 3 เทิร์น หลบหลีก 1 โชคลาภ 1 และผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดเปราะบาง +1 ดาเมจที่ได้รับ 3 เทิร์น" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): กดโน้ตได้สูงสุด 6 ครั้งต่อเทิร์น — ตอนเปิดมิติ คีตกวีได้ต้านสถานะผิดปกติ 3 เทิร์น หลบหลีก 1 โชคลาภ 1 และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด" },
   // ---------- เรียวกิ ชิกิ (patch 2.0.6) ----------
   knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
-  deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2: ถูกโจมตีปกติระหว่างความตายที่โรยรา มีโอกาสถูกสังหาร 10% ต่อ 1 หน่วย (สะสมได้สูงสุด 6 = 60%)" },
+  deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2 (patch 2.0.8): สะสมได้สูงสุด 5 — ระหว่างความตายที่โรยรา เส้นชีวิตแปรเป็นดาเมจเสริมการโจมตีปกติของชิกิ +1 ต่อเส้น (พลังโจมตีรวมสูงสุด 5) และมีโอกาสถูกสังหารทันที 1% คงที่" },
   deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นชีวิตครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
-  wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา: ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ) — ท่าไม้ตายแจกได้สูงสุด 3 หน่วยต่อคน (รวมแหล่งปกติสูงสุด 6 = 60%) — โจมตีปกติมีโอกาสสังหารทันที 10% ต่อเส้นชีวิต 1 หน่วย — เมื่อท่าจบลง (สังหารสำเร็จ/หมดเวลา) เส้นชีวิตส่วนที่ท่าแจกไปถูกลบออกจากทุกคน" },
+  wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา (rework patch 2.0.8): ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ) — ท่าไม้ตายแจกได้สูงสุด 3 หน่วยต่อคน (รวมแหล่งปกติสูงสุด 5) — โจมตีปกติ: เส้นชีวิตแปรเป็นดาเมจเสริม +1 ต่อเส้น (พลังโจมตีรวมสูงสุด 5 ต่อครั้ง) และมีโอกาสสังหารทันที 1% คงที่ เพิ่มไม่ได้ — เมื่อท่าจบลง (สังหารสำเร็จ/หมดเวลา) เส้นชีวิตส่วนที่ท่าแจกไปถูกลบออกจากทุกคน" },
   godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ?: ชิกิพร้อมยกเลิกท่าไม้ตายของผู้เล่นอื่น 1 คน 1 ครั้ง (2 เทิร์น — ผลยังอยู่กดสกิลซ้ำไม่ได้) — ผู้เล่นอื่นคนแรกที่กดท่าไม้ตายระหว่างนี้จะถูกยกเลิกทันที (แต้มสกิลเสียฟรี) และหากเจ้าของท่าไม้ตายที่มีผลอยู่ก่อนแล้วมาโจมตีชิกิ จะถูกยกเลิกท่าแบบย้อนหลังทันที" },
+  // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
+  graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Zone: ได้รับ Stamina +1 ทุกเทิร์น และแต้มสกิล +1 ทุก 2 เทิร์น — คงอยู่จนกว่าจะเข้าร่างหมดแรง" },
+  burnout: { icon: "💦", label: "หมดแรง", cls: "bg-echo-hp", desc: "Burnout: Stamina หมดและไม่มียุคทอง — ใช้สกิลใดๆ ไม่ได้ยกเว้น A Big Meal จนกว่า Stamina จะกลับมามากกว่า 0" },
+  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: พลังโจมตี +1 และเพดานเกราะ +1 — สะสมสูงสุด 2 แต้ม อยู่ 3 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่) ทุกแต้มลดโอกาสฝึกฝนสำเร็จ 10% — หายทั้งหมดเมื่อฝึกฝนล้มเหลว · ครบ 2 แต้มตอนเริ่มเทิร์นจะเข้าสู่ร่าง Zone" },
+  grit: { icon: "😤", label: "เวลากัดฟันทน", cls: "bg-echo-cyan text-gray-900", desc: "เวลากัดฟันทน: ทุกแต้มเพิ่มโอกาสฝึกฝนสำเร็จ 10% (สะสมสูงสุด 2) — หายไปเมื่อฝึกฝนสำเร็จ" },
+  fullbelly: { icon: "🥖", label: "เต็มอิ่ม", cls: "bg-echo-armor", desc: "เต็มอิ่ม (Breakfast): ดาเมจที่ได้รับ -1 หน่วย — หายไปหลังจบเทิร์นที่กดใช้ (สะสมได้ 1 แต้ม)" },
+  overweight: { icon: "🍱", label: "Overweight", cls: "bg-echo-hp", desc: "Overweight (A Big Meal): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง — ลบออกได้ด้วย Healthfull ครบ 2 แต้ม (จากการฝึกฝนสำเร็จระหว่างติดบัฟนี้) เท่านั้น" },
+  healthfull: { icon: "💪", label: "Healthfull", cls: "bg-echo-cyan text-gray-900", desc: "Healthfull: ได้จากการฝึกฝนสำเร็จระหว่างติด Overweight — ครบ 2 แต้มจะถูกใช้เพื่อลบ Overweight ออก 1 แต้ม" },
+  victorybeat: { icon: "🏆", label: "Beat of Victory", cls: "bg-echo-gold text-gray-900", desc: "The Beat of Victory: หากชนะเทิร์นนี้ การโจมตี +1 ดาเมจ และเป้าหมายติดชะงัก 1 เทิร์น" },
+  ashen: { icon: "🐴", label: "Ashen Trail", cls: "bg-echo-hp", desc: "Ashen Trail: Cinderella Gray — เทิร์นนี้การโจมตี +1 ดาเมจ และหลังเปิดไพ่จะโจมตีใส่ทุกคนที่ไพ่แตก คนละ 2 หน่วย" },
+  stagger: { icon: "🫨", label: "ชะงัก", cls: "bg-echo-hp", desc: "ชะงัก (The Beat of Victory): ใช้สกิลไม่ได้ และจั่วไพ่ได้ไม่เกิน 16 แต้ม ตามจำนวนเทิร์นที่เหลือ" },
+  // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2) ----------
+  oblada:   { icon: "🎵", label: "สิ่งแปลกปลอม", cls: "bg-echo-hp", desc: "Obla Di, Obla Da: รับความเสียหาย 1 หน่วยทุกๆ 2 เทิร์น ตามจำนวนเทิร์นที่เหลือ (ดีบัฟพื้นฐาน — ต้าน/ล้างได้)" },
+  calamity: { icon: "🌩️", label: "Calamity", cls: "bg-echo-hp", desc: "Wonder of U: หายนะไล่ล่า — ถูกบังคับจั่วไพ่เพิ่มตามระดับตอนเริ่มเทิร์นถัดจากที่โดน และรับความเสียหายตามระดับทุกๆ 2 เทิร์น ตามจำนวนเทิร์นที่เหลือ (สะสมสูงสุด 3 ระดับ — โดนซ้ำ = ระดับเพิ่ม + เวลารีเฟรช)" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
   marssword:  { icon: "⚔️", label: "ดาบแห่งแสง", cls: "bg-echo-hp", desc: "ดาบแห่งแสง: เมื่อโจมตี จะลดเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงสร้างความเสียหายตามปกติ" },
@@ -490,13 +516,16 @@ function statusEntries(p, full) {
   for (const [k, v] of Object.entries(p.statuses || {})) {
     if (!(v > 0)) continue;
     const info = STATUS_INFO[k] || { icon: "✦", label: k, cls: "bg-white/20", desc: "" };
-    out.push({ key: k, v, ...info });
+    const amt = (p.statusAmt || {})[k] || 0; // จำนวน (amount) ของบัฟ/ดีบัฟพื้นฐาน (patch 2.0.8)
+    out.push({ key: k, v, amt, ...info });
   }
   if ((p.sunriseDrop || 0) > 0) out.push({ key: "sunriseDrop", v: p.sunriseDrop, icon: "🌄", label: "แสงรุ่งอรุณ", cls: "bg-echo-hp", desc: "ผลรุ่งอรุณแห่งวันใหม่: เสียพลังชีวิต 1/เทิร์นแบบไม่สนเกราะ ตามจำนวนเทิร์นที่เหลือ" });
   if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 4) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง และล้างสถานะผิดปกติทั้งหมด" });
   if ((p.profit || 0) > 0) out.push({ key: "profit", v: p.profit, icon: "💰", label: "กำไร", cls: "bg-echo-gold text-gray-900", desc: "กำไรเท่าตัวโว้ย: การโจมตีครั้งถัดไป +N และทะลุเกราะ (คงอยู่จนได้ตี)" });
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
+  // โอกูริ แคป: Stamina สะสม (โชว์เสมอ — ทรัพยากรหลักของตัวละคร)
+  if (p.character?.id === "oguri") out.push({ key: "stamina", v: 1, icon: "🏇", label: `Stamina ${p.stamina || 0}/16`, cls: "bg-echo-cyan text-gray-900", desc: "Stamina: ทรัพยากรของโอกูริ แคป (สะสมสูงสุด 16) — Training ใช้ 4 / The Beat of Victory ใช้ 8 / Ashen Trail ใช้ 16 — เติมได้จาก Breakfast (+4), A Big Meal (เต็ม 16) และ GrayBeast (+1/เทิร์น)" });
   if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
   if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 5) — ครบ 5 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
   if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
@@ -520,10 +549,10 @@ function StatusChips({ p, left }) {
       {items.map((it) => (
         <span
           key={it.key}
-          title={`${it.label}${it.v > 1 ? ` x${it.v}` : ""} — ${it.desc}`}
+          title={`${it.label}${it.amt > 0 ? ` +${it.amt}` : ""}${it.v > 1 ? ` x${it.v}` : ""} — ${it.desc}`}
           className={`text-xs px-1.5 py-0.5 rounded-md font-bold border border-black/25 shadow ${it.cls}`}
         >
-          {it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}
+          {it.icon}{it.label}{it.amt > 0 ? ` +${it.amt}` : ""}{it.v > 1 ? ` ${it.v}` : ""}
         </span>
       ))}
     </div>
@@ -556,7 +585,7 @@ function StatusModal({ p, onClose }) {
           <div className="flex flex-col gap-2">
             {items.map((it) => (
               <div key={it.key} className="flex items-start gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-                <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.amt > 0 ? ` +${it.amt}` : ""}{it.v > 1 ? ` ${it.v}` : ""}</span>
                 <span className="text-sm opacity-90 leading-snug">{it.desc}</span>
               </div>
             ))}
@@ -689,7 +718,7 @@ function CharModal({ ch, me, onClose }) {
             <div className="flex flex-col gap-1.5">
               {myStatuses.map((it) => (
                 <div key={it.key} className="flex items-start gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-1.5">
-                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.v > 1 ? ` ${it.v}` : ""}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold shrink-0 ${it.cls}`}>{it.icon}{it.label}{it.amt > 0 ? ` +${it.amt}` : ""}{it.v > 1 ? ` ${it.v}` : ""}</span>
                   <span className="text-sm opacity-90 leading-snug">{it.desc}</span>
                 </div>
               ))}
@@ -851,6 +880,32 @@ function ContractOfferModal({ offer, onAnswer }) {
   );
 }
 
+// ---------- Locacaca fruit (ซาโตรุ patch 2.0.8.2): ข้อเสนอผลไม้ — เป้าหมายเลือกรับ/ปฏิเสธ ----------
+//  ไม่ตอบก่อนเปิดไพ่ = ถือว่าปฏิเสธ (ไม่มีอะไรเกิดขึ้น)
+function LocaOfferModal({ offer, onAnswer }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2" style={{ borderColor: offer.color }}>
+        <div className="flex items-center gap-3 mb-3">
+          <img src={offer.img} alt="" className="w-20 h-14 object-cover rounded-xl shrink-0" />
+          <div>
+            <div className="text-lg font-black text-echo-gold">🍑 Locacaca fruit</div>
+            <div className="text-sm opacity-80"><span className="font-bold" style={{ color: offer.color }}>{offer.from}</span> ยื่นผลโลกากากาให้คุณ</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">✅ <b>รับ</b> — ฟื้นเลือดจนเต็มทันที แต่ Max HP ลดถาวร 1 หน่วย และจ่ายแต้มสกิล {offer.steal} หน่วยให้ {offer.from}</div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">❌ <b>ปฏิเสธ</b> — ไม่มีอะไรเกิดขึ้น — ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <Button variant="gold" className="py-3" onClick={() => { clickSound(); onAnswer(true); }}>✅ รับผลไม้</Button>
+          <Button variant="ghost" className="py-3" onClick={() => { clickSound(); onAnswer(false); }}>❌ ปฏิเสธ</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- ชำระค่าบริการ (เจ้าแห่งเน็ตบ้าน): คู่สัญญาใช้งานครบทุก 3 เทิร์น -> ถามต่อสัญญา ----------
 function ContractRenewModal({ ask, points, onAnswer }) {
   const shortfall = Math.max(0, (ask.fee || 4) - (points || 0));
@@ -962,6 +1017,8 @@ export default function Game({ state, lowQ }) {
   const [bbSel, setBbSel] = useState(false);         // เจ้าแห่งเน็ตบ้าน: โหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
   const [shSel, setShSel] = useState(false);         // ชเรด เอลัน: โหมดเลือกเป้าหมายแสงจันทร์ส่องวิญญาณ (เลือกตัวเองไม่ได้)
   const [skSel, setSkSel] = useState(false);         // ชิกิ: โหมดเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ? (เลือกตัวเองไม่ได้)
+  const [saObSel, setSaObSel] = useState(false);     // ซาโตรุ: โหมดเลือกเป้าหมาย Obla Di, Obla Da (เลือกตัวเองไม่ได้)
+  const [saLocaSel, setSaLocaSel] = useState(false); // ซาโตรุ: โหมดเลือกเป้าหมาย Locacaca fruit (เลือกตัวเองได้)
   const [bardSel, setBardSel] = useState([]);        // Bard: เป้าหมายบทเพลงที่เลือกไว้ (บทเพลงต้องการ 1-2 คน)
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
@@ -1051,7 +1108,7 @@ export default function Game({ state, lowQ }) {
   // ---------- ฟุจิตะ โคโตเนะ ----------
   const isKotone = ch?.id === "kotone";
   const overworkMe = !!(me && me.statuses?.overwork); // [โหมงานหนัก]: Part-time (กลางวัน)/Dance/ท่าไม้ตายใช้ไม่ได้ + แต้มสกิลแพงขึ้น 1
-  const ktBasicLocked = isKotone && (!!me?.statuses?.caught || (overworkMe && !nightNow)); // โดนโปรดิวเซอร์จับ / โหมงานหนักตอนกลางวัน
+  const ktBasicLocked = isKotone && overworkMe && !nightNow; // โหมงานหนักตอนกลางวัน (patch 2.0.8.1: นำโดนโปรดิวเซอร์จับได้ออกแล้ว)
   const ktSecLocked = isKotone && (nightNow ? !!me?.statuses?.ksleep : overworkMe);        // หลับอยู่แล้ว / โหมงานหนัก
   const ktUltLocked = isKotone && (overworkMe || nightNow || (me?.coins || 0) < 3);        // ท่าไม้ตายใช้ไม่ได้กลางคืน/โหมงานหนัก/coin ไม่ถึง 3
   const ktCost = (s) => (s ? s.cost + 1 : 0); // โหมงานหนัก: ใช้แต้มสกิลเพิ่มขึ้น 1
@@ -1060,9 +1117,9 @@ export default function Game({ state, lowQ }) {
   const bardPending = isBard && phase === "PLAYING" ? me?.bardPending : null; // บทเพลงรอเลือกเป้าหมาย
   const bardNeed = bardPending?.need || 0;
   // เติมโน้ตไม่ได้เมื่อ: มีบทเพลงรอเลือกเป้าหมาย / เติมโน้ตครบลิมิตของเทิร์นนี้แล้ว
-  //  (patch 2.0.5.1 — ระหว่างมิติมายาบรรเลงทั้งสองแบบ ไม่ติดลิมิต 2 แต่กดได้สูงสุด 9 ครั้งต่อเทิร์น)
+  //  (patch 2.0.8 — ระหว่างมิติมายาบรรเลงทั้งสองแบบ ไม่ติดลิมิต 2 แต่กดได้สูงสุด 6 ครั้งต่อเทิร์น)
   const bardDimOn = isBard && ((me?.statuses?.soulDim || 0) > 0 || (me?.statuses?.bloodDim || 0) > 0);
-  const bardNoteLocked = isBard && (!!me?.bardPending || (me?.bardNotesUsed || 0) >= (bardDimOn ? 9 : 2));
+  const bardNoteLocked = isBard && (!!me?.bardPending || (me?.bardNotesUsed || 0) >= (bardDimOn ? 6 : 2));
   // ---------- ชเรด เอลัน ----------
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)
@@ -1121,8 +1178,21 @@ export default function Game({ state, lowQ }) {
     if (tier === "secondary" && ch?.id === "shrade_elan") { setShSel(true); setSkillOpen(false); return; }
     // เรียวกิ ชิกิ: สกิลรอง (นายมีฝีมือแค่ไหนหรอ?) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
     if (tier === "secondary" && ch?.id === "shiki") { setSkSel(true); setSkillOpen(false); return; }
+    // ซาโตรุ อาเคฟุ: สกิลพื้นฐาน/สกิลรอง เข้าโหมดเลือกเป้าหมาย — ท่าไม้ตายทำงานอัตโนมัติ กดเองไม่ได้
+    if (tier === "basic" && ch?.id === "satoru") { setSaObSel(true); setSkillOpen(false); return; }
+    if (tier === "secondary" && ch?.id === "satoru") { setSaLocaSel(true); setSkillOpen(false); return; }
+    if (tier === "ultimate" && ch?.id === "satoru") { setSkillOpen(false); return; }
     socket.emit("useSkill", { tier });
     setSkillOpen(false);
+  };
+  // เลือกเป้าหมาย Obla Di, Obla Da / Locacaca fruit (ซาโตรุ) -> ส่งไป server ทันที
+  const pickSaOb = (id) => {
+    socket.emit("useSkill", { tier: "basic", targets: [id] });
+    setSaObSel(false);
+  };
+  const pickSaLoca = (id) => {
+    socket.emit("useSkill", { tier: "secondary", targets: [id] });
+    setSaLocaSel(false);
   };
   // เลือกเป้าหมายแสงจันทร์ส่องวิญญาณ (ชเรด เอลัน) -> ส่งไป server ทันที
   const pickSh = (id) => {
@@ -1218,6 +1288,12 @@ export default function Game({ state, lowQ }) {
     if (skSel && (phase !== "PLAYING" || me?.skillUsed || done)) setSkSel(false);
   }, [skSel, phase, me?.skillUsed, done]);
   useEffect(() => {
+    if (saObSel && (phase !== "PLAYING" || me?.skillUsed || done)) setSaObSel(false);
+  }, [saObSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
+    if (saLocaSel && (phase !== "PLAYING" || me?.skillUsed || done)) setSaLocaSel(false);
+  }, [saLocaSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
     if (appleOpen && (phase !== "PLAYING" || done)) setAppleOpen(false);
   }, [appleOpen, phase, done]);
   useEffect(() => {
@@ -1283,9 +1359,9 @@ export default function Game({ state, lowQ }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || !!bardPending) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || !!bardPending) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
             />
           ))}
@@ -1336,6 +1412,19 @@ export default function Game({ state, lowQ }) {
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-hp animate-pulse">🔪 แตะเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ?</span>
             <button onClick={() => { clickSound(); setSkSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {saObSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-hp animate-pulse">🎵 แตะเลือกเป้าหมาย Obla Di, Obla Da</span>
+            <button onClick={() => { clickSound(); setSaObSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
+        {saLocaSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-gold animate-pulse">🍑 แตะเลือกเป้าหมาย Locacaca fruit</span>
+            <button onClick={() => { clickSound(); pickSaLoca(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">กินเอง</button>
+            <button onClick={() => { clickSound(); setSaLocaSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
         {bardPending && (
@@ -1514,6 +1603,7 @@ export default function Game({ state, lowQ }) {
         {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
         {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
         {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
+        {state.locaOffer && me?.alive && <LocaOfferModal offer={state.locaOffer} onAnswer={(a) => socket.emit("locaAnswer", { accept: a })} />}
         {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
         {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>
@@ -1557,9 +1647,9 @@ export default function Game({ state, lowQ }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || !!bardPending) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || !!bardPending) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
         />
       ))}
@@ -1618,6 +1708,23 @@ export default function Game({ state, lowQ }) {
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
           <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">🔪 คลิกเลือกเป้าหมาย นายมีฝีมือแค่ไหนหรอ?</span>
           <button onClick={() => { clickSound(); setSkSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
+      {/* โหมดเลือกเป้าหมาย Obla Di, Obla Da (ซาโตรุ) — เลือกได้เฉพาะคนอื่น */}
+      {saObSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎵 คลิกเลือกเป้าหมาย Obla Di, Obla Da</span>
+          <button onClick={() => { clickSound(); setSaObSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
+      {/* โหมดเลือกเป้าหมาย Locacaca fruit (ซาโตรุ) — เลือกตัวเองได้ */}
+      {saLocaSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🍑 คลิกเลือกเป้าหมาย Locacaca fruit</span>
+          <button onClick={() => { clickSound(); pickSaLoca(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">กินเอง</button>
+          <button onClick={() => { clickSound(); setSaLocaSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
 
@@ -1824,6 +1931,7 @@ export default function Game({ state, lowQ }) {
       {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
         {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
       {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
+        {state.locaOffer && me?.alive && <LocaOfferModal offer={state.locaOffer} onAnswer={(a) => socket.emit("locaAnswer", { accept: a })} />}
       {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
       {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>

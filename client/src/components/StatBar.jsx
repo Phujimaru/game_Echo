@@ -28,17 +28,23 @@ export default function StatBar({ p }) {
         )}
       </div>
 
-      {/* หลอดสกิล 6 จุดทอง */}
-      <div className="flex gap-1" title={`หลอดสกิล ${p.skillPoints}/${p.maxSkill}`}>
-        {Array.from({ length: p.maxSkill }, (_, i) => (
-          <span
-            key={i}
-            className={`w-3 h-3 rounded-full ${
-              i < p.skillPoints ? "bg-echo-gold shadow-[0_0_5px] shadow-echo-gold" : "bg-white/10"
-            }`}
-          />
-        ))}
-      </div>
+      {/* หลอดสกิล 6 จุดทอง — ซาโตรุ (patch 2.0.8.2): แต้มสกิลถูกซ่อน (-1) แสดง ??? แทน */}
+      {p.skillPoints < 0 ? (
+        <div className="flex gap-1 items-center" title="แต้มสกิลถูกซ่อน (สกิลติดตัวซาโตรุ)">
+          <span className="text-xs font-black text-echo-gold opacity-90">🌩️ ??? / {p.maxSkill}</span>
+        </div>
+      ) : (
+        <div className="flex gap-1" title={`หลอดสกิล ${p.skillPoints}/${p.maxSkill}`}>
+          {Array.from({ length: p.maxSkill }, (_, i) => (
+            <span
+              key={i}
+              className={`w-3 h-3 rounded-full ${
+                i < p.skillPoints ? "bg-echo-gold shadow-[0_0_5px] shadow-echo-gold" : "bg-white/10"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
