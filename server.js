@@ -365,7 +365,7 @@ function isNightRound(n) {
 const SHRADE_MELODY_MAX = 5;    // ท่วงทำนอง สะสมได้สูงสุด (ครบ 5 ถึงใช้ท่าไม้ตาย 1 ได้)
 const SHRADE_ATK_BONUS = 2;     // ร่างอควาเรียน สปาด้า: พลังโจมตีพื้นฐาน +2 ถาวร
 const SHRADE_CHARGE_TURNS = 3;  // แด่เพื่อนรักของฉัน: ชาร์จ 3 เทิร์น (เสียเลือดเทิร์นละ 1)
-const SHRADE_BLAST_DMG = 5;     // แด่เพื่อนรักของฉัน: ความเสียหายใส่ทุกคนบนสนามเมื่อครบกำหนด
+const SHRADE_BLAST_DMG = 8;     // แด่เพื่อนรักของฉัน: ความเสียหายใส่ทุกคนบนสนามเมื่อครบกำหนด (patch 2.0.8.4 — เพิ่มจาก 5)
 const SHRADE_SPADA_IMG = "/characters/shrade_elan/profile/spada.webp"; // ร่างสปาด้า (ถาวร)
 const SHRADE_SPADA_NAME = "อควาเรียน สปาด้า";
 // กำลังชาร์จแด่เพื่อนรักของฉันอยู่ไหม (จั่วเพิ่ม/ใช้สกิลอื่นไม่ได้ แต่ชนะจั่วยังตีได้)
@@ -579,14 +579,15 @@ function shikiGiveLifeline(shiki, target, amount) {
 const OGURI_STAMINA_START = 8;   // GrayBeast: ได้ Stamina เริ่มเกม
 const OGURI_STAMINA_MAX = 16;    // Stamina สะสมสูงสุด
 const OGURI_GOLD_MAX = 2;        // ยุคทอง สะสมสูงสุด
-const OGURI_GOLD_TURNS = 3;      // ยุคทอง อยู่ 3 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่)
+const OGURI_GOLD_TURNS = 6;      // ยุคทอง อยู่ 6 เทิร์น (patch 2.0.8.4 — เพิ่มจาก 3, รีเฟรชเมื่อได้แต้มใหม่)
+const OGURI_GOLD_ATK = 2;        // ยุคทอง: พลังโจมตี +2 (patch 2.0.8.4 — แก้จาก +1 ให้ตรงสเปค)
 const OGURI_GRIT_MAX = 2;        // เวลากัดฟันทน สะสมสูงสุด
 const OGURI_TRAIN_STAMINA = 4;   // Training: หัก Stamina 4
 const OGURI_TRAIN_STAMINA_OW = 2; // Training ระหว่าง Overweight: หัก Stamina 2 + Cost 0
 const OGURI_TRAIN_BASE = 0.6;    // โอกาสฝึกฝนสำเร็จพื้นฐาน 60% (+10%/เวลากัดฟันทน −10%/ยุคทอง)
 const OGURI_TRAIN_OW = 0.9;      // โอกาสฝึกฝนสำเร็จระหว่าง Overweight: 90% คงที่
 const OGURI_ULT_STAMINA = 8;     // The Beat of Victory: หัก Stamina 8
-const OGURI_ULT2_STAMINA = 16;   // Ashen Trail: หัก Stamina 16 + ยุคทอง 2
+const OGURI_ULT2_STAMINA = 12;   // Ashen Trail: หัก Stamina 12 + ยุคทอง 2 (patch 2.0.8.4 — ลดจาก 16)
 const OGURI_ASHEN_DRAWS = 2;     // Ashen Trail: บังคับทุกคนจั่วเพิ่ม 2 ใบ
 const OGURI_ASHEN_DMG = 2;       // Ashen Trail: โจมตีทุกคนที่ไพ่แตกหลังเปิดไพ่ (1 พื้นฐาน + 1 โบนัสสกิล)
 const OGURI_STAGGER_CAP = 16;    // ชะงัก: จั่วไพ่ได้ไม่เกิน 16 แต้ม
@@ -771,7 +772,7 @@ const TRANSFORMS = {
   shradeForm: { img: SHRADE_SPADA_IMG, video: "/characters/shrade_elan/skill3/shrade_final.mp4", title: "รวมร่างทำนองเพลง", label: "ปล่อยท่าไม้ตาย", seconds: 20, music: null, afterReveal: false },
   // shradeCharge: ท่าไม้ตาย 2 แด่เพื่อนรักของฉัน — วีดีโอเริ่มชาร์จ 10 วิ (เพลง shrade_theme ค้างระหว่างชาร์จ)
   shradeCharge: { img: "/characters/shrade_elan/skill3/shrade_skill3.2.jpg", video: "/characters/shrade_elan/skill3/shrade_final2.1.mp4", title: "แด่เพื่อนรักของฉัน", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: "shrade", afterReveal: false },
-  // shradeBlast: แด่เพื่อนรักของฉัน ครบ 3 เทิร์น — วีดีโอสุดท้าย 15 วิ แล้วระเบิดใส่ทุกคน 5 หน่วย
+  // shradeBlast: แด่เพื่อนรักของฉัน ครบ 3 เทิร์น — วีดีโอสุดท้าย 15 วิ แล้วระเบิดใส่ทุกคน 8 หน่วย
   shradeBlast: { img: SHRADE_SPADA_IMG, video: "/characters/shrade_elan/skill3/shrade_final2.2.mp4", title: "แด่เพื่อนรักของฉัน", label: "บทเพลงบรรเลงจบ", seconds: 15, music: null, afterReveal: false },
   // shradePassive: สกิลติดตัว เสียงไพเราะที่กึกก้อง — เข้ากลางคืนพร้อมท่วงทำนองครบ 5 วีดีโอ 11 วิ
   shradePassive: { img: "/characters/shrade_elan/profile/shrade_elan.jpg", video: "/characters/shrade_elan/shrade_passive.mp4", title: "เสียงไพเราะที่กึกก้อง", label: "สกิลติดตัวทำงาน", seconds: 11, music: null, afterReveal: false },
@@ -1776,24 +1777,29 @@ function dealRound() {
     }
     firePassive(p, "roundStart");
 
-    // ---------- โอกูริ แคป (patch 2.0.8.1): GrayBeast — เช็คตอนเริ่มเทิร์น ----------
+    // ---------- โอกูริ แคป (patch 2.0.8.4): GrayBeast — เช็คตอนเริ่มเทิร์น ----------
     if (p.characterId === "oguri") {
-      // ยุคทองครบ 2 -> เข้าสู่ร่าง Zone (คงอยู่จนกว่าจะเข้าร่างหมดแรง)
+      // ร่าง Zone ผูกกับยุคทอง: ไม่มียุคทองเหลือ -> ร่าง Zone และ GrayBeast หายไปทันที
+      if ((p.statuses.graybeast || 0) > 0 && oguriGoldStacks(p) <= 0) {
+        delete p.statuses.graybeast;
+        delete p.seen.graybeast;
+        p.oguriZoneTurns = 0;
+        lastLog.push(`🐴 ${p.name} ยุคทองหมดลง — ร่าง Zone และ GrayBeast จางหายไป`);
+      }
+      // ยุคทองครบ 2 -> เข้าสู่ร่าง Zone (คงอยู่ตราบใดที่ยังมียุคทอง)
       if (!((p.statuses.graybeast || 0) > 0) && oguriGoldStacks(p) >= OGURI_GOLD_MAX) {
-        p.statuses.graybeast = 1; // ถาวร (ไม่ลดเทิร์น) จนกว่าจะหมดแรง
+        p.statuses.graybeast = 1; // ไม่ลดเทิร์น — หายเมื่อยุคทองหมด/เข้าร่างหมดแรง
         p.seen.graybeast = true;  // ให้เพลง oguri_theme เล่นค้างระหว่างอยู่ร่าง Zone
         p.oguriZoneTurns = 0;
         p.transformAt = ++transformCounter;
         triggerCutscene(p, "graybeast");
-        lastLog.push(`🐴⚡ ${p.name} ยุคทองครบ ${OGURI_GOLD_MAX} แต้ม — เข้าสู่ร่าง Zone! ได้รับ GrayBeast (Stamina +1 ทุกเทิร์น / แต้มสกิล +1 ทุก 2 เทิร์น)`);
+        lastLog.push(`🐴⚡ ${p.name} ยุคทองครบ ${OGURI_GOLD_MAX} แต้ม — เข้าสู่ร่าง Zone! ได้รับ GrayBeast (Stamina +1 และแต้มสกิล +1 ทุกเทิร์น)`);
       }
-      // GrayBeast: Stamina +1 ทุกเทิร์น และแต้มสกิล +1 ทุก 2 เทิร์น
+      // GrayBeast: Stamina +1 และแต้มสกิล +1 ทุกเทิร์น (patch 2.0.8.4 — เดิมแต้มสกิลทุก 2 เทิร์น)
       if ((p.statuses.graybeast || 0) > 0) {
         oguriAddStamina(p, 1);
-        p.oguriZoneTurns = (p.oguriZoneTurns || 0) + 1;
-        const bonusPoint = p.oguriZoneTurns % 2 === 0;
-        if (bonusPoint) addSkill(p, 1);
-        lastLog.push(`🐴 ${p.name} GrayBeast — Stamina +1 (${p.stamina}/${OGURI_STAMINA_MAX})${bonusPoint ? " และแต้มสกิล +1" : ""}`);
+        addSkill(p, 1);
+        lastLog.push(`🐴 ${p.name} GrayBeast — Stamina +1 (${p.stamina}/${OGURI_STAMINA_MAX}) และแต้มสกิล +1`);
       }
       // Stamina หมด + ไม่มียุคทอง -> เข้าสู่ร่างหมดแรง (Burnout)
       if ((p.stamina || 0) <= 0 && oguriGoldStacks(p) <= 0 && !((p.statuses.burnout || 0) > 0)) {
@@ -2715,7 +2721,7 @@ function useSkill(id, tier, targets, item) {
         p.statusAmt.goldenera = Math.min(OGURI_GOLD_MAX, (p.statusAmt.goldenera || 0) + 1);
         p.statuses.goldenera = OGURI_GOLD_TURNS; // รีเฟรชเวลา 3 เทิร์นทุกครั้งที่ได้แต้มใหม่
         flashSuffix = ` — ฝึกฝนสำเร็จ! ยุคทอง ${p.statusAmt.goldenera}/${OGURI_GOLD_MAX}`;
-        lastLog.push(`🏃 ${p.name} Training — ฝึกฝนสำเร็จ! แต้มสกิล +1 และยุคทอง +1 (${p.statusAmt.goldenera}/${OGURI_GOLD_MAX} — พลังโจมตี +1 เพดานเกราะ +1 · อยู่ ${OGURI_GOLD_TURNS} เทิร์น)`);
+        lastLog.push(`🏃 ${p.name} Training — ฝึกฝนสำเร็จ! แต้มสกิล +1 และยุคทอง +1 (${p.statusAmt.goldenera}/${OGURI_GOLD_MAX} — พลังโจมตี +${OGURI_GOLD_ATK} เพดานเกราะ +1 · อยู่ ${OGURI_GOLD_TURNS} เทิร์น)`);
       }
     } else {
       // ฝึกฝนล้มเหลว: เจ็บ 1 ไม่สนเกราะ + เวลากัดฟันทน +1 — ยุคทองทั้งหมดหายไป
@@ -3790,8 +3796,8 @@ function doAttack(byId, targetId) {
   const shradeAtk = (attacker.characterId === "shrade_elan" && attacker.shradeForm && isNightRound(roundNumber)) ? SHRADE_ATK_BONUS : 0;
   const shradeDayOff = attacker.characterId === "shrade_elan" && attacker.shradeForm && !isNightRound(roundNumber);
   // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
-  // ยุคทอง: พลังโจมตี +1 / The Beat of Victory: +1 และเป้าหมายติดชะงัก / Ashen Trail: +1
-  const oguriGoldAtk = (attacker.characterId === "oguri" && oguriGoldStacks(attacker) > 0) ? 1 : 0;
+  // ยุคทอง: พลังโจมตี +2 (patch 2.0.8.4) / The Beat of Victory: +1 และเป้าหมายติดชะงัก / Ashen Trail: +1
+  const oguriGoldAtk = (attacker.characterId === "oguri" && oguriGoldStacks(attacker) > 0) ? OGURI_GOLD_ATK : 0;
   const victoryAtk = (attacker.statuses.victorybeat || 0) > 0;
   const ashenAtk = (attacker.statuses.ashen || 0) > 0;
 
@@ -4058,7 +4064,7 @@ function doAttack(byId, targetId) {
   if (bardDiscord) addFx({ name: "Discord — ขัดแย้ง (+1 ดาเมจ)", img: BARD_JADE_IMG, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "atk");
   if (linkedHit) addFx({ name: `เชื่อมผล (${linkedHit.name} -${buddyHpBefore - linkedHit.hp})`, img: BARD_JADE_IMG, by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
   // โอกูริ แคป (patch 2.0.8.1)
-  if (oguriGoldAtk > 0) addFx({ name: "ยุคทอง +1", img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (oguriGoldAtk > 0) addFx({ name: `ยุคทอง +${oguriGoldAtk}`, img: displayImg(attacker), by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (victoryAtk) addFx({ name: "The Beat of Victory +1 (เป้าหมายติดชะงัก)", img: TRANSFORMS.victorybeat.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (ashenAtk) addFx({ name: "Ashen Trail +1", img: TRANSFORMS.oguriAshen.img, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (fullBelly) addFx({ name: "เต็มอิ่ม (ดาเมจ -1)", img: displayImg(target), by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
@@ -4240,7 +4246,7 @@ function endTurn() {
       }
     }
   }
-  // แด่เพื่อนรักของฉัน (ชเรด เอลัน): ครบ 3 เทิร์น — เล่นวีดีโอสุดท้าย แล้วระเบิดใส่ทุกคนบนสนาม 5 หน่วย
+  // แด่เพื่อนรักของฉัน (ชเรด เอลัน): ครบ 3 เทิร์น — เล่นวีดีโอสุดท้าย แล้วระเบิดใส่ทุกคนบนสนาม 8 หน่วย
   //  จากนั้นชเรดจบชีวิตลงตามไป — หากทุกคนตายเพราะท่านี้หมดก่อน ชเรดถือว่าเป็นผู้ชนะ (ไม่ตายตาม)
   for (const s of shradeBlasts) {
     if (!s.alive) continue; // ตายไปก่อนจะได้ปลดปล่อย = ท่าไม้ตายไม่ระเบิด

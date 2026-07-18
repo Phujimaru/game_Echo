@@ -460,7 +460,7 @@ const STATUS_INFO = {
   kawaii:    { icon: "💖", label: "Kawaii", cls: "bg-echo-magenta", desc: "Sekai ichi kawaii watashi: หลังเปิดไพ่จะตีทุกคน 1 หน่วย (บัฟ Dance Lession = 2) และทุกคนถูกใบ้การใช้สกิล 3 เทิร์น" },
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   melody:    { icon: "🎵", label: "ท่วงทำนอง", cls: "bg-echo-cyan text-gray-900", desc: "ท่วงทำนอง: สะสมจากสกิล เชิญรับฟัง (สูงสุด 5) — ครบ 5 ตอนกลางคืนจะใช้ท่าไม้ตาย รวมร่างทำนองเพลง ได้" },
-  shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 5 หน่วย แล้วชเรดจบชีวิตลง" },
+  shradecharge: { icon: "🎻", label: "บทเพลงสุดท้าย", cls: "bg-echo-hp", desc: "แด่เพื่อนรักของฉัน: กำลังบรรเลงบทเพลงสุดท้าย — จั่ว/ใช้สกิลไม่ได้ ครบกำหนดจะระเบิดใส่ทุกคน 8 หน่วย แล้วชเรดจบชีวิตลง" },
   moonmark:  { icon: "🌕", label: "จันทร์ส่อง", cls: "bg-echo-magenta", desc: "แสงจันทร์ส่องวิญญาณ (สปาด้า): หากไพ่แตกในเทิร์นนี้ จะรับความเสียหาย 1 หน่วยทันที" },
   // ---------- สถานะพื้นฐาน universal (patch 2.0.8) ----------
   freecast:  { icon: "🎁", label: "พรแห่งการจั่ว", cls: "bg-echo-gold text-gray-900", desc: "พรแห่งการจั่ว: ใช้สกิลครั้งถัดไปไม่เสียแต้มสกิล (คงอยู่จนกว่าจะได้ใช้)" },
@@ -487,9 +487,9 @@ const STATUS_INFO = {
   wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา (rework patch 2.0.8): ทุกเทิร์นมอบเส้นชีวิต +1 ให้ผู้เล่นทุกคน (ยกเว้นชิกิ) — ท่าไม้ตายแจกได้สูงสุด 3 หน่วยต่อคน (รวมแหล่งปกติสูงสุด 5) — โจมตีปกติ: เส้นชีวิตแปรเป็นดาเมจเสริม +1 ต่อเส้น (พลังโจมตีรวมสูงสุด 5 ต่อครั้ง) และมีโอกาสสังหารทันที 1% คงที่ เพิ่มไม่ได้ — เมื่อท่าจบลง (สังหารสำเร็จ/หมดเวลา) เส้นชีวิตส่วนที่ท่าแจกไปถูกลบออกจากทุกคน" },
   godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ?: ชิกิพร้อมยกเลิกท่าไม้ตายของผู้เล่นอื่น 1 คน 1 ครั้ง (2 เทิร์น — ผลยังอยู่กดสกิลซ้ำไม่ได้) — ผู้เล่นอื่นคนแรกที่กดท่าไม้ตายระหว่างนี้จะถูกยกเลิกทันที (แต้มสกิลเสียฟรี) และหากเจ้าของท่าไม้ตายที่มีผลอยู่ก่อนแล้วมาโจมตีชิกิ จะถูกยกเลิกท่าแบบย้อนหลังทันที" },
   // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
-  graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Zone: ได้รับ Stamina +1 ทุกเทิร์น และแต้มสกิล +1 ทุก 2 เทิร์น — คงอยู่จนกว่าจะเข้าร่างหมดแรง" },
+  graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Zone: ได้รับ Stamina +1 และแต้มสกิล +1 ทุกเทิร์น — หายไปเมื่อไม่มียุคทองเหลืออยู่ หรือเข้าร่างหมดแรง" },
   burnout: { icon: "💦", label: "หมดแรง", cls: "bg-echo-hp", desc: "Burnout: Stamina หมดและไม่มียุคทอง — ใช้สกิลใดๆ ไม่ได้ยกเว้น A Big Meal จนกว่า Stamina จะกลับมามากกว่า 0" },
-  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: พลังโจมตี +1 และเพดานเกราะ +1 — สะสมสูงสุด 2 แต้ม อยู่ 3 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่) ทุกแต้มลดโอกาสฝึกฝนสำเร็จ 10% — หายทั้งหมดเมื่อฝึกฝนล้มเหลว · ครบ 2 แต้มตอนเริ่มเทิร์นจะเข้าสู่ร่าง Zone" },
+  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: พลังโจมตี +2 และเพดานเกราะ +1 — สะสมสูงสุด 2 แต้ม อยู่ 6 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่) ทุกแต้มลดโอกาสฝึกฝนสำเร็จ 10% — หายทั้งหมดเมื่อฝึกฝนล้มเหลว · ครบ 2 แต้มตอนเริ่มเทิร์นจะเข้าสู่ร่าง Zone (ยุคทองหมด = ออกจากร่าง Zone)" },
   grit: { icon: "😤", label: "เวลากัดฟันทน", cls: "bg-echo-cyan text-gray-900", desc: "เวลากัดฟันทน: ทุกแต้มเพิ่มโอกาสฝึกฝนสำเร็จ 10% (สะสมสูงสุด 2) — หายไปเมื่อฝึกฝนสำเร็จ" },
   fullbelly: { icon: "🥖", label: "เต็มอิ่ม", cls: "bg-echo-armor", desc: "เต็มอิ่ม (Breakfast): ดาเมจที่ได้รับ -1 หน่วย — หายไปหลังจบเทิร์นที่กดใช้ (สะสมได้ 1 แต้ม)" },
   overweight: { icon: "🍱", label: "Overweight", cls: "bg-echo-hp", desc: "Overweight (A Big Meal): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง — ลบออกได้ด้วย Healthfull ครบ 2 แต้ม (จากการฝึกฝนสำเร็จระหว่างติดบัฟนี้) เท่านั้น" },
@@ -525,7 +525,7 @@ function statusEntries(p, full) {
   if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ (ไม่ซ้อนทับ) — มอบชิ้นเดิมให้คนเดิมซ้ำ บัฟหายไป" });
   if ((p.coins || 0) > 0) out.push({ key: "coins", v: p.coins, icon: "🐷", label: "Coin", cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสินน้องหมูน้อย: coin สะสม (สูงสุด 6) — ตอนโจมตีแปลงเป็นความเสียหาย 2 coin = +1 (ใช้แล้วเหรียญหมดไป)" });
   // โอกูริ แคป: Stamina สะสม (โชว์เสมอ — ทรัพยากรหลักของตัวละคร)
-  if (p.character?.id === "oguri") out.push({ key: "stamina", v: 1, icon: "🏇", label: `Stamina ${p.stamina || 0}/16`, cls: "bg-echo-cyan text-gray-900", desc: "Stamina: ทรัพยากรของโอกูริ แคป (สะสมสูงสุด 16) — Training ใช้ 4 / The Beat of Victory ใช้ 8 / Ashen Trail ใช้ 16 — เติมได้จาก Breakfast (+4), A Big Meal (เต็ม 16) และ GrayBeast (+1/เทิร์น)" });
+  if (p.character?.id === "oguri") out.push({ key: "stamina", v: 1, icon: "🏇", label: `Stamina ${p.stamina || 0}/16`, cls: "bg-echo-cyan text-gray-900", desc: "Stamina: ทรัพยากรของโอกูริ แคป (สะสมสูงสุด 16) — Training ใช้ 4 / The Beat of Victory ใช้ 8 / Ashen Trail ใช้ 12 — เติมได้จาก Breakfast (+4), A Big Meal (เต็ม 16) และ GrayBeast (+1/เทิร์น)" });
   if (p.danceBuff) out.push({ key: "dance", v: 1, icon: "💃", label: "Dance", cls: "bg-echo-magenta", desc: "Dance Lession: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1 (ใช้ท่าไม้ตายแล้วบัฟหมด)" });
   if ((p.lightDew || 0) > 0) out.push({ key: "lightDew", v: p.lightDew, icon: "✨", label: "แสงละออง", cls: "bg-echo-cyan text-gray-900", desc: "แสงละอองสะสม (สูงสุด 5) — ครบ 5 ขณะอยู่ร่างโซล่าตอนกลางวัน จะกลายเป็นปีกแห่งสุริยัน 5 เทิร์น" });
   if ((p.reviveIn || 0) > 0) out.push({ key: "reviveIn", v: p.reviveIn, icon: "🌳", label: "รอฟื้นคืนชีพ", cls: "bg-echo-gold text-gray-900", desc: "พฤกษาแห่งชีวิต: จะฟื้นคืนชีพเมื่อครบตามจำนวนเทิร์นที่เหลือ (เลือด 1 เกราะ 0 แต้มสกิล 0) หากเกมยังไม่จบ" });
