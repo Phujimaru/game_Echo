@@ -692,11 +692,10 @@ function riddheAllied(p) {
   const o = players[p.allyId];
   return (o && o.alive && o.allyId === p.id) ? o : null;
 }
-// กันตาย (ท่าไม้ตาย 2): บานาจพันธมิตรตายไม่ได้ระหว่างริดดี้เปิด "ฉันจะไม่ยอมสูญเสียใครไปอีก"
+// กันตาย (ท่าไม้ตาย 2 patch 2.1.1): ริดดี้เองตายไม่ได้ระหว่างเปิด "ฉันจะไม่ยอมสูญเสียใครไปอีก" (สลับจากเดิมที่กันตายให้บานาจ)
 function riddheGuardProtects(p) {
-  if (!p || !p.alive || p.characterId !== "banagher") return false;
-  const r = riddheAllied(p);
-  return !!(r && r.characterId === "riddhe" && (r.statuses.riddheguard || 0) > 0);
+  if (!p || !p.alive || p.characterId !== "riddhe") return false;
+  return (p.statuses.riddheguard || 0) > 0;
 }
 // สกิลติดตัว 1: ทริกเกอร์ท่าไม้ตาย 1 ฟรี — บานาจตีเรา หรือบานาจไม่ตีเราครบ 3 เทิร์น (1 ครั้งต่อเกม)
 //  compensate = ทริกเกอร์ช่วงท้ายเทิร์น (โดนตี) -> +1 ชดเชยการลดสถานะตอนจบเทิร์น
@@ -1212,11 +1211,11 @@ function activeSkillMusic() {
 // เชื่อมผล (patch 2.0.8): การลด HP จริงถูกแชร์ให้คู่เชื่อมเท่ากันด้วย (อมตะกันไว้ได้)
 function loseHp(p) {
   if ((p.tempHp || 0) > 0) { p.tempHp--; return; }
-  // ฉันจะไม่ยอมสูญเสียใครไปอีก (ริดดี้ patch 2.0.9): บานาจพันธมิตรตายไม่ได้ — เลือดค้างที่ 1
+  // ฉันจะไม่ยอมสูญเสียใครไปอีก (ริดดี้ patch 2.1.1): ริดดี้เองตายไม่ได้ — เลือดค้างที่ 1
   if (p.hp <= 1 && riddheGuardProtects(p)) {
     if (p.riddheSaveLoggedRound !== roundNumber) {
       p.riddheSaveLoggedRound = roundNumber;
-      lastLog.push(`🛡️🤝 บันชีปกป้อง ${p.name} — ฉันจะไม่ยอมสูญเสียใครไปอีก! เลือดค้างที่ 1 (ตายไม่ได้ระหว่างท่าไม้ตายทำงาน)`);
+      lastLog.push(`🛡️🤝 บันชีปกป้องตัวเอง ${p.name} — ฉันจะไม่ยอมสูญเสียใครไปอีก! เลือดค้างที่ 1 (ตายไม่ได้ระหว่างท่าไม้ตายทำงาน)`);
     }
     return;
   }
@@ -3067,7 +3066,7 @@ function useSkill(id, tier, targets, item) {
     triggerCutscene(p, "riddheNtd"); // เล่นวีดีโอ banshee_skill3.mp4 ทันทีก่อนเปิดไพ่
     lastLog.push(`⚡ ${p.name} แกไม่มีสิทธิ์มาสั่งสอนฉัน — เปิด NT-D System ${RIDDHE_NTD_TURNS} เทิร์น! โจมตีพื้นฐาน +1 และกระสุน Beam +1`);
   }
-  // ท่าไม้ตาย 2 ฉันจะไม่ยอมสูญเสียใครไปอีก: เกราะ+ต้านสถานะให้ทั้งคู่ 5 เทิร์น + กันตายบานาจ
+  // ท่าไม้ตาย 2 ฉันจะไม่ยอมสูญเสียใครไปอีก: เกราะ+ต้านสถานะให้ทั้งคู่ 3 เทิร์น + กันตายริดดี้เอง (patch 2.1.1 — สลับจากเดิมที่กันตายให้บานาจ)
   //  ระหว่างนี้ริดดี้จั่ว/ใช้สกิล/โจมตีไม่ได้ — เกราะรวมเสียถึง 3 = ฟื้น +2 ทั้งคู่ + วีดีโอพิเศษ
   if (st === "riddheguard") {
     const b = riddheAllied(p);
@@ -3083,7 +3082,7 @@ function useSkill(id, tier, targets, item) {
     p.riddheGuardHealed = false;
     p.transformAt = ++transformCounter;
     triggerCutscene(p, "riddheGuard"); // เล่นวีดีโอ banshee_skill3.2.mp4 ทันทีก่อนเปิดไพ่
-    lastLog.push(`🛡️🤝 ${p.name} ฉันจะไม่ยอมสูญเสียใครไปอีก — ${RIDDHE_GUARD_TURNS} เทิร์น! เกราะสูงสุด +2 ฟื้นเกราะ +2 และต้านสถานะผิดปกติให้${b ? ` ${b.name} และ` : ""}ตัวเอง กระสุน Beam +1 — ${b ? `${b.name} จะตายไม่ได้ (HP ต่ำสุด 1) ` : ""}แต่ริดดี้จั่ว/ใช้สกิล/โจมตีไม่ได้ระหว่างนี้`);
+    lastLog.push(`🛡️🤝 ${p.name} ฉันจะไม่ยอมสูญเสียใครไปอีก — ${RIDDHE_GUARD_TURNS} เทิร์น! เกราะสูงสุด +2 ฟื้นเกราะ +2 และต้านสถานะผิดปกติให้${b ? ` ${b.name} และ` : ""}ตัวเอง กระสุน Beam +1 — ${p.name} จะตายไม่ได้ (HP ต่ำสุด 1) แต่ริดดี้จั่ว/ใช้สกิล/โจมตีไม่ได้ระหว่างนี้`);
   }
 
   // Song for you (เทมาริ patch 2.0.6.1): ล้างสถานะผิดปกติทั้งหมดของตัวเอง แล้วนำชามทงคัสสึมาบัฟตัวเอง
