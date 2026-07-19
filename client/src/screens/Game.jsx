@@ -475,11 +475,11 @@ const STATUS_INFO = {
   guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "คุ้มครอง: ความเสียหายจากการถูกโจมตีลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1) ตามจำนวนเทิร์นที่เหลือ" },
   fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: การจั่วไพ่ครั้งถัดไปจะได้ไพ่ใบที่ดีที่สุดที่ไม่ทำให้แตก (ซ้อนทับได้สูงสุด 3 — หมดไปทีละ 1 ต่อการจั่ว)" },
   empower:   { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "Rejuvenation: การโจมตีครั้งถัดไป +1 ดาเมจ (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี)" },
-  linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "เชื่อมผล: การเพิ่ม-ลด HP ถูกแชร์ให้คู่เชื่อมเท่ากัน (ฝ่ายหนึ่งฮีล อีกฝ่ายฮีลตาม / ฝ่ายหนึ่งเสียเลือดจริง อีกฝ่ายเสียตาม) ตามจำนวนเทิร์นที่เหลือ" },
+  linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "เชื่อมผล: HP โดนดาเมจ, เกราะโดนดาเมจ, ฟื้นฟู HP และฟื้นฟูเกราะ ถูกแชร์ให้คู่เชื่อมเท่ากัน 1:1 (ฝ่ายหนึ่งเสีย/ได้ อีกฝ่ายเสีย/ได้ตาม) ตามจำนวนเทิร์นที่เหลือ" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "หลบหลีก: หลบการโดนโจมตีตาม % ที่ระบุ (ไม่ระบุ = 100%) — ซ้อนทับได้สูงสุด 3 หมดไปทีละ 1 เมื่อถูกเลือกโจมตี" },
   bloodDim:  { icon: "❤️", label: "มิติโลหิต", cls: "bg-echo-hp", desc: "มิติมายาบรรเลงโลหิต (นับเป็นตอนเช้า): กดโน้ตได้สูงสุด 6 ครั้งต่อเทิร์น — ตอนเปิดมิติ คีตกวีได้ต้านสถานะผิดปกติ 3 เทิร์น หลบหลีก 1 โชคลาภ 1 และผู้เล่นทุกคน (ยกเว้นคีตกวี) ติดเปราะบาง +1 ดาเมจที่ได้รับ 3 เทิร์น" },
-  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): กดโน้ตได้สูงสุด 6 ครั้งต่อเทิร์น — ตอนเปิดมิติ คีตกวีได้ต้านสถานะผิดปกติ 3 เทิร์น หลบหลีก 1 โชคลาภ 1 และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด" },
+  soulDim:   { icon: "💚", label: "มิติวิญญาณ", cls: "bg-echo-magenta", desc: "มิติมายาบรรเลงวิญญาณ (นับเป็นตอนกลางคืน): กดโน้ตได้สูงสุด 6 ครั้งต่อเทิร์น — ตอนเปิดมิติ คีตกวีได้ต้านสถานะผิดปกติ 3 เทิร์น หลบหลีก 1 โชคลาภ 1 และทุกการบรรเลงทำนอง ทำความเสียหาย 1 หน่วยแบบสุ่มกับผู้เล่น 2 คน จนกว่ามิติจะสิ้นสุด (เป้าหมายไม่สามารถถูกฆ่าได้จากเอฟเฟกต์นี้)" },
   // ---------- เรียวกิ ชิกิ (patch 2.0.6) ----------
   knife:     { icon: "🔪", label: "มีดพก", cls: "bg-echo-cyan text-gray-900", desc: "มีดพก: การโจมตีปกติฟื้นพลังชีวิตให้ตัวเอง 3 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต (เนตรมารแห่งความมรณะ): สะสมจากการเปิดไพ่แต้มเท่ากับชิกิ / สกิลรอง / ท่าไม้ตาย 2 — โหมดท่า 1: ครบ 6 แล้วถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย = ถูกสังหารทันที (ถูกโจมตีก่อนครบ = รีเซ็ตทั้งหมด) / โหมดท่า 2 (patch 2.0.8): สะสมได้สูงสุด 5 — ระหว่างความตายที่โรยรา เส้นชีวิตแปรเป็นดาเมจเสริมการโจมตีปกติของชิกิ +1 ต่อเส้น (พลังโจมตีรวมสูงสุด 5) และมีโอกาสถูกสังหารทันที 1% คงที่" },
@@ -489,16 +489,22 @@ const STATUS_INFO = {
   // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
   graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Zone: ได้รับ Stamina +1 และแต้มสกิล +1 ทุกเทิร์น — หายไปเมื่อไม่มียุคทองเหลืออยู่ หรือเข้าร่างหมดแรง" },
   burnout: { icon: "💦", label: "หมดแรง", cls: "bg-echo-hp", desc: "Burnout: Stamina หมดและไม่มียุคทอง — ใช้สกิลใดๆ ไม่ได้ยกเว้น A Big Meal จนกว่า Stamina จะกลับมามากกว่า 0" },
-  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: พลังโจมตี +2 และเพดานเกราะ +1 — สะสมสูงสุด 2 แต้ม อยู่ 6 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่) ทุกแต้มลดโอกาสฝึกฝนสำเร็จ 10% — หายทั้งหมดเมื่อฝึกฝนล้มเหลว · ครบ 2 แต้มตอนเริ่มเทิร์นจะเข้าสู่ร่าง Zone (ยุคทองหมด = ออกจากร่าง Zone)" },
+  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: พลังโจมตีพื้นฐาน +1 ทุกๆ 2 แต้มที่ติดอยู่บนตัว และเพดานเกราะ +1 — สะสมสูงสุด 2 แต้ม อยู่ 6 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่) ทุกแต้มลดโอกาสฝึกฝนสำเร็จ 10% — หายทั้งหมดเมื่อฝึกฝนล้มเหลว · ครบ 2 แต้มตอนเริ่มเทิร์นจะเข้าสู่ร่าง Zone (ยุคทองหมด = ออกจากร่าง Zone)" },
   grit: { icon: "😤", label: "เวลากัดฟันทน", cls: "bg-echo-cyan text-gray-900", desc: "เวลากัดฟันทน: ทุกแต้มเพิ่มโอกาสฝึกฝนสำเร็จ 10% (สะสมสูงสุด 2) — หายไปเมื่อฝึกฝนสำเร็จ" },
   fullbelly: { icon: "🥖", label: "เต็มอิ่ม", cls: "bg-echo-armor", desc: "เต็มอิ่ม (Breakfast): ดาเมจที่ได้รับ -1 หน่วย — หายไปหลังจบเทิร์นที่กดใช้ (สะสมได้ 1 แต้ม)" },
   overweight: { icon: "🍱", label: "Overweight", cls: "bg-echo-hp", desc: "Overweight (A Big Meal): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง — ลบออกได้ด้วย Healthfull ครบ 2 แต้ม (จากการฝึกฝนสำเร็จระหว่างติดบัฟนี้) เท่านั้น" },
   healthfull: { icon: "💪", label: "Healthfull", cls: "bg-echo-cyan text-gray-900", desc: "Healthfull: ได้จากการฝึกฝนสำเร็จระหว่างติด Overweight — ครบ 2 แต้มจะถูกใช้เพื่อลบ Overweight ออก 1 แต้ม" },
   victorybeat: { icon: "🏆", label: "Beat of Victory", cls: "bg-echo-gold text-gray-900", desc: "The Beat of Victory: หากชนะเทิร์นนี้ การโจมตี +1 ดาเมจ และเป้าหมายติดชะงัก 1 เทิร์น" },
-  ashen: { icon: "🐴", label: "Ashen Trail", cls: "bg-echo-hp", desc: "Ashen Trail: Cinderella Gray — เทิร์นนี้การโจมตี +1 ดาเมจ และหลังเปิดไพ่จะโจมตีใส่ทุกคนที่ไพ่แตก คนละ 2 หน่วย" },
+  ashen: { icon: "🐴", label: "Ashen Trail", cls: "bg-echo-hp", desc: "Ashen Trail: Cinderella Gray — เทิร์นนี้การโจมตี +2 ดาเมจ และหลังเปิดไพ่จะโจมตีใส่ทุกคนที่ไพ่แตก คนละ 2 หน่วย" },
   stagger: { icon: "🫨", label: "ชะงัก", cls: "bg-echo-hp", desc: "ชะงัก (The Beat of Victory): ใช้สกิลไม่ได้ และจั่วไพ่ได้ไม่เกิน 16 แต้ม ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2) ----------
   oblada:   { icon: "🎵", label: "สิ่งแปลกปลอม", cls: "bg-echo-hp", desc: "Obla Di, Obla Da: รับความเสียหาย 1 หน่วยทุกๆ 2 เทิร์น ตามจำนวนเทิร์นที่เหลือ (ดีบัฟพื้นฐาน — ต้าน/ล้างได้)" },
+  // ---------- ริดดี้ มาร์เซนาส (patch 2.0.9) ----------
+  absorbplus: { icon: "🧲", label: "Absorb Shield", cls: "bg-echo-armor", desc: "Absorb Shield: เพดานเกราะ +2 พร้อมเกราะชั่วคราว (1 เทิร์น) — หลังเปิดไพ่ ล่อเป้าการโจมตีของทุกคนมาที่ตัวเอง และเกราะที่เสียจากการถูกตี/แพ้ แปลงกลับเป็นพลังชีวิต" },
+  beamplus:  { icon: "🔫", label: "Beam Plus", cls: "bg-echo-magenta", desc: "Beam Magnum Plus: การโจมตีปกติเทิร์นนี้กลายเป็นตีหมู่ +1 หน่วย (ผู้เล่นอื่นนอกเป้าหมายเสียเกราะ 1) — ซ้อนกับ NT-D ได้ รวมสูงสุด +1" },
+  riddhentd: { icon: "⚡", label: "NT-D", cls: "bg-echo-gold text-gray-900", desc: "แกไม่มีสิทธิ์มาสั่งสอนฉัน: NT-D System — พลังโจมตีพื้นฐาน +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
+  riddheguard: { icon: "🛡️", label: "ไม่ยอมสูญเสีย", cls: "bg-echo-hp", desc: "ฉันจะไม่ยอมสูญเสียใครไปอีก: เพดานเกราะ +2 และต้านสถานะผิดปกติให้ทั้งคู่ — ระหว่างนี้ริดดี้จั่วการ์ด/ใช้สกิล/โจมตีไม่ได้ บานาจพันธมิตรตายไม่ได้ (HP ต่ำสุด 1) และถ้าเกราะรวมเสียถึง 3 หน่วย ฟื้นเกราะให้ทั้งคู่ +2 พร้อมวีดีโอพิเศษ" },
+  riddheward: { icon: "🛡️", label: "บันชีปกป้อง", cls: "bg-echo-armor", desc: "ได้รับการปกป้องจากบันชี: เพดานเกราะ +2 และตายไม่ได้ (HP ต่ำสุด 1) ตามจำนวนเทิร์นที่เหลือ" },
   calamity: { icon: "🌩️", label: "Calamity", cls: "bg-echo-hp", desc: "Wonder of U: หายนะไล่ล่า — ถูกบังคับจั่วไพ่เพิ่มตามระดับตอนเริ่มเทิร์นถัดจากที่โดน และรับความเสียหายตามระดับทุกๆ 2 เทิร์น ตามจำนวนเทิร์นที่เหลือ (สะสมสูงสุด 3 ระดับ — โดนซ้ำ = ระดับเพิ่ม + เวลารีเฟรช)" },
   // ---------- 14 ปีกแห่งสุริยัน อควาเรียน (patch 2.0) ----------
   solarburst: { icon: "🥊", label: "หมัดไร้ขอบเขต", cls: "bg-echo-gold text-gray-900", desc: "หมัดไร้ขอบเขต: การโจมตีเทิร์นนี้กลายเป็นตีหมู่ — เป้าหมายรับเต็ม คนอื่นเสียเกราะ 1 หน่วย" },
@@ -534,6 +540,8 @@ function statusEntries(p, full) {
   if ((p.soulSection || 0) > 0) out.push({ key: "soulSection", v: p.soulSection, icon: "💚", label: "ท่อนวิญญาณ", cls: "bg-echo-magenta", desc: "ท่อนทำนองแห่งวิญญาณ: สะสมจากการบรรเลงเพลงสาย Jade — ครบ 5 ชั้น เปิดมิติมายาบรรเลงวิญญาณ 3 เทิร์น" });
   if ((p.bardNotes || []).length > 0) out.push({ key: "bardNotes", v: 1, icon: "🎼", label: p.bardNotes.map((n) => (n === "R" ? "❤️" : "💚")).join(""), cls: "bg-echo-cyan text-gray-900", desc: "ช่องประพันธ์เพลง: โน้ตที่เติมไว้ — ครบ 3 โน้ตจะบรรเลงทำนองตามลำดับโน้ตทันที" });
   if (p.contractWithId) out.push({ key: "contract", v: 1, icon: "📶", label: "คู่สัญญา", cls: "bg-echo-cyan text-gray-900", desc: "สนใจใช้บริการเราไหม: เพดานเกราะ +1 และพลังโจมตี +1 ตลอดสัญญา — ทุก 3 เทิร์นต้องเลือกต่อสัญญา (4 แต้ม) หรือยกเลิก" });
+  // ริดดี้ (patch 2.0.9): คู่พันธมิตรบันชี × ยูนิคอร์น
+  if (p.allyId) out.push({ key: "ally", v: 1, icon: "🤝", label: "พันธมิตร", cls: "bg-echo-cyan text-gray-900", desc: "พันธมิตรบันชี × ยูนิคอร์น: เห็นแต้มการ์ดของกันและกันได้ตลอด — ถ้าคู่พันธมิตรตีกันเอง ฝ่ายถูกตีเลือกยกเลิกพันธมิตรได้ (ฟื้นสิ่งที่เสียคืน) และถ้าเหลือแค่คู่พันธมิตรบนสนามแล้วเลือกคงพันธมิตร = ชนะทั้งคู่" });
   if (p.contractPartnerId) out.push({ key: "boss", v: 1, icon: "📶", label: "มีคู่สัญญา", cls: "bg-echo-gold text-gray-900", desc: "เจ้าแห่งเน็ตบ้าน: มีคู่สัญญาอยู่ 1 คน — คู่สัญญาโจมตีใส่ตัวละครนี้ ความเสียหายลด 1 หน่วย" });
   if ((p.skillDrain || 0) > 0) out.push({ key: "skillDrain", v: p.skillDrain, icon: "📵", label: "ค่าปรับ", cls: "bg-echo-hp", desc: "ปฏิเสธข้อเสนอสัญญา: แต้มสกิลหลังจบเทิร์นลด 1 หน่วย ตามจำนวนเทิร์นที่เหลือ" });
   if ((p.statuses?.chill || 0) > 0) out.push({ key: "chillDodge", v: 1, icon: "💨", label: `หลบ ${p.chillDodge != null ? p.chillDodge : 100}%`, cls: "bg-echo-cyan text-gray-900", desc: "โอกาสหลบการถูกเลือกโจมตีขณะชิวๆครับน้องๆ — เริ่ม 100% หลบได้เหลือ 50% หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด" });
@@ -906,6 +914,104 @@ function LocaOfferModal({ offer, onAnswer }) {
   );
 }
 
+// ---------- พันธมิตรบันชี × ยูนิคอร์น (ริดดี้ มาร์เซนาส patch 2.0.9) ----------
+// Event เริ่มเกม: ริดดี้เห็นบานาจบนสนาม -> เลือกยื่นข้อเสนอพันธมิตร (เลือกบานาจ 1 คน) หรือเดินเส้นทางเดี่ยว
+function AllyChoiceModal({ choices, onPick, onDecline }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2 border-echo-gold/60">
+        <div className="text-lg font-black text-echo-gold">🤝 ตรวจพบยูนิคอร์นบนสนาม</div>
+        <div className="text-sm opacity-80 mb-3">ต้องการยื่นข้อเสนอเป็นพันธมิตรกับบานาจไหม? (เป็นพันธมิตรแล้ว ท่าไม้ตายจะเปลี่ยนเป็น "ฉันจะไม่ยอมสูญเสียใครไปอีก" และเห็นแต้มการ์ดของกันและกัน — ไม่ตอบก่อนเปิดไพ่ = เดินเส้นทางเดี่ยว)</div>
+        <div className="flex flex-col gap-2">
+          {choices.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => { clickSound(); onPick(c.id); }}
+              className="text-left flex items-center gap-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 px-3 py-2 transition"
+            >
+              <img src={c.img} alt="" className="w-14 h-14 object-cover rounded-lg shrink-0" />
+              <div className="font-bold" style={{ color: c.color }}>{c.name} <span className="text-white/70 text-sm">(บานาจ ลิงก์)</span></div>
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" className="mt-3 w-full py-3" onClick={() => { clickSound(); onDecline(); }}>🤖 ไม่เป็นพันธมิตร — เดินเส้นทางเดี่ยว</Button>
+      </div>
+    </div>
+  );
+}
+// บานาจ: ข้อเสนอพันธมิตรจากริดดี้ — ตอบรับ/ปฏิเสธ (ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ)
+function AllyOfferModal({ offer, onAnswer }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2" style={{ borderColor: offer.color }}>
+        <div className="flex items-center gap-3 mb-3">
+          <img src={offer.img} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+          <div>
+            <div className="text-lg font-black text-echo-gold">🤝 ข้อเสนอพันธมิตรบันชี</div>
+            <div className="text-sm opacity-80"><span className="font-bold" style={{ color: offer.color }}>{offer.from}</span> ยื่นข้อเสนอเป็นพันธมิตรให้คุณ</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">✅ <b>ตอบรับ</b> — เห็นแต้มการ์ดของกันและกันตลอด / ท่าไม้ตาย 2 ของริดดี้จะมอบเกราะ+ต้านสถานะ และกันตายให้คุณ (HP ต่ำสุด 1) / เหลือแค่คู่พันธมิตรบนสนามแล้วคงพันธมิตร = ชนะทั้งคู่</div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">❌ <b>ปฏิเสธ</b> — ริดดี้เดินเส้นทางเดี่ยว: โจมตีใส่คุณแรงขึ้น +1 และถ้าคุณโจมตีเขา (หรือไม่โจมตีครบ 3 เทิร์น) NT-D จะทำงานฟรี — ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <Button variant="gold" className="py-3" onClick={() => { clickSound(); onAnswer(true); }}>✅ ตอบรับ</Button>
+          <Button variant="ghost" className="py-3" onClick={() => { clickSound(); onAnswer(false); }}>❌ ปฏิเสธ</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ถูกคู่พันธมิตรโจมตี: เลือกยกเลิกพันธมิตร (ฟื้นสิ่งที่เสียคืน) หรือให้อภัย (คงพันธมิตร)
+function AllyBreakModal({ ask, onAnswer }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2" style={{ borderColor: ask.color }}>
+        <div className="flex items-center gap-3 mb-3">
+          <img src={ask.img} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+          <div>
+            <div className="text-lg font-black text-echo-hp">💥 ถูกคู่พันธมิตรโจมตี!</div>
+            <div className="text-sm opacity-80"><span className="font-bold" style={{ color: ask.color }}>{ask.from}</span> โจมตีใส่คุณ (เสียเลือด {ask.hp} เกราะ {ask.armor}) — ยกเลิกพันธมิตรไหม?</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">💔 <b>ยกเลิกพันธมิตร</b> — ฟื้นพลังชีวิต/เกราะที่เสียไปจากการโดนคู่ตีคืน และริดดี้กลับสู่เส้นทางเดี่ยว</div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">🤝 <b>ให้อภัย</b> — คงพันธมิตรต่อไป (ไม่ตอบก่อนเปิดไพ่ = คงพันธมิตร)</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <Button variant="ghost" className="py-3" onClick={() => { clickSound(); onAnswer(true); }}>💔 ยกเลิกพันธมิตร</Button>
+          <Button variant="gold" className="py-3" onClick={() => { clickSound(); onAnswer(false); }}>🤝 ให้อภัย</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// เหลือแค่คู่พันธมิตรบนสนาม: ริดดี้เลือกคงพันธมิตร (จบเกม ชนะทั้งคู่) หรือยกเลิก (สู้กันต่อ)
+function AllyFinalModal({ ask, onAnswer }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2 border-echo-gold/60">
+        <div className="flex items-center gap-3 mb-3">
+          <img src={ask.img} alt="" className="w-16 h-16 object-cover rounded-xl shrink-0" />
+          <div>
+            <div className="text-lg font-black text-echo-gold">🤝 นายยังมีอนาคตอีกยาวไกล</div>
+            <div className="text-sm opacity-80">สนามเหลือเพียงคุณกับ <span className="font-bold" style={{ color: ask.color }}>{ask.partner}</span> — จะยกเลิกพันธมิตรไหม?</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">👑 <b>คงพันธมิตร</b> — จบเกมทันที ชนะทั้งคู่!</div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">⚔️ <b>ยกเลิกพันธมิตร</b> — การต่อสู้ครั้งสุดท้ายระหว่างบันชีกับยูนิคอร์นเริ่มขึ้น</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <Button variant="gold" className="py-3" onClick={() => { clickSound(); onAnswer(true); }}>👑 คงพันธมิตร (ชนะทั้งคู่)</Button>
+          <Button variant="ghost" className="py-3" onClick={() => { clickSound(); onAnswer(false); }}>⚔️ ยกเลิก — สู้ต่อ</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- ชำระค่าบริการ (เจ้าแห่งเน็ตบ้าน): คู่สัญญาใช้งานครบทุก 3 เทิร์น -> ถามต่อสัญญา ----------
 function ContractRenewModal({ ask, points, onAnswer }) {
   const shortfall = Math.max(0, (ask.fee || 4) - (points || 0));
@@ -1052,9 +1158,13 @@ export default function Game({ state, lowQ }) {
     if (p.fused && p.leader === "apollo") return "solarburst";
     return null;
   };
+  // ริดดี้ (patch 2.0.9): ระหว่างเป็นพันธมิตร ท่าไม้ตายเป็นท่า 2 (riddheguard) — เส้นทางเดี่ยวเป็นท่า 1 (riddhentd)
+  const riddheAlliedMe = ch?.id === "riddhe" && !!me?.allyId &&
+    state.players.some((x) => x.id === me.allyId && x.alive && x.allyId === me.id);
   const ultStatusKey = ch?.id === "oberon" ? (nightNow ? "vortigern" : "lai")
     : ch?.id === "aquarion" ? aquaUltStatusKey(me)
     : ch?.id === "shiki" ? (me?.shikiUlt === "wither" ? "wither" : "deatheye")
+    : ch?.id === "riddhe" ? (riddheAlliedMe ? "riddheguard" : "riddhentd")
     : ULTIMATE_STATUS[ch?.id];
   const ultimateActive = !!(me && me.statuses && me.statuses[ultStatusKey]);
   // ไปยังพฤกษาแห่งชีวิต: กดปุ่มท่าไม้ตายซ้ำได้เพื่อยกเลิก แม้ล็อกอยู่ (server อนุญาตแม้ระหว่าง locked)
@@ -1124,6 +1234,9 @@ export default function Game({ state, lowQ }) {
   const isShrade = ch?.id === "shrade_elan";
   // แด่เพื่อนรักของฉัน: ระหว่างชาร์จจั่วการ์ด/ใช้สกิลอื่นไม่ได้ (แต่ชนะจั่วยังโจมตีได้)
   const shCharging = !!(me && me.statuses?.shradecharge);
+  // ---------- ริดดี้ มาร์เซนาส ----------
+  // ฉันจะไม่ยอมสูญเสียใครไปอีก: ระหว่างทำงาน จั่วการ์ด/ใช้สกิลไม่ได้ (แม้ชนะจั่วก็โจมตีไม่ได้)
+  const rgCharging = !!(me && me.statuses?.riddheguard);
   // รวมร่างทำนองเพลง: ใช้ได้เฉพาะกลางคืน + ท่วงทำนองครบ 5 (หลังรวมร่างปุ่มเปลี่ยนเป็น แด่เพื่อนรักของฉัน)
   const shUltLocked = isShrade && !me?.shradeForm && (!nightNow || (me?.statuses?.melody || 0) < 5);
   // ---------- เรียวกิ ชิกิ ----------
@@ -1487,12 +1600,15 @@ export default function Game({ state, lowQ }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || rgCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging || rgCharging)} onUse={skill} />}
               </div>
               {noSkill && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+              )}
+              {rgCharging && phase === "PLAYING" && !done && (
+                <div className="text-center text-sm font-bold text-echo-hp mt-1">🛡️ ฉันจะไม่ยอมสูญเสียใครไปอีก — จั่ว/ใช้สกิล/โจมตีไม่ได้ระหว่างท่าทำงาน</div>
               )}
               {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -1509,7 +1625,7 @@ export default function Game({ state, lowQ }) {
                 {phase === "PLAYING" && me.alive && !done ? (
                   <>
                     <div className="flex gap-2">
-                      <Button variant="cyan" className="flex-1 py-4 text-xl" disabled={me.atCap || noDraw || shCharging} onClick={() => { clickSound(); socket.emit("hit"); }}>🎴 จั่วการ์ด</Button>
+                      <Button variant="cyan" className="flex-1 py-4 text-xl" disabled={me.atCap || noDraw || shCharging || rgCharging} onClick={() => { clickSound(); socket.emit("hit"); }}>🎴 จั่วการ์ด</Button>
                       <Button variant="gold" className="flex-1 py-4 text-xl" onClick={() => { clickSound(); socket.emit("lock"); }}>✅ เปิดไพ่</Button>
                     </div>
                     {noDraw && <div className="text-center text-sm font-bold text-echo-hp mt-1">🚫 เทิร์นนี้จั่วไม่ได้</div>}
@@ -1591,7 +1707,10 @@ export default function Game({ state, lowQ }) {
           <div className="fixed inset-0 grid place-items-center bg-black/60 z-30 p-4">
             <div className="text-center">
               <div className="text-4xl font-black mb-4">
-                {(() => { const c = state.players.find((p) => p.alive); return c ? <>🏆 {c.name} ชนะ!</> : "จบเกม"; })()}
+                {(() => {
+                  if (state.allyWin) { const ws = state.players.filter((p) => p.alive); return <>🤝 {ws.map((w) => w.name).join(" & ")} ชนะทั้งคู่!</>; }
+                  const c = state.players.find((p) => p.alive); return c ? <>🏆 {c.name} ชนะ!</> : "จบเกม";
+                })()}
               </div>
               <Button className="py-4 px-8 text-xl" onClick={() => { clickSound(); socket.emit("backToLobby"); }}>🏠 กลับห้องรอ</Button>
             </div>
@@ -1605,6 +1724,10 @@ export default function Game({ state, lowQ }) {
         {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
         {state.locaOffer && me?.alive && <LocaOfferModal offer={state.locaOffer} onAnswer={(a) => socket.emit("locaAnswer", { accept: a })} />}
         {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
+        {state.allyChoices && me?.alive && <AllyChoiceModal choices={state.allyChoices} onPick={(id) => socket.emit("riddheAlly", { targetId: id })} onDecline={() => socket.emit("riddheAlly", {})} />}
+        {state.allyOfferAsk && me?.alive && <AllyOfferModal offer={state.allyOfferAsk} onAnswer={(a) => socket.emit("allyAnswer", { accept: a })} />}
+        {state.allyBreakAsk && me?.alive && <AllyBreakModal ask={state.allyBreakAsk} onAnswer={(c) => socket.emit("allyBreakAnswer", { cancel: c })} />}
+        {state.allyFinalAsk && me?.alive && <AllyFinalModal ask={state.allyFinalAsk} onAnswer={(k) => socket.emit("allyFinalAnswer", { keep: k })} />}
         {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>
     );
@@ -1788,12 +1911,15 @@ export default function Game({ state, lowQ }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
-                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
-                  {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging)} onUse={skill} />}
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || rgCharging || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
+                  {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging || rgCharging)} onUse={skill} />}
                 </div>
                 {noSkill && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🗡️ โดนหอกลองกินัสปัก — เทิร์นนี้ใช้สกิลไม่ได้</div>
+                )}
+                {rgCharging && phase === "PLAYING" && !done && (
+                  <div className="text-center text-xs sm:text-sm font-bold text-echo-hp mt-1">🛡️ ฉันจะไม่ยอมสูญเสียใครไปอีก — จั่ว/ใช้สกิล/โจมตีไม่ได้ระหว่างท่าทำงาน</div>
                 )}
                 {me.skillUsed && !mageRepeat && !gambleRepeat && phase === "PLAYING" && !done && (
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
@@ -1828,7 +1954,7 @@ export default function Game({ state, lowQ }) {
                 {phase === "PLAYING" && me.alive && !done ? (
                   <>
                     {/* แต้มถึงเพดาน (เช่น 21 พอดี) = ปิดปุ่มจั่ว รอผู้ใช้เลือกสกิล/เปิดไพ่เอง */}
-                    <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap || noDraw || shCharging} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
+                    <Button variant="cyan" className="px-3 py-4 text-lg" disabled={me.atCap || noDraw || shCharging || rgCharging} onClick={() => { clickSound(); socket.emit("hit"); }}>จั่วการ์ด</Button>
                     <Button variant="gold" className="px-3 py-4 text-lg" onClick={() => { clickSound(); socket.emit("lock"); }}>เปิดไพ่</Button>
                     {noDraw && <div className="text-center text-xs font-bold text-echo-hp">🚫 เทิร์นนี้จั่วไม่ได้</div>}
                     {shCharging && <div className="text-center text-xs font-bold text-echo-hp">🎻 บรรเลงบทเพลงสุดท้าย<br />จั่ว/ใช้สกิลไม่ได้</div>}
@@ -1918,7 +2044,10 @@ export default function Game({ state, lowQ }) {
         <div className="absolute inset-0 grid place-items-center bg-black/60 z-30">
           <div className="text-center">
             <div className="text-4xl sm:text-5xl font-black mb-4">
-              {(() => { const c = state.players.find((p) => p.alive); return c ? <>🏆 {c.name} ชนะ!</> : "จบเกม"; })()}
+              {(() => {
+                if (state.allyWin) { const ws = state.players.filter((p) => p.alive); return <>🤝 {ws.map((w) => w.name).join(" & ")} ชนะทั้งคู่!</>; }
+                const c = state.players.find((p) => p.alive); return c ? <>🏆 {c.name} ชนะ!</> : "จบเกม";
+              })()}
             </div>
             <Button onClick={() => { clickSound(); socket.emit("backToLobby"); }}>🏠 กลับห้องรอ</Button>
           </div>
@@ -1933,6 +2062,10 @@ export default function Game({ state, lowQ }) {
       {state.contractOffer && me?.alive && <ContractOfferModal offer={state.contractOffer} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
         {state.locaOffer && me?.alive && <LocaOfferModal offer={state.locaOffer} onAnswer={(a) => socket.emit("locaAnswer", { accept: a })} />}
       {state.renewAsk && me?.alive && <ContractRenewModal ask={state.renewAsk} points={me.skillPoints} onAnswer={(a) => socket.emit("contractAnswer", { accept: a })} />}
+      {state.allyChoices && me?.alive && <AllyChoiceModal choices={state.allyChoices} onPick={(id) => socket.emit("riddheAlly", { targetId: id })} onDecline={() => socket.emit("riddheAlly", {})} />}
+      {state.allyOfferAsk && me?.alive && <AllyOfferModal offer={state.allyOfferAsk} onAnswer={(a) => socket.emit("allyAnswer", { accept: a })} />}
+      {state.allyBreakAsk && me?.alive && <AllyBreakModal ask={state.allyBreakAsk} onAnswer={(c) => socket.emit("allyBreakAnswer", { cancel: c })} />}
+      {state.allyFinalAsk && me?.alive && <AllyFinalModal ask={state.allyFinalAsk} onAnswer={(k) => socket.emit("allyFinalAnswer", { keep: k })} />}
       {statusView && <StatusModal p={statusView} onClose={() => setStatusViewId(null)} />}
       </div>
     </div>

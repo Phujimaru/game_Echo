@@ -9,7 +9,7 @@ const PURPLE = "linear-gradient(135deg,#9b4f96,#7d3a78)";
 //  order = ลำดับการแสดงในกลุ่ม — ตัวที่ไม่อยู่ในลิสต์จะต่อท้ายตามลำดับ roster
 const DIFFICULTY_GROUPS = [
   { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["banagher", "hikaru", "kuwagata"] },
-  { key: "medium", label: "กลาง", color: "#E5B33B", order: ["eva13", "temari", "shrade_elan"] },
+  { key: "medium", label: "กลาง", color: "#E5B33B", order: ["eva13", "temari", "shrade_elan", "riddhe"] },
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone", "bard", "shiki"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["gambler", "appleguy", "broadband_man"] },
   { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["aquarion"] },
@@ -222,10 +222,12 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 {/* อควาเรียน: ไม่มีท่าไม้ตายกลาง — ใช้ 4 ท่าตามร่างด้านล่างแทน */}
                 {!sel.ultimateSolar && (
                   <SkillTile
-                    label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : sel.id === "shiki" ? "ท่าไม้ตาย 1" : "ท่าไม้ตาย"}
+                    label={sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : sel.id === "shiki" ? "ท่าไม้ตาย 1" : sel.id === "riddhe" ? "ท่าไม้ตาย 1 (เส้นทางเดี่ยว)" : "ท่าไม้ตาย"}
                     skill={sel.ultimate}
                   />
                 )}
+                {/* ริดดี้ (patch 2.0.9): ท่าไม้ตาย 2 — ใช้แทนท่า 1 ระหว่างเป็นพันธมิตรกับบานาจ */}
+                {sel.id === "riddhe" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2 (เส้นทางพันธมิตร)" skill={sel.ultimate2} />}
                 {/* ชิกิ (patch 2.0.6): ท่าไม้ตาย 2 ความตายที่โรยรา — เลือกใช้ได้ 1 ท่าต่อเกม */}
                 {sel.id === "shiki" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2" skill={sel.ultimate2} />}
                 {sel.id === "shiki" && sel.ultimate2 && (
