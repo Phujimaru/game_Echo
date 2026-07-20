@@ -3173,7 +3173,8 @@ function useSkill(id, tier, targets, item) {
         rAlly.statuses.riddhentd = RIDDHE_NTD_TURNS;
         rAlly.riddheNtdLinked = p.id;
         rAlly.transformAt = ++transformCounter;
-        triggerCutscene(rAlly, "riddheNtd");
+        // ไม่เล่นวีดีโอ riddheNtd ที่นี่ (ขึ้นแค่ 2 วีดีโอพอ: paradise + banagherAlly) — เก็บวีดีโอเต็มครั้งแรกของริดดี้ไว้ให้ตอนกดท่าไม้ตาย 1 เองแบบปกติ
+        notifyTransform(rAlly, "riddheNtd"); // แจ้งเตือนเล็กๆ ไม่หยุดเกม
         lastLog.push(`🤝⚡ ${rAlly.name} ได้รับ NT-D System ไปด้วยฟรีจากพันธมิตร ${p.name} — แกไม่มีสิทธิ์มาสั่งสอนฉัน (${RIDDHE_NTD_TURNS} เทิร์น ไม่เสียแต้มสกิล — จะหมดพร้อมกับ NewType Paradise)`);
       }
     }
