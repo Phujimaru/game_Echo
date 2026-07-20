@@ -173,7 +173,7 @@ function TransformAnnounce({ cs }) {
 // ---------- สกิลช่วงจั่วการ์ด: เด้งขึ้นทันทีบนกระดาน (ไม่ตัดเข้าจอดำ) ----------
 function SkillFlash({ f }) {
   return (
-    <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+    <div className="absolute top-[32%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
       <div className="pop-in flex items-center gap-3 bg-black/75 rounded-2xl px-4 py-2 border-2 text-hard" style={{ borderColor: f.color }}>
         {f.img ? (
           <img src={f.img} alt="" className="w-16 h-11 object-cover rounded-lg" />
@@ -193,7 +193,7 @@ function SkillFlash({ f }) {
 //  ผู้เล่นที่เปิดโหมดนี้จะเห็นแค่ว่าใครเปิดท่าไม้ตาย/สกิลอะไร พร้อมนับถอยหลังรอคนอื่นดูวีดีโอจบ
 function CutsceneSkipNotice({ cs, timeLeft }) {
   return (
-    <div className="fixed top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none px-3 max-w-full">
+    <div className="fixed top-[32%] left-1/2 -translate-x-1/2 z-40 pointer-events-none px-3 max-w-full">
       <div className="pop-in flex items-center gap-3 bg-black/85 rounded-2xl px-4 py-2.5 border-2 text-hard" style={{ borderColor: cs.color }}>
         {cs.img ? (
           <img src={cs.img} alt="" className="w-16 h-16 object-cover rounded-xl border-2 shrink-0" style={{ borderColor: cs.color }} />
@@ -213,7 +213,7 @@ function CutsceneSkipNotice({ cs, timeLeft }) {
 // ---------- แจ้งเตือนแปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป): การ์ดเล็กๆ ไม่หยุดเกม ----------
 function TransformNotice({ n }) {
   return (
-    <div className="fixed top-[16%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+    <div className="fixed top-[32%] left-1/2 -translate-x-1/2 z-40 pointer-events-none">
       <div className="pop-in flex items-center gap-3 bg-black/75 rounded-2xl px-4 py-2 border-2 text-hard" style={{ borderColor: n.color }}>
         {n.img ? (
           <img src={n.img} alt="" className="w-16 h-16 object-cover rounded-xl border-2 shrink-0" style={{ borderColor: n.color }} />
@@ -1267,7 +1267,7 @@ export default function Game({ state, lowQ }) {
   }, []);
   useEffect(() => {
     if (!flash) return;
-    const t = setTimeout(() => setFlash(null), 2500);
+    const t = setTimeout(() => setFlash(null), 1800);
     return () => clearTimeout(t);
   }, [flash]);
   useEffect(() => {
@@ -1277,7 +1277,7 @@ export default function Game({ state, lowQ }) {
   }, []);
   useEffect(() => {
     if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 2500);
+    const t = setTimeout(() => setNotice(null), 1800);
     return () => clearTimeout(t);
   }, [notice]);
 

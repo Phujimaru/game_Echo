@@ -829,9 +829,9 @@ const TRANSFORMS = {
   // ginga (patch 2.1.3): ตอนนี้เป็นสกิลรอง 1 — ทำงานก่อนเปิดการ์ดแล้ว (ไม่ใช่ afterReveal อีกต่อไป)
   ginga:    { img: "/characters/hikaru/ginga.jpg",           video: "/characters/hikaru/ginga_final.mp4",     title: "ULTLIVE ULTRAMAN GINGA", label: "ใช้สกิลรอง",   seconds: 21, music: "ginga",   afterReveal: false },
   // gingastrium (patch 2.1.3): ท่าไม้ตายใหม่ — ทำงานก่อนเปิดการ์ด เพลง gingastrium (ginga_theme2) แทนเพลง ginga
-  gingastrium: { img: HIKARU_STRIUM_IMG, video: "/characters/hikaru/hikaru_update/ginga_skill3.mp4", title: "GINGA STRIUM", label: "ปล่อยท่าไม้ตาย", seconds: 12, music: "gingastrium", afterReveal: false },
+  gingastrium: { img: HIKARU_STRIUM_IMG, video: "/characters/hikaru/hikaru_update/ginga_skill3.mp4", title: "GINGA STRIUM", label: "ปล่อยท่าไม้ตาย", seconds: 20, music: "gingastrium", afterReveal: false },
   // hikaruStorium (patch 2.1.3): สกิลรอง 2 ลำแสงสโตเรียม — เล่นก่อนสรุปผลตอนชนะแล้วได้โจมตี
-  hikaruStorium: { img: "/characters/hikaru/hikaru_update/ginga_skill2.2.png", video: "/characters/hikaru/hikaru_update/ginga_skill2.2.mp4", title: "STORIUM RAY", label: "ใช้สกิล", seconds: 5, music: null, afterReveal: false },
+  hikaruStorium: { img: "/characters/hikaru/hikaru_update/ginga_skill2.2.png", video: "/characters/hikaru/hikaru_update/ginga_skill2.2.mp4", title: "STORIUM RAY", label: "ใช้สกิล", seconds: 16, music: null, afterReveal: false },
   // patch 2.1.2 ลิงก์ Rework: NewType Paradise ทำงานก่อนเปิดการ์ดแล้ว (ไม่ใช่ afterReveal อีกต่อไป — เล่นวีดีโอทันทีตอนกด)
   paradise: { img: "/characters/banagher/unicorn_ntdfinal.jpg", video: "/characters/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",    label: "ปล่อยท่าไม้ตาย",   seconds: 10, music: "unicorn", afterReveal: false },
   ntd:      { img: "/characters/banagher/banagher_update/unicorn_new_ndt.png", video: "/characters/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           label: "สกิลติดตัวทำงาน", seconds: 9,  music: null,     afterReveal: false },
@@ -853,7 +853,7 @@ const TRANSFORMS = {
   // humanity: ท่าไม้ตายฟุจิมารุ — วีดีโอ 13 วิ แล้วเพลง fujimaru_final_theme เล่นค้างระหว่างมีผล
   humanity: { img: FUJIMARU_FINAL_IMG, video: "/characters/fujimaru/fujimaru_final.mp4", title: "EVERYTHING FOR HUMANITY", label: "ปล่อยท่าไม้ตาย", seconds: 13, music: "fujimaru_final", afterReveal: true },
   // monster: เล่นทันทีตอนใช้สกิล (พักช่วงจั่วการ์ดไว้ก่อน) | anataFinal: สกิลติดตัวเทมาริ เล่นก่อนท่าไม้ตายอื่นเสมอ
-  // monster (patch 2.1.3): ไม่ใช่การแปลงร่างอีกต่อไป (เป็นบัฟเกราะ/ฟื้นเลือด) — เก็บ entry ไว้ให้ skillByStatus หา fx เท่านั้น ไม่มีการเล่นวีดีโอแล้ว
+  // monster (patch 2.1.3): ไม่ใช่การแปลงร่างถาวรอีกต่อไป (เป็นบัฟเกราะ/ฟื้นเลือด) แต่ยังเล่นวีดีโอตอนกดสกิลเหมือนเดิม
   monster:  { img: "/characters/hikaru/black_king.webp", video: "/characters/hikaru/ginga_skill3.mp4", title: "MONSTERLIVE", label: "แปลงร่างไคจู", seconds: 10, music: null, afterReveal: false },
   anataFinal: { img: "/characters/temari/temari.webp", video: "/characters/temari/temari_final.mp4", title: "หิวอะโปรดิวเซอร์", label: "สกิลติดตัวทำงาน", seconds: 10, music: null, afterReveal: false },
   // golden: ท่าไม้ตายแกมเบลอร์ ทอยสำเร็จ -> เล่นทันทีก่อนเปิดไพ่ (แบบ monster) + เพลงค้างระหว่างมีผล — วีดีโอ 10 วิ
@@ -3360,8 +3360,9 @@ function useSkill(id, tier, targets, item) {
     anataMusicSeq = ++transformCounter;
   }
 
-  // MonsterLive (ฮิคารุ patch 2.1.3): เพิ่มเพดานเกราะ +2 (มีผลทันทีจาก maxArmorOf) และฟื้นเกราะทันที +2 — ไม่มีวีดีโอแล้ว
+  // MonsterLive (ฮิคารุ patch 2.1.3): เพิ่มเพดานเกราะ +2 (มีผลทันทีจาก maxArmorOf) และฟื้นเกราะทันที +2 — เล่นวีดีโอทันทีก่อนเปิดไพ่
   if (st === "monster") {
+    triggerCutscene(p, "monster");
     const healed = healArmor(p, HIKARU_MONSTER_ARMOR_HEAL);
     lastLog.push(`🛡️ ${p.name} MonsterLive — เพดานเกราะ +${HIKARU_MONSTER_ARMOR_BONUS} และฟื้นเกราะ +${healed} (คงอยู่ ${HIKARU_MONSTER_TURNS} เทิร์น — เกราะที่เสียจะฟื้นเป็นเลือดแทน และความเสียหายที่ได้รับ -1)`);
   }
@@ -4542,6 +4543,15 @@ function doAttack(byId, targetId) {
     } else {
       target.statuses.hburn = Math.min(HIKARU_BURN_MAX, (target.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
       lastLog.push(`🔥 ${target.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จาก Ginga Strium (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
+    }
+  }
+  // Ginga Strium (ฮิคารุ patch 2.1.3): ถูกโจมตีขณะอยู่ในร่างนี้ -> ผู้โจมตีติดลุกไหม้ 2 หน่วย (สวนกลับ — ต้าน/ล้างได้)
+  if (target.characterId === "hikaru" && (target.statuses.gingastrium || 0) > 0 && attacker.alive && attacker.id !== target.id) {
+    if (resistActive(attacker)) {
+      lastLog.push(`🛡️ ${attacker.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้สวนกลับ`);
+    } else {
+      attacker.statuses.hburn = Math.min(HIKARU_BURN_MAX, (attacker.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
+      lastLog.push(`🔥 Ginga Strium สวนกลับ! ${attacker.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จากการโจมตี ${target.name} (${attacker.statuses.hburn}/${HIKARU_BURN_MAX})`);
     }
   }
   if (profitAtk > 0) {
