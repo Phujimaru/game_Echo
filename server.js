@@ -1677,7 +1677,7 @@ function buildStateFor(viewerId) {
       }
       // ไรโด ฮิคารุ (patch 2.1.3): ระหว่างร่าง Ginga — สกิลพื้นฐานเปลี่ยนเป็น UPG! / ระหว่างร่าง Ginga Strium — สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม
       if (ch.id === "hikaru") {
-        basicPub = pub((p.statuses.ginga || 0) > 0 ? ch.basic2 : ch.basic);
+        basicPub = pub(((p.statuses.ginga || 0) > 0 || (p.statuses.gingastrium || 0) > 0) ? ch.basic2 : ch.basic);
         secondaryPub = pub((p.statuses.gingastrium || 0) > 0 ? ch.secondary2 : ch.secondary);
       }
       // โอกูริ แคป (patch 2.0.8.1): Stamina หมด — สกิลพื้นฐานกลายเป็น A Big Meal
@@ -2076,8 +2076,8 @@ function dealRound() {
         const heal = healHp(p, 1);
         lastLog.push(`❤️‍🔥 ${p.name} หัวใจที่ลุกไหม้ — ลุกไหม้กลายเป็นการรักษา ฟื้นพลังชีวิต +${heal} (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
       } else {
-        dealDirect(p, 1); // ลุกไหม้ไม่สนเกราะ
-        lastLog.push(`🔥 ${p.name} ลุกไหม้ — เสียพลังชีวิต -1 ไม่สนเกราะ (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
+        dealMixed(p, 1); // ลุกไหม้: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
+        lastLog.push(`🔥 ${p.name} ลุกไหม้ — เสียหาย -1 (ลดเกราะก่อน) (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
         maybeBeatSave(p);
         maybeBeatMode(p);
         maybeEva3(p);
@@ -2419,10 +2419,10 @@ function useSkill(id, tier, targets, item) {
     if (tier === "secondary") skill = banagherTransformed ? ch.secondary2 : ch.secondary;
     if (tier === "ultimate") skill = (banagherTransformed && riddheAllied(p)) ? ch.ultimate2 : ch.ultimate;
   }
-  // ไรโด ฮิคารุ (patch 2.1.3): ระหว่างร่าง Ginga (สกิลรอง 1) — สกิลพื้นฐานเปลี่ยนเป็น UPG! (basic2)
+  // ไรโด ฮิคารุ (patch 2.1.3): ระหว่างร่าง Ginga หรือ Ginga Strium — สกิลพื้นฐานเปลี่ยนเป็น UPG! (basic2)
   //  ระหว่างร่าง Ginga Strium (ท่าไม้ตาย) — สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม (secondary2)
   if (ch && ch.id === "hikaru") {
-    if (tier === "basic") skill = (p.statuses.ginga || 0) > 0 ? ch.basic2 : ch.basic;
+    if (tier === "basic") skill = ((p.statuses.ginga || 0) > 0 || (p.statuses.gingastrium || 0) > 0) ? ch.basic2 : ch.basic;
     if (tier === "secondary") skill = (p.statuses.gingastrium || 0) > 0 ? ch.secondary2 : ch.secondary;
   }
   // โอกูริ แคป (patch 2.0.8.1): Stamina หมด = สกิลพื้นฐานกลายเป็น A Big Meal
@@ -3374,13 +3374,15 @@ function useSkill(id, tier, targets, item) {
     lastLog.push(`🎵 ${p.name} Ultlive Ultraman Ginga — แปลงร่าง Ginga ${HIKARU_GINGA_TURNS} เทิร์น! การโจมตีกลายเป็นตีหมู่ (สกิลพื้นฐานเปลี่ยนเป็น UPG!)`);
   }
 
-  // Ginga Strium (ฮิคารุ patch 2.1.3 — ท่าไม้ตาย): แปลงร่างต่อจาก Ginga ทันทีก่อนเปิดไพ่ + เพลงใหม่แทนเพลงเดิม
+  // Ginga Strium (ฮิคารุ patch 2.1.3 — ท่าไม้ตาย): แทนที่ร่าง Ginga ทันทีก่อนเปิดไพ่ + เพลงใหม่แทนเพลงเดิม
+  //  ลบสถานะ Ginga ออก (ไม่ใช่แค่ซ้อนทับ) — สกิลพื้นฐานยังคง UPG! อยู่ต่อเพราะอิง (ginga || gingastrium)
   if (st === "gingastrium") {
+    delete p.statuses.ginga;
     p.seen.gingastrium = true;
     p.transformAt = ++transformCounter;
     triggerCutscene(p, "gingastrium");
     p.statuses.hburn = Math.min(HIKARU_BURN_MAX, (p.statuses.hburn || 0) + HIKARU_STRIUM_SELF_BURN);
-    lastLog.push(`🔥🎵 ${p.name} Ginga Strium! แปลงร่าง ${HIKARU_STRIUM_TURNS} เทิร์น พลังโจมตี +1 ติดลุกไหม้ตัวเอง ${HIKARU_STRIUM_SELF_BURN} หน่วย (สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม)`);
+    lastLog.push(`🔥🎵 ${p.name} Ginga Strium! แปลงร่าง ${HIKARU_STRIUM_TURNS} เทิร์น (แทนที่ร่าง Ginga) พลังโจมตี +1 ติดลุกไหม้ตัวเอง ${HIKARU_STRIUM_SELF_BURN} หน่วย (สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม)`);
   }
 
   // ข้อเสียโคโตเนะ: 40% เมื่อใช้สกิลใดๆ จะเจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
