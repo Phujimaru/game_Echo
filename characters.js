@@ -100,7 +100,7 @@ const CHARACTERS = [
     name: "บานาจ ลิงก์",
     avatar: 3,
     difficulty: "easy",
-    img: "/characters/banagher/banagher_update/unicorn_new.png",
+    img: "/characters/banagher/Banagher_Links.png", // ภาพหน้าเลือกตัวละคร (เดิม) — ลงสนามเปลี่ยนเป็น unicorn_new.png (engine override)
     // ---------- บานาจ ลิงก์ — ลิงก์ Rework (patch 2.1.2) ----------
     //  สกิลติดตัว 1 NT-D System: ถูกเลือกโจมตี -> ล็อกเป้าแก้แค้นเป็นคนที่ตีเราล่าสุด (คัตซีนเฉพาะตอนเป้าเปลี่ยน)
     //  สกิลติดตัว 2 ฉันไม่อยากให้เราต้องมาสู้กัน: ริดดี้ไม่ใช่พันธมิตร + กดท่าไม้ตาย/NT-D ทำงาน -> ล็อกเป้าแก้แค้นใส่ริดดี้เพิ่มอีกทาง
