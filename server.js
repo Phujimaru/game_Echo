@@ -4537,12 +4537,21 @@ function doAttack(byId, targetId) {
     lastLog.push(`💃 ${attacker.name} ดาเมจเจาะเกราะทะลุเข้าเลือดจริง +${KOTONE_PIERCE_DMG}`);
   }
   // Ginga Strium (ฮิคารุ patch 2.1.3): โจมตีโดนเป้าหมาย -> ติดลุกไหม้ให้เป้าหมาย (ต้าน/ล้างได้)
-  if (gingastriumAtk && target.alive) {
+  if (gingastriumAtk && target.hp > 0) {
     if (resistActive(target)) {
       lastLog.push(`🛡️ ${target.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้`);
     } else {
       target.statuses.hburn = Math.min(HIKARU_BURN_MAX, (target.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
       lastLog.push(`🔥 ${target.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จาก Ginga Strium (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
+    }
+  }
+  // ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3): โดนแล้วยังไม่ตาย ติดลุกไหม้เพิ่มอีก 2 หน่วย (แยกต่างหากจากลุกไหม้ของร่าง Ginga Strium ด้านบน)
+  if (storiumAtk && target.hp > 0) {
+    if (resistActive(target)) {
+      lastLog.push(`🛡️ ${target.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้เพิ่มจากลำแสงสโตเรียม`);
+    } else {
+      target.statuses.hburn = Math.min(HIKARU_BURN_MAX, (target.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
+      lastLog.push(`🔥 ลำแสงสโตเรียม! ${target.name} ติดลุกไหม้เพิ่มอีก +${HIKARU_STRIUM_HIT_BURN} (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
     }
   }
   // Ginga Strium (ฮิคารุ patch 2.1.3): ถูกโจมตีขณะอยู่ในร่างนี้ -> ผู้โจมตีติดลุกไหม้ 2 หน่วย (สวนกลับ — ต้าน/ล้างได้)
@@ -4861,10 +4870,10 @@ function doAttack(byId, targetId) {
     startPhaseTimer(fxSkills.length ? ATTACKFX_TIME + 2 : ATTACKFX_TIME, () => runCutsceneQueue(endTurn));
     broadcastState();
   };
-  // Beam Magnum Plus (ริดดี้ patch 2.1.1) / Beam Magnum + แสงที่ไม่อยู่เพียงลำพัง (บานาจ patch 2.1.2):
+  // Beam Magnum Plus (ริดดี้ patch 2.1.1) / Beam Magnum + แสงที่ไม่อยู่เพียงลำพัง (บานาจ patch 2.1.2) / ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3):
   //  เล่นวีดีโอที่ค้างคิวก่อน แล้วค่อยขึ้นสรุปความเสียหาย
   //  (ปกติทุกท่าอื่นจะขึ้นสรุปความเสียหายก่อนแล้วค่อยเล่นวีดีโอค้างคิวตอนจบ — ท่าเหล่านี้กลับลำดับเฉพาะตัว)
-  if ((beamPlusAtk || (beam && attacker.characterId === "banagher") || unibeam2Atk) && cutsceneQueue.length) runCutsceneQueue(showAttackFx);
+  if ((beamPlusAtk || (beam && attacker.characterId === "banagher") || unibeam2Atk || storiumAtk) && cutsceneQueue.length) runCutsceneQueue(showAttackFx);
   else showAttackFx();
 }
 
