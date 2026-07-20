@@ -66,16 +66,46 @@ const APPLE_GIVE_USES = 1;  // เอาไปสิ ใช้ได้จำก
 // อัตราหลบขณะชิวๆครับน้องๆ: เริ่ม 100% -> หลบได้เหลือ 50% -> หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด
 const CHILL_DODGE_MIN = 25; // อัตราหลบต่ำสุด (%)
 
-// ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+// ---------- ไรโด ฮิคารุ / อุลตร้าแมนกิงกะ (rework patch 2.1.3) ----------
+//  สกิลพื้นฐาน 1 MonsterLive: เพดานเกราะ+2 ฟื้นเกราะทันที+2 คงอยู่ 3 เทิร์น — เกราะลด = ฟื้นเลือดตามเกราะที่เสีย
+//    + ดาเมจที่ได้รับจากการโจมตี -1 (ใช้ terms เดิมของสถานะ monster) — ใช้สกิลรอง 1 ไม่ได้ระหว่างนี้
+//  สกิลพื้นฐาน 2 UPG!: แทนสกิลพื้นฐาน 1 ระหว่างร่าง Ginga — เพดานแต้มจั่วไพ่ 20 (เดิม 16/19)
+//  สกิลรอง 1 Ultlive Ultraman Ginga: ก่อนเปิดการ์ด แปลงร่าง Ginga 5 เทิร์น ตีหมู่ — เปลี่ยนสกิลพื้นฐานเป็น UPG!
+//  สกิลรอง 2 ลำแสงสโตเรียม: แทนสกิลรอง 1 ระหว่างร่าง Ginga Strium — ดาเมจ = โจมตีปกติ(สูงสุด 4)+ลุกไหม้ที่เหลือ รวมไม่เกิน 8
+//  ท่าไม้ตาย Ginga Strium: ต้องอยู่ในร่าง Ginga ตอนกลางวันเท่านั้น — แปลงร่าง 5 เทิร์น โจมตี+1 ลุกไหม้ตัวเอง 5
+//    โจมตีโดนเป้าหมาย = ลุกไหม้เป้าหมาย +2 — เปลี่ยนสกิลรองเป็นลำแสงสโตเรียม
+//  สกิลติดตัว 2 หัวใจที่ลุกไหม้: ระหว่างร่าง Ginga Strium ลุกไหม้ที่เกิดกับตัวเองรักษาแทนสร้างความเสียหาย
+const HIKARU_MONSTER_ARMOR_BONUS = 2; // MonsterLive: เพดานเกราะ +2
+const HIKARU_MONSTER_ARMOR_HEAL = 2;  // MonsterLive: ฟื้นเกราะทันที +2
+const HIKARU_MONSTER_TURNS = 3;       // MonsterLive: คงอยู่ 3 เทิร์น
+const HIKARU_UPG2_CAP = 20;           // UPG! (สกิลพื้นฐาน 2 ระหว่างร่าง Ginga): เพดานแต้มจั่วไพ่
+const HIKARU_GINGA_TURNS = 5;         // Ultlive Ultraman Ginga (สกิลรอง 1): คงอยู่ 5 เทิร์น (เดิม 3 ตอนเป็นท่าไม้ตาย)
+const HIKARU_STORIUM_ATK_CAP = 4;     // ลำแสงสโตเรียม: นับดาเมจจากการโจมตีปกติสูงสุด 4
+const HIKARU_STORIUM_TOTAL_CAP = 8;   // ลำแสงสโตเรียม: ดาเมจรวมสูงสุด 8
+const HIKARU_STRIUM_TURNS = 5;        // Ginga Strium (ท่าไม้ตาย): คงอยู่ 5 เทิร์น
+const HIKARU_STRIUM_SELF_BURN = 5;    // Ginga Strium: ติดลุกไหม้ใส่ตัวเองทันทีตอนแปลงร่าง
+const HIKARU_STRIUM_HIT_BURN = 2;     // Ginga Strium: โจมตีโดนเป้าหมาย -> ติดลุกไหม้ให้เป้าหมาย
+const HIKARU_BURN_MAX = 6;            // ลุกไหม้: สะสมได้ไม่เกิน 6 หน่วยต่อผู้เล่น
+const HIKARU_STRIUM_IMG = "/characters/hikaru/hikaru_update/ginga_strium.jpg"; // โปรไฟล์ระหว่างร่าง Ginga Strium
+
+// ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1 / rework 2.1.3) ----------
 const KOTONE_COIN_MAX = 6;       // กระปุกออมสินน้องหมูน้อย เก็บ coin ได้สูงสุด
-const KOTONE_COIN_PER_DMG = 2;   // 2 coin = +1 ความเสียหายตอนโจมตี (ใช้แล้วเหรียญหมดไป)
+const KOTONE_COIN_PER_DMG = 3;   // 3 coin = +1 ความเสียหายตอนโจมตี (patch 2.1.3 — เดิม 2, ใช้แล้วเหรียญหมดไป)
 const KOTONE_SENA_BASE = 0.1;    // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ (ฐาน 10%)
 const KOTONE_SENA_PER_COIN = 0.1; // เพิ่มอีก 10% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (patch พิเศษ — เดิมทุก 2 coin)
 const KOTONE_STUN_CHANCE = 0.1;  // [โหมงานหนัก]: โอกาสสุ่มสตั้นต่อเทิร์น (patch 2.0.6 — ลดจาก 20%)
-const KOTONE_SILENCE_TURNS = 3;  // ท่าไม้ตาย: ใบ้การใช้สกิลของทุกคน (patch 2.0.6 — เพิ่มเป็น 3 เทิร์น)
-const KOTONE_KAWAII_DMG = 1;     // ท่าไม้ตาย: ความเสียหายใส่ทุกคน (patch 2.0.6 — ลดเหลือ 1, Dance Lession +1)
-const KOTONE_KAWAII_COIN_NEED = 3; // ท่าไม้ตาย: ต้องมี coin ในกระปุกอย่างน้อย 3 เหรียญถึงจะใช้ได้ (patch 2.0.6)
+const KOTONE_KAWAII_DMG = 3;     // ท่าไม้ตาย (patch 2.1.3): ความเสียหายใส่เป้าหมายที่เลือก
+const KOTONE_KAWAII_STUN_TURNS = 3; // ท่าไม้ตาย (patch 2.1.3): เป้าหมายติดสตั้น
+const KOTONE_KAWAII_COIN_NEED = 3; // ท่าไม้ตาย: ต้องมี coin ในกระปุกอย่างน้อย 3 เหรียญถึงจะใช้ได้ — หัก coin เท่าจำนวนนี้เท่านั้น (patch 2.1.3 — เดิมหักทั้งหมด)
 const KOTONE_COIN_GAIN_MAX = 3;  // Part-time: ได้ coin แบบสุ่ม 1-3 เหรียญต่อครั้ง (patch 2.0.6)
+// สกิลรอง (patch 2.1.3 — แทน Dance Lession เดิม): คอสเป็น coin ล้วน ไม่ใช้แต้มสกิล
+const KOTONE_PIERCE_COIN_COST = 3; // ต้องมี coin อย่างน้อยเท่านี้ถึงใช้ได้ — หักเท่านี้ตอนใช้
+const KOTONE_PIERCE_DMG = 1;       // บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป (ทะลุเกราะเข้าเลือดจริง — ใช้แล้วหมดไป)
+const KOTONE_PIERCE_BURDEN_TURNS = 2; // ภาระเวท (แต้มสกิล +1) มีผลเทิร์นถัดไปเทิร์นเดียว (เทิร์นนี้ที่กดใช้ไม่นับเพราะใช้สกิลไปแล้ว)
+// สกิลรอง 2 กลางคืน (patch 2.1.3 — Sleeping time): หลับนิ่ง 2 เทิร์นตายตัว (ไม่ผูกกับความยาวกลางคืนอีกต่อไป)
+const KOTONE_KSLEEP_TURNS = 2;
+const KOTONE_KSLEEP_HEAL = 2;      // ฮีลตัวเองทันทีตอนใช้สกิล (ครั้งเดียว)
+const KOTONE_KSLEEP_SEAL_TURNS = 1; // ศัตรูไม่สามารถโจมตี(เลือกเป็นเป้าหมาย)ได้ 1 เทิร์นแรกของการหลับ
 // [โหมงานหนัก] ทำงานอยู่ไหม (คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน)
 function overworkActive(p) {
   return !!p && ((p.statuses && p.statuses.overwork) || 0) > 0;
@@ -298,7 +328,7 @@ const CONTRACT_CYCLE = 3;      // ถามต่อสัญญาทุกๆ 
 const CONTRACT_ARMOR_BONUS = 1; // คู่สัญญา: เพดานเกราะ +1 (ฟื้นให้ทันทีตอนตอบรับ) — patch 1.9.1 ลดจาก 3
 const FIBER_CAP = 19;          // เสือนอนกิน: คู่สัญญาจั่วไม่แตก แต่แต้มไม่เกิน 19
 // บัฟที่ "กระชากสายแลน" ถอดออกชั่วคราว 1 เทิร์น (คืนให้ตอนจบเทิร์น — เทิร์นถัดไปกลับมามีผลต่อ)
-const UNPLUG_BUFFS = ["upg", "monster", "ginga", "absorb", "beam", "paradise", "ohger", "rachan",
+const UNPLUG_BUFFS = ["upg", "monster", "ginga", "gingastrium", "storium", "absorb", "beam", "paradise", "ohger", "rachan",
   "song", "golden", "spear", "humanity", "seal", "veil", "chill", "awaken", "vortarmor", "fourth", "fiber", "tiger", "fresh",
   "fullassault", "bshield"]; // patch 2.1.2: บานาจ ลิงก์ — Full Assault / Absorb shield
 
@@ -479,7 +509,7 @@ function applyDebuff(p, key, amount, turns) {
   return true;
 }
 // ดีบัฟพื้นฐานที่ "ต้านสถานะผิดปกติ" ล้างออกได้ทั้งหมด
-const BASIC_DEBUFF_CLEAR = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "aquapoison", "weak", "fragile", "spellburden", "oblada", "calamity"];
+const BASIC_DEBUFF_CLEAR = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "aquapoison", "weak", "fragile", "spellburden", "oblada", "calamity", "hburn"];
 // ดีบัฟที่ยังไม่เกิดผลทันที (ยามฟ้าสาง / เส้นชีวิต): โดนล้าง = ลดลงทีละ 1 หน่วย ไม่หายทั้งหมด
 const SOFT_DEBUFF_STEP = ["dawn", "deathline"];
 function cleanseDebuffs(p) {
@@ -548,7 +578,7 @@ const SHIKI_PROFILE_IMG = "/characters/shiki/shiki.jpg";
 const SHIKI_DEATH_IMG = "/characters/shiki/shiki_death.jpg"; // ร่างระหว่างท่าไม้ตาย ฉันมองเห็นมันแล้ว
 const SHIKI_WITHER_IMG = "/characters/shiki/shiki2.jpg";     // ร่างระหว่างท่าไม้ตาย 2 ความตายที่โรยรา
 // ท่าไม้ตายที่ยกเลิกย้อนหลังได้ (เจ้าของท่ามาตีชิกิระหว่างถือชาร์จ) — สถานะท่าไม้ตายที่กำลังมีผลอยู่
-const SHIKI_CANCELABLE_ULTS = ["ginga", "rachan", "paradise", "humanity", "golden", "fourth", "chill",
+const SHIKI_CANCELABLE_ULTS = ["gingastrium", "rachan", "paradise", "humanity", "golden", "fourth", "chill",
   "kawaii", "lai", "vortigern", "solarburst", "marssword", "lunabow", "godtree", "deatheye", "wither", "shradecharge",
   "anata",                  // patch 2.0.8: เพิ่ม ANATA WAAAAAAAA (เทมาริ) — ครอบคลุมท่าไม้ตายทุกตัวละครที่เก็บเป็นสถานะ
   "bloodDim", "soulDim",    // patch 2.0.8.1: มิติมายาบรรเลงทั้งสอง (คีตกวี) นับเป็นท่าไม้ตาย — ยกเลิกย้อนหลังได้
@@ -605,7 +635,7 @@ const OGURI_STAMINA_START = 8;   // GrayBeast: ได้ Stamina เริ่ม
 const OGURI_STAMINA_MAX = 16;    // Stamina สะสมสูงสุด
 const OGURI_GOLD_MAX = 2;        // ยุคทอง สะสมสูงสุด
 const OGURI_GOLD_TURNS = 6;      // ยุคทอง อยู่ 6 เทิร์น (patch 2.0.8.4 — เพิ่มจาก 3, รีเฟรชเมื่อได้แต้มใหม่)
-const OGURI_GOLD_ATK_PER = 2;     // ยุคทอง: พลังโจมตีพื้นฐาน +1 ทุกๆ 2 แต้มที่ติดอยู่บนตัว (patch 2.1.1)
+const OGURI_GOLD_ATK_PER = 1;     // ยุคทอง: พลังโจมตีพื้นฐาน +1 ทุกๆแต้มที่ติดอยู่บนตัว (patch 2.1.3)
 const OGURI_GRIT_MAX = 2;        // เวลากัดฟันทน สะสมสูงสุด
 const OGURI_TRAIN_STAMINA = 4;   // Training: หัก Stamina 4
 const OGURI_TRAIN_STAMINA_OW = 2; // Training ระหว่าง Overweight: หัก Stamina 2 + Cost 0
@@ -796,7 +826,12 @@ const OHGER_FORM = "/characters/kuwagata/kuwakata_ohger_form.jpg";
 //  afterReveal = เล่นหลังเปิดไพ่ (ท่าไม้ตาย) | ntd/beat เล่นตอน trigger (โดนโจมตี/เลือดต่ำ)
 //  voice = เสียงพากย์เล่นต่อเมื่อวีดีโอจบ | music = เพลงสกิลที่ค้างหลัง cutscene
 const TRANSFORMS = {
-  ginga:    { img: "/characters/hikaru/ginga.jpg",           video: "/characters/hikaru/ginga_final.mp4",     title: "ULTLIVE ULTRAMAN GINGA", label: "ปล่อยท่าไม้ตาย",   seconds: 21, music: "ginga",   afterReveal: true },
+  // ginga (patch 2.1.3): ตอนนี้เป็นสกิลรอง 1 — ทำงานก่อนเปิดการ์ดแล้ว (ไม่ใช่ afterReveal อีกต่อไป)
+  ginga:    { img: "/characters/hikaru/ginga.jpg",           video: "/characters/hikaru/ginga_final.mp4",     title: "ULTLIVE ULTRAMAN GINGA", label: "ใช้สกิลรอง",   seconds: 21, music: "ginga",   afterReveal: false },
+  // gingastrium (patch 2.1.3): ท่าไม้ตายใหม่ — ทำงานก่อนเปิดการ์ด เพลง gingastrium (ginga_theme2) แทนเพลง ginga
+  gingastrium: { img: HIKARU_STRIUM_IMG, video: "/characters/hikaru/hikaru_update/ginga_skill3.mp4", title: "GINGA STRIUM", label: "ปล่อยท่าไม้ตาย", seconds: 12, music: "gingastrium", afterReveal: false },
+  // hikaruStorium (patch 2.1.3): สกิลรอง 2 ลำแสงสโตเรียม — เล่นก่อนสรุปผลตอนชนะแล้วได้โจมตี
+  hikaruStorium: { img: "/characters/hikaru/hikaru_update/ginga_skill2.2.png", video: "/characters/hikaru/hikaru_update/ginga_skill2.2.mp4", title: "STORIUM RAY", label: "ใช้สกิล", seconds: 5, music: null, afterReveal: false },
   // patch 2.1.2 ลิงก์ Rework: NewType Paradise ทำงานก่อนเปิดการ์ดแล้ว (ไม่ใช่ afterReveal อีกต่อไป — เล่นวีดีโอทันทีตอนกด)
   paradise: { img: "/characters/banagher/unicorn_ntdfinal.jpg", video: "/characters/banagher/Unicorn_final.mp4", title: "NEWTYPE PARADISE",    label: "ปล่อยท่าไม้ตาย",   seconds: 10, music: "unicorn", afterReveal: false },
   ntd:      { img: "/characters/banagher/banagher_update/unicorn_new_ndt.png", video: "/characters/banagher/NTD_passive.mp4",   title: "NT-D SYSTEM",           label: "สกิลติดตัวทำงาน", seconds: 9,  music: null,     afterReveal: false },
@@ -818,6 +853,7 @@ const TRANSFORMS = {
   // humanity: ท่าไม้ตายฟุจิมารุ — วีดีโอ 13 วิ แล้วเพลง fujimaru_final_theme เล่นค้างระหว่างมีผล
   humanity: { img: FUJIMARU_FINAL_IMG, video: "/characters/fujimaru/fujimaru_final.mp4", title: "EVERYTHING FOR HUMANITY", label: "ปล่อยท่าไม้ตาย", seconds: 13, music: "fujimaru_final", afterReveal: true },
   // monster: เล่นทันทีตอนใช้สกิล (พักช่วงจั่วการ์ดไว้ก่อน) | anataFinal: สกิลติดตัวเทมาริ เล่นก่อนท่าไม้ตายอื่นเสมอ
+  // monster (patch 2.1.3): ไม่ใช่การแปลงร่างอีกต่อไป (เป็นบัฟเกราะ/ฟื้นเลือด) — เก็บ entry ไว้ให้ skillByStatus หา fx เท่านั้น ไม่มีการเล่นวีดีโอแล้ว
   monster:  { img: "/characters/hikaru/black_king.webp", video: "/characters/hikaru/ginga_skill3.mp4", title: "MONSTERLIVE", label: "แปลงร่างไคจู", seconds: 10, music: null, afterReveal: false },
   anataFinal: { img: "/characters/temari/temari.webp", video: "/characters/temari/temari_final.mp4", title: "หิวอะโปรดิวเซอร์", label: "สกิลติดตัวทำงาน", seconds: 10, music: null, afterReveal: false },
   // golden: ท่าไม้ตายแกมเบลอร์ ทอยสำเร็จ -> เล่นทันทีก่อนเปิดไพ่ (แบบ monster) + เพลงค้างระหว่างมีผล — วีดีโอ 10 วิ
@@ -959,8 +995,8 @@ function drawCardFor(p) {
 }
 function calculateScore(cards) { return cards.reduce((s, c) => s + c.value, 0); }
 function upgCap(p) {
-  // เพดานแต้มขณะ UPG! : ปกติ 16 — ถ้าอยู่ในร่าง Ginga (ท่าไม้ตาย) เพิ่มเป็น 19
-  return (p.statuses && (p.statuses.ginga || 0) > 0) ? 19 : 16;
+  // เพดานแต้มขณะ UPG! (patch 2.1.3): ใช้ได้เฉพาะระหว่างร่าง Ginga (สกิลพื้นฐาน 2) — เพดานคงที่ 20
+  return HIKARU_UPG2_CAP;
 }
 function scoreCap(p) {
   // แต้มสูงสุดที่รับได้ก่อนล็อกไพ่อัตโนมัติ (UPG! = เพดานของมัน, เสือนอนกิน (fiber) = 19, ปกติ = 21)
@@ -998,7 +1034,7 @@ const TEMARI_ANATA_DRAWS = 3;    // ANATA WAAAAAAAA: บังคับจั่
 //  และแยก ยามฟ้าสาง/เส้นชีวิต ออกไปลดทีละ 1 แทน — ดูใน st === "song")
 const DEBUFF_KEYS = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "sena",
   "aquapoison", "energy", "nohealing", "moonmark", "overwork", "unplug", "weak", "fragile", "spellburden",
-  "oblada", "calamity"];
+  "oblada", "calamity", "hburn"];
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่างสวมเกราะราชัน (ท่าไม้ตายคุวากาตะ) เพิ่ม +3 เป็น 5
 // ระหว่าง Everything For Humanity (ฟุจิมารุ) เพิ่ม +3
 // ระหว่างสกิลติดตัว 3 เอวา 13 (เลือด <= 3) เพิ่ม +1
@@ -1010,6 +1046,7 @@ function maxArmorOf(p) {
     + ((((p.statuses && p.statuses.humanity) || 0) > 0) ? 3 : 0)
     + ((((p.statuses && p.statuses.vortarmor) || 0) > 0) ? 1 : 0)
     + ((((p.statuses && p.statuses.goldenera) || 0) > 0) ? 1 : 0) // ยุคทอง (โอกูริ patch 2.0.8.1): เพดานเกราะ +1
+    + ((p.characterId === "hikaru" && ((p.statuses && p.statuses.monster) || 0) > 0) ? HIKARU_MONSTER_ARMOR_BONUS : 0) // MonsterLive (ฮิคารุ patch 2.1.3): เพดานเกราะ +2
     // ริดดี้ (patch 2.0.9): Absorb Shield +2 (1 เทิร์น) / ท่าไม้ตาย 2 +2 ทั้งริดดี้ (riddheguard) และบานาจ (riddheward)
     + ((((p.statuses && p.statuses.absorbplus) || 0) > 0) ? RIDDHE_ABSORB_ARMOR : 0)
     + ((((p.statuses && p.statuses.riddheguard) || 0) > 0 || ((p.statuses && p.statuses.riddheward) || 0) > 0) ? 2 : 0)
@@ -1156,7 +1193,9 @@ function displayImg(p) {
   if (p.seen && p.seen.paradise && (p.statuses.paradise || 0) > 0) return TRANSFORMS.paradise.img;
   // บานาจ (patch 2.1.2): NT-D System (สกิลติดตัว 1) หรือฉันไม่อยากให้เราต้องมาสู้กัน (สกิลติดตัว 2) ทำงานอยู่ — ภาพร่าง NT-D
   if ((p.ntdTarget || p.ntdRivalId) && p.seen && (p.seen.ntd || p.seen.banagherPassive2)) return TRANSFORMS.ntd.img;
-  for (const key of ["monster", "ginga", "rachan", "golden"]) {
+  // ไรโด ฮิคารุ (patch 2.1.3): Ginga Strium อยู่เหนือกว่า Ginga (สกิลรอง 1) — MonsterLive ไม่เปลี่ยนภาพอีกต่อไป
+  if (p.characterId === "hikaru" && p.seen && p.seen.gingastrium && (p.statuses.gingastrium || 0) > 0) return HIKARU_STRIUM_IMG;
+  for (const key of ["ginga", "rachan", "golden"]) {
     if (p.seen && p.seen[key] && (p.statuses[key] || 0) > 0) return TRANSFORMS[key].img;
   }
   // บานาจ ลิงก์ (patch 2.1.2): หน้าเลือกตัวละคร/ล็อบบี้ใช้ p.img เดิม — ลงสนามแล้วเปลี่ยนเป็น unicorn_new.png
@@ -1218,7 +1257,7 @@ function activeSkillMusic() {
   }
   if (bestWou) return bestWou;
   let best = null;
-  for (const key of ["ginga", "paradise", "rachan", "humanity", "golden", "fourth", "solarburst", "marssword", "lunabow", "graybeast"]) {
+  for (const key of ["ginga", "gingastrium", "paradise", "rachan", "humanity", "golden", "fourth", "solarburst", "marssword", "lunabow", "graybeast"]) {
     const t = TRANSFORMS[key];
     if (!t.music) continue;
     for (const p of alivePlayers()) {
@@ -1255,6 +1294,8 @@ function loseHp(p) {
 // เชื่อมผล (patch 2.1.1): เกราะที่เสียจริงถูกแชร์ให้คู่เชื่อมเท่ากันด้วย (คนละช่องกับ HP)
 function loseArmor(p) {
   p.armor--; p.dmgArmor++;
+  // MonsterLive (ฮิคารุ patch 2.1.3): เกราะลดลง -> ฟื้นพลังชีวิตตามเกราะที่เสียไป (นับทีละหน่วยตามจำนวนครั้งที่เรียก)
+  if (p.characterId === "hikaru" && (p.statuses.monster || 0) > 0) healHp(p, 1);
   if (!linkMirror) {
     const b = linkedBuddyOf(p);
     if (b && !sealActive(b) && b.armor > 0) {
@@ -1429,7 +1470,7 @@ function resetCombat(p) {
   p.nightWork = 0;        // จำนวนครั้งที่ทำงาน Part-time ในเฟสกลางคืนนี้ (>1 = โหมงานหนัก)
   p.overworkNext = false; // ติด [โหมงานหนัก] ตอนเริ่มเทิร์นถัดไป
   p.senaNext = false;     // เจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
-  p.danceBuff = false;    // Dance Lession: ผลใบ้สกิลของท่าไม้ตายครั้งถัดไป +1 เทิร์น
+  p.kawaiiTargetId = null; // Sekai ichi kawaii watashi: เป้าหมายที่เลือกไว้ (ทำงานหลังเปิดการ์ด)
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   p.contractPartner = null; // เจ้าแห่งเน็ตบ้าน: id คู่สัญญาปัจจุบัน (มีได้ 1 คน)
   p.contractWith = null;    // ฝั่งคู่สัญญา: id เจ้าแห่งเน็ตบ้านที่ทำสัญญาด้วย
@@ -1634,6 +1675,11 @@ function buildStateFor(viewerId) {
         ultimatePub = pub((p.shikiUlt || "deatheye") === "wither" ? ch.ultimate2 : ch.ultimate);
         if (basicPub && (p.statuses.wither || 0) > 0) basicPub.img = "/characters/shiki/shiki_skill1.2.webp";
       }
+      // ไรโด ฮิคารุ (patch 2.1.3): ระหว่างร่าง Ginga — สกิลพื้นฐานเปลี่ยนเป็น UPG! / ระหว่างร่าง Ginga Strium — สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม
+      if (ch.id === "hikaru") {
+        basicPub = pub((p.statuses.ginga || 0) > 0 ? ch.basic2 : ch.basic);
+        secondaryPub = pub((p.statuses.gingastrium || 0) > 0 ? ch.secondary2 : ch.secondary);
+      }
       // โอกูริ แคป (patch 2.0.8.1): Stamina หมด — สกิลพื้นฐานกลายเป็น A Big Meal
       //  / ยุคทองครบ 2 — ท่าไม้ตายกลายเป็น Ashen Trail / Overweight — Training คอสต์ 0
       if (ch.id === "oguri") {
@@ -1684,7 +1730,6 @@ function buildStateFor(viewerId) {
         appleAtk: p.appleAtk || 0,         // Apple guy: บัฟพลังโจมตีจากการมอบของ (ไม่ซ้อนทับ)
         appleGiveUses: p.appleGiveUses != null ? p.appleGiveUses : APPLE_GIVE_USES, // Apple guy: จำนวนใช้ เอาไปสิ คงเหลือ
         coins: p.coins || 0,               // โคโตเนะ: coin ในกระปุกออมสิน (สูงสุด 6)
-        danceBuff: !!p.danceBuff,          // โคโตเนะ: บัฟ Dance Lession (ใบ้สกิลของท่าไม้ตาย +1 เทิร์น)
         leader: p.leader || "apollo",      // อควาเรียน: ผู้นำที่เลือกอยู่ (apollo/sirius/rena)
         fused: !!p.fused,                  // อควาเรียน: กำลังรวมร่างหุ่นศักดิ์สิทธิ์อยู่ไหม
         shradeForm: !!p.shradeForm,        // ชเรด เอลัน: รวมร่างทำนองเพลงแล้ว (อควาเรียน สปาด้า — ถาวร)
@@ -2024,6 +2069,27 @@ function dealRound() {
       p.hp--; p.dmgHp++;
       lastLog.push(`☠️ ${p.name} ติดพิษศรศักดิ์สิทธิ์ — เสียพลังชีวิต -1 (เหลืออีก ${p.statuses.aquapoison - 1} เทิร์น)`);
     }
+    // ---------- ไรโด ฮิคารุ (patch 2.1.3): ลุกไหม้ — ดาเมจ 1/เทิร์น ลดลงทีละหน่วยหลังสร้างความเสียหาย สะสมสูงสุด 6 ----------
+    if ((p.statuses.hburn || 0) > 0 && p.alive) {
+      // หัวใจที่ลุกไหม้ (สกิลติดตัว 2 ฮิคารุ): ระหว่างร่าง Ginga Strium ลุกไหม้ที่เกิดกับตัวเองรักษาแทนสร้างความเสียหาย
+      if (p.characterId === "hikaru" && (p.statuses.gingastrium || 0) > 0) {
+        const heal = healHp(p, 1);
+        lastLog.push(`❤️‍🔥 ${p.name} หัวใจที่ลุกไหม้ — ลุกไหม้กลายเป็นการรักษา ฟื้นพลังชีวิต +${heal} (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
+      } else {
+        dealDirect(p, 1); // ลุกไหม้ไม่สนเกราะ
+        lastLog.push(`🔥 ${p.name} ลุกไหม้ — เสียพลังชีวิต -1 ไม่สนเกราะ (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
+        maybeBeatSave(p);
+        maybeBeatMode(p);
+        maybeEva3(p);
+        maybeWakeKotone(p);
+        if (p.alive && p.hp <= 0) {
+          instantDeath(p);
+          lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+        }
+      }
+      p.statuses.hburn = Math.max(0, p.statuses.hburn - 1);
+      if (p.statuses.hburn <= 0) delete p.statuses.hburn;
+    }
     // ---------- บานาจ (patch 2.1.2): Full Assault — ตีหมู่ทุกคนต่อเนื่องทุกต้นเทิร์นที่ผลยังอยู่ ----------
     if ((p.statuses.fullassault || 0) > 0) {
       const hits = [];
@@ -2095,18 +2161,12 @@ function dealRound() {
       lastLog.push(`🌳 ${p.name} ไปยังพฤกษาแห่งชีวิต — ทุกคนเจ็บ -1 (ไม่สนเกราะ) ตัวเองเสียเลือด -1 (ไม่สนเกราะ) เกราะฟื้น +2`);
     }
 
-    // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
-    // Sleeping time: หลับตลอดเฟสกลางคืน (ฟื้น 2/เทิร์น) — ถึงเช้าตื่นรับ [เช้าที่สดใส] 3 เทิร์น
+    // ---------- ฟุจิตะ โคโตเนะ (patch 2.1.3) ----------
+    // Sleeping time: หลับนิ่ง 2 เทิร์นตายตัว (ไม่ผูกกับความยาวกลางคืนอีกต่อไป — นับถอยหลังตามปกติ)
+    //  ตื่นเองเมื่อครบเวลา (นับถอยหลังหมดใน endTurn) จะได้รับ [เช้าที่สดใส] 3 เทิร์น
     if ((p.statuses.ksleep || 0) > 0) {
-      if (isNightRound(roundNumber)) {
-        p.locked = true;
-        const heal = healHp(p, 2);
-        lastLog.push(`😴 ${p.name} หลับพักผ่อนอยู่ — ฟื้นพลังชีวิต +${heal}`);
-      } else {
-        delete p.statuses.ksleep;
-        p.statuses.fresh = 3;
-        lastLog.push(`🌅 ${p.name} ตื่นนอนอย่างสดชื่น — ได้รับ [เช้าที่สดใส] 3 เทิร์น (แต้มสกิล +1 และโล่ +1 ทุกเทิร์น)`);
-      }
+      p.locked = true;
+      lastLog.push(`😴 ${p.name} หลับพักผ่อนอยู่ (เหลืออีก ${p.statuses.ksleep} เทิร์น)`);
     }
     // [เช้าที่สดใส]: แต้มสกิล +1 และโล่ +1 ทุกเทิร์นที่ผลยังอยู่
     if ((p.statuses.fresh || 0) > 0) {
@@ -2359,6 +2419,12 @@ function useSkill(id, tier, targets, item) {
     if (tier === "secondary") skill = banagherTransformed ? ch.secondary2 : ch.secondary;
     if (tier === "ultimate") skill = (banagherTransformed && riddheAllied(p)) ? ch.ultimate2 : ch.ultimate;
   }
+  // ไรโด ฮิคารุ (patch 2.1.3): ระหว่างร่าง Ginga (สกิลรอง 1) — สกิลพื้นฐานเปลี่ยนเป็น UPG! (basic2)
+  //  ระหว่างร่าง Ginga Strium (ท่าไม้ตาย) — สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม (secondary2)
+  if (ch && ch.id === "hikaru") {
+    if (tier === "basic") skill = (p.statuses.ginga || 0) > 0 ? ch.basic2 : ch.basic;
+    if (tier === "secondary") skill = (p.statuses.gingastrium || 0) > 0 ? ch.secondary2 : ch.secondary;
+  }
   // โอกูริ แคป (patch 2.0.8.1): Stamina หมด = สกิลพื้นฐานกลายเป็น A Big Meal
   //  / ยุคทองครบ 2 = ท่าไม้ตายกลายเป็น Ashen Trail: Cinderella Gray
   if (ch && ch.id === "oguri") {
@@ -2468,8 +2534,13 @@ function useSkill(id, tier, targets, item) {
   if (tier === "ultimate" && st && (p.statuses[st] || 0) > 0) return;
   // เวลาทอง (แกมเบลอร์): ระหว่างบัฟยังอยู่ กดท่าไม้ตายซ้ำไม่ได้
   if (tier === "ultimate" && isGambler && goldenOn) return;
-  // MonsterLive (ฮิคารุ): ระหว่างร่างไคจู ใช้ท่าไม้ตายไม่ได้
-  if (tier === "ultimate" && p.characterId === "hikaru" && (p.statuses.monster || 0) > 0) return;
+  // ---------- ไรโด ฮิคารุ / อุลตร้าแมนกิงกะ (rework patch 2.1.3) ----------
+  // Ultlive Ultraman Ginga (สกิลรอง 1): ใช้ไม่ได้ระหว่างติด MonsterLive และกดซ้ำไม่ได้จนกว่าผลจะหมด
+  const isHikaruGinga = p.characterId === "hikaru" && skill === ch.secondary;
+  if (isHikaruGinga && (p.statuses.monster || 0) > 0) return;
+  if (isHikaruGinga && (p.statuses.ginga || 0) > 0) return;
+  // Ginga Strium (ท่าไม้ตาย): ต้องอยู่ในร่าง Ginga (สกิลรอง 1 ยังไม่หมดเวลา) และต้องเป็นตอนกลางวันเท่านั้นถึงใช้ได้
+  if (tier === "ultimate" && p.characterId === "hikaru" && (!((p.statuses.ginga || 0) > 0) || isNightRound(roundNumber))) return;
   // Rainbow Pudding (คุวากาตะ): ใช้ได้แค่ 2 ครั้งต่อเกม
   const isPudding = p.characterId === "kuwagata" && tier === "basic";
   if (isPudding && (p.puddingUses || 0) <= 0) return;
@@ -2513,18 +2584,27 @@ function useSkill(id, tier, targets, item) {
     if (!t || !t.alive || t.id === p.id) return;
     appleTarget = t;
   }
-  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1) ----------
+  // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1 / rework 2.1.3) ----------
   const isKotone = p.characterId === "kotone";
   const kotoneNight = isNightRound(roundNumber);
   const isPartTime = isKotone && tier === "basic";                    // Part-time (กลางวัน/กะดึก)
-  const isDance = isKotone && tier === "secondary" && !kotoneNight;   // Dance Lession
-  const isKSleep = isKotone && tier === "secondary" && kotoneNight;   // Sleeping time
+  const isDance = isKotone && tier === "secondary" && !kotoneNight;   // สกิลรอง (คอส coin ล้วน — แทน Dance Lession เดิม)
+  const isKSleep = isKotone && tier === "secondary" && kotoneNight;   // สกิลรอง 2 — Sleeping time
   const isKawaii = isKotone && tier === "ultimate";                   // Sekai ichi kawaii watashi
   if (isPartTime && overworkActive(p)) return;                        // โหมงานหนัก: Part-time ใช้ไม่ได้
-  if (isDance && overworkActive(p)) return;                           // โหมงานหนัก: Dance Lession ใช้ไม่ได้
+  if (isDance && overworkActive(p)) return;                           // โหมงานหนัก: สกิลรอง ใช้ไม่ได้
+  if (isDance && (p.coins || 0) < KOTONE_PIERCE_COIN_COST) return;    // สกิลรอง (patch 2.1.3): ต้องมี coin อย่างน้อย 3 เหรียญ
   if (isKawaii && (overworkActive(p) || kotoneNight)) return;         // ท่าไม้ตาย: ใช้ไม่ได้ตอนกลางคืน/โหมงานหนัก
   if (isKawaii && (p.coins || 0) < KOTONE_KAWAII_COIN_NEED) return;   // ท่าไม้ตาย: ต้องมี coin อย่างน้อย 3 เหรียญ (patch 2.0.6)
   if (isKSleep && (p.statuses.ksleep || 0) > 0) return;               // หลับอยู่แล้ว กดซ้ำไม่ได้
+  // ---------- โคโตเนะ: Sekai ichi kawaii watashi (patch 2.1.3) — เลือกเป้าหมาย 1 คน (คนอื่นเท่านั้น) ----------
+  let kawaiiTarget = null;
+  if (isKawaii) {
+    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
+    const t = tgs.length === 1 ? players[tgs[0]] : null;
+    if (!t || !t.alive || t.id === p.id) return;
+    kawaiiTarget = t.id;
+  }
   // Dance Lession (patch พิเศษ): ใช้ใส่ตัวเองเท่านั้น — ไม่ต้องเลือกเป้าหมายอีกต่อไป
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   const isShrade = p.characterId === "shrade_elan";
@@ -2728,6 +2808,12 @@ function useSkill(id, tier, targets, item) {
     if (satoruOnTargeted(nt, p, `สกิล ${skill.name} `).negated) flashSuffix = " — ถูกลบล้าง";
     else p.nightmareTarget = nightmareTarget;
   }
+  // ---------- โคโตเนะ: Sekai ichi kawaii watashi (patch 2.1.3) — เก็บเป้าหมายไว้ ทำงานหลังเปิดการ์ด ----------
+  if (isKawaii) {
+    const kt = players[kawaiiTarget];
+    if (satoruOnTargeted(kt, p, `สกิล ${skill.name} `).negated) flashSuffix = " — ถูกลบล้าง";
+    else p.kawaiiTargetId = kawaiiTarget;
+  }
   // ---------- Apple guy: เอาแบบนี้ได้ไหม — เปลี่ยนของส่งมอบ (ปกสกิลเปลี่ยนตาม) ----------
   if (isApplePick) {
     p.appleItem = item;
@@ -2815,24 +2901,30 @@ function useSkill(id, tier, targets, item) {
     flashSuffix = ` — coin +${gained} (มี ${p.coins}/${KOTONE_COIN_MAX})`;
     lastLog.push(`🐷 ${p.name} Part-time — เสียพลังชีวิต 1 หน่วย ได้ coin +${gained} (สุ่มได้ ${roll} · สะสม ${p.coins}/${KOTONE_COIN_MAX})`);
   }
-  // ---------- โคโตเนะ: Dance Lession (patch 2.0.6) — ใช้ใส่ตัวเองเท่านั้น: เสียเลือด 1
-  //  บัฟท่าไม้ตายครั้งถัดไป: ความเสียหาย +1 ----------
+  // ---------- โคโตเนะ: สกิลรอง (patch 2.1.3 — คอส coin ล้วน แทน Dance Lession เดิม) ----------
+  //  ใช้ใส่ตัวเองเท่านั้น: หัก coin 3 เหรียญ -> บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป
+  //  + แต้มสกิลที่ใช้ในเทิร์นถัดไปสูงขึ้น +1 (ภาระเวท 2 เทิร์น — ครอบคลุมเทิร์นถัดไปเทิร์นเดียว)
   if (isDance) {
-    if (p.hp > 1 || (p.tempHp || 0) > 0) loseHp(p);
-    p.danceBuff = true;
-    lastLog.push(`💃 ${p.name} Dance Lession — ซ้อมเต้นอย่างหนัก: ท่าไม้ตายครั้งถัดไป ความเสียหาย +1`);
+    p.coins = Math.max(0, (p.coins || 0) - KOTONE_PIERCE_COIN_COST);
+    p.statuses.kpierce = 1; // คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น — เหมือน empower)
+    p.statusAmt = p.statusAmt || {};
+    p.statuses.spellburden = Math.max(p.statuses.spellburden || 0, KOTONE_PIERCE_BURDEN_TURNS);
+    p.statusAmt.spellburden = Math.min(SPELLBURDEN_MAX, (p.statusAmt.spellburden || 0) + 1);
+    lastLog.push(`💃 ${p.name} ใช้ coin ${KOTONE_PIERCE_COIN_COST} เหรียญฝึกซ้อม — การโจมตีครั้งถัดไปเจาะเกราะ +${KOTONE_PIERCE_DMG} (เทิร์นถัดไปใช้แต้มสกิลเพิ่ม +1 — เหลือ coin ${p.coins})`);
   }
-  // ---------- โคโตเนะ: Sleeping time — หลับตลอดเฟสกลางคืน + ลบ [โหมงานหนัก] ----------
+  // ---------- โคโตเนะ: สกิลรอง 2 กลางคืน (patch 2.1.3 — Sleeping time) ----------
+  //  หลับนิ่ง 2 เทิร์นตายตัว + ลบ [โหมงานหนัก] + ฮีลตัวเองทันที 2 หน่วย + กันถูกเลือกโจมตี 1 เทิร์นแรก
   if (isKSleep) {
-    p.statuses.ksleep = 1; // คงอยู่จนหมดกลางคืน (engine ไม่ลดเทิร์นสถานะนี้)
+    p.statuses.ksleep = KOTONE_KSLEEP_TURNS;
+    p.statuses.seal = Math.max(p.statuses.seal || 0, KOTONE_KSLEEP_SEAL_TURNS); // ศัตรูไม่สามารถโจมตีได้ 1 เทิร์น
     p.nightWork = 0;
     p.overworkNext = false;
     if (overworkActive(p)) {
       delete p.statuses.overwork;
       lastLog.push(`😌 ${p.name} ได้นอนพักเสียที — สถานะ [โหมงานหนัก] หายไป`);
     }
-    const heal = healHp(p, 2);
-    lastLog.push(`😴 ${p.name} Sleeping time — หลับยาวตลอดเฟสกลางคืน (ฟื้น +${heal}/เทิร์น) ตื่นเช้ารับ [เช้าที่สดใส]`);
+    const heal = healHp(p, KOTONE_KSLEEP_HEAL);
+    lastLog.push(`😴 ${p.name} Sleeping time — หลับ ${KOTONE_KSLEEP_TURNS} เทิร์น ฟื้นพลังชีวิต +${heal} และศัตรูไม่สามารถเลือกโจมตีได้ 1 เทิร์นแรก (ตื่นแล้วรับ [เช้าที่สดใส])`);
   }
   // ---------- ชเรด เอลัน: เชิญรับฟัง — ฟื้นเลือด 1 + เกราะ 1 (+ท่วงทำนอง +1 เฉพาะร่างปกติ) ----------
   if (isShradeBasic) {
@@ -3002,7 +3094,7 @@ function useSkill(id, tier, targets, item) {
         p.statusAmt.goldenera = Math.min(OGURI_GOLD_MAX, (p.statusAmt.goldenera || 0) + 1);
         p.statuses.goldenera = OGURI_GOLD_TURNS; // รีเฟรชเวลา 3 เทิร์นทุกครั้งที่ได้แต้มใหม่
         flashSuffix = ` — ฝึกฝนสำเร็จ! ยุคทอง ${p.statusAmt.goldenera}/${OGURI_GOLD_MAX}`;
-        lastLog.push(`🏃 ${p.name} Training — ฝึกฝนสำเร็จ! แต้มสกิล +1 และยุคทอง +1 (${p.statusAmt.goldenera}/${OGURI_GOLD_MAX} — พลังโจมตี +1 ทุกๆ ${OGURI_GOLD_ATK_PER} แต้ม เพดานเกราะ +1 · อยู่ ${OGURI_GOLD_TURNS} เทิร์น)`);
+        lastLog.push(`🏃 ${p.name} Training — ฝึกฝนสำเร็จ! แต้มสกิล +1 และยุคทอง +1 (${p.statusAmt.goldenera}/${OGURI_GOLD_MAX} — พลังโจมตี +1 ทุกๆแต้มที่ติดอยู่บนตัว เพดานเกราะ +1 · อยู่ ${OGURI_GOLD_TURNS} เทิร์น)`);
       }
     } else {
       // ฝึกฝนล้มเหลว: เจ็บ 1 ไม่สนเกราะ + เวลากัดฟันทน +1 — ยุคทองทั้งหมดหายไป
@@ -3268,17 +3360,27 @@ function useSkill(id, tier, targets, item) {
     anataMusicSeq = ++transformCounter;
   }
 
-  // MonsterLive (ฮิคารุ): แปลงร่างไคจู Black King ทันทีก่อนเปิดไพ่ — พักช่วงจั่วการ์ดเล่นฉากแปลงร่าง
+  // MonsterLive (ฮิคารุ patch 2.1.3): เพิ่มเพดานเกราะ +2 (มีผลทันทีจาก maxArmorOf) และฟื้นเกราะทันที +2 — ไม่มีวีดีโอแล้ว
   if (st === "monster") {
-    p.seen.monster = true;
-    if (!p.cutsceneShown.monster) {
-      p.cutsceneShown.monster = true;
-      queueCutscene(p, "monster");
-      pausePlayingForCutscene();
-    } else {
-      notifyTransform(p, "monster");
-    }
-    lastLog.push(`🦖 ${p.name} แปลงร่างไคจู Black King (MonsterLive)!`);
+    const healed = healArmor(p, HIKARU_MONSTER_ARMOR_HEAL);
+    lastLog.push(`🛡️ ${p.name} MonsterLive — เพดานเกราะ +${HIKARU_MONSTER_ARMOR_BONUS} และฟื้นเกราะ +${healed} (คงอยู่ ${HIKARU_MONSTER_TURNS} เทิร์น — เกราะที่เสียจะฟื้นเป็นเลือดแทน และความเสียหายที่ได้รับ -1)`);
+  }
+
+  // Ultlive Ultraman Ginga (ฮิคารุ patch 2.1.3 — สกิลรอง 1): แปลงร่าง Ginga ทันทีก่อนเปิดไพ่ (ไม่ใช่ afterReveal อีกต่อไป)
+  if (st === "ginga") {
+    p.seen.ginga = true;
+    p.transformAt = ++transformCounter;
+    triggerCutscene(p, "ginga");
+    lastLog.push(`🎵 ${p.name} Ultlive Ultraman Ginga — แปลงร่าง Ginga ${HIKARU_GINGA_TURNS} เทิร์น! การโจมตีกลายเป็นตีหมู่ (สกิลพื้นฐานเปลี่ยนเป็น UPG!)`);
+  }
+
+  // Ginga Strium (ฮิคารุ patch 2.1.3 — ท่าไม้ตาย): แปลงร่างต่อจาก Ginga ทันทีก่อนเปิดไพ่ + เพลงใหม่แทนเพลงเดิม
+  if (st === "gingastrium") {
+    p.seen.gingastrium = true;
+    p.transformAt = ++transformCounter;
+    triggerCutscene(p, "gingastrium");
+    p.statuses.hburn = Math.min(HIKARU_BURN_MAX, (p.statuses.hburn || 0) + HIKARU_STRIUM_SELF_BURN);
+    lastLog.push(`🔥🎵 ${p.name} Ginga Strium! แปลงร่าง ${HIKARU_STRIUM_TURNS} เทิร์น พลังโจมตี +1 ติดลุกไหม้ตัวเอง ${HIKARU_STRIUM_SELF_BURN} หน่วย (สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม)`);
   }
 
   // ข้อเสียโคโตเนะ: 40% เมื่อใช้สกิลใดๆ จะเจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
@@ -3902,25 +4004,37 @@ function afterResolve() {
           p.hp = 1;
           healArmor(p, 3);
         }
-        // Sekai ichi kawaii watashi (โคโตเนะ): ตัด coin ทั้งหมด — ตีทุกคน 1 หน่วย
-        //  และทุกคนถูกใบ้การใช้สกิล 2 เทิร์นนับจากเทิร์นถัดไป (มีบัฟ Dance Lession = 3 เทิร์น)
+        // Sekai ichi kawaii watashi (โคโตเนะ patch 2.1.3): โจมตีเป้าหมายที่เลือกไว้ตอนกดสกิล
+        //  ดาเมจ 3 หน่วย + สตั้น 3 เทิร์น — หัก coin เท่าคอสสกิล (ไม่ตัดทั้งหมดอีกต่อไป)
         if (key === "kawaii") {
-          const silence = KOTONE_SILENCE_TURNS; // patch 2.0.6: ใบ้สกิล 3 เทิร์นคงที่ (Dance Lession ไม่ต่อเวลาแล้ว)
-          const kdmg = KOTONE_KAWAII_DMG + (p.danceBuff ? 1 : 0); // Dance Lession: ความเสียหาย +1
-          if (p.danceBuff) lastLog.push(`💃 บัฟ Dance Lession ถูกใช้ไปกับการแสดง — ความเสียหาย +1`);
-          p.danceBuff = false;
-          const coins = p.coins || 0;
-          p.coins = 0;
-          for (const o of alivePlayers()) {
-            if (o.id === p.id) continue;
-            dealMixed(o, kdmg);
-            maybeBeatSave(o);
-            maybeWakeKotone(o);
-            if (resistActive(o)) lastLog.push(`🛡️ ${o.name} ต้านสถานะผิดปกติ — ไม่ติดผลใบ้สกิล`);
-            else o.noSkillNext = Math.max(o.noSkillNext || 0, silence);
-            o.wasAttacked = true;
+          const coinCost = Math.min(p.coins || 0, KOTONE_KAWAII_COIN_NEED);
+          p.coins = Math.max(0, (p.coins || 0) - KOTONE_KAWAII_COIN_NEED);
+          const t = players[p.kawaiiTargetId];
+          p.kawaiiTargetId = null;
+          if (t && t.alive) {
+            dealMixed(t, KOTONE_KAWAII_DMG);
+            maybeBeatSave(t);
+            maybeBeatMode(t);
+            maybeEva3(t);
+            maybeWakeKotone(t);
+            t.wasAttacked = true;
+            let stunMsg = "";
+            if (t.alive) {
+              if (resistActive(t)) {
+                lastLog.push(`🛡️ ${t.name} ต้านสถานะผิดปกติ — ไม่ติดสตั้น`);
+              } else {
+                t.statuses.stun = Math.max(t.statuses.stun || 0, KOTONE_KAWAII_STUN_TURNS);
+                stunMsg = ` และสตั้น ${KOTONE_KAWAII_STUN_TURNS} เทิร์น`;
+              }
+            }
+            lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารักใส่ ${t.name} -${KOTONE_KAWAII_DMG}${stunMsg} (ใช้ coin ${coinCost} เหรียญ — เหลือ ${p.coins})`);
+            if (t.alive && t.hp <= 0) {
+              instantDeath(t);
+              lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+            }
+          } else {
+            lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก แต่เป้าหมายหายไปแล้ว (ใช้ coin ${coinCost} เหรียญ — เหลือ ${p.coins})`);
           }
-          lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก — ทุกคน -${kdmg} และตกหลุมรักจนใช้สกิลไม่ได้ ${silence} เทิร์น${coins > 0 ? ` (เท coin ทั้งหมด ${coins} เหรียญออกจากกระปุก)` : ""}`);
         }
         // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย
         //  + มอบ "การตื่นขึ้น" (ฟื้น 1/เทิร์น 1 เทิร์น) + ติด "ยามฟ้าสาง" +1 (คนหลับไม่ติดเพิ่ม)
@@ -4009,7 +4123,7 @@ function afterSummary() {
   }
   // โคโตเนะ: หลับพักผ่อน (Sleeping time) / สตั้นจากโหมงานหนัก / หนีท่านประธานเซนะ — ไม่มีเทิร์นโจมตี
   if (winner && winner.alive && (
-    ((winner.statuses.ksleep || 0) > 0 && isNightRound(roundNumber)) ||
+    (winner.statuses.ksleep || 0) > 0 ||
     (winner.statuses.kstun || 0) > 0 ||
     (winner.statuses.stun || 0) > 0 || // สตั้น (สถานะพื้นฐาน patch 2.0.8)
     (winner.statuses.sena || 0) > 0 ||
@@ -4246,7 +4360,11 @@ function doAttack(byId, targetId) {
     // ลบล้างติดคูลดาวน์อยู่ — การโจมตีดำเนินต่อ (Wonder of U อาจสวนกลับไปแล้วใน satoruOnTargeted)
   }
 
-  const ginga = (attacker.statuses.ginga || 0) > 0;
+  // ไรโด ฮิคารุ (patch 2.1.3): Ginga (สกิลรอง 1) และ Ginga Strium (ท่าไม้ตาย) ห้ามส่งผลทับซ้อนกัน — gingastrium ทำงานเหนือกว่าเสมอ
+  const gingastriumAtk = attacker.characterId === "hikaru" && (attacker.statuses.gingastrium || 0) > 0;
+  const ginga = (attacker.statuses.ginga || 0) > 0 && !gingastriumAtk;
+  // ลำแสงสโตเรียม (สกิลรอง 2 ระหว่างร่าง Ginga Strium): ดาเมจ = โจมตีปกติ(สูงสุด 4) + ลุกไหม้ที่เหลือของเป้าหมาย รวมไม่เกิน 8
+  const storiumAtk = attacker.characterId === "hikaru" && (attacker.statuses.storium || 0) > 0;
   const beam = (attacker.statuses.beam || 0) > 0;
   const paradiseAtk = (attacker.statuses.paradise || 0) > 0;
   // Ohger Finish: ต้องมีทั้งสวมเกราะราชัน + ประกายเขี้ยวปฏิปักษ์ (เช็คตอนกดสกิล) = +1
@@ -4266,7 +4384,7 @@ function doAttack(byId, targetId) {
   // แสงที่ไม่อยู่เพียงลำพัง (ท่าไม้ตาย 2 patch 2.1.2): ดาเมจเสริมใส่เป้าหมาย +6 (รวมพื้นฐาน 1 = 7)
   const unibeam2Atk = (attacker.statuses.unibeam2 || 0) > 0;
   // Ginga no Uta: ถ้าเหลือฝ่ายตรงข้ามเพียงคนเดียว พลังโจมตี +1
-  const lastStanding = ginga && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
+  const lastStanding = (ginga || gingastriumAtk) && alivePlayers().filter((p) => p.id !== attacker.id).length === 1;
   // ม่านแห่งราตรี (โอเบรอน): พลังโจมตี +1 ทุกคนที่ติดบัฟ (2 เทิร์น)
   const veilAtk = (attacker.statuses.veil || 0) > 0;
   // เสริมพลัง (Rejuvenation — Bard patch 2.0.6.1): การโจมตีครั้งถัดไป +1 (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี)
@@ -4286,6 +4404,8 @@ function doAttack(byId, targetId) {
   // [โหมงานหนัก] (โคโตเนะ): เมื่อถึงเฟสตอนเช้า พลังโจมตีเหลือ 0 เพราะพักผ่อนไม่พอ
   const kotoneExhausted = attacker.characterId === "kotone" && overworkActive(attacker) && !isNightRound(roundNumber);
   if (kotoneExhausted) pigDmg = 0; // ตีไม่เข้า — ไม่เสีย coin ฟรี
+  // สกิลรอง (โคโตเนะ patch 2.1.3): บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป (ทะลุเกราะเข้าเลือดจริง — ใช้แล้วหมดไป)
+  const kotonePierce = attacker.characterId === "kotone" && (attacker.statuses.kpierce || 0) > 0;
   // ---------- อควาเรียน: สกิลติดตัว 1/2/3 (แสงแห่งสุริยัน / ดาบแห่งจุดจบ / จันทราสยบ) ----------
   let aquaAtk = 0;
   let aquaZero = false; // จันทราสยบ กลางวัน: พลังโจมตีเหลือ 0 (แต่โจมตีได้ฟื้นเลือด 1)
@@ -4303,7 +4423,7 @@ function doAttack(byId, targetId) {
   const shradeAtk = (attacker.characterId === "shrade_elan" && attacker.shradeForm && isNightRound(roundNumber)) ? SHRADE_ATK_BONUS : 0;
   const shradeDayOff = attacker.characterId === "shrade_elan" && attacker.shradeForm && !isNightRound(roundNumber);
   // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
-  // ยุคทอง: พลังโจมตี +2 (patch 2.0.8.4) / The Beat of Victory: +1 และเป้าหมายติดชะงัก / Ashen Trail: +1
+  // ยุคทอง: พลังโจมตี +1 ทุกๆแต้มที่ติดอยู่บนตัว สูงสุด +2 (patch 2.1.3) / The Beat of Victory: +1 และเป้าหมายติดชะงัก / Ashen Trail: +1
   const oguriGoldAtk = attacker.characterId === "oguri" ? Math.floor(oguriGoldStacks(attacker) / OGURI_GOLD_ATK_PER) : 0;
   const victoryAtk = (attacker.statuses.victorybeat || 0) > 0;
   const ashenAtk = (attacker.statuses.ashen || 0) > 0;
@@ -4319,7 +4439,7 @@ function doAttack(byId, targetId) {
   // สกิลติดตัว 3 (อย่าทิ้งฉันไป): พลังโจมตีถาวร +1
   const riddheAvAtk = attacker.characterId === "riddhe" && attacker.riddheAvenger;
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + (ginga ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
   if (kotoneExhausted) base = 0;
   if (aquaZero) base = 0;
   let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
@@ -4336,6 +4456,14 @@ function doAttack(byId, targetId) {
     lastLog.push(`🥀 ความตายที่โรยรา — เส้นชีวิตของ ${target.name} แปรเป็นดาเมจเสริม +${Math.max(0, dmg - before)} (พลังโจมตีรวมสูงสุด ${SHIKI_WITHER_ATK_CAP})`);
   } else if (shikiWither) {
     dmg = Math.min(SHIKI_WITHER_ATK_CAP, dmg); // เพดานพลังโจมตีระหว่างท่าไม้ตาย 2 คงที่ 5
+  }
+  // ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3): แทนที่ดาเมจทั้งหมดด้วยสูตรเฉพาะ — โจมตีปกติ(สูงสุด 4) + ลุกไหม้ที่เหลือของเป้าหมาย รวมไม่เกิน 8
+  let storiumAtkPart = 0, storiumBurnPart = 0;
+  if (storiumAtk) {
+    storiumAtkPart = Math.min(HIKARU_STORIUM_ATK_CAP, dmg);
+    storiumBurnPart = target.statuses.hburn || 0;
+    dmg = Math.min(HIKARU_STORIUM_TOTAL_CAP, storiumAtkPart + storiumBurnPart);
+    delete attacker.statuses.storium;
   }
   if (pigDmg > 0) {
     attacker.coins -= pigDmg * KOTONE_COIN_PER_DMG; // ทุบกระปุกจ่ายเป็นดาเมจ
@@ -4360,6 +4488,11 @@ function doAttack(byId, targetId) {
   const fullBelly = (target.statuses.fullbelly || 0) > 0;
   if (fullBelly) dmg = Math.max(0, dmg - 1);
 
+  // ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3): เล่นวีดีโอก่อนสรุปผลความเสียหาย
+  if (storiumAtk) {
+    triggerCutscene(attacker, "hikaruStorium");
+    lastLog.push(`🌟 ${attacker.name} ลำแสงสโตเรียม — โจมตีปกติ ${storiumAtkPart} + ลุกไหม้ที่เหลือของ ${target.name} ${storiumBurnPart} = ${dmg} หน่วย (สูงสุด ${HIKARU_STORIUM_TOTAL_CAP})`);
+  }
   // Beam Magnum: หักกระสุน 1 นัดเมื่อได้โจมตีจริงเท่านั้น (ไม่นับถ้าเลือกแล้วไม่ได้ตี/แตกในเทิร์น)
   if (beam && (attacker.beamAmmo || 0) > 0) attacker.beamAmmo--;
   // บานาจ (patch 2.1.2): Beam Magnum (สกิลรอง 2 ระหว่างร่าง Paradise) — เล่นวีดีโอก่อนสรุปผล
@@ -4394,6 +4527,21 @@ function doAttack(byId, targetId) {
   const buddyHpBefore = linkedBuddy ? linkedBuddy.hp : 0;
   if (attackerBeat || profitAtk > 0) dealDirect(target, dmg); // ประกายเขี้ยวปฏิปักษ์ / กำไรเท่าตัวโว้ย: ทะลุเกราะเข้าเลือดจริง
   else dealMixed(target, dmg);               // กฎปกติ: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
+  // สกิลรอง (โคโตเนะ patch 2.1.3): ดาเมจเจาะเกราะเพิ่ม +1 ทะลุเกราะเข้าเลือดจริงโดยตรง (ใช้แล้วหมดไป)
+  if (kotonePierce && target.alive) {
+    delete attacker.statuses.kpierce;
+    dealDirect(target, KOTONE_PIERCE_DMG);
+    lastLog.push(`💃 ${attacker.name} ดาเมจเจาะเกราะทะลุเข้าเลือดจริง +${KOTONE_PIERCE_DMG}`);
+  }
+  // Ginga Strium (ฮิคารุ patch 2.1.3): โจมตีโดนเป้าหมาย -> ติดลุกไหม้ให้เป้าหมาย (ต้าน/ล้างได้)
+  if (gingastriumAtk && target.alive) {
+    if (resistActive(target)) {
+      lastLog.push(`🛡️ ${target.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้`);
+    } else {
+      target.statuses.hburn = Math.min(HIKARU_BURN_MAX, (target.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
+      lastLog.push(`🔥 ${target.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จาก Ginga Strium (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
+    }
+  }
   if (profitAtk > 0) {
     attacker.profit = 0; // บัฟกำไรหมดไปเมื่อได้ตี
     lastLog.push(`💰 ${attacker.name} กำไรเท่าตัวโว้ย — โจมตี +${profitAtk} ทะลุเกราะ! (บัฟหมดลง)`);
@@ -4581,9 +4729,9 @@ function doAttack(byId, targetId) {
     lastLog.push(`🌅 การหลับไหลอันไม่สิ้นสุด: ${target.name} ติดยามฟ้าสาง +1`);
   }
 
-  // Ginga no Uta: ถ้ากำจัดเป้าหมายที่เลือกได้ ต่ออายุท่าไม้ตาย +1 เทิร์น (ชดเชยการลดสถานะตอนจบเทิร์น)
-  if (attacker.characterId === "hikaru" && ginga && hpBefore > 0 && target.hp <= 0) {
-    attacker.statuses.ginga = (attacker.statuses.ginga || 0) + 1;
+  // Ginga no Uta (patch 2.1.3): ถ้ากำจัดเป้าหมายได้ขณะอยู่ในร่าง Ginga Strium (ท่าไม้ตาย) ต่ออายุ +1 เทิร์น (ชดเชยการลดสถานะตอนจบเทิร์น)
+  if (attacker.characterId === "hikaru" && gingastriumAtk && hpBefore > 0 && target.hp <= 0) {
+    attacker.statuses.gingastrium = (attacker.statuses.gingastrium || 0) + 1;
     lastLog.push(`🎵 Ginga no Uta: ${attacker.name} กำจัด ${target.name} — ท่าไม้ตายคงอยู่ +1 เทิร์น`);
   }
 
@@ -4628,6 +4776,7 @@ function doAttack(byId, targetId) {
   if (beam) addFx(skillByStatus(attacker, "beam"), "atk");
   if (ohger) addFx(skillByStatus(attacker, "ohger"), "atk");
   if (ginga) addFx(skillByStatus(attacker, "ginga"), "atk");
+  if (gingastriumAtk) addFx({ name: `Ginga Strium${lastStanding ? " +1 (คู่ต่อสู้คนเดียว)" : ""}`, img: HIKARU_STRIUM_IMG, by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (humanityAtk) addFx(skillByStatus(attacker, "humanity"), "atk");
   if (spearAtk) addFx(skillByStatus(attacker, "spear"), "atk");
   if (veilAtk) addFx({ name: "ม่านแห่งราตรี +1", img: "/characters/oberon/oberon_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
@@ -4638,6 +4787,7 @@ function doAttack(byId, targetId) {
   if (appleAtk > 0) addFx({ name: `เอาไปสิ +${appleAtk} (บัฟมอบของ)`, img: "/characters/appleguy/appleguy_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (tigerAtk) addFx({ name: "เสือนอนกิน +1", img: "/characters/broadband_man/broadband_man_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (pigDmg > 0) addFx({ name: `กระปุกออมสินน้องหมูน้อย +${pigDmg}`, img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (kotonePierce) addFx({ name: `ดาเมจเจาะเกราะ +${KOTONE_PIERCE_DMG}`, img: "/characters/kotone/kotone_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (kotoneExhausted) addFx({ name: "โหมงานหนัก (พลังโจมตี 0)", img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (partnerAtk) addFx({ name: "คู่สัญญา +1 (สนใจใช้บริการเราไหม)", img: "/characters/broadband_man/broadband_man_skill3.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (contractGuard) addFx({ name: "ชำระค่าบริการ (ความเสียหายลด 1)", img: "/characters/broadband_man/broadband_man.jpg", by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
@@ -4752,8 +4902,9 @@ function endTurn() {
       if (k === "dawn") continue;   // ยามฟ้าสาง (โอเบรอน): สแตคถาวร จนกว่า Vortigern จะล้าง
       if (k === "chill") continue;  // ชิวๆครับน้องๆ (Apple guy): คงอยู่จนกว่าจะถูกโจมตี ไม่ลดเทิร์น
       // โหมงานหนัก (โคโตเนะ patch พิเศษ): คงอยู่ 3 เทิร์นแล้วหมดเอง (หรือลบก่อนด้วย Sleeping time ตอนกลางคืน)
-      if (k === "ksleep") continue;   // Sleeping time (โคโตเนะ): หลับจนหมดเฟสกลางคืน (ตื่นตอนเช้า)
+      // ksleep (Sleeping time patch 2.1.3): นับถอยหลังตามปกติ 2 เทิร์นตายตัว — ตื่นเองแล้วรับ [เช้าที่สดใส] (ดูด้านล่าง)
       if (k === "godtree") continue; // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): คงอยู่จนกว่ากลางวันจะหมด/ยกเลิกเอง ไม่ลดเทิร์น
+      if (k === "hburn") continue;   // ลุกไหม้ (ฮิคารุ patch 2.1.3): ลดลงเองในตอนต้นเทิร์นหลังสร้างผล (ดูด้านล่าง) ไม่ลดซ้ำที่นี่
       if (k === "melody") continue;  // ท่วงทำนอง (ชเรด เอลัน): สแตคถาวร สะสมจนครบ 5 เพื่อรวมร่าง
       if (k === "fortune") continue; // โชคลาภ (Bard): คงอยู่จนกว่าจะจั่วไพ่ครั้งถัดไป
       if (k === "evade") continue;   // หลบหลีก (Bard): คงอยู่จนกว่าจะถูกเลือกโจมตี (ซ้อนทับสูงสุด 3)
@@ -4789,6 +4940,11 @@ function endTurn() {
         }
         // เชื่อมผลจบลง (Resonance): ตัดลิงก์ทั้งสองฝั่ง
         if (k === "linked") p.linkedWith = null;
+        // Sleeping time หมดเวลาเอง (โคโตเนะ patch 2.1.3): ตื่นนอนอย่างสดชื่น รับ [เช้าที่สดใส] 3 เทิร์น
+        if (k === "ksleep" && p.characterId === "kotone") {
+          p.statuses.fresh = 3;
+          lastLog.push(`🌅 ${p.name} ตื่นนอนอย่างสดชื่น — ได้รับ [เช้าที่สดใส] 3 เทิร์น (แต้มสกิล +1 และโล่ +1 ทุกเทิร์น)`);
+        }
         // ความตายที่โรยราหมดเวลา (ชิกิ patch 2.0.6.1): ลบเส้นชีวิตส่วนที่ท่าไม้ตายแจกไปออกจากทุกคน
         if (k === "wither" && p.characterId === "shiki") {
           clearWitherLines();
@@ -5097,7 +5253,7 @@ io.on("connection", (socket) => {
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       sunriseDrop: 0, sleepFresh: false,
       appleItem: "drink", appleGifts: {}, appleAtk: 0, chillDodge: 100, appleGiveUses: APPLE_GIVE_USES,
-      coins: 0, nightWork: 0, overworkNext: false, senaNext: false, danceBuff: false,
+      coins: 0, nightWork: 0, overworkNext: false, senaNext: false, kawaiiTargetId: null,
       contractPartner: null, contractWith: null, contractOffer: null,
       contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
       healNextTurn: 0, unplugHold: null,
