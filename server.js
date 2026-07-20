@@ -3784,7 +3784,7 @@ function resolveRound() {
     roundTiedWin = tied.length > 1; // เสมอแต้มกัน -> ยังได้แต้มสกิล/ท่าไม้ตายทำงานปกติ แต่ไม่มีเทิร์นโจมตี
     w.isWinner = true;
     w.result = "win";
-    addSkill(w, 1); // ชนะเป็นคนแรก (ใกล้ 21 สุด / เท่ากับ 21) +1
+    // patch 2.1.3.5: ชนะจั่วการ์ดไม่ได้แต้มสกิลอีกต่อไป
     firePassive(w, "win");
     if (tied.length > 1) lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name} (เสมอ ไม่มีเทิร์นโจมตี)`);
     // ดาบแห่งจุดจบ (อควาเรียน): ชนะพร้อมมีผู้เล่นอื่นไพ่แตกในเทิร์นนั้น -> พลังโจมตี +1 (เทิร์นนี้)
@@ -4215,7 +4215,7 @@ function doAttack(byId, targetId) {
       if (target.statusAmt) delete target.statusAmt.evade;
     }
     if (Math.random() * 100 < evadePct) {
-      addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
+      // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป (แม้หลบพ้น)
       target.wasAttacked = true;
       lastLog.push(`💨 หลบหลีก! ${target.name} หลบการโจมตีของ ${attacker.name} ได้ (${evadePct}%) — เหลือหลบหลีกอีก ${target.statuses.evade || 0} ครั้ง`);
       lastAttack = {
@@ -4315,7 +4315,7 @@ function doAttack(byId, targetId) {
       healHp(target, 1); // หลบได้ ฟื้นพลังชีวิต 1 หน่วย
       // หลบได้ ฟื้นฟูจำนวนการใช้งานสกิลรอง เอาไปสิ +1 ครั้ง (สะสมไม่ได้) (patch 1.9.1)
       target.appleGiveUses = Math.min(APPLE_GIVE_USES, (target.appleGiveUses || 0) + 1);
-      addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ (แม้หลบพ้น)
+      // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป (แม้หลบพ้น)
       target.wasAttacked = true;
       lastLog.push(`🏖️ ${target.name} ชิวๆครับน้องๆ — หลบการโจมตีของ ${attacker.name} ได้! ฟื้นพลังชีวิต +1 เติมเอาไปสิ +1 (อัตราหลบเหลือ ${target.chillDodge}%)`);
       // ฉากวิ่งหลบ: ขึ้นหลังจากฝั่งตรงข้ามกดตีแล้ว จบวีดีโอค่อยแสดงสรุปผลการตีตามปกติ
@@ -4345,7 +4345,7 @@ function doAttack(byId, targetId) {
   if (target.characterId === "satoru") {
     const r = satoruOnTargeted(target, attacker, "การโจมตี");
     if (r.negated) {
-      addSkill(target, 1); // ถูกเลือกโจมตี +1 แต้มสกิลตามปกติ
+      // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป
       target.wasAttacked = true;
       lastAttack = {
         byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
@@ -4632,7 +4632,7 @@ function doAttack(byId, targetId) {
     lastLog.push(`🔗 เชื่อมผล! ${linkedBuddy.name} รับความเสียหายตาม ${target.name} -${shared}`);
   }
   target.wasAttacked = true;
-  addSkill(target, 1); // โดนเลือกโจมตีจากผู้ชนะรอบนั้น +1
+  // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป
   // Absorb shield (บานาจ) / Absorb Shield (ริดดี้): เกราะที่เสียไปจากการถูกโจมตี แปลงกลับเป็นพลังชีวิต
   const armorLost = armorBefore - target.armor;
   if (((target.statuses.absorb || 0) > 0 || (target.statuses.absorbplus || 0) > 0) && armorLost > 0) {
