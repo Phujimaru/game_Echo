@@ -214,11 +214,15 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
               {/* auto-rows-fr = ทุกช่องสูงเท่ากัน ช่องที่คำอธิบายยาวจะเลื่อนดูในตัวเอง */}
               <div className="grid grid-cols-2 auto-rows-fr gap-3 flex-1 min-h-0">
                 <SkillTile label="สกิลติดตัว" skill={sel.passive} />
+                {/* บานาจ ลิงก์ (patch 2.1.2): สกิลติดตัว 2 ฉันไม่อยากให้เราต้องมาสู้กัน */}
+                {sel.id === "banagher" && sel.passive2 && <SkillTile label="สกิลติดตัว 2" skill={sel.passive2} />}
                 <SkillTile label={sel.basicNight ? "สกิลพื้นฐาน (กลางวัน)" : "สกิลพื้นฐาน"} skill={sel.basic} />
                 {sel.basicNight && <SkillTile label="สกิลพื้นฐาน (กลางคืน)" skill={sel.basicNight} />}
                 {/* โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
                 <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
+                {/* บานาจ ลิงก์ (patch 2.1.2): สกิลรอง 2 Beam Magnum — แทนที่สกิลรอง 1 ระหว่างร่าง NewType Paradise */}
+                {sel.id === "banagher" && sel.secondary2 && <SkillTile label="สกิลรอง 2 (ระหว่างร่าง Paradise)" skill={sel.secondary2} />}
                 {/* อควาเรียน: ไม่มีท่าไม้ตายกลาง — ใช้ 4 ท่าตามร่างด้านล่างแทน */}
                 {!sel.ultimateSolar && (
                   <SkillTile
@@ -228,6 +232,8 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 )}
                 {/* ริดดี้ (patch 2.0.9): ท่าไม้ตาย 2 — ใช้แทนท่า 1 ระหว่างเป็นพันธมิตรกับบานาจ */}
                 {sel.id === "riddhe" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2 (เส้นทางพันธมิตร)" skill={sel.ultimate2} />}
+                {/* บานาจ ลิงก์ (patch 2.1.2): ท่าไม้ตาย 2 — ใช้แทนท่า 1 ระหว่างร่าง Paradise ที่มีริดดี้เป็นพันธมิตร */}
+                {sel.id === "banagher" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2 (ระหว่างร่าง Paradise + พันธมิตรริดดี้)" skill={sel.ultimate2} />}
                 {/* ชิกิ (patch 2.0.6): ท่าไม้ตาย 2 ความตายที่โรยรา — เลือกใช้ได้ 1 ท่าต่อเกม */}
                 {sel.id === "shiki" && sel.ultimate2 && <SkillTile label="ท่าไม้ตาย 2" skill={sel.ultimate2} />}
                 {sel.id === "shiki" && sel.ultimate2 && (
