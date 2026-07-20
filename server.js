@@ -4545,15 +4545,6 @@ function doAttack(byId, targetId) {
       lastLog.push(`🔥 ${target.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จาก Ginga Strium (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
     }
   }
-  // ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3): โดนแล้วยังไม่ตาย ติดลุกไหม้เพิ่มอีก 2 หน่วย (แยกต่างหากจากลุกไหม้ของร่าง Ginga Strium ด้านบน)
-  if (storiumAtk && target.hp > 0) {
-    if (resistActive(target)) {
-      lastLog.push(`🛡️ ${target.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้เพิ่มจากลำแสงสโตเรียม`);
-    } else {
-      target.statuses.hburn = Math.min(HIKARU_BURN_MAX, (target.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
-      lastLog.push(`🔥 ลำแสงสโตเรียม! ${target.name} ติดลุกไหม้เพิ่มอีก +${HIKARU_STRIUM_HIT_BURN} (${target.statuses.hburn}/${HIKARU_BURN_MAX})`);
-    }
-  }
   // Ginga Strium (ฮิคารุ patch 2.1.3): ถูกโจมตีขณะอยู่ในร่างนี้ -> ผู้โจมตีติดลุกไหม้ 2 หน่วย (สวนกลับ — ต้าน/ล้างได้)
   if (target.characterId === "hikaru" && (target.statuses.gingastrium || 0) > 0 && attacker.alive && attacker.id !== target.id) {
     if (resistActive(attacker)) {
@@ -4701,6 +4692,32 @@ function doAttack(byId, targetId) {
       splashHit.push(o);
     }
     if (splashHit.length) lastLog.push(`ตีหมู่ Ginga! ผู้เล่นอื่นเสียเกราะ -1`);
+  }
+  // ลำแสงสโตเรียม (ฮิคารุ patch 2.1.3): ตีหมู่ — คนอื่นที่ไม่ใช่เป้าหมายที่เลือก รับดาเมจเท่ากับจำนวนลุกไหม้ที่ติดอยู่บนตัวเอง
+  //  ทุกคนที่โดน (รวมเป้าหมายหลัก) ถ้ายังไม่ตายจะติดลุกไหม้เพิ่มอีก 2 หน่วย (เป้าหมายหลักได้จาก Ginga Strium ด้านบนแล้ว)
+  if (storiumAtk) {
+    const splashHit = [];
+    for (const o of alivePlayers()) {
+      if (o.id === attacker.id || o.id === target.id) continue;
+      const preBurn = o.statuses.hburn || 0;
+      if (preBurn > 0) dealMixed(o, preBurn);
+      maybeBeatSave(o);
+      maybeBeatMode(o);
+      maybeEva3(o);
+      maybeWakeKotone(o);
+      o.wasAttacked = true;
+      splashHit.push({ p: o, dmg: preBurn });
+    }
+    if (splashHit.length) lastLog.push(`🌟 ลำแสงสโตเรียม ตีหมู่! ${splashHit.map((h) => `${h.p.name} -${h.dmg}`).join(", ")}`);
+    for (const { p: o } of splashHit) {
+      if (o.hp <= 0) continue;
+      if (resistActive(o)) {
+        lastLog.push(`🛡️ ${o.name} ต้านสถานะผิดปกติ — ไม่ติดลุกไหม้จากลำแสงสโตเรียม`);
+      } else {
+        o.statuses.hburn = Math.min(HIKARU_BURN_MAX, (o.statuses.hburn || 0) + HIKARU_STRIUM_HIT_BURN);
+        lastLog.push(`🔥 ${o.name} ติดลุกไหม้ +${HIKARU_STRIUM_HIT_BURN} จากลำแสงสโตเรียม (${o.statuses.hburn}/${HIKARU_BURN_MAX})`);
+      }
+    }
   }
   // หมัดไร้ขอบเขต (อควาเรียน ท่าไม้ตายร่างโซล่า): ตีหมู่ — คนที่ไม่ใช่เป้าหมายเสียเกราะ 1 หน่วย
   if ((attacker.statuses.solarburst || 0) > 0) {
@@ -4862,7 +4879,7 @@ function doAttack(byId, targetId) {
   lastAttack = {
     byName: attacker.name, byImg: displayImg(attacker), byColor: POSITION_COLORS[attacker.position] || "#888",
     targetName: target.name, targetImg: displayImg(target), targetColor: POSITION_COLORS[target.position] || "#888",
-    dmg, aoe: ginga || (attacker.statuses.solarburst || 0) > 0 || beamPlusAtk || unibeam2Atk, revenge: isRevenge, skills: fxSkills,
+    dmg, aoe: ginga || (attacker.statuses.solarburst || 0) > 0 || beamPlusAtk || unibeam2Atk || storiumAtk, revenge: isRevenge, skills: fxSkills,
   };
   const showAttackFx = () => {
     gameState = "ATTACKING";
