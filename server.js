@@ -5267,10 +5267,10 @@ function endTurn() {
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
-      // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตายขณะสถานะนี้ยังอยู่ -> รอฟื้นคืนชีพ (เช็คว่าเกมจบไหมด้านล่าง)
-      if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) p.pendingRevive = true;
-      p.hp = 0; p.alive = false; p.result = "dead";
-      lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+      // patch 2.1.6.3: เรียกผ่าน instantDeath() แทนการตั้ง alive=false ตรงๆ — กันบั๊กริต้าไม่เกิดใหม่
+      //  (จุดนี้เคย bypass สกิลติดตัว 1 ริต้า เบอร์นัล เพราะไม่ได้เรียก instantDeath ที่มีตรรกะเกิดใหม่)
+      instantDeath(p);
+      if (!p.alive) lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
     }
   }
   // ระเบิด fourth impact: เอวา 13 ตายขณะสถานะยังอยู่ -> ทุกคนในสนามรับ 5 หน่วย (เกราะก่อนแล้วเลือด)
@@ -5290,9 +5290,8 @@ function endTurn() {
     // เช็คคนตายจากแรงระเบิดอีกรอบ
     for (const p of Object.values(players)) {
       if (p.alive && p.hp <= 0) {
-        if (p.characterId === "aquarion" && (p.statuses.godtree || 0) > 0) p.pendingRevive = true;
-        p.hp = 0; p.alive = false; p.result = "dead";
-        lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+        instantDeath(p);
+        if (!p.alive) lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
       }
     }
   }
@@ -5314,17 +5313,16 @@ function endTurn() {
     // คนที่โดนบทเพลงจนเลือดหมด ตกรอบทันที
     for (const o of Object.values(players)) {
       if (o.alive && o.hp <= 0) {
-        if (o.characterId === "aquarion" && (o.statuses.godtree || 0) > 0) o.pendingRevive = true;
-        o.hp = 0; o.alive = false; o.result = "dead";
-        lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
+        instantDeath(o);
+        if (!o.alive) lastLog.push(`💀 ${o.name} เลือดจริงหมด ตกรอบ!`);
       }
     }
     const othersLeft = alivePlayers().filter((o) => o.id !== s.id);
     if (othersLeft.length === 0) {
       lastLog.push(`👑 ${s.name} บทเพลงกวาดล้างทุกคนบนสนาม — ชเรดคือผู้ชนะ!`);
-    } else {
-      s.hp = 0; s.alive = false; s.result = "dead";
-      lastLog.push(`🎻 ${s.name} จบชีวิตลงพร้อมบทเพลงสุดท้าย... ลาก่อนเพื่อนรัก`);
+    } else if (s.alive) {
+      instantDeath(s);
+      if (!s.alive) lastLog.push(`🎻 ${s.name} จบชีวิตลงพร้อมบทเพลงสุดท้าย... ลาก่อนเพื่อนรัก`);
     }
   }
   // ไปยังพฤกษาแห่งชีวิต (อควาเรียน): ตั้งเวลาฟื้นคืนชีพ 12 เทิร์น ก็ต่อเมื่อเกมยังไม่จบ (เหลือผู้เล่นอื่นอย่างน้อย 2 คน)
