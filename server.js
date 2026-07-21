@@ -298,6 +298,7 @@ function maybeBardDim(p, live) {
   }
   p.statuses[kind] = BARD_DIM_TURNS; // 3 เทิร์น (patch 2.0.8.1: นับเทิร์นปัจจุบันเป็นเทิร์นแรก)
   p.transformAt = ++transformCounter;
+  p.bardNotesUsed = 0; // patch 2.1.7: เข้ามิติแล้วรีเซ็ตโน้ตที่เติมไปก่อนหน้าในเทิร์นนี้ — เริ่มนับใหม่ 0/6 ทันที
   // patch 2.0.8: ทั้งสองมิติ — คีตกวีได้ "ต้านสถานะผิดปกติ" 3 เทิร์น (ล้างดีบัฟพื้นฐานตอนติดด้วย)
   //  "หลบหลีก" 1 ครั้ง และ "โชคลาภ" 1 ครั้ง
   p.statuses.resist = Math.max(p.statuses.resist || 0, BARD_DIM_RESIST_TURNS); // 3 เทิร์น (นับเทิร์นปัจจุบัน)
@@ -398,7 +399,7 @@ function healArmor(p, amount) {
 // ---------- ระบบกลางวัน/กลางคืน (patch 1.7 / ปรับเวลา+โบนัส patch 2.1.7) ----------
 //  เริ่มเกมเป็นกลางวันเสมอ สลับทุก 5 เทิร์น: รอบ 1-5 กลางวัน, 6-10 กลางคืน, 11-15 กลางวัน, ...
 //  จบเทิร์นกลางวัน = ทุกคนได้แต้มสกิลเพิ่ม +1 แต่แจกเฉพาะเช้าที่ 2, 4, 6, ... (เช้าที่ 1, 3, 5, ... ไม่มีโบนัส — ดู morningBonusActive)
-//  กลางคืน = เกราะฟื้นทุกเทิร์น (ปกติทุก 2 เทิร์น) + สุ่มสกิลพื้นฐาน/สกิลรองแพงขึ้น +1 ทุกเทิร์น (ดู nightTaxTier)
+//  กลางคืน = สุ่มสกิลพื้นฐาน/สกิลรองแพงขึ้น +1 ทุกเทิร์น (ดู nightTaxTier) — เกราะฟื้นทุก 2 เทิร์นเหมือนกันทั้งวัน/คืน
 //  cycleShift: Lie Like Vortigern รีเซ็ตเวลากลางคืนให้เหลืออีก 5 เทิร์น — เลื่อนวงจรทั้งเกมไปข้างหน้า
 const CYCLE_TURNS = 5;
 let cycleShift = 0;
@@ -996,8 +997,10 @@ const TRANSFORMS = {
   // seconds วัดจากความยาววีดีโอจริง (+buffer ~0.5-1 วิ กันตัดก่อนจบ)
   // phenexReflect: สกิลรอง 1 ฝันไปเถอะ — เล่นตอนสะท้อนความเสียหายกลับผู้โจมตี ก่อนสรุปผล (วีดีโอจริง 3.24 วิ)
   phenexReflect: { img: "/characters/rita/skill2/phenex_skill2.jpg", video: "/characters/rita/skill2/phenex_skill2.mp4", title: "ฝันไปเถอะ", label: "สะท้อนความเสียหาย", seconds: 4, music: null, afterReveal: false },
-  // phenexPurge: สกิลรอง 2 อย่าอยู่เลย แกน่ะ! — เล่นก่อนสรุปผลตอนได้โจมตี (ทำงานหลังเปิดไพ่) (วีดีโอจริง 6.47 วิ)
-  phenexPurge: { img: "/characters/rita/skill2/phenex_skill2.2.jpg", video: "/characters/rita/skill2/phenex_skill2.2.mp4", title: "อย่าอยู่เลย แกน่ะ!", label: "ใช้สกิล", seconds: 7, music: null, afterReveal: true },
+  // phenexPurge: สกิลรอง 2 อย่าอยู่เลย แกน่ะ! — เล่นก่อนสรุปผลตอนได้โจมตี (วีดีโอจริง 6.47 วิ)
+  //  afterReveal ต้องเป็น false เสมอ — true จะโดนระบบ afterResolve() sweep ทั่วไป (ที่ไว้ auto-activate ท่าไม้ตายทันทีตอนเปิดไพ่)
+  //  ดึงไปเล่นวีดีโอทันทีที่เปิดไพ่ ทั้งที่ยังไม่ได้โจมตี (บั๊กที่เจอจริง — ผลจริงของสกิลนี้ทำงานเฉพาะใน doAttack เท่านั้น)
+  phenexPurge: { img: "/characters/rita/skill2/phenex_skill2.2.jpg", video: "/characters/rita/skill2/phenex_skill2.2.mp4", title: "อย่าอยู่เลย แกน่ะ!", label: "ใช้สกิล", seconds: 7, music: null, afterReveal: false },
   // phenexNtd: ท่าไม้ตาย 1 ฝืนใช้งาน NTD-Sytem — กดก่อนเปิดไพ่ (วีดีโอจริง 16.67 วิ)
   phenexNtd: { img: PHENEX_NTD_IMG, video: "/characters/rita/skill3/phenex_skill3.mp4", title: "ฝืนใช้งาน NTD-Sytem", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: null, afterReveal: false },
   // phenexTaunt: ท่าไม้ตาย 2 ไม่อยากให้ใครต้องเจ็บปวด — กดก่อนเปิดไพ่ (วีดีโอจริง 16.48 วิ)
@@ -1197,8 +1200,9 @@ function instantDeath(p) {
     phenexRebirth(p);
     return;
   }
-  // ริต้า เบอร์นัล (สกิลติดตัว 2 patch 2.1.6): ตกรอบจริง -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดก่อนตาย
-  if (p.characterId === "phenex" && (p.phenexPain || 0) > 0) phenexReleasePain(p);
+  // ริต้า เบอร์นัล (สกิลติดตัว 2 patch 2.1.7): ตกรอบจริงขณะท่าไม้ตาย 2 (ไม่อยากให้ใครต้องเจ็บปวด) ยังทำงานอยู่เท่านั้น
+  //  -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดก่อนตาย — ตายนอกช่วงท่าไม้ตาย 2 จะไม่ปลดปล่อย (ความเจ็บปวดที่มียังคงค้างอยู่)
+  if (p.characterId === "phenex" && (p.phenexPain || 0) > 0 && (p.statuses.phenexTaunt || 0) > 0) phenexReleasePain(p);
   p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
 }
 
@@ -2177,10 +2181,10 @@ function dealRound() {
       }
     }
 
-    // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — จบเทิร์นช่วงกลางคืน: ฟื้นทุกเทิร์น
-    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน (prevNight = เทิร์นที่เพิ่งจบเป็นกลางคืนตามวงจรเดิม)
+    // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — เหมือนกันทั้งกลางวัน/กลางคืน (ยกเลิกโบนัสฟื้นทุกเทิร์นตอนกลางคืน patch 2.1.7)
+    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
     // [โหมงานหนัก] (โคโตเนะ): ฟื้นเกราะไม่ได้จนกว่าจะใช้ Sleeping time
-    if (!p.armorLocked && !overworkActive(p) && (roundNumber % 2 === 0 || prevNight)) {
+    if (!p.armorLocked && !overworkActive(p) && roundNumber % 2 === 0) {
       healArmor(p, 1);
     }
     // คืนร่าง (อควาเรียน): ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น (ซ้อนกับการฟื้นเกราะปกติ) เป็นเวลา 3 เทิร์น
@@ -5727,7 +5731,8 @@ io.on("connection", (socket) => {
     const options = ask.options.map((id) => players[id]).filter((o) => o && o.alive);
     const target = options.find((o) => o.id === targetId) || null;
     resolvePhenexRelease(p, target, ask.pain);
-    broadcastState();
+    // ต้องเรียก runCutsceneQueue ไม่ใช่ broadcastState() ตรงๆ — ไม่งั้นวีดีโอที่ queueCutscene ไว้จะไม่ถูกเล่นเลย
+    runCutsceneQueue(() => broadcastState());
   });
   socket.on("allyAnswer", ({ accept } = {}) => answerAllyOffer(socket.id, !!accept));    // บานาจ: ตอบข้อเสนอพันธมิตร
   socket.on("allyBreakAnswer", ({ cancel } = {}) => answerAllyBreak(socket.id, !!cancel)); // ฝ่ายถูกคู่ตี: ยกเลิกพันธมิตรไหม
