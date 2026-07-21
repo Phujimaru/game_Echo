@@ -3497,9 +3497,8 @@ function useSkill(id, tier, targets, item) {
     p.statuses.hburn = Math.min(PHENEX_BURN_MAX, (p.statuses.hburn || 0) + PHENEX_SELF_BURN);
     lastLog.push(`🔥 ${p.name} หัวใจที่ไม่ดับมอด — ติดลุกไหม้ตัวเอง +${PHENEX_SELF_BURN} หน่วย (${p.statuses.hburn}/${PHENEX_BURN_MAX})`);
   }
-  // ฝันไปเถอะ: เสียพลังชีวิต 2 หน่วยไม่สนเกราะทันที แล้วตั้งรับ 3 เทิร์น (สะท้อนดาเมจตอนถูกโจมตี — ดูใน doAttack)
+  // ฝันไปเถอะ: เสียพลังชีวิต 2 หน่วยไม่สนเกราะทันที แล้วตั้งรับ 3 เทิร์น (วีดีโอ+สะท้อนดาเมจเกิดตอนถูกโจมตีเท่านั้น — ดูใน doAttack ไม่ใช่ตอนกดสกิล)
   if (st === "phenexReflect") {
-    triggerCutscene(p, "phenexReflect");
     dealDirect(p, PHENEX_REFLECT_COST_HP);
     maybeBeatSave(p); maybeBeatMode(p); maybeEva3(p); maybeWakeKotone(p);
     lastLog.push(`🪞 ${p.name} ฝันไปเถอะ — เสียพลังชีวิต ${PHENEX_REFLECT_COST_HP} หน่วย (ไม่สนเกราะ) แล้วตั้งรับ ${p.statuses.phenexReflect || 0} เทิร์น สะท้อนความเสียหายที่ได้รับกลับผู้โจมตีทั้งหมด`);
