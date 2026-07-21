@@ -1202,7 +1202,8 @@ function instantDeath(p) {
   }
   // ริต้า เบอร์นัล (สกิลติดตัว 2 patch 2.1.7): ตกรอบจริงขณะท่าไม้ตาย 2 (ไม่อยากให้ใครต้องเจ็บปวด) ยังทำงานอยู่เท่านั้น
   //  -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดก่อนตาย — ตายนอกช่วงท่าไม้ตาย 2 จะไม่ปลดปล่อย (ความเจ็บปวดที่มียังคงค้างอยู่)
-  if (p.characterId === "phenex" && (p.phenexPain || 0) > 0 && (p.statuses.phenexTaunt || 0) > 0) phenexReleasePain(p);
+  //  phenexTauntGrace: หมดเวลาพอดีเทิร์นที่ตาย (เช่น เทิร์นที่ 3) ก็ยังนับว่าตายขณะท่าไม้ตายทำงาน
+  if (p.characterId === "phenex" && (p.phenexPain || 0) > 0 && ((p.statuses.phenexTaunt || 0) > 0 || p.phenexTauntGrace)) phenexReleasePain(p);
   p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
 }
 
@@ -1664,6 +1665,7 @@ function resetCombat(p) {
   p.phenexNtdPermanent = false; // เปิด NTD-Sytem ถาวรฟรีจากสกิลติดตัว 1 (แทนสถานะนับเทิร์นปกติ)
   p.phenexLastHitBy = null;     // id ผู้โจมตีล่าสุดที่ทำให้เสียเลือด/เกราะ — ใช้เลือกเป้าปลดปล่อยความเจ็บปวด
   p.phenexReleaseAsk = null;    // ขอแค่ได้พบกันอีก: รอเลือกเป้าหมายปลดปล่อยความเจ็บปวด { pain, options: [id] }
+  p.phenexTauntGrace = false;   // ไม่อยากให้ใครต้องเจ็บปวด: ตายเทิร์นที่ท่าไม้ตายหมดเวลาพอดี ยังนับว่าตายขณะทำงาน (patch 2.1.7)
   p.nightTaxTier = null;        // กลางคืน (patch 2.1.7): สกิลที่สุ่มโดนคืนนี้ใช้แต้มมากขึ้น +1 ("basic" | "secondary" | null)
   p.evadeIdle = 0;               // หลบหลีก (Bard patch 2.1.7): นับเทิร์นที่ไม่ได้ใช้ (ครบ 3 = หมดฤทธิ์เอง)
   p.fortuneIdle = 0;             // โชคลาภ (Bard patch 2.1.7): นับเทิร์นที่ไม่ได้ใช้ (ครบ 3 = หมดฤทธิ์เอง)
@@ -2113,6 +2115,7 @@ function dealRound() {
     } else {
       p.nightTaxTier = null;
     }
+    p.phenexTauntGrace = false; // ไม่อยากให้ใครต้องเจ็บปวด (ริต้า เบอร์นัล): ผ่านเทิร์นที่หมดเวลาพอดีไปแล้ว ล้างค่านี้ทิ้ง
 
     // [โหมงานหนัก] (โคโตเนะ): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้
     if (p.overworkNext) {
@@ -5377,6 +5380,9 @@ function endTurn() {
         }
         // เชื่อมผลจบลง (Resonance): ตัดลิงก์ทั้งสองฝั่ง
         if (k === "linked") p.linkedWith = null;
+        // ไม่อยากให้ใครต้องเจ็บปวด (ริต้า เบอร์นัล patch 2.1.7): หมดเวลาพอดีเทิร์นนี้ — ยังนับว่า "ตายขณะท่าไม้ตายทำงาน"
+        //  ต่อไปอีก 1 จังหวะจบเทิร์น เผื่อตายจากผลติกท้ายเทิร์นเดียวกัน (ล้างค่านี้ทิ้งตอนเริ่มเทิร์นถัดไปใน dealRound)
+        if (k === "phenexTaunt") p.phenexTauntGrace = true;
         // Sleeping time หมดเวลาเอง (โคโตเนะ patch 2.1.3): ตื่นนอนอย่างสดชื่น รับ [เช้าที่สดใส] 3 เทิร์น
         if (k === "ksleep" && p.characterId === "kotone") {
           p.statuses.fresh = 3;
