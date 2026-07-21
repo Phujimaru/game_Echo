@@ -728,10 +728,11 @@ const RIDDHE_BANSHEE_IMG = "/characters/riddhe/profile/banshee.png";   // ภา
 const RIDDHE_NTD_IMG = "/characters/riddhe/profile/banshee_ntd.png";   // ระหว่าง NT-D (ท่าไม้ตาย 1)
 const RIDDHE_NTD2_IMG = "/characters/riddhe/profile/banshee_ntd2.jpg"; // ระหว่างท่าไม้ตาย 2 / หลังสกิลติดตัว 3 (ถาวร)
 // ---------- ริต้า เบอร์นัล / ฟีนิกซ์ (patch 2.1.6) ----------
-const PHENEX_SELF_BURN = 3;      // หัวใจที่ไม่ดับมอด: ติดลุกไหม้ตัวเอง +3 หน่วย
+const PHENEX_SELF_BURN = 2;      // หัวใจที่ไม่ดับมอด: ติดลุกไหม้ตัวเอง +2 หน่วย
 const PHENEX_BURN_MAX = 5;       // ลุกไหม้ (ตัวเอง): สะสมได้ไม่เกิน 5 หน่วย
 const PHENEX_REFLECT_COST_HP = 2; // ฝันไปเถอะ: เสียพลังชีวิต 2 หน่วยไม่สนเกราะตอนกด
 const PHENEX_NTD_COST_HP = 3;     // ฝืนใช้งาน NTD-Sytem: เสียพลังชีวิต 3 หน่วยไม่สนเกราะตอนกด
+const PHENEX_NTD_ATK_BONUS = 2;   // ฝืนใช้งาน NTD-Sytem: พลังโจมตีพื้นฐาน +2 ระหว่าง NTD ทำงาน (ซ้อนกับสกิลติดตัว 1 ได้ รวม +3)
 const PHENEX_BAN_ULT_TURNS = 3;   // อย่าอยู่เลย แกน่ะ!: ไม่มีท่าไม้ตายให้ลบ -> แบนท่าไม้ตายเป้าหมาย 3 เทิร์นแทน
 const PHENEX_FORCE_SCORE = 20;    // อย่าอยู่เลย แกน่ะ!: บังคับแต้มการจั่วเป็น 20 ทันที (ไม่มีผลถ้ามีแต้ม 21 อยู่แล้ว)
 const PHENEX_BASE_IMG = "/characters/rita/profile/phenex.png";     // ภาพเริ่มเกม (ลงสนามแล้ว) ปกติ
@@ -1129,16 +1130,11 @@ function phenexRebirth(p) {
   triggerCutscene(p, "phenexRebirth"); // phenex_passive.mp4
   lastLog.push(`🔥🕊️ ${p.name} ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ? — เกิดใหม่ด้วยพลังชีวิต/เกราะเต็ม! เปิดใช้งาน NTD-Sytem ถาวรฟรี พลังโจมตีพื้นฐาน +1 ถาวร (ท่าไม้ตายเปลี่ยนเป็น "ไม่อยากให้ใครต้องเจ็บปวด" ถาวร)`);
 }
-// สกิลติดตัว 2 ขอแค่ได้พบกันอีก: ตกรอบจริง (ไม่ใช่ครั้งแรกที่เกิดใหม่ได้) -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดใส่เป้าหมาย
-//  แบบไม่สนการหลบหลีก — เลือกเป้าหมายจากผู้โจมตีล่าสุดที่ทำให้เสีย HP/เกราะ (ถ้าไม่มี/ตายไปแล้ว สุ่มจากผู้เล่นที่รอดชีวิต)
-function phenexReleasePain(p) {
-  const pain = p.phenexPain || 0;
-  p.phenexPain = 0;
-  if (pain <= 0) return;
-  const pool = Object.values(players).filter((o) => o.alive && o.id !== p.id);
-  const last = p.phenexLastHitBy ? players[p.phenexLastHitBy] : null;
-  const target = (last && last.alive && last.id !== p.id) ? last : (pool.length ? pool[Math.floor(Math.random() * pool.length)] : null);
-  if (!target) return;
+// สกิลติดตัว 2 ขอแค่ได้พบกันอีก: ตกรอบจริง (ไม่ใช่ครั้งแรกที่เกิดใหม่ได้) -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดใส่เป้าหมายที่เลือก
+//  แบบไม่สนการหลบหลีก — มีเป้าหมายให้เลือกมากกว่า 1 คน = รอผู้เล่นเลือกเอง (phenexReleaseAsk)
+//  ถ้ามีตัวเลือกเดียวจะยิงทันที / ถ้าไม่เลือกทันเวลา (ยังไม่ตอบตอนเปิดไพ่รอบถัดไป) จะสุ่มให้
+function resolvePhenexRelease(p, target, pain) {
+  if (!target || !target.alive) return;
   triggerCutscene(p, "phenexRelease"); // phenex_passive2.mp4
   dealMixed(target, pain); // ไม่ผ่านระบบหลบหลีกปกติ — ยิงตรงแบบไม่สนการหลบหลีกเสมอ (ยังลดเกราะก่อนตามปกติ)
   lastLog.push(`💔🔥 ${p.name} ขอแค่ได้พบกันอีก — ปลดปล่อยความเจ็บปวดที่สะสม ${pain} หน่วยใส่ ${target.name} (ไม่สนการหลบหลีก)!`);
@@ -1146,6 +1142,15 @@ function phenexReleasePain(p) {
     instantDeath(target);
     if (!target.alive) lastLog.push(`💀 ${target.name} เลือดจริงหมด ตกรอบ!`);
   }
+}
+function phenexReleasePain(p) {
+  const pain = p.phenexPain || 0;
+  p.phenexPain = 0;
+  if (pain <= 0) return;
+  const pool = Object.values(players).filter((o) => o.alive && o.id !== p.id);
+  if (!pool.length) return;
+  if (pool.length === 1) { resolvePhenexRelease(p, pool[0], pain); return; }
+  p.phenexReleaseAsk = { pain, options: pool.map((o) => o.id) };
 }
 // ตายกลางเทิร์น (เลือดหมดจากสกิล/ผลสถานะ): ตกรอบทันที — อควาเรียนที่ตายขณะไปยังพฤกษาแห่งชีวิต
 //  จะติดธงรอฟื้นคืนชีพ (ตั้งเวลา 12 เทิร์นตอนจบเทิร์น ถ้าเกมยังไม่จบ)
@@ -1608,6 +1613,7 @@ function resetCombat(p) {
   p.phenexReborn = false;       // ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ?: เกิดใหม่ไปแล้วหรือยัง (1 ครั้งต่อเกม)
   p.phenexNtdPermanent = false; // เปิด NTD-Sytem ถาวรฟรีจากสกิลติดตัว 1 (แทนสถานะนับเทิร์นปกติ)
   p.phenexLastHitBy = null;     // id ผู้โจมตีล่าสุดที่ทำให้เสียเลือด/เกราะ — ใช้เลือกเป้าปลดปล่อยความเจ็บปวด
+  p.phenexReleaseAsk = null;    // ขอแค่ได้พบกันอีก: รอเลือกเป้าหมายปลดปล่อยความเจ็บปวด { pain, options: [id] }
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -1667,6 +1673,15 @@ function buildStateFor(viewerId) {
     const locaFrom = Object.values(players).find((o) => o.alive && o.locaOffer === viewerId);
     if (locaFrom) locaOffer = { from: locaFrom.name, steal: LOCA_STEAL, color: POSITION_COLORS[locaFrom.position] || "#9B4F96", img: "/characters/satoru/locaca.png" };
   }
+  // ริต้า เบอร์นัล: ขอแค่ได้พบกันอีก — เลือกเป้าหมายปลดปล่อยความเจ็บปวด (ใช้ได้แม้ตกรอบไปแล้ว/ทุกเฟส)
+  let phenexReleaseAsk = null;
+  if (viewer && viewer.phenexReleaseAsk) {
+    const options = viewer.phenexReleaseAsk.options
+      .map((id) => players[id])
+      .filter((o) => o && o.alive)
+      .map((o) => ({ id: o.id, name: o.name, color: POSITION_COLORS[o.position] || "#9B4F96", img: displayImg(o) }));
+    if (options.length) phenexReleaseAsk = { pain: viewer.phenexReleaseAsk.pain, options };
+  }
   // ---------- ริดดี้ มาร์เซนาส (patch 2.0.9): popup ระบบพันธมิตร ----------
   let allyChoices = null;   // ริดดี้: เลือกบานาจที่จะยื่นข้อเสนอ (Event เริ่มเกม)
   let allyOfferAsk = null;  // บานาจ: ข้อเสนอพันธมิตรที่รอเราตอบ
@@ -1705,6 +1720,7 @@ function buildStateFor(viewerId) {
     contractOffer, // ข้อเสนอสัญญาที่รอเราตอบ (สนใจใช้บริการเราไหม)
     renewAsk,      // คำถามต่อสัญญาที่รอเราตอบ (ชำระค่าบริการ)
     locaOffer,     // ข้อเสนอผลโลกากากาที่รอเราตอบ (ซาโตรุ)
+    phenexReleaseAsk, // ริต้า เบอร์นัล: เลือกเป้าหมายปลดปล่อยความเจ็บปวด (ขอแค่ได้พบกันอีก)
     gameState,
     timeLeft,
     roundNumber,
@@ -1844,6 +1860,7 @@ function buildStateFor(viewerId) {
         reiju: p.reiju,       // ฟุจิมารุ: เรจูอาคมบัญชาคงเหลือ (UI พิเศษ reiju0-3.jpg)
         mageUses: p.mageUses, // จอมเวทย์ฝึกหัด: กดไปแล้วกี่ครั้งในเทิร์นนี้ (สูงสุด 3)
         tonkatsu: p.tonkatsu || 0, // เทมาริ: ชามทงคัสสึสะสม (UI สะสมชาม)
+        phenexPain: p.phenexPain || 0, // ริต้า เบอร์นัล: ความเจ็บปวดสะสม (ไม่อยากให้ใครต้องเจ็บปวด — ปลดปล่อยตอนตกรอบจริง)
         atCap: scoreOf(p) >= scoreCap(p), // แต้มเต็มเพดาน (21/UPG) -> ปิดปุ่มจั่ว รอเปิดไพ่เอง
         skillUsed: !!p.skillUsedRound,    // ใช้สกิลไปแล้วในเทิร์นนี้ (1 อันต่อเทิร์น)
         alive: p.alive,
@@ -3856,6 +3873,14 @@ function resolveRound() {
       if (p.alive) resolveLoca(p, players[p.locaOffer], false, true);
       else p.locaOffer = null;
     }
+    // ริต้า เบอร์นัล: ขอแค่ได้พบกันอีก — ยังไม่เลือกเป้าหมายก่อนเปิดไพ่รอบถัดไป = สุ่มให้
+    if (p.phenexReleaseAsk) {
+      const ask = p.phenexReleaseAsk;
+      p.phenexReleaseAsk = null;
+      const options = ask.options.map((id) => players[id]).filter((o) => o && o.alive);
+      const target = options.length ? options[Math.floor(Math.random() * options.length)] : null;
+      resolvePhenexRelease(p, target, ask.pain);
+    }
     // ---------- ริดดี้ มาร์เซนาส (patch 2.0.9): คำถามพันธมิตรที่ยังไม่ตอบเมื่อถึงเวลาเปิดไพ่ ----------
     if (p.allyPrompt) {
       p.allyPrompt = false;
@@ -4603,8 +4628,11 @@ function doAttack(byId, targetId) {
   const phenexPurgeAtk = attacker.characterId === "phenex" && (attacker.statuses.phenexPurge || 0) > 0;
   // ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ? (สกิลติดตัว 1 — เกิดใหม่แล้ว): พลังโจมตีพื้นฐานถาวร +1
   const phenexRebornAtk = attacker.characterId === "phenex" && attacker.phenexReborn;
+  // ฝืนใช้งาน NTD-Sytem (ท่าไม้ตาย 1 — ระหว่าง NTD ทำงาน ไม่ว่าชั่วคราวหรือถาวรหลังเกิดใหม่): พลังโจมตีพื้นฐาน +2
+  //  ซ้อนกับโบนัส +1 ของสกิลติดตัว 1 ได้ (เกิดใหม่แล้ว NTD จะถาวรเสมอ) รวมเป็น +3
+  const phenexNtdAtk = attacker.characterId === "phenex" && ((attacker.statuses.phenexNtd || 0) > 0 || attacker.phenexNtdPermanent);
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0) + (phenexNtdAtk ? PHENEX_NTD_ATK_BONUS : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
   if (kotoneExhausted) base = 0;
   if (aquaZero) base = 0;
   let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
@@ -5542,6 +5570,17 @@ io.on("connection", (socket) => {
   socket.on("useReiju", ({ command } = {}) => useReiju(socket.id, command));
   socket.on("locaAnswer", ({ accept } = {}) => answerLoca(socket.id, !!accept)); // ซาโตรุ: ตอบข้อเสนอผลโลกากากา
   socket.on("riddheAlly", ({ targetId } = {}) => riddheChooseAlly(socket.id, targetId)); // ริดดี้: เลือกยื่นข้อเสนอพันธมิตร/เดินเดี่ยว
+  // ริต้า เบอร์นัล: ขอแค่ได้พบกันอีก — เลือกเป้าหมายปลดปล่อยความเจ็บปวด (ใช้ได้แม้ตกรอบไปแล้ว)
+  socket.on("phenexRelease", ({ targetId } = {}) => {
+    const p = players[socket.id];
+    if (!p || !p.phenexReleaseAsk) return;
+    const ask = p.phenexReleaseAsk;
+    p.phenexReleaseAsk = null;
+    const options = ask.options.map((id) => players[id]).filter((o) => o && o.alive);
+    const target = options.find((o) => o.id === targetId) || null;
+    resolvePhenexRelease(p, target, ask.pain);
+    broadcastState();
+  });
   socket.on("allyAnswer", ({ accept } = {}) => answerAllyOffer(socket.id, !!accept));    // บานาจ: ตอบข้อเสนอพันธมิตร
   socket.on("allyBreakAnswer", ({ cancel } = {}) => answerAllyBreak(socket.id, !!cancel)); // ฝ่ายถูกคู่ตี: ยกเลิกพันธมิตรไหม
   socket.on("allyFinalAnswer", ({ keep } = {}) => answerAllyFinal(socket.id, !!keep));   // ริดดี้: คงพันธมิตร (ชนะคู่) / สู้ต่อ
