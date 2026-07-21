@@ -956,19 +956,19 @@ const TRANSFORMS = {
   lunabow: { img: "/characters/auqarion/skill3/skill3_luna.jpg", video: "/characters/auqarion/skill3/luna_final.mp4", title: "ศรศักดิ์สิทธิ์", label: "ปล่อยท่าไม้ตาย", seconds: 11, music: null, afterReveal: true },
   godtree: { img: "/characters/auqarion/skill3/skill3_godwing.jpg", video: "/characters/auqarion/skill3/godwing_final.mp4", title: "ไปยังพฤกษาแห่งชีวิต", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: "auqarion", afterReveal: true },
   // ---------- ริต้า เบอร์นัล / ฟีนิกซ์ (patch 2.1.6) ----------
-  // seconds เป็นค่าประมาณ — ปรับให้ตรงความยาววีดีโอจริงทีหลังได้
-  // phenexReflect: สกิลรอง 1 ฝันไปเถอะ — เล่นตอนสะท้อนความเสียหายกลับผู้โจมตี ก่อนสรุปผล
-  phenexReflect: { img: "/characters/rita/skill2/phenex_skill2.jpg", video: "/characters/rita/skill2/phenex_skill2.mp4", title: "ฝันไปเถอะ", label: "สะท้อนความเสียหาย", seconds: 8, music: null, afterReveal: false },
-  // phenexPurge: สกิลรอง 2 อย่าอยู่เลย แกน่ะ! — เล่นก่อนสรุปผลตอนได้โจมตี (ทำงานหลังเปิดไพ่)
-  phenexPurge: { img: "/characters/rita/skill2/phenex_skill2.2.jpg", video: "/characters/rita/skill2/phenex_skill2.2.mp4", title: "อย่าอยู่เลย แกน่ะ!", label: "ใช้สกิล", seconds: 8, music: null, afterReveal: true },
-  // phenexNtd: ท่าไม้ตาย 1 ฝืนใช้งาน NTD-Sytem — กดก่อนเปิดไพ่
-  phenexNtd: { img: PHENEX_NTD_IMG, video: "/characters/rita/skill3/phenex_skill3.mp4", title: "ฝืนใช้งาน NTD-Sytem", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: false },
-  // phenexTaunt: ท่าไม้ตาย 2 ไม่อยากให้ใครต้องเจ็บปวด — กดก่อนเปิดไพ่
-  phenexTaunt: { img: "/characters/rita/skill3/phenex_skill3.2.jpg", video: "/characters/rita/skill3/phenex_skill3.2.mp4", title: "ไม่อยากให้ใครต้องเจ็บปวด", label: "ปล่อยท่าไม้ตาย", seconds: 10, music: null, afterReveal: false },
-  // phenexRebirth: สกิลติดตัว 1 ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ? — ตายครั้งแรกแล้วเกิดใหม่ (ครั้งเดียวต่อเกม)
-  phenexRebirth: { img: PHENEX_NTD_IMG, video: "/characters/rita/phenex_passive.mp4", title: "ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ?", label: "สกิลติดตัวทำงาน", seconds: 12, music: null, afterReveal: false },
-  // phenexRelease: สกิลติดตัว 2 ขอแค่ได้พบกันอีก — ตกรอบจริง ปลดปล่อยความเจ็บปวดสะสมใส่เป้าหมาย
-  phenexRelease: { img: PHENEX_BASE_IMG, video: "/characters/rita/phenex_passive2.mp4", title: "ขอแค่ได้พบกันอีก", label: "ปลดปล่อยความเจ็บปวด", seconds: 12, music: null, afterReveal: false },
+  // seconds วัดจากความยาววีดีโอจริง (+buffer ~0.5-1 วิ กันตัดก่อนจบ)
+  // phenexReflect: สกิลรอง 1 ฝันไปเถอะ — เล่นตอนสะท้อนความเสียหายกลับผู้โจมตี ก่อนสรุปผล (วีดีโอจริง 3.24 วิ)
+  phenexReflect: { img: "/characters/rita/skill2/phenex_skill2.jpg", video: "/characters/rita/skill2/phenex_skill2.mp4", title: "ฝันไปเถอะ", label: "สะท้อนความเสียหาย", seconds: 4, music: null, afterReveal: false },
+  // phenexPurge: สกิลรอง 2 อย่าอยู่เลย แกน่ะ! — เล่นก่อนสรุปผลตอนได้โจมตี (ทำงานหลังเปิดไพ่) (วีดีโอจริง 6.47 วิ)
+  phenexPurge: { img: "/characters/rita/skill2/phenex_skill2.2.jpg", video: "/characters/rita/skill2/phenex_skill2.2.mp4", title: "อย่าอยู่เลย แกน่ะ!", label: "ใช้สกิล", seconds: 7, music: null, afterReveal: true },
+  // phenexNtd: ท่าไม้ตาย 1 ฝืนใช้งาน NTD-Sytem — กดก่อนเปิดไพ่ (วีดีโอจริง 16.67 วิ)
+  phenexNtd: { img: PHENEX_NTD_IMG, video: "/characters/rita/skill3/phenex_skill3.mp4", title: "ฝืนใช้งาน NTD-Sytem", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: null, afterReveal: false },
+  // phenexTaunt: ท่าไม้ตาย 2 ไม่อยากให้ใครต้องเจ็บปวด — กดก่อนเปิดไพ่ (วีดีโอจริง 16.48 วิ)
+  phenexTaunt: { img: "/characters/rita/skill3/phenex_skill3.2.jpg", video: "/characters/rita/skill3/phenex_skill3.2.mp4", title: "ไม่อยากให้ใครต้องเจ็บปวด", label: "ปล่อยท่าไม้ตาย", seconds: 17, music: null, afterReveal: false },
+  // phenexRebirth: สกิลติดตัว 1 ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ? — ตายครั้งแรกแล้วเกิดใหม่ (ครั้งเดียวต่อเกม) (วีดีโอจริง 10.40 วิ)
+  phenexRebirth: { img: PHENEX_NTD_IMG, video: "/characters/rita/phenex_passive.mp4", title: "ถ้าเลือกได้ อยากเกิดเป็นอะไรหรอ?", label: "สกิลติดตัวทำงาน", seconds: 11, music: null, afterReveal: false },
+  // phenexRelease: สกิลติดตัว 2 ขอแค่ได้พบกันอีก — ตกรอบจริง ปลดปล่อยความเจ็บปวดสะสมใส่เป้าหมาย (วีดีโอจริง 5.69 วิ)
+  phenexRelease: { img: PHENEX_BASE_IMG, video: "/characters/rita/phenex_passive2.mp4", title: "ขอแค่ได้พบกันอีก", label: "ปลดปล่อยความเจ็บปวด", seconds: 6, music: null, afterReveal: false },
 };
 
 
@@ -4658,6 +4658,8 @@ function doAttack(byId, targetId) {
   if (target.characterId === "phenex" && (target.statuses.phenexReflect || 0) > 0 && target.alive && attacker.id !== target.id) {
     triggerCutscene(target, "phenexReflect");
     const reflectDmg = dmg;
+    // สะท้อนได้แค่ครั้งเดียวใน 3 เทิร์น — สะท้อนสำเร็จแล้วผลจบทันที (ไม่ต้องรอครบเทิร์น)
+    delete target.statuses.phenexReflect;
     dealMixed(attacker, reflectDmg);
     maybeBeatSave(attacker);
     maybeBeatMode(attacker);
@@ -4666,7 +4668,7 @@ function doAttack(byId, targetId) {
     attacker.wasAttacked = true;
     attacker.phenexLastHitBy = target.id;
     target.wasAttacked = true;
-    lastLog.push(`🪞 ${target.name} ฝันไปเถอะ — สะท้อนความเสียหาย -${reflectDmg} กลับให้ ${attacker.name}!`);
+    lastLog.push(`🪞 ${target.name} ฝันไปเถอะ — สะท้อนความเสียหาย -${reflectDmg} กลับให้ ${attacker.name}! (ผลจบลงทันที)`);
     if (attacker.alive && attacker.hp <= 0) {
       instantDeath(attacker);
       if (!attacker.alive) lastLog.push(`💀 ${attacker.name} เลือดจริงหมด ตกรอบ!`);
