@@ -530,7 +530,7 @@ function applyDebuff(p, key, amount, turns) {
   return true;
 }
 // ดีบัฟพื้นฐานที่ "ต้านสถานะผิดปกติ" ล้างออกได้ทั้งหมด
-const BASIC_DEBUFF_CLEAR = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "aquapoison", "weak", "fragile", "spellburden", "oblada", "calamity", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal"];
+const BASIC_DEBUFF_CLEAR = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "aquapoison", "weak", "fragile", "spellburden", "oblada", "calamity", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal", "miyakoArmorSeal"];
 // ดีบัฟที่ยังไม่เกิดผลทันที (ยามฟ้าสาง / เส้นชีวิต): โดนล้าง = ลดลงทีละ 1 หน่วย ไม่หายทั้งหมด
 const SOFT_DEBUFF_STEP = ["dawn", "deathline"];
 function cleanseDebuffs(p) {
@@ -627,21 +627,23 @@ const MIYAKO_HEAL_AMOUNT = 1;         // พี่จ๋าอยู่ไหน
 const MIYAKO_COMBO_CHANCE = [1, 0.75, 0.5, 0.25]; // เพลงหมัด อาริมะ: โอกาสโจมตีครั้งที่ 1/2/3/4
 const MIYAKO_FORCE_SCORE = 20;        // หนูจะทำให้พี่ตาสว่างเอง: บังคับแต้มการจั่วเป็น 20 ทันที (ไม่มีผลถ้ามีแต้ม 21 อยู่แล้ว)
 const MIYAKO_SEAL_TURNS = 3;          // หนูจะทำให้พี่ตาสว่างเอง: ปิดใช้งานความสามารถสังหารทันทีของเป้าหมาย 3 เทิร์น
-const MIYAKO_PIERCE_BONUS = 1;        // หนูจะทำให้พี่ตาสว่างเอง: เป้าหมายไม่มีความสามารถสังหาร -> ดาเมจเสริมทะลุเกราะ +1
-const MIYAKO_KILL_REDUCE = 0.30;      // นั่นพี่จ๋าหรอ?: ลดโอกาสถูกสังหารทันทีลง 30% ทุกครั้งที่รอด (สะสม)
+const MIYAKO_ATK_BONUS = 1;           // หนูจะทำให้พี่ตาสว่างเอง: เป้าหมายไม่มีความสามารถสังหาร -> พลังโจมตีถาวร +1 (ได้ครั้งเดียว ไม่สะสม)
+const MIYAKO_ARMOR_SEAL_TURNS = 5;    // หนูจะทำให้พี่ตาสว่างเอง: เป้าหมายไม่มีความสามารถสังหาร -> เกราะเป้าหมายไม่ฟื้น 5 เทิร์น
+const MIYAKO_KILL_REDUCE = 0.40;      // นั่นพี่จ๋าหรอ?: ลดโอกาสถูกสังหารทันทีลง 40% ทุกครั้งที่รอด (สะสม)
 // ความสามารถสังหารทันทีถูก "หนูจะทำให้พี่ตาสว่างเอง" ปิดใช้งานอยู่ไหม (อาริมะ มิยาโกะ)
 function killSealed(p) {
   return !!p && ((p.statuses && p.statuses.miyakoSeal) || 0) > 0;
 }
-// ตัวละครนี้กำลังมีความสามารถสังหารทันทีทำงานอยู่ไหม (โทโนะ ชิกิ / นานายะ ชิกิ / เรียวกิ ชิกิ)
+// ตัวละครนี้ "มี" ความสามารถสังหารทันทีติดตัวไหม (โทโนะ ชิกิ / นานายะ ชิกิ: นับแม้กำลังปิดสกิลติดตัวไว้อยู่ — ป้องกันเปิดกลับมาใช้ทีหลัง
+//  หลังโดนปิดใช้งานจากหนูจะทำให้พี่ตาสว่างเอง / เรียวกิ ชิกิ: ต้องมีท่าไม้ตายสังหารทันทีเปิดใช้งานอยู่จริงเท่านั้น เพราะเป็นทรัพยากรที่ต้องเสียแต้มเปิดใหม่)
 function hasKillCapability(p) {
   if (!p || !p.alive) return false;
-  if (p.characterId === "tohno" && (p.tohnoLevel || 1) >= 2 && !passiveSealed(p) && !killSealed(p)) return true;
-  if (p.characterId === "nanaya" && p.nanayaEyeOn && !passiveSealed(p) && !killSealed(p)) return true;
+  if (p.characterId === "tohno") return true;
+  if (p.characterId === "nanaya") return true;
   if (p.characterId === "shiki" && (((p.statuses.deatheye || 0) > 0) || ((p.statuses.wither || 0) > 0))) return true;
   return false;
 }
-// นั่นพี่จ๋าหรอ? (สกิลติดตัว): ลดโอกาสถูกสังหารทันทีของอาริมะ มิยาโกะ ตามจำนวนครั้งที่เคยรอด (สะสม 30%/ครั้ง)
+// นั่นพี่จ๋าหรอ? (สกิลติดตัว): ลดโอกาสถูกสังหารทันทีของอาริมะ มิยาโกะ ตามจำนวนครั้งที่เคยรอด (สะสม 40%/ครั้ง)
 function miyakoKillChance(target, baseChance) {
   if (!target || target.characterId !== "miyako") return baseChance;
   const resist = target.miyakoKillResist || 0;
@@ -651,7 +653,7 @@ function miyakoKillChance(target, baseChance) {
 function miyakoSurvivedKillAttempt(target) {
   if (!target || target.characterId !== "miyako" || !target.alive) return;
   target.miyakoKillResist = (target.miyakoKillResist || 0) + 1;
-  lastLog.push(`🥊 ${target.name} นั่นพี่จ๋าหรอ? — รอดจากการถูกสังหารทันที! โอกาสถูกสังหารทันทีในอนาคตลดลงอีก 30% (สะสม ${target.miyakoKillResist} ชั้น) เสียพลังชีวิต 1 หน่วย (ไม่สนเกราะ)`);
+  lastLog.push(`🥊 ${target.name} นั่นพี่จ๋าหรอ? — รอดจากการถูกสังหารทันที! โอกาสถูกสังหารทันทีในอนาคตลดลงอีก 40% (สะสม ${target.miyakoKillResist} ชั้น) เสียพลังชีวิต 1 หน่วย (ไม่สนเกราะ)`);
   dealDirect(target, 1);
   if (target.alive && target.hp <= 0) { instantDeath(target); if (!target.alive) lastLog.push(`💀 ${target.name} เลือดจริงหมด ตกรอบ!`); }
 }
@@ -1151,7 +1153,7 @@ const TEMARI_ANATA_DRAWS = 3;    // ANATA WAAAAAAAA: บังคับจั่
 //  และแยก ยามฟ้าสาง/เส้นชีวิต ออกไปลดทีละ 1 แทน — ดูใน st === "song")
 const DEBUFF_KEYS = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "sena",
   "aquapoison", "energy", "nohealing", "moonmark", "overwork", "unplug", "weak", "fragile", "spellburden",
-  "oblada", "calamity", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal"];
+  "oblada", "calamity", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal", "miyakoArmorSeal"];
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่างสวมเกราะราชัน (ท่าไม้ตายคุวากาตะ) เพิ่ม +3 เป็น 5
 // ระหว่าง Everything For Humanity (ฟุจิมารุ) เพิ่ม +3
 // ระหว่างสกิลติดตัว 3 เอวา 13 (เลือด <= 3) เพิ่ม +1
@@ -1738,7 +1740,8 @@ function resetCombat(p) {
   p.nanayaRestTurn = 0;           // พักผ่อนสักครู่: นับเทิร์น (ครบ 2 = ฟื้นเลือด)
   // ---------- อาริมะ มิยาโกะ (patch 2.2.0) ----------
   p.miyakoComboHits = 0;          // เพลงหมัด อาริมะ: จำนวนครั้งที่ตีไปแล้วในคอมโบปัจจุบัน
-  p.miyakoKillResist = 0;         // นั่นพี่จ๋าหรอ?: จำนวนชั้นที่สะสม (ลดโอกาสถูกสังหารทันที 30%/ชั้น)
+  p.miyakoKillResist = 0;         // นั่นพี่จ๋าหรอ?: จำนวนชั้นที่สะสม (ลดโอกาสถูกสังหารทันที 40%/ชั้น)
+  p.miyakoAtkBonus = false;       // หนูจะทำให้พี่ตาสว่างเอง: พลังโจมตีถาวร +1 ได้รับไปแล้วหรือยัง (ครั้งเดียวต่อเกม)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
 }
 
@@ -2285,7 +2288,8 @@ function dealRound() {
     // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — เหมือนกันทั้งกลางวัน/กลางคืน (ยกเลิกโบนัสฟื้นทุกเทิร์นตอนกลางคืน patch 2.1.7)
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
     // [โหมงานหนัก] (โคโตเนะ): ฟื้นเกราะไม่ได้จนกว่าจะใช้ Sleeping time
-    if (!p.armorLocked && !overworkActive(p) && roundNumber % 2 === 0) {
+    // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ patch 2.2.0): เกราะไม่ฟื้นตามจำนวนเทิร์นที่เหลือ
+    if (!p.armorLocked && !overworkActive(p) && !((p.statuses.miyakoArmorSeal || 0) > 0) && roundNumber % 2 === 0) {
       healArmor(p, 1);
     }
     // คืนร่าง (อควาเรียน): ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น (ซ้อนกับการฟื้นเกราะปกติ) เป็นเวลา 3 เทิร์น
@@ -5039,7 +5043,8 @@ function doAttack(byId, targetId) {
   //  ซ้อนกับโบนัส +1 ของสกิลติดตัว 1 ได้ (เกิดใหม่แล้ว NTD จะถาวรเสมอ) รวมเป็น +2 (โจมตีปกติ 3)
   const phenexNtdAtk = attacker.characterId === "phenex" && ((attacker.statuses.phenexNtd || 0) > 0 || attacker.phenexNtdPermanent);
 
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0) + (phenexNtdAtk ? PHENEX_NTD_ATK_BONUS : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
+  const miyakoAtkBonusOn = attacker.characterId === "miyako" && attacker.miyakoAtkBonus;
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0) + (phenexNtdAtk ? PHENEX_NTD_ATK_BONUS : 0) + (miyakoAtkBonusOn ? MIYAKO_ATK_BONUS : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
   if (kotoneExhausted) base = 0;
   if (aquaZero) base = 0;
   let dmg = base + (kotoneExhausted ? 0 : ntdBonus);
@@ -5206,8 +5211,8 @@ function doAttack(byId, targetId) {
       }
     }
   }
-  // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ): เล่นวีดีโอก่อนสรุปผล — เป้าหมายมีความสามารถสังหารทันทีอยู่ไหม
-  //  มี -> ปิดใช้งานความสามารถนั้น 3 เทิร์น | ไม่มี -> ดาเมจเสริมทะลุเกราะ +1 แทน
+  // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ): เล่นวีดีโอก่อนสรุปผล — เป้าหมายมีความสามารถสังหารทันทีติดตัวไหม
+  //  มี -> ปิดใช้งานความสามารถนั้น 3 เทิร์น | ไม่มี -> มิยาโกะได้พลังโจมตีถาวร +1 (ครั้งเดียว ไม่สะสม) + เป้าหมายเกราะไม่ฟื้น 5 เทิร์น
   if (miyakoUltAtk) {
     triggerCutscene(attacker, "miyakoUlt");
     delete attacker.statuses.miyakoUlt;
@@ -5216,9 +5221,13 @@ function doAttack(byId, targetId) {
         target.statuses.miyakoSeal = Math.max(target.statuses.miyakoSeal || 0, MIYAKO_SEAL_TURNS);
         lastLog.push(`🥊 ${attacker.name} หนูจะทำให้พี่ตาสว่างเอง — สั่งปิดใช้งานความสามารถในการสังหารทันทีของ ${target.name} เป็นเวลา ${MIYAKO_SEAL_TURNS} เทิร์น!`);
       } else {
-        dealDirect(target, MIYAKO_PIERCE_BONUS);
-        lastLog.push(`🥊 ${attacker.name} หนูจะทำให้พี่ตาสว่างเอง — ${target.name} ไม่มีความสามารถในการสังหารทันที เสริมความเสียหายทะลุเกราะ +${MIYAKO_PIERCE_BONUS}`);
-        if (target.alive && target.hp <= 0) { instantDeath(target); if (!target.alive) lastLog.push(`💀 ${target.name} เลือดจริงหมด ตกรอบ!`); }
+        target.statuses.miyakoArmorSeal = Math.max(target.statuses.miyakoArmorSeal || 0, MIYAKO_ARMOR_SEAL_TURNS);
+        if (!attacker.miyakoAtkBonus) {
+          attacker.miyakoAtkBonus = true;
+          lastLog.push(`🥊 ${attacker.name} หนูจะทำให้พี่ตาสว่างเอง — ${target.name} ไม่มีความสามารถในการสังหารทันที พลังโจมตีถาวร +${MIYAKO_ATK_BONUS} และเกราะของ ${target.name} จะไม่ฟื้น ${MIYAKO_ARMOR_SEAL_TURNS} เทิร์น!`);
+        } else {
+          lastLog.push(`🥊 ${attacker.name} หนูจะทำให้พี่ตาสว่างเอง — ${target.name} ไม่มีความสามารถในการสังหารทันที (พลังโจมตีถาวรได้รับไปแล้ว ไม่สะสมเพิ่ม) เกราะของ ${target.name} จะไม่ฟื้น ${MIYAKO_ARMOR_SEAL_TURNS} เทิร์น!`);
+        }
       }
     }
   }
