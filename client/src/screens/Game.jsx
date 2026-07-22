@@ -1604,7 +1604,7 @@ export default function Game({ state, lowQ }) {
               key={p.id}
               p={p}
               phase={phase}
-              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending) && p.alive}
+              targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending || nanayaSel) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
               onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : nanayaSel ? pickNanaya(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
@@ -1949,7 +1949,7 @@ export default function Game({ state, lowQ }) {
           p={p}
           phase={phase}
           slot={slots[i] || [50, 50]}
-          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending) && p.alive}
+          targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending || nanayaSel) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
           onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : nanayaSel ? pickNanaya(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
