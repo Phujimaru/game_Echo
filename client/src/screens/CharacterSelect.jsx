@@ -13,6 +13,7 @@ const DIFFICULTY_GROUPS = [
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone", "bard", "shiki"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["gambler", "appleguy", "broadband_man"] },
   { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["aquarion"] },
+  { key: "impossible", label: "ทักษิณ จะโปรหาบิดาท่านหรือ?", color: "#450a0a", order: ["nanaya"] },
 ];
 // ตัวละครในกลุ่มความยากนั้น เรียงตาม order ที่กำหนด
 function charsInGroup(roster, g) {
@@ -216,6 +217,9 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 <SkillTile label="สกิลติดตัว" skill={sel.passive} />
                 {/* บานาจ ลิงก์ (patch 2.1.2): สกิลติดตัว 2 ฉันไม่อยากให้เราต้องมาสู้กัน */}
                 {sel.id === "banagher" && sel.passive2 && <SkillTile label="สกิลติดตัว 2" skill={sel.passive2} />}
+                {/* นานายะ ชิกิ (patch 2.1.9): สกิลติดตัว 2 หัวใจฆาตกร / สกิลติดตัว 3 พักผ่อนสักครู่ */}
+                {sel.id === "nanaya" && sel.passive2 && <SkillTile label="สกิลติดตัว 2" skill={sel.passive2} />}
+                {sel.id === "nanaya" && sel.passive3 && <SkillTile label="สกิลติดตัว 3" skill={sel.passive3} />}
                 <SkillTile label={sel.basicNight ? "สกิลพื้นฐาน (กลางวัน)" : "สกิลพื้นฐาน"} skill={sel.basic} />
                 {sel.basicNight && <SkillTile label="สกิลพื้นฐาน (กลางคืน)" skill={sel.basicNight} />}
                 {/* โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}

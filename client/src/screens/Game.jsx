@@ -519,6 +519,8 @@ const STATUS_INFO = {
   godarmor:   { icon: "🛡️", label: "คืนร่าง", cls: "bg-echo-armor", desc: "คืนร่าง: ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น ตามจำนวนเทิร์นที่เหลือ" },
   aquapoison: { icon: "☠️", label: "พิษศร", cls: "bg-echo-hp", desc: "พิษศรศักดิ์สิทธิ์: เสียพลังชีวิต 1 หน่วยทุกเทิร์น (ไม่ถึงตาย — ค้างที่ 1) ตามจำนวนเทิร์นที่เหลือ" },
   marssurge:  { icon: "🗡️", label: "ดาบแห่งจุดจบ", cls: "bg-echo-gold text-gray-900", desc: "ดาบแห่งจุดจบ: ชนะเทิร์นที่มีผู้เล่นอื่นไพ่แตก — พลังโจมตี +1 หน่วยในเทิร์นนี้" },
+  // ---------- นานายะ ชิกิ (patch 2.1.9) ----------
+  nanayaSeal: { icon: "👁️", label: "สกิลติดตัวถูกปิด", cls: "bg-echo-hp", desc: "อันนี้ของนายรึเปล่า: ใช้สกิล/จั่วไพ่ไม่ได้ และสกิลติดตัวไม่ทำงาน ตามจำนวนเทิร์นที่เหลือ" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
@@ -1191,6 +1193,7 @@ export default function Game({ state, lowQ }) {
   const [saObSel, setSaObSel] = useState(false);     // ซาโตรุ: โหมดเลือกเป้าหมาย Obla Di, Obla Da (เลือกตัวเองไม่ได้)
   const [saLocaSel, setSaLocaSel] = useState(false); // ซาโตรุ: โหมดเลือกเป้าหมาย Locacaca fruit (เลือกตัวเองได้)
   const [bardSel, setBardSel] = useState([]);        // Bard: เป้าหมายบทเพลงที่เลือกไว้ (บทเพลงต้องการ 1-2 คน)
+  const [nanayaSel, setNanayaSel] = useState(false);  // นานายะ ชิกิ: โหมดเลือกเป้าหมาย อันนี้ของนายรึเปล่า (เลือกตัวเองไม่ได้)
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
@@ -1206,6 +1209,14 @@ export default function Game({ state, lowQ }) {
   const loser = state.players.find((p) => p.isLoser);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
+  // นานายะ ชิกิ (patch 2.1.9): ชนะการจั่ว -> สุ่มเล่นเสียงพากย์ 1 เสียง (ครั้งเดียวต่อรอบ)
+  const nanayaVoiceRound = useRef(null);
+  useEffect(() => {
+    if (phase === "SUMMARY" && winner?.character?.id === "nanaya" && nanayaVoiceRound.current !== state.roundNumber) {
+      nanayaVoiceRound.current = state.roundNumber;
+      playSfx(`nanayaVoice${1 + Math.floor(Math.random() * 5)}`);
+    }
+  }, [phase, winner, state.roundNumber]);
   // ผู้เล่นที่กำลังเปิดดูสถานะ (ข้อมูลสดจาก state ทุกครั้งที่ re-render)
   const statusView = statusViewId ? state.players.find((x) => x.id === statusViewId) : null;
   // Beat Mode (คุวากาตะ เลือด < 3): สกิลพื้นฐาน + ท่าไม้ตายใช้ไม่ได้
@@ -1364,6 +1375,8 @@ export default function Game({ state, lowQ }) {
     if (tier === "basic" && ch?.id === "aquarion") { setAquaOpen(true); setSkillOpen(false); return; }
     // โทโนะ ชิกิ: สกิลพื้นฐานเปิดเมนูเลือกระดับมีดพับประจำตระกูล (1-5)
     if (tier === "basic" && ch?.id === "tohno") { setTohnoOpen(true); setSkillOpen(false); return; }
+    // นานายะ ชิกิ: สกิลพื้นฐาน (อันนี้ของนายรึเปล่า) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
+    if (tier === "basic" && ch?.id === "nanaya") { setNanayaSel(true); setSkillOpen(false); return; }
     // เจ้าแห่งเน็ตบ้าน: ท่าไม้ตายเข้าโหมดเลือกเป้าหมายยื่นข้อเสนอสัญญา
     if (tier === "ultimate" && ch?.id === "broadband_man") { setBbSel(true); setSkillOpen(false); return; }
     // ชเรด เอลัน: สกิลรอง (แสงจันทร์ส่องวิญญาณ) เข้าโหมดเลือกเป้าหมายก่อนส่งไป server
@@ -1467,6 +1480,15 @@ export default function Game({ state, lowQ }) {
     socket.emit("useSkill", { tier: "ultimate", targets: [id] });
     setKawaiiSel(false);
   };
+  // เลือกเป้าหมาย อันนี้ของนายรึเปล่า (นานายะ ชิกิ) -> ส่งไป server ทันที
+  const pickNanaya = (id) => {
+    socket.emit("useSkill", { tier: "basic", targets: [id] });
+    setNanayaSel(false);
+  };
+  // นานายะ ชิกิ: เปิด/ปิด Mystic eye of death perception (ปุ่มแยกต่างหาก ไม่ใช่ช่องสกิล)
+  const nanayaToggleEye = () => { clickSound(); socket.emit("nanayaToggleEye"); };
+  // นานายะ ชิกิ: ยกเลิกโจมตีซ้ำของหัวใจฆาตกร
+  const nanayaCancelReattack = () => { clickSound(); socket.emit("nanayaCancelReattack"); };
   // เลือก/ยกเลิกเป้าหมาย ANATA — ครบจำนวนแล้วส่งไป server ทันที
   const pickAnata = (id) => {
     if (!anataSel) return;
@@ -1510,6 +1532,9 @@ export default function Game({ state, lowQ }) {
   useEffect(() => {
     if (saLocaSel && (phase !== "PLAYING" || me?.skillUsed || done)) setSaLocaSel(false);
   }, [saLocaSel, phase, me?.skillUsed, done]);
+  useEffect(() => {
+    if (nanayaSel && (phase !== "PLAYING" || me?.skillUsed || done)) setNanayaSel(false);
+  }, [nanayaSel, phase, me?.skillUsed, done]);
   useEffect(() => {
     if (appleOpen && (phase !== "PLAYING" || done)) setAppleOpen(false);
   }, [appleOpen, phase, done]);
@@ -1581,7 +1606,7 @@ export default function Game({ state, lowQ }) {
               phase={phase}
               targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending) && p.alive}
               picked={!!anataSel && anataSel.includes(p.id)}
-              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+              onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : nanayaSel ? pickNanaya(id) : socket.emit("attack", { targetId: id }))}
               onInspect={setStatusViewId}
             />
           ))}
@@ -1668,6 +1693,12 @@ export default function Game({ state, lowQ }) {
             )}
           </div>
         )}
+        {nanayaSel && (
+          <div className="shrink-0 text-center mt-1.5 text-hard">
+            <span className="text-lg font-black text-echo-hp animate-pulse">👁️ แตะเลือกเป้าหมาย อันนี้ของนายรึเปล่า</span>
+            <button onClick={() => { clickSound(); setNanayaSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+          </div>
+        )}
 
         {/* กลางจอ: โลโก้ */}
         <div className="flex-1 min-h-0 grid place-items-center pointer-events-none">
@@ -1743,6 +1774,21 @@ export default function Game({ state, lowQ }) {
                 <div className="text-center text-sm font-bold text-echo-gold mt-1">🎰 เวลาทอง! กดสกิลพื้นฐานต่อได้ (เหลือ {me.gamblerUses} ครั้ง)</div>
               )}
 
+              {/* นานายะ ชิกิ: ปุ่มเปิด/ปิด Mystic eye of death perception (แยกจากช่องสกิล — เปิด/ปิดได้แค่ 1 ครั้งต่อเทิร์น) */}
+              {ch?.id === "nanaya" && phase === "PLAYING" && me.alive && !done && (
+                <div className="mt-2">
+                  <Button
+                    variant={me.nanayaEyeOn ? "danger" : "ghost"}
+                    className="w-full py-3 text-base"
+                    disabled={me.nanayaToggleUsed}
+                    onClick={nanayaToggleEye}
+                  >
+                    👁️ Mystic eye of death perception — {me.nanayaEyeOn ? "เปิดอยู่ (กดเพื่อปิด)" : "ปิดอยู่ (กดเพื่อเปิด)"}
+                  </Button>
+                  {me.nanayaToggleUsed && <div className="text-center text-xs font-bold text-echo-gold mt-1">เปิด/ปิดได้ 1 ครั้งต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>}
+                </div>
+              )}
+
               {/* ปุ่มแอคชันใหญ่ (ล่างสุด เต็มความกว้าง) */}
               <div className="mt-2">
                 {phase === "PLAYING" && me.alive && !done ? (
@@ -1758,7 +1804,15 @@ export default function Game({ state, lowQ }) {
                 ) : phase === "PLAYING" && me.alive && done ? (
                   <div className="text-center text-lg font-bold py-2">{me.busted ? "แตก! 😢" : me.statuses?.sleep || me.statuses?.ksleep ? "หลับไหลอยู่ 💤" : me.statuses?.sena ? "หนีเซนะอยู่ 🏃‍♀️" : me.statuses?.kstun ? "สตั้นอยู่ 😵" : "พร้อมแล้ว ✅"} รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
-                  <div className="text-center text-lg font-bold py-2">{iAmAttacker ? "⚔️ แตะการ์ดคู่ต่อสู้ด้านบน!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"} เลือกเป้าหมาย...`}</div>
+                  <div className="text-center text-lg font-bold py-2">
+                    {iAmAttacker ? "⚔️ แตะการ์ดคู่ต่อสู้ด้านบน!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"} เลือกเป้าหมาย...`}
+                    {iAmAttacker && state.nanayaReattack && (
+                      <div className="mt-1">
+                        <span className="text-sm font-bold text-echo-hp">🗡️ หัวใจฆาตกร — พลาดสังหาร โจมตีซ้ำได้ทันที!</span>
+                        <button onClick={nanayaCancelReattack} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+                      </div>
+                    )}
+                  </div>
                 ) : !me.alive ? (
                   <div className="text-center text-lg opacity-80 py-2">💀 ตกรอบแล้ว</div>
                 ) : <div className="py-1" />}
@@ -1897,7 +1951,7 @@ export default function Game({ state, lowQ }) {
           slot={slots[i] || [50, 50]}
           targetable={((iAmAttacker && !p.statuses?.seal) || !!anataSel || dawnSel || nightSel || appleSel || bbSel || shSel || skSel || saObSel || saLocaSel || bgSel || kawaiiSel || !!bardPending) && p.alive}
           picked={!!anataSel && anataSel.includes(p.id)}
-          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : socket.emit("attack", { targetId: id }))}
+          onAttack={(id) => (anataSel ? pickAnata(id) : dawnSel ? pickDawn(id) : nightSel ? pickNight(id) : appleSel ? pickGive(id) : bbSel ? pickBb(id) : shSel ? pickSh(id) : skSel ? pickSk(id) : saObSel ? pickSaOb(id) : saLocaSel ? pickSaLoca(id) : bgSel ? pickBg(id) : kawaiiSel ? pickKawaii(id) : bardPending ? pickBard(id) : nanayaSel ? pickNanaya(id) : socket.emit("attack", { targetId: id }))}
           onInspect={setStatusViewId}
         />
       ))}
@@ -2003,6 +2057,14 @@ export default function Game({ state, lowQ }) {
         </div>
       )}
 
+      {/* โหมดเลือกเป้าหมาย อันนี้ของนายรึเปล่า (นานายะ ชิกิ) — เลือกได้เฉพาะคนอื่น */}
+      {nanayaSel && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">👁️ คลิกเลือกเป้าหมาย อันนี้ของนายรึเปล่า</span>
+          <button onClick={() => { clickSound(); setNanayaSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
+
       {/* ---------- แผงตัวเรา (ล่างกลาง) ---------- */}
       {me && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[min(96%,860px)]">
@@ -2073,6 +2135,21 @@ export default function Game({ state, lowQ }) {
                   <div className="text-center text-xs sm:text-sm font-bold text-echo-gold mt-1">🎰 เวลาทอง! กดสกิลพื้นฐานต่อได้ (เหลือ {me.gamblerUses} ครั้ง)</div>
                 )}
 
+                {/* นานายะ ชิกิ: ปุ่มเปิด/ปิด Mystic eye of death perception (แยกจากช่องสกิล — เปิด/ปิดได้แค่ 1 ครั้งต่อเทิร์น) */}
+                {ch?.id === "nanaya" && phase === "PLAYING" && me.alive && !done && (
+                  <div className="mt-2">
+                    <Button
+                      variant={me.nanayaEyeOn ? "danger" : "ghost"}
+                      className="w-full py-2.5 text-sm"
+                      disabled={me.nanayaToggleUsed}
+                      onClick={nanayaToggleEye}
+                    >
+                      👁️ Mystic eye of death perception — {me.nanayaEyeOn ? "เปิดอยู่ (กดเพื่อปิด)" : "ปิดอยู่ (กดเพื่อเปิด)"}
+                    </Button>
+                    {me.nanayaToggleUsed && <div className="text-center text-xs font-bold text-echo-gold mt-1">เปิด/ปิดได้ 1 ครั้งต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>}
+                  </div>
+                )}
+
                 {/* หลอดแต้มสกิล (จัดกลาง + สวยขึ้น) */}
                 <div className="flex items-center justify-center gap-3 mt-3">
                   <div className="flex gap-1.5 p-1 rounded-xl bg-black/25">
@@ -2105,7 +2182,15 @@ export default function Game({ state, lowQ }) {
                 ) : phase === "PLAYING" && me.alive && done ? (
                   <div className="text-center text-base font-bold text-white/90">{me.busted ? "แตก! 😢" : me.statuses?.sleep || me.statuses?.ksleep ? "หลับไหลอยู่ 💤" : me.statuses?.sena ? "หนีเซนะอยู่ 🏃‍♀️" : me.statuses?.kstun ? "สตั้นอยู่ 😵" : "พร้อมแล้ว ✅"}<br />รอเพื่อน...</div>
                 ) : phase === "ATTACK" ? (
-                  <div className="text-center text-base font-bold">{iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}</div>
+                  <div className="text-center text-base font-bold">
+                    {iAmAttacker ? "⚔️ เลือกเป้า!" : `รอ ${attacker ? attacker.name : "ผู้ชนะ"}`}
+                    {iAmAttacker && state.nanayaReattack && (
+                      <div className="mt-1">
+                        <span className="text-xs font-bold text-echo-hp">🗡️ พลาดสังหาร โจมตีซ้ำได้!</span>
+                        <button onClick={nanayaCancelReattack} className="ml-1 text-xs font-bold bg-black/60 rounded-full px-2 py-0.5 border border-white/30">ยกเลิก</button>
+                      </div>
+                    )}
+                  </div>
                 ) : !me.alive ? (
                   <div className="text-center text-base opacity-80">ตกรอบแล้ว</div>
                 ) : null}

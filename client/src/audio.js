@@ -16,6 +16,12 @@ const FILES = {
   shiki: "/characters/shiki/shiki_theme.mp3",         // เพลงระหว่างท่าไม้ตาย ฉันมองเห็นมันแล้ว (ชิกิ)
   shiki2: "/characters/shiki/shiki_theme2.mp3",       // เพลงระหว่างท่าไม้ตาย 2 ความตายที่โรยรา (ชิกิ patch 2.0.6)
   tohno: "/characters/tohno/tohno_theme.mp3",         // เพลงระหว่างสกิลติดตัวโทโนะเปิดใช้งาน (ระดับ 2 ขึ้นไป — patch 2.1.7)
+  nanaya: "/characters/nanaya/nanaya_theme.mp3",      // เพลงระหว่างสกิลติดตัว 1 นานายะ ชิกิ เปิดใช้งาน (patch 2.1.9)
+  nanayaVoice1: "/characters/nanaya/voice/nanaya_voice1.m4a", // เสียงพากย์สุ่มตอนนานายะชนะการจั่ว
+  nanayaVoice2: "/characters/nanaya/voice/nanaya_voice2.m4a",
+  nanayaVoice3: "/characters/nanaya/voice/nanaya_voice3.m4a",
+  nanayaVoice4: "/characters/nanaya/voice/nanaya_voice4.m4a",
+  nanayaVoice5: "/characters/nanaya/voice/nanaya_voice5.m4a",
   bard_dim: "/characters/bard/bard_dim_theme.mp3",    // BGM ระหว่างมิติมายาบรรเลง (Bard — วนลูป 3 เทิร์น)
   bard_note1: "/characters/bard/bard_note1.mp3",      // เสียงเติมโน้ตช่องที่ 1 (Bard)
   bard_note2: "/characters/bard/bard_note2.mp3",      // เสียงเติมโน้ตช่องที่ 2
