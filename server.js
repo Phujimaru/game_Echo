@@ -363,9 +363,12 @@ function invertActive(p) {
   return !!p && ((p.statuses && p.statuses.invert) || 0) > 0;
 }
 // เลือดจริงสูงสุดของผู้เล่น — Locacaca fruit (ซาโตรุ patch 2.0.8.2) ลด Max HP ได้ (ต่ำสุด 1)
-//  คิชินามิ ฮาคุโนะ (patch 2.2.1): ร่างหญิง — เพดานเลือดจริงคงที่ 5 หน่วย (ไม่ใช้ MAX_HP ปกติ)
+//  คิชินามิ ฮาคุโนะ (patch 2.2.1): เพดานเลือดจริงคงที่ตามเพศ (ไม่ใช้ MAX_HP ปกติ) — ชาย 6 / หญิง 5
 function maxHpOf(p) {
-  if (p && p.characterId === "hakuno" && p.hakunoGender === "female") return Math.max(1, HAKUNO_FEMALE_MAX_HP - ((p.maxHpPenalty) || 0));
+  if (p && p.characterId === "hakuno") {
+    const base = p.hakunoGender === "female" ? HAKUNO_FEMALE_MAX_HP : HAKUNO_MALE_MAX_HP;
+    return Math.max(1, base - ((p.maxHpPenalty) || 0));
+  }
   return Math.max(1, MAX_HP - ((p && p.maxHpPenalty) || 0));
 }
 // ฟื้นเลือดจริงแบบเคารพสถานะ "ไม่ใช้งานต่อ" / "ไร้ทางเยียวยา" — คืนจำนวนที่ฟื้นได้จริง
@@ -683,8 +686,9 @@ function miyakoSurvivedKillAttempt(target) {
   if (target.alive && target.hp <= 0) { instantDeath(target); if (!target.alive) lastLog.push(`💀 ${target.name} เลือดจริงหมด ตกรอบ!`); }
 }
 // ---------- คิชินามิ ฮาคุโนะ (patch 2.2.1) ----------
-const HAKUNO_MALE_ARMOR_CAP = 2;      // ร่างชาย: เพดานเกราะคงที่ 2 หน่วย
-const HAKUNO_FEMALE_ARMOR_CAP = 3;    // ร่างหญิง: เพดานเกราะคงที่ 3 หน่วย
+const HAKUNO_MALE_ARMOR_CAP = 4;      // ร่างชาย: เพดานเกราะคงที่ 4 หน่วย
+const HAKUNO_FEMALE_ARMOR_CAP = 5;    // ร่างหญิง: เพดานเกราะคงที่ 5 หน่วย
+const HAKUNO_MALE_MAX_HP = 6;         // ร่างชาย: เพดานเลือดจริงคงที่ 6 หน่วย
 const HAKUNO_FEMALE_MAX_HP = 5;       // ร่างหญิง: เพดานเลือดจริงคงที่ 5 หน่วย
 const HAKUNO_MALE_ATK_BONUS = 1;      // ร่างชาย: พลังโจมตีพื้นฐานถาวร +1
 const HAKUNO_MALE_REST_TURNS = 2;     // ร่างชาย: ทุกๆ 2 เทิร์น ฟื้นพลังชีวิต
@@ -5303,6 +5307,9 @@ function doAttack(byId, targetId) {
   // เต็มอิ่ม (Breakfast โอกูริ patch 2.0.8.1): ดาเมจที่ได้รับ -1 (หมดหลังจบเทิร์นที่กดใช้)
   const fullBelly = (target.statuses.fullbelly || 0) > 0;
   if (fullBelly) dmg = Math.max(0, dmg - 1);
+  // MOON*CELL (คิชินามิ ฮาคุโนะ patch 2.2.1): ทุกคนยกเว้นเจ้าของท่า โจมตีด้วยพลังโจมตีพื้นฐาน 1 หน่วยเท่านั้น
+  //  ไม่ว่าจะเสริมแกร่งอะไรมา (ทับค่าที่คำนวณไว้ทั้งหมดข้างบน — สกิลติดตัว/บัฟถาวรที่ไม่ใช่สถานะก็โดนด้วย)
+  if (moonCellActive() && attacker.characterId !== "hakuno") dmg = 1;
 
   // ---------- ริต้า เบอร์นัล: ฝันไปเถอะ — ตั้งรับ สะท้อนความเสียหายทั้งหมดกลับผู้โจมตีแทนที่จะรับเอง ----------
   if (target.characterId === "phenex" && (target.statuses.phenexReflect || 0) > 0 && target.alive && attacker.id !== target.id) {
