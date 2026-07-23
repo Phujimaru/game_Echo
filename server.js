@@ -90,39 +90,33 @@ const HIKARU_STRIUM_IMG = "/characters/hikaru/hikaru_update/ginga_strium.jpg"; /
 
 // ---------- ฟุจิตะ โคโตเนะ (patch 1.9.1 / rework 2.1.3) ----------
 const KOTONE_COIN_MAX = 6;       // กระปุกออมสินน้องหมูน้อย เก็บ coin ได้สูงสุด
-const KOTONE_COIN_PER_DMG = 3;   // 3 coin = +1 ความเสียหายตอนโจมตี (patch 2.1.3 — เดิม 2, ใช้แล้วเหรียญหมดไป)
+const KOTONE_COIN_PER_DMG = 2;   // 2 coin = +1 ความเสียหายตอนโจมตี (patch 2.2.2 — เดิม 3, ใช้แล้วเหรียญหมดไป)
 const KOTONE_SENA_BASE = 0.1;    // โอกาสเจอท่านประธานเซนะจังเมื่อใช้สกิลใดๆ (ฐาน 10%)
-const KOTONE_SENA_PER_COIN = 0.1; // เพิ่มอีก 10% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (patch พิเศษ — เดิมทุก 2 coin)
+const KOTONE_SENA_PER_COIN = 0.05; // เพิ่มอีก 5% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (patch 2.2.2 — เดิม 10%/coin)
 const KOTONE_STUN_CHANCE = 0.1;  // [โหมงานหนัก]: โอกาสสุ่มสตั้นต่อเทิร์น (patch 2.0.6 — ลดจาก 20%)
-const KOTONE_KAWAII_DMG = 3;     // ท่าไม้ตาย (patch 2.1.3): ความเสียหายใส่เป้าหมายที่เลือก
-const KOTONE_KAWAII_STUN_TURNS = 3; // ท่าไม้ตาย (patch 2.1.3): เป้าหมายติดสตั้น
-const KOTONE_KAWAII_COIN_NEED = 3; // ท่าไม้ตาย: ต้องมี coin ในกระปุกอย่างน้อย 3 เหรียญถึงจะใช้ได้ — หัก coin เท่าจำนวนนี้เท่านั้น (patch 2.1.3 — เดิมหักทั้งหมด)
+const KOTONE_KAWAII_DMG = 3;     // ท่าไม้ตาย (patch 2.2.2): ความเสียหายใส่ทุกคน (ยกเว้นตัวเอง)
+const KOTONE_KAWAII_STUN_TURNS = 2; // ท่าไม้ตาย (patch 2.2.2 — เดิม 3): ทุกคนติดสตั้น
 const KOTONE_COIN_GAIN_MAX = 3;  // Part-time: ได้ coin แบบสุ่ม 1-3 เหรียญต่อครั้ง (patch 2.0.6)
-// สกิลรอง (patch 2.1.3 — แทน Dance Lession เดิม): คอสเป็น coin ล้วน ไม่ใช้แต้มสกิล
-const KOTONE_PIERCE_COIN_COST = 3; // ต้องมี coin อย่างน้อยเท่านี้ถึงใช้ได้ — หักเท่านี้ตอนใช้
-const KOTONE_PIERCE_DMG = 1;       // บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป (ทะลุเกราะเข้าเลือดจริง — ใช้แล้วหมดไป)
+// สกิลรอง (patch 2.2.2 — แทน Dance Lession เดิม): คอสเป็น coin ล้วน ไม่ใช้แต้มสกิล
+const KOTONE_DANCE_COIN_COST = 3; // ต้องมี coin อย่างน้อยเท่านี้ถึงใช้ได้ — หักเท่านี้ตอนใช้
+const KOTONE_DANCE_ATK_BONUS = 2; // บัฟพลังโจมตีพื้นฐาน +2 ในการโจมตีครั้งถัดไป (patch 2.2.2 — เดิมเป็นดาเมจเจาะเกราะ +1)
 const KOTONE_PIERCE_BURDEN_TURNS = 2; // ภาระเวท (แต้มสกิล +1) มีผลเทิร์นถัดไปเทิร์นเดียว (เทิร์นนี้ที่กดใช้ไม่นับเพราะใช้สกิลไปแล้ว)
-// สกิลรอง 2 กลางคืน (patch 2.1.3 — Sleeping time): หลับนิ่ง 2 เทิร์นตายตัว (ไม่ผูกกับความยาวกลางคืนอีกต่อไป)
-const KOTONE_KSLEEP_TURNS = 2;
+// สกิลรอง 2 กลางคืน (patch 2.2.2 — Sleeping time): หลับนิ่ง 3 เทิร์นตายตัว (ไม่ผูกกับความยาวกลางคืนอีกต่อไป — ถูกโจมตีระหว่างหลับไม่ตื่นแล้ว)
+const KOTONE_KSLEEP_TURNS = 3;
 const KOTONE_KSLEEP_HEAL = 2;      // ฮีลตัวเองทันทีตอนใช้สกิล (ครั้งเดียว)
 const KOTONE_KSLEEP_SEAL_TURNS = 1; // ศัตรูไม่สามารถโจมตี(เลือกเป็นเป้าหมาย)ได้ 1 เทิร์นแรกของการหลับ
 // [โหมงานหนัก] ทำงานอยู่ไหม (คงอยู่จนกว่าจะใช้ Sleeping time ตอนกลางคืน)
 function overworkActive(p) {
   return !!p && ((p.statuses && p.statuses.overwork) || 0) > 0;
 }
-// โอกาสเจอท่านประธานเซนะจัง: ฐาน 10% + 10% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (สูงสุด 70% ตอนมี 6 coin)
+// โอกาสเจอท่านประธานเซนะจัง: ฐาน 10% + 5% ทุกๆ 1 coin ที่มีอยู่ในกระปุก (สูงสุด 40% ตอนมี 6 coin)
 function kotoneSenaChance(p) {
   return KOTONE_SENA_BASE + KOTONE_SENA_PER_COIN * (p.coins || 0);
 }
-// Sleeping time: ถูกโจมตีระหว่างหลับ = สะดุ้งตื่นทันที + ติด [โหมงานหนัก] เพราะนอนไม่พอ (patch พิเศษ)
+// Sleeping time (patch 2.2.2): ถูกโจมตีระหว่างหลับจะไม่ปลุกโคโตเนะอีกต่อไป — หลับยาว 3 เทิร์นเต็มโดยไม่สะดุ้งตื่น
+// (คงฟังก์ชัน/จุดเรียกไว้เผื่อใช้ในอนาคต — ตอนนี้ไม่มีผลอะไรแล้ว)
 function maybeWakeKotone(t) {
-  if (!t || !t.alive || t.characterId !== "kotone") return;
-  if (!((t.statuses && t.statuses.ksleep) > 0)) return;
-  delete t.statuses.ksleep;
-  t.statuses.overwork = 3; // คงอยู่ 3 เทิร์น (patch 2.0.8.1: นับเทิร์นปัจจุบันเป็นเทิร์นแรก) — Sleeping time ลบก่อนได้
-  t.armor = 0;
-  t.shield = 0;
-  lastLog.push(`😫 ${t.name} ถูกปลุกกลางดึกเพราะโดนโจมตี — ตื่นทันทีและติดสถานะ [โหมงานหนัก] 3 เทิร์นเพราะนอนไม่พอ!`);
+  return;
 }
 
 // แสงจันทร์ส่องวิญญาณ ร่างสปาด้า (ชเรด patch พิเศษ): เป้าหมายที่ถูกส่องแล้วไพ่แตกในเทิร์นนี้
@@ -821,6 +815,7 @@ function applyCalamity(v) {
 // ท่าไม้ตาย Wonder of U: ทำงานอัตโนมัติ (หักแต้มสกิล 6) — ผู้ที่โจมตี/ใช้สกิลใส่ซาโตรุติด [Calamity]
 function maybeWonderOfU(t, by) {
   if (!t || !t.alive || t.characterId !== "satoru" || !by || !by.alive || by.id === t.id) return;
+  if (passiveSealed(t)) return; // สกิลติดตัวถูกปิดใช้งาน (เช่น MOON*CELL คิชินามิ ฮาคุโนะ)
   if (t.skillPoints < WOU_COST) return;
   t.skillPoints -= WOU_COST;
   t.transformAt = ++transformCounter;
@@ -832,6 +827,7 @@ function maybeWonderOfU(t, by) {
 //  คืน { negated } — ผู้เรียกข้ามการใส่ผลสกิล/ดาเมจเมื่อ negated เป็น true (แต้มที่จ่ายไปเสียฟรี)
 function satoruOnTargeted(t, by, what) {
   if (!t || !t.alive || t.characterId !== "satoru" || !by || by.id === t.id) return { negated: false };
+  if (passiveSealed(t)) return { negated: false }; // สกิลติดตัวถูกปิดใช้งาน (เช่น MOON*CELL คิชินามิ ฮาคุโนะ)
   let negated = false;
   if ((t.wouGuardCd || 0) <= 0) {
     t.wouGuardCd = WOU_GUARD_CD; // ลบล้างแล้วติดคูลดาวน์ 2 เทิร์น (ลดลงตอนเริ่มเทิร์นใหม่)
@@ -1743,7 +1739,6 @@ function resetCombat(p) {
   p.nightWork = 0;        // จำนวนครั้งที่ทำงาน Part-time ในเฟสกลางคืนนี้ (>1 = โหมงานหนัก)
   p.overworkNext = false; // ติด [โหมงานหนัก] ตอนเริ่มเทิร์นถัดไป
   p.senaNext = false;     // เจอท่านประธานเซนะจัง -> เทิร์นถัดไปทำอะไรไม่ได้เลย
-  p.kawaiiTargetId = null; // Sekai ichi kawaii watashi: เป้าหมายที่เลือกไว้ (ทำงานหลังเปิดการ์ด)
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   p.contractPartner = null; // เจ้าแห่งเน็ตบ้าน: id คู่สัญญาปัจจุบัน (มีได้ 1 คน)
   p.contractWith = null;    // ฝั่งคู่สัญญา: id เจ้าแห่งเน็ตบ้านที่ทำสัญญาด้วย
@@ -2060,7 +2055,7 @@ function buildStateFor(viewerId) {
         beat: !!(p.seen && p.seen.beat),
         rachan: !!(p.seen && p.seen.rachan) && (p.statuses.rachan || 0) > 0,
         // ซาโตรุ (patch 2.0.8.2): แต้มสกิลถูกซ่อนจากผู้เล่นอื่นเสมอ (-1 = ซ่อน)
-        skillPoints: (p.characterId === "satoru" && !mine) ? -1 : p.skillPoints,
+        skillPoints: (p.characterId === "satoru" && !mine && !passiveSealed(p)) ? -1 : p.skillPoints,
         maxSkill: maxSkillOf(p), // Bard: เพดานพลังงาน 9
         beamAmmo: p.beamAmmo,
         puddingUses: p.puddingUses,
@@ -2328,13 +2323,12 @@ function dealRound() {
       }
     }
 
-    // [โหมงานหนัก] (โคโตเนะ): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — เกราะ/โล่พังทั้งหมดและฟื้นไม่ได้
+    // [โหมงานหนัก] (โคโตเนะ patch 2.2.2): ติดสถานะตอนเริ่มเทิร์นถัดจากที่โหมงานกะดึก — โล่พังทั้งหมดและฟื้นไม่ได้ (เดิมเป็นเกราะ)
     if (p.overworkNext) {
       p.overworkNext = false;
-      p.statuses.overwork = 3; // คงอยู่ 3 เทิร์น (patch 2.0.8.1: นับเทิร์นปัจจุบันเป็นเทิร์นแรก) — Sleeping time ลบก่อนได้
-      p.armor = 0;
+      p.statuses.overwork = 2; // คงอยู่ 2 เทิร์น (patch 2.2.2 — เดิม 3 เทิร์น) — Sleeping time ลบก่อนได้
       p.shield = 0;
-      lastLog.push(`🥵 ${p.name} ติดสถานะ [โหมงานหนัก] 3 เทิร์น — เกราะพังทั้งหมด ฟื้นเกราะไม่ได้ ใช้แต้มสกิลเพิ่ม 1 และเสี่ยงสตั้น 10% ทุกเทิร์น`);
+      lastLog.push(`🥵 ${p.name} ติดสถานะ [โหมงานหนัก] 2 เทิร์น — โล่พังทั้งหมด ฟื้นโล่ไม่ได้ ใช้แต้มสกิลเพิ่ม 1 และเสี่ยงสตั้น 10% ทุกเทิร์น`);
     }
 
     // รุ่งอรุณแห่งวันใหม่ (โอเบรอน): เสียพลังชีวิตเทิร์นละ 1 หน่วยแบบไม่สนเกราะ (รวม 2 เทิร์น)
@@ -2397,10 +2391,10 @@ function dealRound() {
 
     // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — เหมือนกันทั้งกลางวัน/กลางคืน (ยกเลิกโบนัสฟื้นทุกเทิร์นตอนกลางคืน patch 2.1.7)
     // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
-    // [โหมงานหนัก] (โคโตเนะ): ฟื้นเกราะไม่ได้จนกว่าจะใช้ Sleeping time
     // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ patch 2.2.0): เกราะไม่ฟื้นตามจำนวนเทิร์นที่เหลือ
     // MOON*CELL (คิชินามิ ฮาคุโนะ patch 2.2.1): เกราะไม่ฟื้นเลยระหว่างท่าไม้ตายทำงาน รวมถึงตัวเอง
-    if (!p.armorLocked && !overworkActive(p) && !((p.statuses.armorSeal || 0) > 0) && !moonCellActive() && roundNumber % 2 === 0) {
+    // [โหมงานหนัก] (โคโตเนะ patch 2.2.2): เปลี่ยนไปพังโล่แทนเกราะแล้ว — เกราะฟื้นได้ตามปกติ
+    if (!p.armorLocked && !((p.statuses.armorSeal || 0) > 0) && !moonCellActive() && roundNumber % 2 === 0) {
       healArmor(p, 1);
     }
     // คืนร่าง (อควาเรียน): ฟื้นฟูเกราะเพิ่ม +1 หน่วยทุกเทิร์น (ซ้อนกับการฟื้นเกราะปกติ) เป็นเวลา 3 เทิร์น
@@ -2568,11 +2562,15 @@ function dealRound() {
       p.locked = true;
       lastLog.push(`😴 ${p.name} หลับพักผ่อนอยู่ (เหลืออีก ${p.statuses.ksleep} เทิร์น)`);
     }
-    // [เช้าที่สดใส]: แต้มสกิล +1 และโล่ +1 ทุกเทิร์นที่ผลยังอยู่
+    // [เช้าที่สดใส]: แต้มสกิล +1 และโล่ +1 ทุกเทิร์นที่ผลยังอยู่ — [โหมงานหนัก] (patch 2.2.2): ฟื้นโล่ไม่ได้
     if ((p.statuses.fresh || 0) > 0) {
       addSkill(p, 1);
-      p.shield += 1;
-      lastLog.push(`🌅 ${p.name} เช้าที่สดใส — แต้มสกิล +1 และโล่ +1`);
+      if (!overworkActive(p)) {
+        p.shield += 1;
+        lastLog.push(`🌅 ${p.name} เช้าที่สดใส — แต้มสกิล +1 และโล่ +1`);
+      } else {
+        lastLog.push(`🌅 ${p.name} เช้าที่สดใส — แต้มสกิล +1 (โล่ฟื้นไม่ได้เพราะ [โหมงานหนัก])`);
+      }
     }
     // เจอท่านประธานเซนะจัง: เทิร์นนี้ทำอะไรไม่ได้เลย
     if (p.senaNext) {
@@ -3045,18 +3043,10 @@ function useSkill(id, tier, targets, item) {
   const isKawaii = isKotone && tier === "ultimate";                   // Sekai ichi kawaii watashi
   if (isPartTime && overworkActive(p)) return;                        // โหมงานหนัก: Part-time ใช้ไม่ได้
   if (isDance && overworkActive(p)) return;                           // โหมงานหนัก: สกิลรอง ใช้ไม่ได้
-  if (isDance && (p.coins || 0) < KOTONE_PIERCE_COIN_COST) return;    // สกิลรอง (patch 2.1.3): ต้องมี coin อย่างน้อย 3 เหรียญ
+  if (isDance && (p.coins || 0) < KOTONE_DANCE_COIN_COST) return;    // สกิลรอง (patch 2.2.2): ต้องมี coin อย่างน้อย 3 เหรียญ
   if (isKawaii && (overworkActive(p) || kotoneNight)) return;         // ท่าไม้ตาย: ใช้ไม่ได้ตอนกลางคืน/โหมงานหนัก
-  if (isKawaii && (p.coins || 0) < KOTONE_KAWAII_COIN_NEED) return;   // ท่าไม้ตาย: ต้องมี coin อย่างน้อย 3 เหรียญ (patch 2.0.6)
   if (isKSleep && (p.statuses.ksleep || 0) > 0) return;               // หลับอยู่แล้ว กดซ้ำไม่ได้
-  // ---------- โคโตเนะ: Sekai ichi kawaii watashi (patch 2.1.3) — เลือกเป้าหมาย 1 คน (คนอื่นเท่านั้น) ----------
-  let kawaiiTarget = null;
-  if (isKawaii) {
-    const tgs = Array.isArray(targets) ? [...new Set(targets)] : [];
-    const t = tgs.length === 1 ? players[tgs[0]] : null;
-    if (!t || !t.alive || t.id === p.id) return;
-    kawaiiTarget = t.id;
-  }
+  // Sekai ichi kawaii watashi (โคโตเนะ patch 2.2.2): ตีหมู่ทุกคนแล้ว ไม่ต้องเลือกเป้าหมายอีกต่อไป
   // Dance Lession (patch พิเศษ): ใช้ใส่ตัวเองเท่านั้น — ไม่ต้องเลือกเป้าหมายอีกต่อไป
   // ---------- ชเรด เอลัน (patch พิเศษ) ----------
   const isShrade = p.characterId === "shrade_elan";
@@ -3270,12 +3260,6 @@ function useSkill(id, tier, targets, item) {
     if (satoruOnTargeted(nt, p, `สกิล ${skill.name} `).negated) flashSuffix = " — ถูกลบล้าง";
     else p.nightmareTarget = nightmareTarget;
   }
-  // ---------- โคโตเนะ: Sekai ichi kawaii watashi (patch 2.1.3) — เก็บเป้าหมายไว้ ทำงานหลังเปิดการ์ด ----------
-  if (isKawaii) {
-    const kt = players[kawaiiTarget];
-    if (satoruOnTargeted(kt, p, `สกิล ${skill.name} `).negated) flashSuffix = " — ถูกลบล้าง";
-    else p.kawaiiTargetId = kawaiiTarget;
-  }
   // ---------- โทโนะ ชิกิ: มีดพับประจำตระกูล — เลือกระดับสกิลติดตัว 1-5 (กดเปลี่ยนกี่ครั้งก็ได้) ----------
   if (isTohnoPick) {
     p.tohnoLevel = tohnoLevelPick;
@@ -3387,16 +3371,16 @@ function useSkill(id, tier, targets, item) {
     flashSuffix = ` — coin +${gained} (มี ${p.coins}/${KOTONE_COIN_MAX})`;
     lastLog.push(`🐷 ${p.name} Part-time — เสียพลังชีวิต 1 หน่วย ได้ coin +${gained} (สุ่มได้ ${roll} · สะสม ${p.coins}/${KOTONE_COIN_MAX})`);
   }
-  // ---------- โคโตเนะ: สกิลรอง (patch 2.1.3 — คอส coin ล้วน แทน Dance Lession เดิม) ----------
-  //  ใช้ใส่ตัวเองเท่านั้น: หัก coin 3 เหรียญ -> บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป
+  // ---------- โคโตเนะ: สกิลรอง (patch 2.2.2 — คอส coin ล้วน แทน Dance Lession เดิม) ----------
+  //  ใช้ใส่ตัวเองเท่านั้น: หัก coin 3 เหรียญ -> บัฟพลังโจมตีพื้นฐาน +2 ในการโจมตีครั้งถัดไป (เดิมเป็นดาเมจเจาะเกราะ +1)
   //  + แต้มสกิลที่ใช้ในเทิร์นถัดไปสูงขึ้น +1 (ภาระเวท 2 เทิร์น — ครอบคลุมเทิร์นถัดไปเทิร์นเดียว)
   if (isDance) {
-    p.coins = Math.max(0, (p.coins || 0) - KOTONE_PIERCE_COIN_COST);
-    p.statuses.kpierce = 1; // คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น — เหมือน empower)
+    p.coins = Math.max(0, (p.coins || 0) - KOTONE_DANCE_COIN_COST);
+    p.statuses.kotoneAtk = 1; // คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น — เหมือน empower)
     p.statusAmt = p.statusAmt || {};
     p.statuses.spellburden = Math.max(p.statuses.spellburden || 0, KOTONE_PIERCE_BURDEN_TURNS);
     p.statusAmt.spellburden = Math.min(SPELLBURDEN_MAX, (p.statusAmt.spellburden || 0) + 1);
-    lastLog.push(`💃 ${p.name} ใช้ coin ${KOTONE_PIERCE_COIN_COST} เหรียญฝึกซ้อม — การโจมตีครั้งถัดไปเจาะเกราะ +${KOTONE_PIERCE_DMG} (เทิร์นถัดไปใช้แต้มสกิลเพิ่ม +1 — เหลือ coin ${p.coins})`);
+    lastLog.push(`💃 ${p.name} ใช้ coin ${KOTONE_DANCE_COIN_COST} เหรียญฝึกซ้อม — การโจมตีครั้งถัดไปพลังโจมตี +${KOTONE_DANCE_ATK_BONUS} (เทิร์นถัดไปใช้แต้มสกิลเพิ่ม +1 — เหลือ coin ${p.coins})`);
   }
   // ---------- โคโตเนะ: สกิลรอง 2 กลางคืน (patch 2.1.3 — Sleeping time) ----------
   //  หลับนิ่ง 2 เทิร์นตายตัว + ลบ [โหมงานหนัก] + ฮีลตัวเองทันที 2 หน่วย + กันถูกเลือกโจมตี 1 เทิร์นแรก
@@ -4643,19 +4627,16 @@ function afterResolve() {
           p.hp = 1;
           healArmor(p, 3);
         }
-        // Sekai ichi kawaii watashi (โคโตเนะ patch 2.1.3): โจมตีเป้าหมายที่เลือกไว้ตอนกดสกิล
-        //  ดาเมจ 3 หน่วย + สตั้น 3 เทิร์น — หัก coin เท่าคอสสกิล (ไม่ตัดทั้งหมดอีกต่อไป)
+        // Sekai ichi kawaii watashi (โคโตเนะ patch 2.2.2): ตีหมู่ทุกคน (ยกเว้นตัวเอง) ดาเมจ 3 หน่วย + สตั้น 2 เทิร์น
+        //  ไม่ใช้ coin แล้ว (เดิมต้องมี 3 coin + หักตอนกด)
         if (key === "kawaii") {
-          const coinCost = Math.min(p.coins || 0, KOTONE_KAWAII_COIN_NEED);
-          p.coins = Math.max(0, (p.coins || 0) - KOTONE_KAWAII_COIN_NEED);
-          const t = players[p.kawaiiTargetId];
-          p.kawaiiTargetId = null;
-          if (t && t.alive) {
+          lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารักใส่ทุกคน!`);
+          for (const t of alivePlayers()) {
+            if (t.id === p.id) continue;
             dealMixed(t, KOTONE_KAWAII_DMG);
             maybeBeatSave(t);
             maybeBeatMode(t);
             maybeEva3(t);
-            maybeWakeKotone(t);
             t.wasAttacked = true;
             let stunMsg = "";
             if (t.alive) {
@@ -4666,13 +4647,11 @@ function afterResolve() {
                 stunMsg = ` และสตั้น ${KOTONE_KAWAII_STUN_TURNS} เทิร์น`;
               }
             }
-            lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารักใส่ ${t.name} -${KOTONE_KAWAII_DMG}${stunMsg} (ใช้ coin ${coinCost} เหรียญ — เหลือ ${p.coins})`);
+            lastLog.push(`💖 ${t.name} โดนไลฟ์ -${KOTONE_KAWAII_DMG}${stunMsg}`);
             if (t.alive && t.hp <= 0) {
               instantDeath(t);
               if (!t.alive) lastLog.push(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
             }
-          } else {
-            lastLog.push(`💖 Sekai ichi kawaii watashi! ${p.name} ขึ้นไลฟ์สุดน่ารัก แต่เป้าหมายหายไปแล้ว (ใช้ coin ${coinCost} เหรียญ — เหลือ ${p.coins})`);
           }
         }
         // Lai Rhyme Goodfellow (โอเบรอน กลางวัน): โจมตีทุกคนไม่สนเกราะ 1 หน่วย
@@ -5201,8 +5180,8 @@ function doAttack(byId, targetId) {
   // [โหมงานหนัก] (โคโตเนะ): เมื่อถึงเฟสตอนเช้า พลังโจมตีเหลือ 0 เพราะพักผ่อนไม่พอ
   const kotoneExhausted = attacker.characterId === "kotone" && overworkActive(attacker) && !isNightRound(roundNumber);
   if (kotoneExhausted) pigDmg = 0; // ตีไม่เข้า — ไม่เสีย coin ฟรี
-  // สกิลรอง (โคโตเนะ patch 2.1.3): บัฟดาเมจเจาะเกราะ +1 ในการโจมตีครั้งถัดไป (ทะลุเกราะเข้าเลือดจริง — ใช้แล้วหมดไป)
-  const kotonePierce = attacker.characterId === "kotone" && (attacker.statuses.kpierce || 0) > 0;
+  // สกิลรอง (โคโตเนะ patch 2.2.2): บัฟพลังโจมตีพื้นฐาน +2 ในการโจมตีครั้งถัดไป (ผ่านเกราะตามปกติ — ใช้แล้วหมดไป)
+  const kotoneAtk = attacker.characterId === "kotone" && (attacker.statuses.kotoneAtk || 0) > 0;
   // ---------- อควาเรียน: สกิลติดตัว 1/2/3 (แสงแห่งสุริยัน / ดาบแห่งจุดจบ / จันทราสยบ) ----------
   let aquaAtk = 0;
   let aquaZero = false; // จันทราสยบ กลางวัน: พลังโจมตีเหลือ 0 (แต่โจมตีได้ฟื้นเลือด 1)
@@ -5255,7 +5234,7 @@ function doAttack(byId, targetId) {
   const hakunoMoonOn = attacker.characterId === "hakuno" && (attacker.statuses.moonCell || 0) > 0;
   const hakunoMaleAtk = (attacker.characterId === "hakuno" && attacker.hakunoGender === "male" && !hakunoMoonOn) ? HAKUNO_MALE_ATK_BONUS : 0; // ร่างชาย: พลังโจมตีถาวร +1 (ระงับระหว่าง MOON*CELL)
   const hakunoMoonAtk = hakunoMoonOn ? HAKUNO_MOONCELL_ATK_BONUS : 0; // MOON*CELL: พลังโจมตีรวมสูงสุด 2 หน่วยเท่ากันทั้งสองร่าง (ไม่ซ้อนกับ +1 ถาวรร่างชาย)
-  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0) + (phenexNtdAtk ? PHENEX_NTD_ATK_BONUS : 0) + (miyakoAtkBonusOn ? MIYAKO_ATK_BONUS : 0) + hakunoMaleAtk + hakunoMoonAtk; // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
+  let base = 1 + oberonZero + (veilAtk ? 1 : 0) + (empowerAtk ? 1 : 0) + ((ginga || gingastriumAtk) ? 1 : 0) + (gingastriumAtk ? 1 : 0) + (beam ? 2 : 0) + (lastStanding ? 1 : 0) + ohgerBonus + (humanityAtk ? 4 : 0) + (spearAtk ? 1 : 0) + profitAtk + appleAtk + (tigerAtk ? 1 : 0) + (partnerAtk ? 1 : 0) + pigDmg + aquaAtk + shradeAtk + oguriGoldAtk + (victoryAtk ? 1 : 0) + (ashenAtk ? OGURI_ASHEN_ATK : 0) + riddheUltBonus + (riddheP1Atk ? 1 : 0) + (riddheAvAtk ? 1 : 0) + (unibeam2Atk ? BANAGHER_ULT2_TARGET_DMG : 0) + (phenexRebornAtk ? 1 : 0) + (phenexNtdAtk ? PHENEX_NTD_ATK_BONUS : 0) + (miyakoAtkBonusOn ? MIYAKO_ATK_BONUS : 0) + hakunoMaleAtk + hakunoMoonAtk + (kotoneAtk ? KOTONE_DANCE_ATK_BONUS : 0); // Beam Magnum +2 / แสงที่ไม่อยู่เพียงลำพัง +6
   // ผกผัน (สถานะ Universal patch 2.2.1): โบนัสพลังโจมตีที่ควรได้ กลับกลายเป็นลดพลังโจมตีแทน (คำนวณรอบเพดานฐาน 1 หน่วย)
   if (invertActive(attacker)) base = Math.max(0, 1 - (base - 1));
   if (kotoneExhausted) base = 0;
@@ -5381,11 +5360,10 @@ function doAttack(byId, targetId) {
   const buddyHpBefore = linkedBuddy ? linkedBuddy.hp : 0;
   if (attackerBeat || profitAtk > 0 || phenexPurgeAtk) dealDirect(target, dmg); // ประกายเขี้ยวปฏิปักษ์ / กำไรเท่าตัวโว้ย / อย่าอยู่เลย แกน่ะ!: ทะลุเกราะเข้าเลือดจริง
   else dealMixed(target, dmg);               // กฎปกติ: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
-  // สกิลรอง (โคโตเนะ patch 2.1.3): ดาเมจเจาะเกราะเพิ่ม +1 ทะลุเกราะเข้าเลือดจริงโดยตรง (ใช้แล้วหมดไป)
-  if (kotonePierce && target.alive) {
-    delete attacker.statuses.kpierce;
-    dealDirect(target, KOTONE_PIERCE_DMG);
-    lastLog.push(`💃 ${attacker.name} ดาเมจเจาะเกราะทะลุเข้าเลือดจริง +${KOTONE_PIERCE_DMG}`);
+  // สกิลรอง (โคโตเนะ patch 2.2.2): บัฟพลังโจมตีพื้นฐาน +2 ใช้แล้วหมดไปทันทีเมื่อได้โจมตี
+  if (kotoneAtk) {
+    delete attacker.statuses.kotoneAtk;
+    lastLog.push(`💃 ${attacker.name} เพลงฝึกซ้อม — การโจมตีนี้ +${KOTONE_DANCE_ATK_BONUS} (บัฟหมดลง)`);
   }
   // Ginga Strium (ฮิคารุ patch 2.1.3): โจมตีโดนเป้าหมาย -> ติดลุกไหม้ให้เป้าหมาย (ต้าน/ล้างได้)
   if (gingastriumAtk && target.hp > 0) {
@@ -5746,7 +5724,7 @@ function doAttack(byId, targetId) {
   if (appleAtk > 0) addFx({ name: `เอาไปสิ +${appleAtk} (บัฟมอบของ)`, img: "/characters/appleguy/appleguy_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (tigerAtk) addFx({ name: "เสือนอนกิน +1", img: "/characters/broadband_man/broadband_man_skill1.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (pigDmg > 0) addFx({ name: `กระปุกออมสินน้องหมูน้อย +${pigDmg}`, img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
-  if (kotonePierce) addFx({ name: `ดาเมจเจาะเกราะ +${KOTONE_PIERCE_DMG}`, img: "/characters/kotone/kotone_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
+  if (kotoneAtk) addFx({ name: `เพลงฝึกซ้อม +${KOTONE_DANCE_ATK_BONUS}`, img: "/characters/kotone/kotone_skill2.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (kotoneExhausted) addFx({ name: "โหมงานหนัก (พลังโจมตี 0)", img: "/characters/kotone/kotone.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (partnerAtk) addFx({ name: "คู่สัญญา +1 (สนใจใช้บริการเราไหม)", img: "/characters/broadband_man/broadband_man_skill3.jpg", by: attacker.name, color: POSITION_COLORS[attacker.position] || "#888" }, "atk");
   if (contractGuard) addFx({ name: "ชำระค่าบริการ (ความเสียหายลด 1)", img: "/characters/broadband_man/broadband_man.jpg", by: target.name, color: POSITION_COLORS[target.position] || "#888" }, "def");
@@ -5895,6 +5873,7 @@ function endTurn() {
       if (k === "empower") continue; // เสริมพลัง (Rejuvenation): คงอยู่จนกว่าจะได้โจมตี (ไม่ซ้อนทับ)
       if (k === "miyakoHeal" || k === "miyakoCombo") continue; // อาริมะ มิยาโกะ: คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
       if (k === "hakunoInvertReady" || k === "hakunoNoRegenReady") continue; // คิชินามิ ฮาคุโนะ: คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
+      if (k === "kotoneAtk") continue; // โคโตเนะ: คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น — เหมือน empower)
       if (k === "freecast") continue; // พรแห่งการจั่ว (patch 2.0.8): ใช้สกิลไม่เสียแต้ม — คงอยู่จนกว่าจะได้ใช้
       if (k === "deathline") continue; // เส้นตาย (ชิกิ): สแตคถาวร จนกว่าจะถูกชิกิโจมตีปกติระหว่างท่าไม้ตาย
       // ---------- โอกูริ แคป (patch 2.0.8.1) ----------
@@ -5953,8 +5932,8 @@ function endTurn() {
       p.tempHpTurns--;
       if (p.tempHpTurns <= 0) { p.tempHp = 0; p.tempHpTurns = 0; }
     }
-    // [โหมงานหนัก] (โคโตเนะ): เกราะพังและฟื้นไม่ได้ — ล้างเกราะที่ได้มาระหว่างเทิร์นทิ้ง
-    if (overworkActive(p)) p.armor = 0;
+    // [โหมงานหนัก] (โคโตเนะ patch 2.2.2): โล่พังและฟื้นไม่ได้ — ล้างโล่ที่ได้มาระหว่างเทิร์นทิ้ง (เดิมเป็นเกราะ)
+    if (overworkActive(p)) p.shield = 0;
     p.armor = Math.min(p.armor, maxArmorOf(p)); // กันเกราะเกินเพดาน
   }
   // MOON*CELL หมดเวลา (คิชินามิ ฮาคุโนะ): คืนบัฟ/ดีบัฟที่ล้างไว้ทั้งหมดให้ทุกคน (ยกเว้นตัวเอง) + ติดไร้ทางเยียวยา 3 เทิร์น
@@ -5984,8 +5963,8 @@ function endTurn() {
   const dayBonus = morningBonusActive(roundNumber); // patch 2.1.7: แจกเฉพาะเช้าที่ 2, 4, 6, ...
   for (const p of alivePlayers()) {
     let gain = dayBonus ? 2 : 1;
-    // ซาโตรุ อาเคฟุ (patch 2.0.8.2): สกิลติดตัว — รีเจนแต้มสกิลเพิ่ม +1 ทุกเทิร์น
-    if (p.characterId === "satoru") gain += 1;
+    // ซาโตรุ อาเคฟุ (patch 2.0.8.2): สกิลติดตัว — รีเจนแต้มสกิลเพิ่ม +1 ทุกเทิร์น (ปิดได้ เช่น MOON*CELL)
+    if (p.characterId === "satoru" && !passiveSealed(p)) gain += 1;
     // คิชินามิ ฮาคุโนะ (patch 2.2.1): ร่างหญิง — แต้มสกิลฟื้นเพิ่ม +1 ทุกเทิร์น
     if (p.characterId === "hakuno" && p.hakunoGender === "female") gain += 1;
     // ค่าปรับปฏิเสธข้อเสนอ (เจ้าแห่งเน็ตบ้าน): แต้มสกิลหลังจบเทิร์นลด 1
@@ -6258,7 +6237,7 @@ io.on("connection", (socket) => {
       reiju: REIJU_USES, mageUses: 0, mageHealNext: 0, humanityActivated: false,
       sunriseDrop: 0, sleepFresh: false,
       appleItem: "drink", appleGifts: {}, appleAtk: 0, chillDodge: 100, appleGiveUses: APPLE_GIVE_USES,
-      coins: 0, nightWork: 0, overworkNext: false, senaNext: false, kawaiiTargetId: null,
+      coins: 0, nightWork: 0, overworkNext: false, senaNext: false,
       contractPartner: null, contractWith: null, contractOffer: null,
       contractTurns: 0, renewPending: false, skillDrain: 0, skillDrainPending: 0,
       healNextTurn: 0, unplugHold: null,
