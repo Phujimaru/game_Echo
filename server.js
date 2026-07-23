@@ -683,7 +683,8 @@ function miyakoSurvivedKillAttempt(target) {
   if (target.alive && target.hp <= 0) { instantDeath(target); if (!target.alive) lastLog.push(`💀 ${target.name} เลือดจริงหมด ตกรอบ!`); }
 }
 // ---------- คิชินามิ ฮาคุโนะ (patch 2.2.1) ----------
-const HAKUNO_ARMOR_CAP = 2;           // เพดานเกราะคงที่ทั้งสองร่าง
+const HAKUNO_MALE_ARMOR_CAP = 2;      // ร่างชาย: เพดานเกราะคงที่ 2 หน่วย
+const HAKUNO_FEMALE_ARMOR_CAP = 3;    // ร่างหญิง: เพดานเกราะคงที่ 3 หน่วย
 const HAKUNO_FEMALE_MAX_HP = 5;       // ร่างหญิง: เพดานเลือดจริงคงที่ 5 หน่วย
 const HAKUNO_MALE_ATK_BONUS = 1;      // ร่างชาย: พลังโจมตีพื้นฐานถาวร +1
 const HAKUNO_MALE_REST_TURNS = 2;     // ร่างชาย: ทุกๆ 2 เทิร์น ฟื้นพลังชีวิต
@@ -1212,8 +1213,10 @@ const DEBUFF_KEYS = ["discord", "sleep", "kstun", "stun", "nodraw", "noskill", "
 // ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
 // ระหว่างเป็นคู่สัญญาเจ้าแห่งเน็ตบ้าน (สนใจใช้บริการเราไหม) เพิ่ม +3
 function maxArmorOf(p) {
-  // คิชินามิ ฮาคุโนะ (patch 2.2.1): เพดานเกราะคงที่ 2 หน่วยทั้งสองร่าง (แทน MAX_ARMOR ปกติ)
-  const armorBase = (p && p.characterId === "hakuno") ? HAKUNO_ARMOR_CAP : MAX_ARMOR;
+  // คิชินามิ ฮาคุโนะ (patch 2.2.1): เพดานเกราะคงที่ตามเพศ (แทน MAX_ARMOR ปกติ) — ชาย 2 / หญิง 3
+  const armorBase = (p && p.characterId === "hakuno")
+    ? (p.hakunoGender === "female" ? HAKUNO_FEMALE_ARMOR_CAP : HAKUNO_MALE_ARMOR_CAP)
+    : MAX_ARMOR;
   return armorBase
     + ((((p.statuses && p.statuses.rachan) || 0) > 0) ? 3 : 0)
     + ((((p.statuses && p.statuses.humanity) || 0) > 0) ? 3 : 0)
