@@ -10,7 +10,7 @@ const PURPLE = "linear-gradient(135deg,#9b4f96,#7d3a78)";
 const DIFFICULTY_GROUPS = [
   { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["banagher", "hikaru", "kuwagata"] },
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["eva13", "temari", "shrade_elan", "riddhe", "miyako"] },
-  { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone", "bard", "shiki"] },
+  { key: "hard", label: "ยาก", color: "#C0392B", order: ["oberon", "kotone", "bard", "shiki", "hakuno"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["gambler", "appleguy", "broadband_man"] },
   { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["aquarion"] },
   { key: "impossible", label: "ทักษิณ จะโปรหาบิดาท่านหรือ?", color: "#450a0a", order: ["nanaya"] },
@@ -223,10 +223,11 @@ export default function CharacterSelect({ roster, position, name, onConfirm, onB
                 <SkillTile label={sel.basicNight ? "สกิลพื้นฐาน (กลางวัน)" : "สกิลพื้นฐาน"} skill={sel.basic} />
                 {sel.basicNight && <SkillTile label="สกิลพื้นฐาน (กลางคืน)" skill={sel.basicNight} />}
                 {/* โอเบรอน/โคโตเนะ: สกิลสลับตามช่วงเวลากลางวัน/กลางคืน — โชว์ครบทุกท่า */}
-                <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : "สกิลรอง"} skill={sel.secondary} />
+                <SkillTile label={sel.secondaryNight ? "สกิลรอง (กลางวัน)" : sel.id === "hakuno" ? "สกิลรอง (ร่างชาย)" : "สกิลรอง"} skill={sel.secondary} />
                 {sel.secondaryNight && <SkillTile label="สกิลรอง (กลางคืน)" skill={sel.secondaryNight} />}
                 {/* บานาจ ลิงก์ (patch 2.1.2): สกิลรอง 2 Beam Magnum — แทนที่สกิลรอง 1 ระหว่างร่าง NewType Paradise */}
                 {sel.id === "banagher" && sel.secondary2 && <SkillTile label="สกิลรอง 2 (ระหว่างร่าง Paradise)" skill={sel.secondary2} />}
+                {sel.id === "hakuno" && sel.secondary2 && <SkillTile label="สกิลรอง (ร่างหญิง)" skill={sel.secondary2} />}
                 {/* อควาเรียน: ไม่มีท่าไม้ตายกลาง — ใช้ 4 ท่าตามร่างด้านล่างแทน */}
                 {!sel.ultimateSolar && (
                   <SkillTile

@@ -17,6 +17,7 @@ const FILES = {
   shiki2: "/characters/shiki/shiki_theme2.mp3",       // เพลงระหว่างท่าไม้ตาย 2 ความตายที่โรยรา (ชิกิ patch 2.0.6)
   tohno: "/characters/tohno/tohno_theme.mp3",         // เพลงระหว่างสกิลติดตัวโทโนะเปิดใช้งาน (ระดับ 2 ขึ้นไป — patch 2.1.7)
   nanaya: "/characters/nanaya/nanaya_theme.mp3",      // เพลงระหว่างสกิลติดตัว 1 นานายะ ชิกิ เปิดใช้งาน (patch 2.1.9)
+  hakuno: "/characters/hakuno/hakuno_theme.mp3",      // เพลงระหว่าง MOON*CELL คิชินามิ ฮาคุโนะ ทำงาน (patch 2.2.1)
   nanayaVoice1: "/characters/nanaya/voice/nanaya_voice1.m4a", // เสียงพากย์สุ่มตอนนานายะชนะการจั่ว
   nanayaVoice2: "/characters/nanaya/voice/nanaya_voice2.m4a",
   nanayaVoice3: "/characters/nanaya/voice/nanaya_voice3.m4a",

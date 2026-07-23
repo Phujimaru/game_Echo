@@ -233,7 +233,7 @@ function TransformNotice({ n }) {
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
 //  ระหว่าง Lie Like Vortigern (โอเบรอน) ฉากหลังกลางคืนกลายเป็นวีดีโอ oberon_background.mp4 (เฟดเข้า)
-function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg, shikiBg }) {
+function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg, shikiBg, hakunoBg }) {
   const night = cycle === "night";
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -292,6 +292,14 @@ function GameBackground({ cycle, oberonBg, godtreeBg, shradeBg, bardBg, shikiBg 
         <video
           src="/characters/shiki/shiki_fill2.mp4"
           autoPlay loop muted playsInline
+          className="absolute inset-0 w-full h-full object-cover bg-fade-in"
+        />
+      )}
+      {/* MOON*CELL (คิชินามิ ฮาคุโนะ patch 2.2.1): ซ้อน hakuno_fill.jpg ทับฉากหลังปัจจุบันระหว่างท่าไม้ตายทำงาน */}
+      {hakunoBg && (
+        <img
+          src="/characters/hakuno/hakuno_fill.jpg"
+          alt=""
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
       )}
@@ -526,7 +534,14 @@ const STATUS_INFO = {
   miyakoCombo: { icon: "🥊", label: "เพลงหมัด อาริมะ", cls: "bg-echo-cyan text-gray-900", desc: "เพลงหมัด อาริมะ: การโจมตีปกติครั้งถัดไปต่อคอมโบได้สูงสุด 4 ครั้ง (100%/75%/50%/25%) — คงอยู่จนกว่าจะได้โจมตี" },
   miyakoUlt:   { icon: "🎯", label: "แต้มบังคับ 20", cls: "bg-echo-gold text-gray-900", desc: "หนูจะทำให้พี่ตาสว่างเอง: แต้มการจั่วกลายเป็น 20 — เมื่อได้โจมตีจะปิดความสามารถสังหารทันทีของเป้าหมาย หรือเสริมดาเมจทะลุเกราะ +1" },
   miyakoSeal:  { icon: "🥊", label: "ความสามารถสังหารถูกปิด", cls: "bg-echo-hp", desc: "หนูจะทำให้พี่ตาสว่างเอง: ความสามารถสังหารทันทีถูกปิดใช้งาน ตามจำนวนเทิร์นที่เหลือ" },
-  miyakoArmorSeal: { icon: "🥊", label: "เกราะไม่ฟื้น", cls: "bg-echo-hp", desc: "หนูจะทำให้พี่ตาสว่างเอง: เกราะฟื้นไม่ได้ ตามจำนวนเทิร์นที่เหลือ" },
+  armorSeal: { icon: "🛡️", label: "เกราะไม่ฟื้น", cls: "bg-echo-hp", desc: "เกราะฟื้นไม่ได้ ตามจำนวนเทิร์นที่เหลือ" },
+  // ---------- สถานะ Universal (patch 2.2.1) ----------
+  invert:     { icon: "🔄", label: "ผกผัน", cls: "bg-echo-hp", desc: "ผกผัน: ฟื้นเลือด/เกราะ กลายเป็นเสียแทน — เพิ่มพลังโจมตี กลายเป็นลดแทน ตามจำนวนเทิร์นที่เหลือ" },
+  norecover:  { icon: "☠️", label: "ไร้ทางเยียวยา", cls: "bg-echo-hp", desc: "ไร้ทางเยียวยา: ฟื้นพลังชีวิตไม่ได้ ตามจำนวนเทิร์นที่เหลือ" },
+  // ---------- คิชินามิ ฮาคุโนะ (patch 2.2.1) ----------
+  hakunoInvertReady:   { icon: "🌓", label: "ข้าขอบัญชา", cls: "bg-echo-cyan text-gray-900", desc: "ข้าขอบัญชา: การโจมตีปกติครั้งถัดไปทำให้เป้าหมายติดผกผัน 3 เทิร์น — คงอยู่จนกว่าจะได้โจมตี" },
+  hakunoNoRegenReady:  { icon: "🌕", label: "ข้าขอบัญชา", cls: "bg-echo-magenta", desc: "ข้าขอบัญชา: การโจมตีปกติครั้งถัดไปทำให้เป้าหมายเกราะไม่ฟื้น + ไร้ทางเยียวยา — คงอยู่จนกว่าจะได้โจมตี" },
+  moonCell:   { icon: "🌙", label: "MOON*CELL", cls: "bg-echo-magenta", desc: "คำสาปแห่งดวงจันทร์ MOON*CELL: ล้าง/ปิดใช้งานบัฟ ดีบัฟ สกิล และสกิลติดตัวของทุกคน (ยกเว้นเจ้าของท่า) ตามจำนวนเทิร์นที่เหลือ" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
@@ -793,6 +808,64 @@ function ReijuModal({ me, onUse, onClose }) {
         </div>
         <div className="flex flex-col gap-2">
           {REIJU_COMMANDS.map((c) => (
+            <button
+              key={c.cmd}
+              onClick={() => { clickSound(); onUse(c.cmd); }}
+              className="text-left rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 px-3 py-2 transition"
+            >
+              <div className="font-bold text-echo-gold">{c.icon} คำสั่งที่ {c.cmd} · {c.name}</div>
+              <div className="text-sm opacity-80">{c.desc}</div>
+            </button>
+          ))}
+        </div>
+        <Button className="mt-3 w-full" onClick={() => { clickSound(); onClose(); }}>ปิด</Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- อาคมบัญชาระดับ EX+ (สกิลติดตัวคิชินามิ ฮาคุโนะ patch 2.2.1): UI พิเศษแยกจากช่องสกิล ----------
+//  ไม่นับเป็นการใช้สกิล -> ใช้พร้อมสกิลอื่นได้ | 3 ครั้งต่อเกม กดได้กี่ครั้งก็ได้ใน 1 เทิร์น | รูปเปลี่ยนตามจำนวนที่เหลือ
+const HAKUNO_COMMANDS = [
+  { cmd: 1, icon: "✨", name: "เติมแต้มสกิลเต็ม", desc: "เติมแต้มสกิลให้เต็ม 8 แต้มทันที" },
+  { cmd: 2, icon: "💗", name: "ฟื้นพลังชีวิตเต็ม", desc: "ฟื้นพลังชีวิตให้เต็ม (ไม่ฟื้นเกราะ)" },
+  { cmd: 3, icon: "🎯", name: "บังคับแต้มการ์ดเป็น 21", desc: "แต้มการจั่วกลายเป็น 21 ทันที" },
+];
+const hakunoCommandImg = (n) => `/characters/hakuno/passive/${(n ?? 0) <= 0 ? "lost" : n === 1 ? "1left" : n === 2 ? "2left" : "full"}.png`;
+
+function HakunoCommandButton({ me, usable, onOpen, className = "" }) {
+  return (
+    <button
+      onClick={() => { if (usable) { clickSound(); onOpen(); } }}
+      disabled={!usable}
+      title="อาคมบัญชาระดับ EX+ — ใช้ก่อนเปิดการ์ด (ไม่นับเป็นการใช้สกิล)"
+      className={`relative rounded-xl overflow-hidden border-2 border-echo-gold shadow-lg transition ${
+        usable ? "hover:scale-105 ring-2 ring-echo-gold/60" : "opacity-60 grayscale cursor-not-allowed"
+      } ${className}`}
+    >
+      <img src={hakunoCommandImg(me.hakunoCommandUses)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <span className="absolute bottom-0 inset-x-0 bg-black/75 text-[10px] font-bold text-echo-gold leading-tight py-0.5">
+        📜 อาคม {me.hakunoCommandUses ?? 0}/3
+      </span>
+    </button>
+  );
+}
+
+function HakunoCommandModal({ me, onUse, onClose }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-xl overflow-hidden w-16 h-16 border-2 border-echo-gold shrink-0">
+            <img src={hakunoCommandImg(me.hakunoCommandUses)} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <div className="text-lg font-black text-echo-gold">อาคมบัญชาระดับ EX+</div>
+            <div className="text-sm opacity-80">เหลือ {me.hakunoCommandUses ?? 0}/3 — เลือกคำสั่ง</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          {HAKUNO_COMMANDS.map((c) => (
             <button
               key={c.cmd}
               onClick={() => { clickSound(); onUse(c.cmd); }}
@@ -1203,6 +1276,7 @@ export default function Game({ state, lowQ }) {
   const [cycleFx, setCycleFx] = useState(null); // แบนเนอร์สลับกลางวัน/กลางคืน
   const prevCycle = useRef(null);
   const [reijuOpen, setReijuOpen] = useState(false); // ฟุจิมารุ: เมนูเลือกคำสั่งเรจูอาคมบัญชา
+  const [hakunoCmdOpen, setHakunoCmdOpen] = useState(false); // คิชินามิ ฮาคุโนะ: เมนูเลือกคำสั่งอาคมบัญชาระดับ EX+
   const [statusViewId, setStatusViewId] = useState(null); // ดูสถานะผู้เล่นคนอื่น (แตะการ์ดตอนไม่ได้เลือกเป้า)
   const vp = useViewport();
   const phase = state.gameState;
@@ -1295,6 +1369,8 @@ export default function Game({ state, lowQ }) {
   // เรจูอาคมบัญชา (สกิลติดตัว): สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล
   const reijuUsable = !!(isFuji && phase === "PLAYING" && me?.alive && !done && (me?.reiju || 0) > 0);
   const useReiju = (cmd) => { socket.emit("useReiju", { command: cmd }); setReijuOpen(false); };
+  const hakunoCmdUsable = !!(isHakuno && phase === "PLAYING" && me?.alive && !done && (me?.hakunoCommandUses || 0) > 0);
+  const useHakunoCmd = (cmd) => { socket.emit("hakunoCommandSpell", { command: cmd }); setHakunoCmdOpen(false); };
   // ---------- โอเบรอน ----------
   const isOberon = ch?.id === "oberon";
   // ม่านแห่งราตรี: กดซ้ำไม่ได้จนกว่าผลเพิ่มพลังโจมตีจะหมด
@@ -1303,6 +1379,7 @@ export default function Game({ state, lowQ }) {
   const isApple = ch?.id === "appleguy"; // สกิลพื้นฐานไม่นับเป็นการใช้สกิลของเทิร์น (ใช้แล้วยังใช้สกิลอื่นได้)
   const isAquarion = ch?.id === "aquarion"; // เปลี่ยนหัวหน้า (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน
   const isTohno = ch?.id === "tohno"; // มีดพับประจำตระกูล (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน (กดเปลี่ยนระดับได้เรื่อยๆ)
+  const isHakuno = ch?.id === "hakuno"; // เธอ/นาย คือฉันหรอ? (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน (กดสลับได้ 1 ครั้ง/เทิร์น)
   // ---------- เจ้าแห่งเน็ตบ้าน ----------
   const isBroadband = ch?.id === "broadband_man";
   const lanLocked = isBroadband && !me?.contractPartnerId;    // กระชากสายแลน: ใช้ได้ก็ต่อเมื่อมีคู่สัญญาแล้ว
@@ -1574,6 +1651,9 @@ export default function Game({ state, lowQ }) {
   useEffect(() => {
     if (reijuOpen && !reijuUsable) setReijuOpen(false);
   }, [reijuOpen, reijuUsable]);
+  useEffect(() => {
+    if (hakunoCmdOpen && !hakunoCmdUsable) setHakunoCmdOpen(false);
+  }, [hakunoCmdOpen, hakunoCmdUsable]);
 
   // เฟส CUTSCENE: วีดีโอ/แบนเนอร์แปลงร่าง (key=id -> remount กันจอดำ)
   //  ยกเว้นฉากประกาศเปลี่ยนร่าง (announce) -> แสดงกระดานเกมตามปกติ + เอฟเฟกต์ทับ (ไม่ตัดจอดำ)
@@ -1590,7 +1670,7 @@ export default function Game({ state, lowQ }) {
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
-        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} />
+        <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} hakunoBg={state.hakunoBg} />
         {/* แถบบน: รอบ + เวลา (เว้นขวาให้ปุ่มเสียง) */}
         <div className="shrink-0 flex flex-col items-center gap-1 pt-2 px-14 min-h-[40px]">
           {(phase === "PLAYING" || phase === "ATTACK") && (
@@ -1723,6 +1803,7 @@ export default function Game({ state, lowQ }) {
                   <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-black/75 rounded-full px-1.5 leading-tight whitespace-nowrap">ℹ️ ข้อมูล</span>
                 </button>
                 {isFuji && <ReijuButton me={me} usable={reijuUsable} onOpen={() => setReijuOpen(true)} className="w-14 h-16 shrink-0" />}
+                {isHakuno && <HakunoCommandButton me={me} usable={hakunoCmdUsable} onOpen={() => setHakunoCmdOpen(true)} className="w-14 h-16 shrink-0" />}
                 <div className="flex-1 min-w-0 flex items-center overflow-x-auto min-h-[56px]">
                   {revealed ? (
                     <div className="text-3xl font-black">
@@ -1757,7 +1838,7 @@ export default function Game({ state, lowQ }) {
 
               {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || phenexTaunting || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard && !isTohno) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || phenexTaunting || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard && !isTohno && !isHakuno) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked || (isHakuno && me.hakunoGenderSwitched)} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
                 <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || rgCharging || phenexTaunting || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked || banagherAssaultLocked || monsterMe} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
                 {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging || rgCharging || phenexTaunting || hikaruUltLocked)} onUse={skill} />}
               </div>
@@ -1902,6 +1983,7 @@ export default function Game({ state, lowQ }) {
 
         {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
         {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
+        {hakunoCmdOpen && me && <HakunoCommandModal me={me} onUse={useHakunoCmd} onClose={() => setHakunoCmdOpen(false)} />}
         {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
         {tohnoOpen && me && <TohnoLevelModal me={me} onPick={pickTohnoLevel} onClose={() => setTohnoOpen(false)} />}
         {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
@@ -1925,7 +2007,7 @@ export default function Game({ state, lowQ }) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} />
+      <GameBackground cycle={state.cycle} oberonBg={state.oberonBg} godtreeBg={state.godtreeBg} shradeBg={state.shradeBg} bardBg={state.bardBg} shikiBg={state.shikiBg} hakunoBg={state.hakunoBg} />
       <div
         className="relative overflow-hidden"
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
@@ -2084,6 +2166,7 @@ export default function Game({ state, lowQ }) {
               <div className="font-bold text-base mt-1 leading-tight">{me.character.name}</div>
               <button onClick={() => { clickSound(); setShowChar(true); }} className="text-xs underline opacity-80">รายละเอียดตัวละคร</button>
               {isFuji && <ReijuButton me={me} usable={reijuUsable} onOpen={() => setReijuOpen(true)} className="w-20 h-16 mt-1.5" />}
+              {isHakuno && <HakunoCommandButton me={me} usable={hakunoCmdUsable} onOpen={() => setHakunoCmdOpen(true)} className="w-20 h-16 mt-1.5" />}
             </div>
 
             <div className="flex gap-3">
@@ -2121,7 +2204,7 @@ export default function Game({ state, lowQ }) {
 
                 {/* ช่องสกิล 3 อัน (ใช้ได้ 1 สกิลต่อเทิร์น) */}
                 <div className="grid grid-cols-3 gap-3 mt-2">
-                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || phenexTaunting || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard && !isTohno) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
+                  <SkillSlot label="สกิลพื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || beatMe || shCharging || rgCharging || phenexTaunting || bardNoteLocked || (me.skillUsed && !mageRepeat && !gambleRepeat && !isApple && !isAquarion && !isBard && !isTohno && !isHakuno) || mageLocked || cassiusLocked || veilLocked || ktBasicLocked || (isHakuno && me.hakunoGenderSwitched)} onUse={skill} ammo={isGambler ? me.gamblerUses : me.puddingUses} cost={isGambler && goldenOn ? halfCost(ch?.basic) : isKotone && overworkMe ? ktCost(ch?.basic) : undefined} />
                   <SkillSlot label="สกิลรอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isBard) || shCharging || rgCharging || phenexTaunting || bardNoteLocked || ohgerLocked || mysticLocked || lanLocked || ktSecLocked || skSecLocked || banagherAssaultLocked} onUse={skill} ammo={isApple ? me.appleGiveUses : me.beamAmmo} cost={isGambler && goldenOn ? halfCost(ch?.secondary) : isKotone && overworkMe ? ktCost(ch?.secondary) : undefined} />
                   {isBard ? <BardComposeSlot me={me} /> : <SkillSlot label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={aquaCancelable ? false : (done || phase !== "PLAYING" || noSkill || beatMe || me.skillUsed || ultimateActive || monsterMe || humanityLocked || fourthLocked || offerLocked || ktUltLocked || aquaUltLocked || shUltLocked || shCharging || rgCharging || phenexTaunting)} onUse={skill} />}
                 </div>
@@ -2290,6 +2373,7 @@ export default function Game({ state, lowQ }) {
       {/* ---------- modal รายละเอียดตัวละคร / ดูสถานะผู้เล่น ---------- */}
       {showChar && ch && <CharModal ch={ch} me={me} onClose={() => setShowChar(false)} />}
       {reijuOpen && me && <ReijuModal me={me} onUse={useReiju} onClose={() => setReijuOpen(false)} />}
+        {hakunoCmdOpen && me && <HakunoCommandModal me={me} onUse={useHakunoCmd} onClose={() => setHakunoCmdOpen(false)} />}
       {appleOpen && me && <AppleItemModal me={me} onPick={pickAppleItem} onClose={() => setAppleOpen(false)} />}
         {tohnoOpen && me && <TohnoLevelModal me={me} onPick={pickTohnoLevel} onClose={() => setTohnoOpen(false)} />}
         {aquaOpen && me && <AquaLeaderModal me={me} onPick={pickAquaLeader} onClose={() => setAquaOpen(false)} />}
