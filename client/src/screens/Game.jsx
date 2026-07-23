@@ -1369,8 +1369,7 @@ export default function Game({ state, lowQ }) {
   // เรจูอาคมบัญชา (สกิลติดตัว): สั่งใช้ก่อนเปิดการ์ด ไม่นับเป็นการใช้สกิล
   const reijuUsable = !!(isFuji && phase === "PLAYING" && me?.alive && !done && (me?.reiju || 0) > 0);
   const useReiju = (cmd) => { socket.emit("useReiju", { command: cmd }); setReijuOpen(false); };
-  const hakunoCmdUsable = !!(isHakuno && phase === "PLAYING" && me?.alive && !done && (me?.hakunoCommandUses || 0) > 0);
-  const useHakunoCmd = (cmd) => { socket.emit("hakunoCommandSpell", { command: cmd }); setHakunoCmdOpen(false); };
+  // isHakuno ประกาศด้านล่าง (แถวเดียวกับ isTohno ฯลฯ) — คำนวณ hakunoCmdUsable/useHakunoCmd หลังจากนั้น
   // ---------- โอเบรอน ----------
   const isOberon = ch?.id === "oberon";
   // ม่านแห่งราตรี: กดซ้ำไม่ได้จนกว่าผลเพิ่มพลังโจมตีจะหมด
@@ -1380,6 +1379,8 @@ export default function Game({ state, lowQ }) {
   const isAquarion = ch?.id === "aquarion"; // เปลี่ยนหัวหน้า (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน
   const isTohno = ch?.id === "tohno"; // มีดพับประจำตระกูล (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน (กดเปลี่ยนระดับได้เรื่อยๆ)
   const isHakuno = ch?.id === "hakuno"; // เธอ/นาย คือฉันหรอ? (สกิลพื้นฐาน) ไม่นับเป็นการใช้สกิลของเทิร์นเช่นกัน (กดสลับได้ 1 ครั้ง/เทิร์น)
+  const hakunoCmdUsable = !!(isHakuno && phase === "PLAYING" && me?.alive && !done && (me?.hakunoCommandUses || 0) > 0);
+  const useHakunoCmd = (cmd) => { socket.emit("hakunoCommandSpell", { command: cmd }); setHakunoCmdOpen(false); };
   // ---------- เจ้าแห่งเน็ตบ้าน ----------
   const isBroadband = ch?.id === "broadband_man";
   const lanLocked = isBroadband && !me?.contractPartnerId;    // กระชากสายแลน: ใช้ได้ก็ต่อเมื่อมีคู่สัญญาแล้ว

@@ -1698,7 +1698,7 @@ function resetRoundDisplay(p) {
   p.wasAttacked = false; p.isWinner = false; p.isLoser = false;
 }
 function resetCombat(p) {
-  p.hp = MAX_HP; p.armor = MAX_ARMOR; p.skillPoints = 0; p.alive = true; p.shield = 0;
+  p.skillPoints = 0; p.alive = true; p.shield = 0;
   p.statuses = {}; p.seen = {}; p.ntdTarget = null; p.transformAt = 0; p.beatAt = 0;
   // ---------- บานาจ ลิงก์ (patch 2.1.2) ----------
   p.ntdRivalId = null;      // สกิลติดตัว 2: เป้าแก้แค้นพิเศษใส่ริดดี้ (ไม่ใช่พันธมิตร)
@@ -1818,6 +1818,10 @@ function resetCombat(p) {
   p.hakunoCommandUses = HAKUNO_COMMAND_USES; // อาคมบัญชาระดับ EX+: ใช้ได้ 3 ครั้งต่อเกม
   p.moonCellBackup = null;        // MOON*CELL: บัฟ/ดีบัฟที่ถูกล้างไว้ชั่วคราวของผู้เล่นอื่น (คืนให้ตอนหมดฤทธิ์)
   p.cutsceneShown = {}; // เล่นวีดีโอครั้งเดียวต่อเกม (per match)
+  // เลือด/เกราะเริ่มเกม: คำนวณหลังรีเซ็ต statuses/maxHpPenalty/hakunoGender แล้วเท่านั้น
+  // (maxHpOf/maxArmorOf อ่านค่าพวกนี้ — คำนวณก่อนหน้านั้นจะติดค่าเก่าจากแมตช์ที่แล้ว)
+  p.hp = maxHpOf(p);
+  p.armor = maxArmorOf(p);
 }
 
 
