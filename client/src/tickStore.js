@@ -21,6 +21,10 @@ function subscribe(fn) {
 function getSnapshot() {
   return seconds;
 }
+// อ่านค่าวินาทีที่เหลือของเฟสปัจจุบันครั้งเดียว (ไม่ subscribe) — ใช้กำหนดความยาวฉากที่ต้องจบพร้อม server
+export function getTickSeconds() {
+  return seconds;
+}
 
 export function useTick() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

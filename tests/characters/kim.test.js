@@ -1,4 +1,6 @@
 // Bamboo-Hatted Kim — กติกาหลักของ characters/kim.js ผ่าน engine จริง (server.js)
+// startMatch() ในโหมดปกติพักรอฉากแผนที่การเดินทางก่อนแจกไพ่ — เทสต์นี้ต้องการเทิร์นแรกทันที
+process.env.JOURNEY_START_SECONDS = '0';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { engine } = require('../../server.js');

@@ -1261,6 +1261,42 @@ body {
   box-shadow: 0 0 14px 1px rgba(232, 191, 90, 0.7);
 }
 
+/* การเดินทาง: ป้ายภูมิภาคใต้กล่อง "รอบที่" (สีตามภูมิภาค --jr / --jr-glow จาก journey/areas.js) */
+.jr-badge {
+  position: absolute;
+  top: 5.3rem;
+  left: 0.9rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 22rem;
+  padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+  background: linear-gradient(100deg, rgba(10, 6, 17, 0.9), rgba(10, 6, 17, 0.72));
+  border-bottom: 1px solid var(--jr);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.jr-badge:hover { transform: translateX(2px); }
+.jr-badge-num {
+  display: grid;
+  place-items: center;
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--jr);
+  color: var(--jr-glow);
+  font-family: var(--font-av-display);
+  font-weight: 900;
+  font-size: 0.95rem;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--jr) 35%, transparent), transparent 75%);
+}
+.jr-badge-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.jr-badge-name { color: var(--jr-glow); font-weight: 800; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jr-badge-sub { color: rgba(239, 230, 245, 0.65); font-size: 0.68rem; white-space: nowrap; }
+
 .bd-timer {
   position: relative;
   display: grid;

@@ -11,6 +11,23 @@ const FILES = {
   new_morning: "/theme_song/day_4.0.mp3",    // เพลงช่วงกลางวัน
   new_night: "/theme_song/night_4.0.mp3",    // เพลงช่วงกลางคืน
   battle_phase: "/theme_song/battle_phase.mp3", // เพลงเฉพาะช่วงโจมตี — เริ่มใหม่ทุกครั้งที่เข้าช่วง
+  // การเดินทาง 7 ภูมิภาค (โหมดสงครามทั่วไป): เพลงสนามแยกกลางวัน/กลางคืนต่อภูมิภาค — แทน new_morning/new_night
+  //  ไฟล์ที่มีวงเล็บในชื่อ = กลางวัน · map.mp3 = เพลงระหว่างฉากแผนที่การเดินทาง
+  journey_map: "/journey/map.mp3",
+  journey_1_day: "/journey/map1/Fire Emblem Engage Faraway Holy Land (Flare).mp3",
+  journey_1_night: "/journey/map1/Fire Emblem Engage Faraway Holy Land.mp3",
+  journey_2_day: "/journey/map2/Fire Emblem Engage Full Bloom in the Breeze (Blossom).mp3",
+  journey_2_night: "/journey/map2/Fire Emblem Engage Full Bloom in the Breeze.mp3",
+  journey_3_day: "/journey/map3/Fire Emblem Engage Trial of Dawn (Heal Us).mp3",
+  journey_3_night: "/journey/map3/Fire Emblem Engage Trial of Dawn.mp3",
+  journey_4_day: "/journey/map4/Fire Emblem Engage Trial of the Pact (Connect Us).mp3",
+  journey_4_night: "/journey/map4/Fire Emblem Engage Trial of the Pact.mp3",
+  journey_5_day: "/journey/map5/Fire Emblem Engage Bright Sandstorm (Fiery).mp3",
+  journey_5_night: "/journey/map5/Fire Emblem Engage Bright Sandstorm.mp3",
+  journey_6_day: "/journey/map6/Fire Emblem Engage Tear Streaked (Ice).mp3",
+  journey_6_night: "/journey/map6/Fire Emblem Engage Tear Streaked.mp3",
+  journey_7_day: "/journey/map7/Fire Emblem Engage Distorted Flash of Light (Battle).mp3",
+  journey_7_night: "/journey/map7/Fire Emblem Engage Distorted Flash of Light.mp3",
   buy_something: "/effect_sound/buy_something.mp3",
   change_cutscene: "/effect_sound/change_cutscene.mp3",
   overload_force: "/overload_force/overload_force_connect.m4a",
@@ -213,7 +230,8 @@ const MUSIC_POSITION_GROUPS = {
 
 // สัดส่วนผสมเสียง: เอฟเฟกต์/เสียงพากย์ต้องเด่นกว่าเพลงประกอบ (เพลงเป็นพื้นหลัง)
 //  ระหว่างวีดีโอเพลงถูกพักอยู่แล้ว วีดีโอจึงเต็ม 1 ได้โดยไม่แย่งกับเพลง
-const MUSIC_BASE = 0.5;
+//  เดิม 0.5 (-6 dB) ผู้เล่นบอกว่าเพลงเบาเกินไป -> 0.75 (-2.5 dB) เอฟเฟกต์ยังเด่นกว่าเพลงอยู่
+const MUSIC_BASE = 0.75;
 const SFX_BASE = 1;
 const CLICK_BASE = 0.55;
 const VIDEO_BASE = 1;
@@ -380,6 +398,15 @@ const LOUDNESS_GAIN = {
   "/overload_force/overload_force_connect.m4a": 0.67,
   "/overload_force/overload_force_theme.mp3": 0.53,
   "/theme_song/FULL FORCE.mp3": 0.44,
+  // การเดินทาง (วัดด้วย Web Audio: RMS บล็อก 0.4 วิ ตัดบล็อกที่เบากว่า -50 dBFS) — ไฟล์ที่เบากว่า -14 อยู่แล้วไม่อยู่ในตาราง
+  //  ⚠️ map2 กลางคืน (Full Bloom in the Breeze.mp3) เบากว่าเป้า ~5 dB — ต้องเข้ารหัสใหม่ให้ดังขึ้นที่ตัวไฟล์ถ้าต้องการให้เท่ากัน
+  "/journey/map1/Fire Emblem Engage Faraway Holy Land (Flare).mp3": 0.61,
+  "/journey/map2/Fire Emblem Engage Full Bloom in the Breeze (Blossom).mp3": 0.59,
+  "/journey/map3/Fire Emblem Engage Trial of Dawn (Heal Us).mp3": 0.7,
+  "/journey/map4/Fire Emblem Engage Trial of the Pact (Connect Us).mp3": 0.62,
+  "/journey/map6/Fire Emblem Engage Tear Streaked (Ice).mp3": 0.66,
+  "/journey/map6/Fire Emblem Engage Tear Streaked.mp3": 0.66,
+  "/journey/map7/Fire Emblem Engage Distorted Flash of Light (Battle).mp3": 0.71,
   "/theme_song/battle_phase.mp3": 0.65,
   "/theme_song/day_4.0.mp3": 0.78,
   "/theme_song/main_home_4.0.mp3": 0.69,
@@ -391,6 +418,8 @@ const musicSuspensions = new Set();
 
 // เพลงบางเพลงต้นฉบับดังกว่าเพลงอื่นมาก (เพลงคุวากาตะทั้ง 2 แบบ) — ลดเฉพาะตัวให้สมดุลกับเพลงอื่น
 const MUSIC_TRACK_SCALE = {
+  // การเดินทาง ภูมิภาค 2 กลางคืน: ไฟล์เบากว่าเพลงอื่น ~5 dB (-19 เทียบ -14 dBFS) — ดันขึ้นให้เท่ากัน (ชนเพดาน volume 1 เมื่อหลอดเสียงสูง)
+  journey_2_night: 1.78,
 };
 // "หรี่เพลงหลัก" (patch 3.4.2 — เพลงคิดของคอนเนอร์): ระหว่างมีลูปเสียงเฉพาะกิจเล่นอยู่
 //  เพลง BGM ปกติจะถูกหรี่ลงแทนที่จะหยุด เพราะเอฟเฟกต์เพลงใน App.jsx สั่งเล่นซ้ำทุกครั้งที่ state เปลี่ยน

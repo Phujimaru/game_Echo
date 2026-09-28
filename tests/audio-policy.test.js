@@ -47,3 +47,13 @@ test('round sound survives intermediate cutscenes and broadcasts; attack sound f
   track({ ...state, gameState: 'PLAYING' });
   assert.equal(track({ ...state, gameState: 'SUMMARY' }).roundEnded, true);
 });
+
+test('การเดินทาง: เพลงประจำภูมิภาคแยกกลางวัน/กลางคืน · ฉากแผนที่เล่น map.mp3 ทับทุกอย่าง · ช่วงโจมตียังเป็นเพลงโจมตี', () => {
+  const j = (area, night, scene = null) => ({ gameState: 'PLAYING', cycle: night ? 'night' : 'day', journey: { area, night, scene } });
+  assert.equal(policy.musicForState(j(3, false)).name, 'journey_3_day');
+  assert.equal(policy.musicForState(j(7, true)).name, 'journey_7_night');
+  const travel = { ...j(2, false, { seq: 4, active: true, mode: 'advance' }), gameState: 'CUTSCENE', cutscene: null, skillMusic: 'shiki' };
+  assert.deepEqual({ ...policy.musicForState(travel) }, { name: 'journey_map', seq: 4 });
+  assert.equal(policy.musicForState({ ...j(2, false), gameState: 'ATTACK' }).name, 'battle_phase');
+  assert.equal(policy.musicForState({ ...j(2, false, { seq: 4, active: false }) }).name, 'journey_2_day');
+});

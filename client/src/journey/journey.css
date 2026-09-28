@@ -1,0 +1,993 @@
+/* =========================================================================
+   Journey — ฉากหลัง 7 ภูมิภาค (jb-) + แผนที่การเดินทาง (jm-)
+   กฎประสิทธิภาพ: ขยับด้วย transform / opacity เท่านั้น ไม่มี filter/blur/box-shadow ที่ขยับ
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- jb: backdrop */
+.jb {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #06040a;
+}
+
+/* หนึ่งฉาก = หนึ่งชั้น; ฉากใหม่ซ้อนด้านบนแล้วค่อย ๆ เฟดเข้า ฉากเก่าอยู่ใต้ทึบเต็มจนถูกถอด */
+.jb-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+  container-type: size;
+}
+.jb-scene.jb-in {
+  animation: jbSceneIn var(--jb-fade, 1800ms) ease-in-out both;
+}
+@keyframes jbSceneIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* stage 1600×900 (16:9) ที่คลุมจอแบบ cover — ลูกทั้งหมดวางด้วย % จึงตรงกับ svg พอดี */
+.jb-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, 177.7778cqh);
+  height: max(100cqh, 56.25cqw);
+  transform: translate(-50%, -50%);
+}
+.jb-sky,
+.jb-svg,
+.jb-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.jb-abs {
+  position: absolute;
+}
+.jb-abs > svg,
+.jb-fill > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ชั้นเกรดสีคุมคอนทราสต์ตรงกลาง (กระดานเกมอยู่ด้านบน)
+   เบาลงจากเดิม (กลาง 0.3 -> 0.12 · ขอบ 0.62 -> 0.34) เพราะผู้เล่นบอกว่าฉากหลังมืดเกินไป */
+.jb-grade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 72% 62% at 50% 50%, rgba(6, 4, 12, 0.12) 0%, rgba(6, 4, 12, 0.05) 48%, rgba(6, 4, 12, 0.34) 100%),
+    linear-gradient(180deg, rgba(6, 4, 12, 0.18) 0%, transparent 22%, transparent 74%, rgba(6, 4, 12, 0.28) 100%);
+}
+
+/* ---------- อนิเมชันทั่วไปของฉาก ---------- */
+.jb-breathe {
+  animation: jbBreathe 9s ease-in-out infinite alternate;
+}
+@keyframes jbBreathe {
+  from { opacity: 0.72; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1.03); }
+}
+.jb-pulse {
+  animation: jbPulse 4s ease-in-out infinite;
+}
+@keyframes jbPulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  45% { opacity: 1; transform: scale(1.04); }
+  60% { opacity: 0.8; }
+}
+.jb-tw {
+  animation: jbTwinkle 4s ease-in-out infinite alternate;
+}
+@keyframes jbTwinkle {
+  from { opacity: 1; }
+  to { opacity: 0.15; }
+}
+.jb-rays {
+  transform-origin: 50% 0%;
+  animation: jbRays 12s ease-in-out infinite alternate;
+}
+@keyframes jbRays {
+  from { opacity: 0.55; transform: rotate(-1.5deg); }
+  to { opacity: 1; transform: rotate(1.5deg); }
+}
+.jb-drift {
+  will-change: transform;
+  animation: jbDrift 60s ease-in-out infinite alternate;
+}
+@keyframes jbDrift {
+  from { transform: translate3d(var(--from, -6cqw), 0, 0); }
+  to { transform: translate3d(var(--to, 6cqw), 0, 0); }
+}
+.jb-slide {
+  will-change: transform;
+  animation: jbSlide 40s linear infinite;
+}
+@keyframes jbSlide {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.jb-spin {
+  will-change: transform;
+  animation: jbSpin 30s linear infinite;
+}
+@keyframes jbSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.jb-sway {
+  transform-origin: 50% 100%;
+  animation: jbSway 7s ease-in-out infinite alternate;
+}
+@keyframes jbSway {
+  from { transform: skewX(-2.5deg); }
+  to { transform: skewX(2.5deg); }
+}
+.jb-flag {
+  transform-origin: 0% 50%;
+  animation: jbFlag 1.8s ease-in-out infinite alternate;
+}
+@keyframes jbFlag {
+  from { transform: scaleX(1) skewY(-4deg); }
+  to { transform: scaleX(0.82) skewY(5deg); }
+}
+.jb-fly {
+  will-change: transform;
+  animation: jbFly 34s linear infinite;
+}
+@keyframes jbFly {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(118cqw, var(--rise, -6cqh), 0); }
+}
+.jb-flap {
+  transform-origin: 50% 60%;
+  animation: jbFlap 0.55s ease-in-out infinite alternate;
+}
+@keyframes jbFlap {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(-0.35); }
+}
+.jb-orbit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: jbSpin 16s linear infinite;
+}
+.jb-orbit-arm {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.jb-orbit-arm > svg {
+  display: block;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.jb-shoot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0.22cqh;
+  min-height: 1px;
+  border-radius: 999px;
+  opacity: 0;
+  transform-origin: 100% 50%;
+  animation: jbShoot 11s ease-out infinite;
+}
+@keyframes jbShoot {
+  0%, 86% { opacity: 0; transform: translate3d(0, 0, 0) scaleX(0.2); }
+  88% { opacity: 1; transform: translate3d(4cqw, 0, 0) scaleX(1); }
+  94% { opacity: 0; transform: translate3d(22cqw, 0, 0) scaleX(0.6); }
+  100% { opacity: 0; transform: translate3d(22cqw, 0, 0) scaleX(0.6); }
+}
+.jb-shimmer {
+  animation: jbShimmer 3.2s ease-in-out infinite alternate;
+}
+@keyframes jbShimmer {
+  from { opacity: 0.25; transform: scaleX(0.94); }
+  to { opacity: 1; transform: scaleX(1.06); }
+}
+.jb-haze {
+  transform-origin: 50% 50%;
+  background: repeating-linear-gradient(180deg, rgba(255, 244, 220, 0) 0, rgba(255, 244, 220, 0.2) 0.35cqh, rgba(255, 244, 220, 0) 0.7cqh);
+  animation: jbHaze 3s ease-in-out infinite alternate;
+}
+@keyframes jbHaze {
+  from { opacity: 0.2; transform: translate3d(0, -0.6cqh, 0) scaleY(0.9); }
+  to { opacity: 0.75; transform: translate3d(0, 0.6cqh, 0) scaleY(1.12); }
+}
+.jb-aurora {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  transform-origin: 50% 0%;
+  will-change: transform, opacity;
+  animation: jbAurora 16s ease-in-out infinite alternate;
+}
+@keyframes jbAurora {
+  0% { opacity: 0.35; transform: translate3d(-3cqw, 0, 0) scaleY(0.86) skewX(-4deg); }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.55; transform: translate3d(3cqw, 0, 0) scaleY(1.14) skewX(4deg); }
+}
+.jb-glint {
+  animation: jbGlint 3.4s ease-in-out infinite;
+}
+@keyframes jbGlint {
+  0%, 60%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  75% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+.jb-eyes {
+  transform-origin: 50% 50%;
+  animation: jbEyes 10s ease-in-out infinite;
+}
+@keyframes jbEyes {
+  0%, 8% { opacity: 0; transform: scaleY(1); }
+  16%, 44% { opacity: 1; transform: scaleY(1); }
+  46% { transform: scaleY(0.08); }
+  48%, 70% { opacity: 1; transform: scaleY(1); }
+  72% { transform: scaleY(0.08); }
+  74% { opacity: 1; transform: scaleY(1); }
+  84%, 100% { opacity: 0; transform: scaleY(1); }
+}
+.jb-flicker {
+  animation: jbFlicker 3s linear infinite;
+}
+@keyframes jbFlicker {
+  0% { opacity: 0.75; }
+  18% { opacity: 1; }
+  22% { opacity: 0.45; }
+  30% { opacity: 0.95; }
+  56% { opacity: 0.6; }
+  62% { opacity: 1; }
+  80% { opacity: 0.7; }
+}
+.jb-flame {
+  transform-origin: 50% 100%;
+  will-change: transform;
+  animation: jbFlame 1.2s ease-in-out infinite alternate;
+}
+.jb-flame > svg {
+  overflow: hidden;
+}
+@keyframes jbFlame {
+  0% { transform: scale(1, 0.9) skewX(-3deg); opacity: 0.9; }
+  35% { transform: scale(0.94, 1.08) skewX(3deg); opacity: 1; }
+  70% { transform: scale(1.04, 0.96) skewX(-1deg); }
+  100% { transform: scale(0.96, 1.14) skewX(4deg); opacity: 0.92; }
+}
+.jb-flash {
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 70% 20%, rgba(255, 40, 30, 0.45), transparent 70%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.35), transparent 70%);
+  animation: jbFlash 9s linear infinite;
+}
+@keyframes jbFlash {
+  0%, 71% { opacity: 0; }
+  72% { opacity: 0.9; }
+  73% { opacity: 0.1; }
+  74.5% { opacity: 0.75; }
+  78% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ---------- อนุภาค: ชั้นเดียวคลุมจอพอดี (ไม่ใช่ทั้ง stage) ---------- */
+.jb-parts {
+  position: absolute;
+  left: calc(50% - 50cqw);
+  top: calc(50% - 50cqh);
+  width: 100cqw;
+  height: 100cqh;
+  overflow: hidden;
+}
+.jb-p {
+  position: absolute;
+  top: 0;
+  display: block;
+  border-radius: 50%;
+  will-change: transform;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.jb-p-snow,
+.jb-p-snowNight {
+  background: radial-gradient(circle, #ffffff 0%, #ffffff 40%, rgba(214, 230, 248, 0.7) 54%, rgba(255, 255, 255, 0) 72%);
+  animation-name: jbFall;
+}
+.jb-p-snowNight {
+  background: radial-gradient(circle, #eaf8ff 0%, #d4efff 40%, rgba(200, 235, 255, 0) 72%);
+}
+.jb-p-ash {
+  border-radius: 40%;
+  background: #6d5a57;
+  animation-name: jbFall;
+}
+@keyframes jbFall {
+  0% { transform: translate3d(0, -6cqh, 0); }
+  50% { transform: translate3d(calc(var(--dx) * 0.5 + var(--sw)), 48cqh, 0); }
+  100% { transform: translate3d(var(--dx), 104cqh, 0); }
+}
+.jb-p-petal {
+  border-radius: 80% 0 80% 0;
+  opacity: 0.9;
+  animation-name: jbPetal;
+}
+@keyframes jbPetal {
+  0% { transform: translate3d(0, -6cqh, 0) rotate3d(0.4, 1, 0.2, 0deg) rotate(var(--r0)); }
+  50% { transform: translate3d(calc(var(--dx) * 0.5 + var(--sw)), 48cqh, 0) rotate3d(0.4, 1, 0.2, 360deg) rotate(var(--r0)); }
+  100% { transform: translate3d(var(--dx), 104cqh, 0) rotate3d(0.4, 1, 0.2, 720deg) rotate(var(--r0)); }
+}
+.jb-p-ember {
+  top: 100%;
+  background: radial-gradient(circle, #fff1c2 0%, #ffab3d 30%, rgba(255, 70, 20, 0.6) 55%, rgba(255, 40, 10, 0) 72%);
+  animation-name: jbRise;
+}
+@keyframes jbRise {
+  0% { transform: translate3d(0, 2cqh, 0) scale(1); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate3d(var(--sw), calc(var(--rise) * 0.5), 0) scale(0.85); opacity: 0.95; }
+  100% { transform: translate3d(var(--dx), var(--rise), 0) scale(0.3); opacity: 0; }
+}
+.jb-p-firefly,
+.jb-p-wisp {
+  animation-name: jbWander, jbBlink;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-direction: alternate, alternate;
+}
+.jb-p-firefly {
+  background: radial-gradient(circle, #fbffd0 0%, #e3ff7a 28%, rgba(190, 255, 90, 0.35) 50%, rgba(160, 255, 80, 0) 72%);
+}
+.jb-p-wisp {
+  background: radial-gradient(circle, #eafff8 0%, #8ff0e0 22%, rgba(120, 220, 255, 0.35) 46%, rgba(160, 110, 255, 0) 72%);
+}
+@keyframes jbWander {
+  0% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(var(--ax), var(--ay), 0); }
+  66% { transform: translate3d(var(--bx), var(--by), 0); }
+  100% { transform: translate3d(calc(var(--ax) * -0.6), calc(var(--by) * 0.5), 0); }
+}
+@keyframes jbBlink {
+  0%, 30% { opacity: 0.15; }
+  60%, 100% { opacity: 1; }
+}
+.jb-p-sand,
+.jb-p-sandNight {
+  left: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 226, 170, 0), rgba(255, 226, 170, 0.75) 50%, rgba(255, 226, 170, 0));
+  animation-name: jbBlow;
+}
+.jb-p-sandNight {
+  background: linear-gradient(90deg, rgba(180, 190, 255, 0), rgba(190, 200, 255, 0.5) 50%, rgba(180, 190, 255, 0));
+}
+@keyframes jbBlow {
+  from { transform: translate3d(-12cqw, 0, 0); }
+  to { transform: translate3d(112cqw, var(--dy), 0); }
+}
+
+/* หิมะชั้นไกล: ลายจุดปูกระเบื้อง เลื่อนลงทีละ 1 ช่องแบบวนไร้รอยต่อ -> หิมะหนาแน่นในราคา 1 layer */
+.jb-snowsheet {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(var(--tile) * -1);
+  height: calc(100% + var(--tile));
+  background-size: var(--tile) var(--tile);
+  will-change: transform;
+  animation: jbSheet 14s linear infinite;
+}
+.jb-snowsheet.s1 {
+  --tile: 26cqh;
+  opacity: 0.75;
+  background-image:
+    radial-gradient(circle at 12% 18%, #fff 0, #fff 0.18cqh, transparent 0.34cqh),
+    radial-gradient(circle at 58% 8%, #fff 0, #fff 0.14cqh, transparent 0.3cqh),
+    radial-gradient(circle at 84% 46%, #fff 0, #fff 0.2cqh, transparent 0.36cqh),
+    radial-gradient(circle at 36% 62%, #fff 0, #fff 0.16cqh, transparent 0.32cqh),
+    radial-gradient(circle at 70% 86%, #fff 0, #fff 0.18cqh, transparent 0.34cqh),
+    radial-gradient(circle at 20% 90%, #fff 0, #fff 0.12cqh, transparent 0.28cqh),
+    radial-gradient(circle at 92% 12%, #fff 0, #fff 0.12cqh, transparent 0.28cqh);
+  animation-duration: 16s;
+}
+.jb-snowsheet.s2 {
+  --tile: 40cqh;
+  opacity: 0.85;
+  background-image:
+    radial-gradient(circle at 22% 30%, #fff 0, #fff 0.3cqh, transparent 0.52cqh),
+    radial-gradient(circle at 74% 20%, #fff 0, #fff 0.26cqh, transparent 0.48cqh),
+    radial-gradient(circle at 50% 72%, #fff 0, #fff 0.32cqh, transparent 0.54cqh),
+    radial-gradient(circle at 8% 78%, #fff 0, #fff 0.24cqh, transparent 0.46cqh),
+    radial-gradient(circle at 90% 60%, #fff 0, #fff 0.28cqh, transparent 0.5cqh);
+  animation-duration: 11s;
+}
+.jb-snowsheet.is-night {
+  opacity: 0.6;
+}
+@keyframes jbSheet {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, var(--tile), 0); }
+}
+/* lowQ: ทุกอย่างหยุดนิ่ง (paused + negative delay = ภาพนิ่งกลางอนิเมชัน) ไม่จอง GPU layer */
+.jb-lowq .jb-stage *,
+.jb-lowq .jb-stage {
+  animation-play-state: paused !important;
+  will-change: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jb-p,
+  .jb-snowsheet,
+  .jb-drift,
+  .jb-slide,
+  .jb-spin,
+  .jb-fly,
+  .jb-flap,
+  .jb-orbit,
+  .jb-flame,
+  .jb-flash,
+  .jb-flicker,
+  .jb-shoot,
+  .jb-haze,
+  .jb-sway,
+  .jb-flag,
+  .jb-aurora {
+    animation-play-state: paused !important;
+    will-change: auto;
+  }
+}
+
+/* ---------------------------------------------------------------- jm: journey map overlay */
+.jm {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: auto;
+  user-select: none;
+  background: #070404;
+  color: #f3e9d8;
+  font-family: var(--font-av-body, "Kanit", sans-serif);
+}
+@keyframes jmIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes jmOut {
+  from { opacity: 1; visibility: visible; }
+  to { opacity: 0; visibility: hidden; }
+}
+.jm-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 50%, rgba(70, 48, 22, 0.35), transparent 70%),
+    radial-gradient(circle at 12% 20%, rgba(201, 153, 47, 0.06), transparent 30%),
+    radial-gradient(circle at 88% 76%, rgba(201, 153, 47, 0.05), transparent 30%),
+    linear-gradient(180deg, #0c0505 0%, #0c0806 50%, #0a0705 100%);
+}
+.jm-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23c9992f' stroke-width='0.8' opacity='0.25'%3E%3Cpath d='M48 6 L66 48 L48 90 L30 48 Z'/%3E%3Ccircle cx='48' cy='48' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 96px 96px;
+}
+
+/* แผ่นแผนที่สูง 300vh — กล้อง = translateY ของแผ่นนี้ */
+.jm-sheet {
+  position: absolute;
+  top: 0;
+  left: calc(50% - 53.5714vh);
+  width: 107.1429vh;
+  height: 300vh;
+  will-change: transform;
+}
+.jm-paper {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 8%, rgba(0, 0, 0, 0) 92%, rgba(0, 0, 0, 0.7)),
+    linear-gradient(180deg, #0d0303 0%, #1f0d09 7%, #2a1d12 16%, #2f2316 45%, #2c2115 75%, #2a2014 100%);
+}
+.jm-paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.7 0 0 0 0 0.45 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+.jm-lowq .jm-paper::after {
+  display: none;
+}
+.jm-wash {
+  position: absolute;
+}
+.jm-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.jm-route {
+  position: absolute;
+  overflow: visible;
+}
+.jm-seg-reveal {
+  opacity: 0;
+  animation: jmSegIn 900ms ease-out both;
+}
+@keyframes jmSegIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* หมอกปกคลุมภูมิภาคที่ยังไปไม่ถึง */
+.jm-fog {
+  position: absolute;
+  left: -12%;
+  width: 124%;
+  opacity: 0.9;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+}
+.jm-fog.is-clear {
+  opacity: 0;
+}
+.jm-fog-inner {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 36% 50% at 20% 45%, rgba(10, 7, 5, 0.96), transparent 72%),
+    radial-gradient(ellipse 40% 54% at 52% 55%, rgba(12, 8, 6, 0.94), transparent 74%),
+    radial-gradient(ellipse 36% 50% at 82% 42%, rgba(10, 7, 5, 0.96), transparent 72%),
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgba(40, 30, 22, 0.6), transparent 82%);
+  animation: jmFogDrift 14s ease-in-out infinite alternate;
+}
+.jm-fog.is-end .jm-fog-inner {
+  background:
+    radial-gradient(ellipse 30% 40% at 22% 60%, rgba(8, 2, 2, 0.95), transparent 70%),
+    radial-gradient(ellipse 34% 44% at 52% 70%, rgba(10, 3, 3, 0.9), transparent 72%),
+    radial-gradient(ellipse 30% 42% at 80% 58%, rgba(8, 2, 2, 0.95), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 60%, rgba(60, 10, 8, 0.5), transparent 80%);
+}
+@keyframes jmFogDrift {
+  from { transform: translate3d(-3%, 0, 0) scale(1); }
+  to { transform: translate3d(3%, 0, 0) scale(1.05); }
+}
+.jm-lowq .jm-fog-inner {
+  animation: none;
+}
+
+/* แสงลางร้ายของภูมิภาค 7 (ส่องทะลุหมอก) */
+.jm-n7glow {
+  position: absolute;
+  width: 70vh;
+  height: 50vh;
+  margin: -25vh 0 0 -35vh;
+  background: radial-gradient(closest-side, rgba(230, 40, 25, 0.5), rgba(140, 10, 8, 0.2) 55%, transparent);
+  animation: jmN7 3.2s ease-in-out infinite;
+  transition: transform 0.8s ease;
+}
+.jm-n7glow.is-omen {
+  transform: scale(1.35);
+}
+@keyframes jmN7 {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.jm-omen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(200, 20, 10, 0.28), transparent 70%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 55%, rgba(90, 0, 0, 0.55) 100%);
+}
+.jm-omen.is-on {
+  opacity: 1;
+}
+
+/* ---------- โหนด ---------- */
+.jm-node {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.jm-node-glow {
+  position: absolute;
+  width: 26vh;
+  height: 26vh;
+  margin: -13vh 0 0 -13vh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--g) 55%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.jm-node.is-visited .jm-node-glow { opacity: 0.35; }
+.jm-node.is-current .jm-node-glow { opacity: 0.9; }
+.jm-medal {
+  position: absolute;
+  width: 7.4vh;
+  height: 7.4vh;
+  margin: -3.7vh 0 0 -3.7vh;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #33261a, #120c08 75%);
+  border: 0.32vh solid #6a5530;
+  box-shadow: 0 0 0 0.35vh rgba(12, 8, 5, 0.9), 0 0 0 0.5vh rgba(106, 85, 48, 0.6), 0 0.8vh 1.6vh rgba(0, 0, 0, 0.6);
+  transition: border-color 0.8s ease;
+}
+.jm-node.is-visited .jm-medal,
+.jm-node.is-current .jm-medal {
+  border-color: #e8bf5a;
+}
+.jm-node.is-end .jm-medal {
+  border-color: #7a2a1e;
+  background: radial-gradient(circle at 50% 40%, #3a0f0a, #120404 75%);
+}
+.jm-emb {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  transition: opacity 0.9s ease;
+}
+.jm-emb-lit { opacity: 0; }
+.jm-node.is-visited .jm-emb-lit,
+.jm-node.is-current .jm-emb-lit { opacity: 1; }
+.jm-node.is-visited .jm-emb-dim,
+.jm-node.is-current .jm-emb-dim { opacity: 0; }
+.jm-node.is-end.is-locked .jm-emb-lit { opacity: 0.55; }
+.jm-node-ring {
+  position: absolute;
+  width: 7.4vh;
+  height: 7.4vh;
+  margin: -3.7vh 0 0 -3.7vh;
+  border-radius: 50%;
+  border: 0.3vh solid var(--g);
+  animation: jmRing 1.8s ease-out infinite;
+}
+@keyframes jmRing {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(2); }
+}
+.jm-node-burst {
+  position: absolute;
+  width: 7.4vh;
+  height: 7.4vh;
+  margin: -3.7vh 0 0 -3.7vh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, transparent 55%, var(--g) 70%, transparent 76%), radial-gradient(closest-side, color-mix(in srgb, var(--g) 60%, transparent), transparent);
+  animation: jmBurst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes jmBurst {
+  from { opacity: 1; transform: scale(0.4); }
+  to { opacity: 0; transform: scale(4.2); }
+}
+.jm-plaque {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2vh;
+  padding: 0.7vh 1.6vh 0.8vh;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, rgba(24, 16, 10, 0.92), rgba(12, 8, 5, 0.92));
+  border: 1px solid rgba(201, 153, 47, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(12, 8, 5, 0.9), inset 0 0 0 3px rgba(201, 153, 47, 0.25);
+  transition: opacity 0.9s ease, border-color 0.9s ease;
+  opacity: 0.45;
+}
+.jm-plaque.is-right {
+  left: 5.4vh;
+  padding-left: 2.4vh;
+  clip-path: polygon(1.2vh 0, 100% 0, 100% 100%, 1.2vh 100%, 0 50%);
+}
+.jm-plaque.is-left {
+  right: 5.4vh;
+  align-items: flex-end;
+  padding-right: 2.4vh;
+  clip-path: polygon(0 0, calc(100% - 1.2vh) 0, 100% 50%, calc(100% - 1.2vh) 100%, 0 100%);
+}
+.jm-node.is-visited .jm-plaque { opacity: 0.85; }
+.jm-node.is-current .jm-plaque { opacity: 1; border-color: #e8bf5a; }
+.jm-plaque-num {
+  font-family: var(--font-av-display, "Cinzel", serif);
+  font-size: 1.35vh;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #c9992f;
+  line-height: 1;
+}
+.jm-plaque-name {
+  font-family: var(--font-av-thai, "Trirong", serif);
+  font-size: 2.05vh;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #efe2c4;
+}
+.jm-node.is-current .jm-plaque-name { color: var(--g); }
+.jm-node.is-end .jm-plaque { border-color: rgba(200, 50, 30, 0.6); opacity: 0.8; }
+.jm-node.is-end .jm-plaque-num,
+.jm-node.is-end .jm-plaque-name { color: #ff7a5c; }
+
+/* ---------- หมุดนักเดินทาง ---------- */
+.jm-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform, opacity;
+}
+.jm-token {
+  position: absolute;
+  width: 6vh;
+  height: 10vh;
+  left: -1.4vh;
+  top: -12.6vh;
+}
+.jm-token-glow {
+  position: absolute;
+  left: -2.6vh;
+  top: 7.2vh;
+  width: 8.8vh;
+  height: 4.8vh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 233, 168, 0.75), rgba(232, 191, 90, 0.25) 55%, transparent);
+  animation: jmTokenGlow 1.6s ease-in-out infinite alternate;
+}
+@keyframes jmTokenGlow {
+  from { opacity: 0.6; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+.jm-token-hop,
+.jm-token-bob {
+  position: absolute;
+  inset: 0;
+  transform-origin: 30% 96%;
+}
+.jm-token-bob {
+  animation: jmBob 1.4s ease-in-out infinite alternate;
+}
+.jm-token-bob svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+@keyframes jmBob {
+  from { transform: translateY(0) rotate(-1deg); }
+  to { transform: translateY(-0.5vh) rotate(1deg); }
+}
+.jm-token-hop.is-moving {
+  animation: jmHop 0.42s ease-in-out infinite alternate;
+}
+@keyframes jmHop {
+  from { transform: translateY(0) rotate(-4deg) scale(1.05); }
+  to { transform: translateY(-1.3vh) rotate(4deg) scale(1.05); }
+}
+.jm-token-hop.is-landed {
+  animation: jmLand 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes jmLand {
+  0% { transform: scale(1.1, 0.82); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- กรอบ/เงา/ฝุ่น ---------- */
+.jm-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 3, 2, 0.75) 0%, transparent 16%, transparent 50%, rgba(5, 3, 2, 0.93) 74%, rgba(5, 3, 2, 0.98) 100%),
+    radial-gradient(ellipse 90% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+.jm-vignette::before,
+.jm-vignette::after {
+  content: "";
+  position: absolute;
+  width: 16vh;
+  height: 16vh;
+  border: 1px solid rgba(201, 153, 47, 0.55);
+  opacity: 0.8;
+}
+.jm-vignette::before {
+  left: 2.4vh;
+  top: 2.4vh;
+  border-right: 0;
+  border-bottom: 0;
+}
+.jm-vignette::after {
+  right: 2.4vh;
+  bottom: 2.4vh;
+  border-left: 0;
+  border-top: 0;
+}
+.jm-motes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.jm-mote {
+  position: absolute;
+  bottom: -2vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c8 0%, rgba(232, 191, 90, 0.6) 40%, rgba(232, 191, 90, 0) 72%);
+  will-change: transform, opacity;
+  animation: jmMote 12s linear infinite;
+}
+@keyframes jmMote {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: 0.9; }
+  85% { opacity: 0.6; }
+  100% { transform: translate3d(var(--dx), -105vh, 0); opacity: 0; }
+}
+
+/* ---------- ราวความคืบหน้าด้านขวา ---------- */
+.jm-rail {
+  position: absolute;
+  right: max(2.4vw, 3vh);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.2vh;
+}
+.jm-rail-line {
+  position: absolute;
+  top: 1vh;
+  bottom: 1vh;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(200, 50, 30, 0.7), rgba(201, 153, 47, 0.6));
+}
+.jm-pip {
+  position: relative;
+  width: 3.8vh;
+  height: 3.8vh;
+  display: grid;
+  place-items: center;
+  transform: rotate(45deg);
+  border: 1px solid rgba(201, 153, 47, 0.45);
+  background: #120c08;
+  transition: background-color 0.6s ease, border-color 0.6s ease, transform 0.6s ease;
+}
+.jm-pip span {
+  transform: rotate(-45deg);
+  font-family: var(--font-av-display, "Cinzel", serif);
+  font-weight: 700;
+  font-size: 1.15vh;
+  letter-spacing: 0.05em;
+  color: rgba(201, 153, 47, 0.6);
+}
+.jm-pip.is-end { border-color: rgba(200, 50, 30, 0.6); }
+.jm-pip.is-end span { color: rgba(255, 110, 80, 0.75); }
+.jm-pip.is-done {
+  border-color: #c9992f;
+  background: #3a2a12;
+}
+.jm-pip.is-done span { color: #ffe9a8; }
+.jm-pip.is-cur {
+  border-color: var(--g);
+  background: color-mix(in srgb, var(--c) 45%, #120c08);
+  transform: rotate(45deg) scale(1.25);
+}
+.jm-pip.is-cur span { color: #fff8e6; }
+
+/* ---------- การ์ดชื่อ ---------- */
+.jm-cards {
+  position: absolute;
+  left: 50%;
+  bottom: 6vh;
+  width: min(92vw, 120vh);
+  height: 22vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.jm-cards::before {
+  content: "";
+  position: absolute;
+  inset: -25% -12% -35%;
+  background: radial-gradient(ellipse 50% 50% at 50% 58%, rgba(5, 3, 2, 0.92), rgba(5, 3, 2, 0.6) 55%, transparent 78%);
+}
+.jm-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  transform: translate3d(0, 2vh, 0) scale(0.97);
+  transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.jm-card.is-on {
+  opacity: 1;
+  transform: none;
+}
+.jm-card-kicker {
+  font-family: var(--font-av-thai, "Trirong", serif);
+  font-weight: 700;
+  font-size: clamp(13px, 2.1vh, 30px);
+  letter-spacing: 0.06em;
+  color: var(--c, #c9992f);
+  margin-bottom: 0.6vh;
+}
+.jm-card-title {
+  font-family: var(--font-av-thai, "Trirong", serif);
+  font-weight: 800;
+  font-size: clamp(28px, 6vh, 84px);
+  line-height: 1.4;
+  padding: 0 0.3em;
+  background: linear-gradient(180deg, #fff6d8 0%, #f3d27a 45%, #c9992f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.jm-card-title-sm {
+  font-size: clamp(22px, 4.4vh, 60px);
+}
+.jm-card-title-area {
+  background: linear-gradient(180deg, #ffffff 0%, var(--g, #ffe9a8) 45%, var(--c, #c9992f) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.jm-card.is-end .jm-card-title-area {
+  background: linear-gradient(180deg, #ffd0b8 0%, #ff5a3a 50%, #8f0f0a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.jm-card-rule {
+  display: flex;
+  align-items: center;
+  gap: 1.2vh;
+  width: min(60vh, 70%);
+  margin: 0.6vh 0 0.8vh;
+}
+.jm-card-rule i {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c, #c9992f));
+}
+.jm-card-rule i:last-child {
+  background: linear-gradient(90deg, var(--c, #c9992f), transparent);
+}
+.jm-card-rule b {
+  width: 1vh;
+  height: 1vh;
+  transform: rotate(45deg);
+  background: var(--c, #c9992f);
+}
+.jm-card-sub {
+  font-family: var(--font-av-thai, "Trirong", serif);
+  font-weight: 600;
+  font-size: clamp(14px, 2.4vh, 34px);
+  color: var(--c, #efe2c4);
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jm-mote,
+  .jm-fog-inner,
+  .jm-token-bob,
+  .jm-token-hop.is-moving {
+    animation: none;
+  }
+}

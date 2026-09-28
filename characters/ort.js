@@ -36,7 +36,6 @@ const RAID_BARS = 5;
 // Raid: หลอดเพิ่ม 1 ต่อผู้เล่น 1 คนตั้งแต่คนที่ 5 (4 คน = 5 หลอด · 5 = 6 · 6 = 7 · 7 = 8 ตามตัวอย่างของผู้ใช้)
 const RAID_BARS_FROM = 4;
 function raidBarsFor(humans) { return RAID_BARS + Math.max(0, (humans || 0) - RAID_BARS_FROM); }
-const NORMAL_BARS = 3;
 const FORTUNE_AT_HAND = 2;
 const LOST_TURNS = 2;
 const TIERS = ["basic", "secondary", "ultimate"];
@@ -52,7 +51,7 @@ let flushing = false;
 
 module.exports = {
   id: ID,
-  BAR_HP, BAR_ARMOR, ATK_MAX, LOST_TURNS, RAID_BARS, raidBarsFor, NORMAL_BARS, KILL_RESIST_MIN, CRIT_CHANCE, KILL_CHANCE, IMG,
+  BAR_HP, BAR_ARMOR, ATK_MAX, LOST_TURNS, RAID_BARS, raidBarsFor, KILL_RESIST_MIN, CRIT_CHANCE, KILL_CHANCE, IMG,
   isOrt,
   bossOf,
 

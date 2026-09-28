@@ -86,6 +86,8 @@ const { NETRAMANA_KILL_CHANCE, netramanaActive } = require("./characters/_univer
 const YunaMod = require("./characters/yuna");
 // เกราะ Mark 42 — ไอเทมร้านค้าที่ใครก็ใส่ได้ (ไม่ใช่ตัวละคร ไม่อยู่ใน CHAR_HOOKS) — ดู characters/_mark42.js
 const Mark42 = require("./characters/_mark42");
+// การเดินทาง 7 ภูมิภาค — สนามของโหมดสงครามทั่วไป (ffa/duo/trio) ดู characters/_journey.js
+const Journey = require("./characters/_journey");
 // SE.RA.PH Moon Cell — โหมดผจญภัย 7 วัน (กติกา: SERAPH_MOONCELL.md · ฉาก: SERAPH_SCENES.md)
 const Seraph = require("./seraph");
 
@@ -115,8 +117,9 @@ const ASSET_BASE_URL = process.env.ASSET_BASE_URL; // เช่น https://pub-x
 // โฟลเดอร์สื่อทั้งหมดที่ย้ายไป R2 — /characters (รูป/วิดีโอ/เพลงตัวละคร), /item (ปืนหน่วย GUTS
 //  Select + คีย์/วีดีโอกระสุน), /overload_force (สนาม), /theme_song + /effect_sound (เพลง/เสียง),
 //  /image (พื้นหลัง + สแปลช), /mooncell (สื่อโหมด SE.RA.PH: ฉากหลัง GIF + ภาพสถานที่ + เพลง/SFX)
+//  /journey (เพลงการเดินทาง 7 ภูมิภาค กลางวัน/กลางคืน + map.mp3 ของฉากแผนที่)
 //  — ต้องอัปขึ้น R2 ให้ครบทุกโฟลเดอร์ก่อนถึงจะ redirect ติด ไม่งั้น 404
-const R2_DIRS = ["characters", "item", "overload_force", "theme_song", "effect_sound", "image", "mooncell"];
+const R2_DIRS = ["characters", "item", "overload_force", "theme_song", "effect_sound", "image", "mooncell", "journey"];
 if (ASSET_BASE_URL) {
   for (const dir of R2_DIRS) {
     app.get(`/${dir}/*`, (req, res) => res.redirect(302, ASSET_BASE_URL + req.path));
@@ -816,11 +819,17 @@ let mercuryLost = new Set();   // characterId ที่ตายไปแล้�
 let mercuryResult = null;      // "win" | "lose" | "surrender" — ผลของ Raid ที่จบแล้ว
 let mercuryHold = false;       // ผู้เล่นตายหมดและยังไม่มีใครเลือกตัวใหม่ -> เกมหยุดรอ เวลาไม่เดิน
 let mercurySurrender = null;   // { votes: { [playerId]: true|false }, endsAt, timer }
-let ortArrivalSeq = 0;         // เพิ่มทุกครั้งที่ ORT ปรากฏตัว (เริ่ม Raid / บุกเทิร์น 60) -> client เล่นฉากเปิดตัว
+let ortArrivalSeq = 0;         // เพิ่มทุกครั้งที่ ORT ปรากฏตัว (เริ่ม Raid) -> client เล่นฉากเปิดตัว
 let ortArrivalActive = false;  // กำลังพักเกมรอฉากเปิดตัว ORT อยู่ (client ใช้ตัดสินว่าจะเล่นฉากไหม — รีคอนเนกต์กลางเกมไม่เล่นซ้ำ)
-// โหมดปกติ (ffa/duo/trio): ORT บุกเข้าสนามต้นเทิร์นนี้ — เป็น "ระบบกำจัดผู้เล่น" ให้เกมจบเร็วขึ้น ไม่ใช่ผู้ชิงชัย
-//  เกมยังจบเมื่อเหลือผู้เล่นจริงคนเดียว/ทีมเดียว (ORT ไม่นับ) · ผู้เล่นตายหมด = เสมอ ORT ไม่มีทางชนะ
-const ORT_NORMAL_ROUND = 60;
+// โหมดปกติ (ffa/duo/trio) ไม่มี ORT บุกเทิร์น 60 แล้ว — ภูมิภาคที่ 7 ของการเดินทางเป็นตัวบีบให้เกมจบแทน
+// ฉากแผนที่การเดินทาง (characters/_journey.js): server พักเกมในเฟส CUTSCENE (ไม่มีคลิป) ให้ทุกคนดูพร้อมกัน
+//  start = หลังฉากเปิดตัวผู้เล่นตอนเริ่มเกม · advance = ก่อนเข้าเทิร์นแรกของภูมิภาคใหม่ (11, 21, …, 61)
+//  ความยาวฝั่ง client: start 7 วิ · advance 6 วิ (+1 วิเผื่อเน็ตหน่วง) — เทสต์ย่อได้ผ่าน env
+//  start เริ่มตั้งแต่ฉากเปิดตัว "เริ่มปิดฉาก" (1 วิสุดท้ายของ gameIntroHoldSeconds + ส่วนเผื่อ ~1 วิ) จึงบวกเพิ่มแค่ 6 วิ
+const JOURNEY_START_SECONDS = Math.max(0, Number(process.env.JOURNEY_START_SECONDS ?? 6));
+const JOURNEY_ADVANCE_SECONDS = Math.max(0, Number(process.env.JOURNEY_ADVANCE_SECONDS ?? 7));
+let journeyScene = null; // { seq, active, mode: "start" | "advance", area, fromArea }
+let journeySceneSeq = 0;
 let ortFxSeq = 0;
 function mercuryActive() { return gameMode === "mercury"; }
 function isOrt(p) { return !!p && p.id === ORT_ID; }
@@ -2530,7 +2539,9 @@ function buildStateFor(viewerId) {
     seraph: Seraph.stateFor(engine, viewerId),
     // Type Mercury (Raid Boss ORT): ข้อมูลโหมด + บอส + โหวตยอมแพ้ + ตัวที่เลือกลงสนามได้ (per-viewer)
     mercury: mercuryStateFor(viewer),
-    ortArrival: { seq: ortArrivalSeq, active: ortArrivalActive }, // ฉากเปิดตัว ORT (Raid + บุกเทิร์น 60)
+    ortArrival: { seq: ortArrivalSeq, active: ortArrivalActive }, // ฉากเปิดตัว ORT (Raid)
+    // การเดินทาง (ffa/duo/trio): ภูมิภาค + กลางวัน/กลางคืน + คำอธิบายผลสนาม + ฉากแผนที่ที่กำลังพักเกมรอ
+    journey: Journey.publicInfo(engine, journeyScene),
     clockUpFrozen,   // Clock Up: ผู้ชมคนนี้ถูกแช่อยู่ไหม (ไรเดอร์ที่เปิด Clock Up เองจะเป็น false เสมอ)
     fullForce,       // มีไรเดอร์ Clock Up พร้อมกันมากกว่า 1 คน
     hisakawaBg, // ฝันของเหล่าฝาแฝด: ฉากหลัง O-KU-RI-MO-NO-Sunday
@@ -2687,11 +2698,15 @@ function buildStateFor(viewerId) {
       // กลางคืน (patch 2.1.7): สุ่มแล้วให้สกิลพื้นฐานหรือสกิลรอง (อย่างใดอย่างหนึ่ง) ใช้แต้มมากขึ้น +1 — ไม่มีผลกับท่าไม้ตาย
       //  ซ้อนกับกระแสเวท/ภาระเวทได้ แต่ตัวปรับขาขึ้นรวมกันแล้วต้องไม่ดันราคาเกิน SKILL_COST_MAX
       //  (สกิลที่ค่าใช้พลังงานถึงเพดานอยู่แล้วจะไม่แพงขึ้นไปอีก — ต้องตรงกับ useSkill() เป๊ะ)
-      const showCost = (pub, tierName) => Math.min(
-        CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), // ยูเรก้า: เพดาน 16 — ต้องตรงกับ useSkill()
+      const showCost = (pub, tierName) => {
         // SE.RA.PH: ฐานราคามาจากระดับทักษะ (2/4/6) ไม่ใช่ค่าของตัวละคร — ต้องตรงกับ useSkill() เป๊ะ
-        Math.max(0, (Seraph.active() ? Seraph.costOf(tierName) : pub.cost) - spellflowAmt) + spellburdenAmt + (p.nightTaxTier === tierName ? 1 : 0),
-      );
+        const baseCost = Seraph.active() ? Seraph.costOf(tierName) : pub.cost;
+        return Math.min(
+          CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), // ยูเรก้า: เพดาน 16 — ต้องตรงกับ useSkill()
+          Math.max(0, baseCost - spellflowAmt) + spellburdenAmt + (p.nightTaxTier === tierName ? 1 : 0)
+            + Journey.skillTax(engine, baseCost), // การเดินทาง (ป่าไม้ต้องสาป) — ต้องตรงกับ useSkill()
+        );
+      };
       // คอนเนอร์ (วิเคราะห์สถานการณ์ rework 3.4.2): "อ่านขาด" ทั้งลำดับแล้ว = เห็นแต้มการ์ดของเป้าหมาย
       //  คนนั้นคนเดียวตลอดเทิร์นนี้ (เดิมเปิดไพ่ + แต้ม + ประเมินดาเมจของทุกคนพร้อมกัน)
       const connorReads = !!viewer && CHAR_HOOKS.conner.readsScoreOf(viewer, p);
@@ -3155,18 +3170,18 @@ function mercuryRespawnPicked() {
     lastLog.push(`🔁 ${p.name} กลับเข้าสนามในร่าง ${ch.name}`);
   }
 }
-// โหมดปกติ: ORT บุกเข้าสนามก่อนเทิร์น ORT_NORMAL_ROUND — พักเกมให้ฉากเปิดตัวเล่นจบก่อน แล้วค่อยแจกไพ่เทิร์นนั้น
-//  คืน true = จัดการเฟสถัดไปเองแล้ว (ผู้เรียกต้อง return)
-function maybeOrtInvades() {
-  if (mercuryActive() || Seraph.active() || players[ORT_ID]) return false;
-  if (roundNumber + 1 !== ORT_NORMAL_ROUND) return false;
-  createOrt(CHAR_HOOKS.ort.NORMAL_BARS);
-  ortArrivalSeq++;
-  ortArrivalActive = true;
-  lastLog.push("☠️ ORT มหันตภัยบุกเข้าสนาม — หายนะกำลังมาเยือน!");
+// การเดินทาง: เทิร์นถัดไปเป็นเทิร์นแรกของภูมิภาคใหม่ -> พักเกมให้ฉากแผนที่ "เดินทางต่อ" เล่นจบก่อน แล้วค่อยแจกไพ่
+//  คืน true = จัดการเฟสถัดไปเองแล้ว (ผู้เรียกต้อง return) · ย้อนเวลา (ชิโด) ถอยกลับภูมิภาคเก่าได้เองโดยไม่มีฉาก
+function maybeJourneyAdvance() {
+  if (!Journey.active(engine)) return false;
+  const from = Journey.areaOf(roundNumber);
+  const to = Journey.areaOf(roundNumber + 1);
+  if (to <= from) return false;
+  journeyScene = { seq: ++journeySceneSeq, active: true, mode: "advance", area: to, fromArea: from };
+  lastLog.push(`🗺️ ออกเดินทางต่อ — มุ่งหน้าสู่ภูมิภาคที่ ${to} ${Journey.AREAS[to - 1].name}`);
   cutsceneInfo = null;
   gameState = "CUTSCENE";
-  startPhaseTimer(MERCURY_ARRIVAL_SECONDS, () => { ortArrivalActive = false; dealRound(); });
+  startPhaseTimer(JOURNEY_ADVANCE_SECONDS, () => { journeyScene.active = false; dealRound(); });
   broadcastState();
   return true;
 }
@@ -3309,6 +3324,7 @@ function startMatch() {
   yunaLongingUsed = false; yunaWindowEnd = 0; yunaEffect = null; yunaTargetId = null; yunaMusicSeq = 0; yunaLongingPendingId = null; yunaPity = 0;
   overloadForceActive = false;
   overloadForceCount = 0;
+  journeyScene = null;
   clearTurnSnapshot();
   allyWinFlag = false;
   shopItems = []; // ล้างสต็อกร้านค้าเก่าค้างจากแมตช์ก่อน (รอเปิดใหม่ตอนเทิร์นที่ 5)
@@ -3343,12 +3359,19 @@ function startMatch() {
     broadcastState();
     return;
   }
-  if (connerIntro || miyakoIntro || daisukeIntro || yagurumaIntro || kagamiIntro || tsurugiIntro || strikerIntro) {
+  // การเดินทาง: ฉากแผนที่ "การเดินทางเริ่มต้นขึ้น" ต่อท้ายฉากเปิดตัวผู้เล่น — พักรวมทั้งสองฉาก
+  //  (client นับเวลาฉากแผนที่จาก timeLeft ของเฟสนี้ จึงจบพร้อมกันทุกเครื่องแม้ฉากเปิดตัวของแต่ละคนจะช้าเร็วต่างกัน)
+  const journeyStart = Journey.active(engine) && JOURNEY_START_SECONDS > 0;
+  if (journeyStart) journeyScene = { seq: ++journeySceneSeq, active: true, mode: "start", area: 1, fromArea: null };
+  if (journeyStart || connerIntro || miyakoIntro || daisukeIntro || yagurumaIntro || kagamiIntro || tsurugiIntro || strikerIntro) {
     // พักคิวไว้ก่อนจนกว่าฉากเปิดตัวผู้เล่นจะจบ — อยู่ในเฟส CUTSCENE แต่ยังไม่มีคลิป
     //  (cutsceneInfo = null -> client วาดกระดานปกติไว้ใต้ม่าน GameIntro ซึ่งบังอยู่แล้ว)
     cutsceneInfo = null;
     gameState = "CUTSCENE";
-    startPhaseTimer(gameIntroHoldSeconds(), () => runCutsceneQueue(dealRound));
+    startPhaseTimer(gameIntroHoldSeconds() + (journeyStart ? JOURNEY_START_SECONDS : 0), () => {
+      if (journeyScene) journeyScene.active = false;
+      runCutsceneQueue(dealRound);
+    });
     broadcastState();
   }
   else dealRound();
@@ -3415,13 +3438,33 @@ function openShop() {
   let hypers = 0;
   let suits = 0;
   for (let i = 1; i < SHOP_MAX_ITEMS; i++) {
-    const rolled = rollShopItem(guns < SHOP_MAX_GUNS, hypers < SHOP_MAX_HYPER, suits < SHOP_MAX_MARK42);
+    // การเดินทาง (คลื่นวงวนน้ำ กลางวัน): สุ่มซ้ำจนได้ของราคา 5 ขึ้นไป
+    const rolled = Journey.filterShopRoll(engine, () => rollShopItem(guns < SHOP_MAX_GUNS, hypers < SHOP_MAX_HYPER, suits < SHOP_MAX_MARK42));
     if (rolled.type === "gutsGun") guns++;
     if (rolled.type === "mark42") suits++;
     if (rolled.ammo === "hyper_trigger") hypers++;
     shopItems.push({ id: `shop_${shopRoundSeq}_${i}`, ...rolled, sold: false, soldTo: null });
   }
+  // การเดินทาง (ทุ่งดอกไม้ กลางคืน): ช่องละหลายชิ้น — stock = ที่เหลือ · soldTo = คนซื้อชิ้นล่าสุด
+  //  sold จะเป็น true ตอนของหมดช่องเท่านั้น (client ใช้ sold ตัดสินว่ากดซื้อได้ไหมเหมือนเดิม)
+  for (const it of shopItems) {
+    const stock = Journey.shopStock(engine, it);
+    if (stock > 1) { it.stock = stock; it.stockMax = stock; }
+  }
   lastLog.push(`🏪 ร้านค้ามายาเปิดแล้ว! มีสินค้า ${shopItems.length} ชิ้น: ${shopItems.map(shopItemName).join(", ")}`);
+}
+// การเดินทาง (ทุ่งดอกไม้ กลางวัน): ของฟรีราคาไม่เกิน 5 ที่ใช้ได้ทันที — ไม่มีกระสุน (ใช้ไม่ได้ถ้าไม่มีปืน)
+function journeyGiftItem() {
+  const small = SHOP_SKILL_SIZES.find((x) => x.size === "small");
+  const pool = [
+    { type: "armor", value: SHOP_ARMOR_AMOUNT, price: SHOP_ARMOR_PRICE },
+    { type: "skillPoint", size: small.size, value: small.amount, price: small.price },
+    { type: "cardColor", price: SHOP_CARD_COLOR_PRICE },
+    { type: "fortune", price: SHOP_FORTUNE_PRICE },
+    { type: "resist", price: SHOP_RESIST_PRICE },
+    { type: "cardRemove", price: SHOP_CARD_REMOVE_PRICE },
+  ].filter((it) => it.price <= 5);
+  return { ...pool[Math.floor(Math.random() * pool.length)] };
 }
 // แจกไอเทมเข้าคลังโดยตรง (ไม่ผ่านร้านค้า/ไม่เสียเหรียญ) — ใช้กับเอฟเฟกต์ตัวละครที่ "ได้รับไอเทม +1 ชิ้น"
 //  item = { type, value?, size?, ammo? } รูปแบบเดียวกับของในร้าน — คืน item ที่เข้าคลังจริง
@@ -3463,7 +3506,8 @@ function buyShopItem(id, itemId) {
   if (item.type === "mark42" && !Mark42.canBuy(engine, p)) return; // มีชุดอยู่แล้ว / ชุดเพิ่งพังจากการต่อสู้ (10 เทิร์น)
   if (item.type === "gutsAmmo" && item.ammo === "hyper_trigger" && (p.characterId === "ignis" || hasBlackSparklence(p))) return;
   if (item.type === "gutsAmmo" && (item.ammo === "hyper_trigger" || item.ammo === "trigger_dark_key") && p.inventory.some((it) => it.type === "gutsAmmo" && it.ammo === item.ammo)) return;
-  item.sold = true;
+  if (item.stock > 1) item.stock--;       // ทุ่งดอกไม้ กลางคืน: ยังเหลือชิ้นในช่องนี้
+  else { item.sold = true; item.stock = 0; }
   item.soldTo = p.id;
   p.gold -= item.price;
   p.inventory.push({ uid: `${item.id}_${p.inventory.length}_${Date.now()}`, type: item.type, value: item.value, size: item.size, ammo: item.ammo, price: item.price });
@@ -3737,7 +3781,8 @@ function dealRound() {
     // SE.RA.PH: ปิดข้อเสียของกลางคืนทั้งโหมด (SERAPH_MOONCELL.md §12)
     //  ที่นี่คือ "ภาษี tier +1" ซึ่งทำให้สกิลที่ถูกสุ่มแพงขึ้น 1 แต้มในรอบกลางคืน
     //  ถ้าไม่ปิด รอบเลขคู่ (กลางคืนทั้งรอบ) จะมีคนกดสกิลไม่ออกทั้งที่แต้มถึงตามตาราง 2/4/6
-    if (isNightRound(roundNumber) && !Seraph.active()) {
+    //  การเดินทาง: ภาษีนี้เหลือเฉพาะ "อาณาจักรแห่งจุดเริ่มต้น" กลางคืน (ภูมิภาคอื่นใช้ผลของภูมิภาคแทน)
+    if (Journey.nightTaxOn(engine, isNightRound(roundNumber)) && !Seraph.active()) {
       const ch0 = CHAR_BY_ID[p.characterId];
       const taxCandidates = [];
       if (ch0 && ch0.basic) taxCandidates.push("basic");
@@ -3805,7 +3850,9 @@ function dealRound() {
     // ผุพัง (สถานะ Universal patch 2.2 beta — ไวท์เล็น "ฉันขอรับไปนะคะ"): เกราะไม่ฟื้นระหว่างมีผล
     //  แบทแมนร่างรถ: เกราะคือ "พลังชีวิตของรถ" ไม่ใช่เกราะจริง — ห้ามฟื้นเอง ไม่งั้นรถซ่อมตัวเองฟรีทุก 2 เทิร์น
     //  และจะไม่มีวันพังเลยถ้าโดนตีเบาๆ (สเปคระบุว่า "ขึ้นรถถาวรจนกว่ารถจะพัง" = ต้องพังได้จริง)
-    if (!p.armorLocked && !((p.statuses.decay || 0) > 0) && !Seraph.noCombat() && roundNumber % 2 === 0
+    //  การเดินทาง: ภูมิภาค 5-7 เกราะฟื้นทุกเทิร์น (Journey.armorRegenDue)
+    const armorRegenDue = Journey.armorRegenDue(engine, roundNumber);
+    if (!p.armorLocked && !((p.statuses.decay || 0) > 0) && !Seraph.noCombat() && armorRegenDue
         && !CHAR_HOOKS.bat_ben.blocksArmorRegen(p)
         && !CHAR_HOOKS.daisuke.blocksArmorRegen(p) // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
         && !CHAR_HOOKS.recruit.blocksArmorRegen(p)) { // Recruit: [Armor] ไม่ฟื้นเองอัตโนมัติ // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
@@ -3814,7 +3861,7 @@ function dealRound() {
     }
     // คู่แฝดฮิซากาว่า: แฝดที่พักอยู่ฟื้นเกราะเองได้ตามจังหวะเดียวกัน แม้ไม่ได้ถูกควบคุมอยู่
     //  (เงื่อนไข "ผุพัง" คิดจากสถานะของแฝดคนนั้นเอง — ดู CHAR_HOOKS.hisakawa_sister.regenRestingArmor)
-    if (!p.armorLocked && roundNumber % 2 === 0) CHAR_HOOKS.hisakawa_sister.regenRestingArmor(engine, p);
+    if (!p.armorLocked && armorRegenDue) CHAR_HOOKS.hisakawa_sister.regenRestingArmor(engine, p);
     // การตื่นขึ้น (Lai Rhyme Goodfellow โอเบรอน): ฟื้นพลังชีวิตเทิร์นละ 1 หน่วย
     if ((p.statuses.awaken || 0) > 0 && healHp(p, 1) > 0) {
       lastLog.push(`⏰ ${p.name} การตื่นขึ้น — ฟื้นพลังชีวิต +1`);
@@ -4300,11 +4347,13 @@ function useSkillCore(id, tier, targets, item) {
   // SE.RA.PH: ราคาสกิลมาจาก "ระดับทักษะ" ไม่ใช่ค่าของตัวละคร — 2 / 4 / 6 ตายตัว (§3)
   //  ต้องคิดสูตรเดียวกันเป๊ะกับ showCost() ใน publicState ไม่งั้นราคาบนปุ่มไม่ตรงกับที่หักจริง
   if (Seraph.active()) cost = Seraph.costOf(tier);
+  // การเดินทาง (ป่าไม้ต้องสาป): ทุกสกิลแพงขึ้น +1 — สกิลราคา 0 ยังฟรี · ต้องตรงกับ showCost() ใน buildStateFor
+  const journeyTax = Journey.skillTax(engine, cost);
   // กระแสเวท / ภาระเวท (สถานะพื้นฐาน patch 2.0.8): ใช้พลังงานลดลง/เพิ่มขึ้นตามจำนวนที่ระบุ
   cost = Math.max(0, cost - statusAmtOf(p, "spellflow"));
   //  ตัวปรับราคาขาขึ้นทั้งหมด (กลางคืน + ภาระเวท) รวมกันแล้วดันราคาได้ไม่เกิน SKILL_COST_MAX
   //  → สกิลที่ค่าใช้พลังงานถึงเพดานอยู่แล้ว (เช่นท่าไม้ตาย 8) จะไม่แพงขึ้นไปอีก
-  cost = Math.min(CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), cost + nightTax + Math.min(SPELLBURDEN_MAX, statusAmtOf(p, "spellburden"))); // ยูเรก้า: เพดาน 16 (ท่าไม้ตาย 9/12)
+  cost = Math.min(CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), cost + nightTax + journeyTax + Math.min(SPELLBURDEN_MAX, statusAmtOf(p, "spellburden"))); // ยูเรก้า: เพดาน 16 (ท่าไม้ตาย 9/12)
   // การ์ดราชินี: ใช้สกิลไม่เสียแต้ม 1 ครั้ง — ใช้กับสกิลที่มีค่าใช้จ่ายเท่านั้น
   const blessFree = cost > 0 && (p.statuses.freecast || 0) > 0;
   if (blessFree) cost = 0;
@@ -4649,6 +4698,25 @@ function useSkillCore(id, tier, targets, item) {
     broadcastState();
     checkAllLocked();
     return;
+  }
+  // การเดินทาง (ป่าไม้ต้องสาป กลางวัน): สกิลที่เลือกศัตรูเป็นเป้าหมายพลาด 25% — คืนแต้ม (และการ์ดราชินี)
+  //  แต่สิทธิ์ใช้สกิลของเทิร์นถูกใช้ไปแล้ว · แพทเทิร์นเดียวกับเหน็บชาด้านบน (ยังไม่มีผลใดลงไป)
+  if (Journey.skillMisses(engine, p, targets)) {
+    p.skillPoints += cost;
+    if (blessFree) p.statuses.freecast = (p.statuses.freecast || 0) + 1;
+    lastLog.push(`🌲 ป่าไม้ต้องสาป — ${skill.name} ของ ${p.name} พลาดเป้า! (ได้แต้มสกิลคืน ${cost})`);
+    io.emit("skillFlash", { name: `${skill.name} — พลาดเป้า (ป่าไม้ต้องสาป)`, img: skill.img || null, by: p.name, color: colorOf(p) });
+    broadcastState();
+    checkAllLocked();
+    return;
+  }
+  // การเดินทาง (ทะเลทราย กลางคืน): ใช้สกิลได้แต้มคืน 2 — ไม่เกินที่จ่ายจริง (การ์ดราชินี/ราคา 0 จึงไม่ได้คืน)
+  {
+    const refund = Journey.skillRefund(engine, cost);
+    if (refund > 0) {
+      p.skillPoints = Math.min(maxSkillOf(p), p.skillPoints + refund);
+      lastLog.push(`🌙 ทะเลทรายยามค่ำคืน — ${p.name} ได้แต้มสกิลคืน +${refund}`);
+    }
   }
 
   // ---------- นายมีฝีมือแค่ไหนหรอ? (ชิกิ patch 2.0.6): ยกเลิกท่าไม้ตายทันทีที่มีผู้เล่นอื่นกด ----------
@@ -5791,13 +5859,16 @@ function computeAttackBase(engine, attacker, target) {
   const cardAtkBonus = triggerForm ? 0 : (attacker.statusAmt.cardAtkBonus || 0); // Trigger เสริมพลังตัวเองไม่ได้
 
   const mark42Atk = Mark42.attackBonus(attacker); // เกราะ Mark 42: พลังโจมตี +1 ระหว่างใส่ (ungated ใครใส่ก็ได้)
-  const base = baseHook + hookBonus + mark42Atk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
+  // การเดินทาง: ป่าไม้ต้องสาป กลางวัน (ตีโดนแรงขึ้น +1) / จุดสิ้นสุดของโลก กลางคืน (ทุกคน +1) — ผลสนาม ungated
+  const journeyAtkFx = Journey.attackBonus(engine);
+  const journeyAtk = journeyAtkFx ? journeyAtkFx.amount : 0;
+  const base = baseHook + hookBonus + mark42Atk + journeyAtk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
     + (yuiRockAtk ? CHAR_HOOKS.yui.ROCK_ATK : 0) + (yuiMelodyAtk ? CHAR_HOOKS.yui.MELODY_ATK : 0)
     + cardAtkBonus;
   return {
     base,
     storiumAtk, empowerAtk, discipleAtk, yuiRockAtk, yuiMelodyAtk, cardAtkBonus,
-    phenexPurgeAtk, mark42Atk,
+    phenexPurgeAtk, mark42Atk, journeyAtkFx,
     ...hookCtx,
   };
 }
@@ -6019,6 +6090,8 @@ function doAttack(byId, targetId) {
   if (!accurate && CHAR_HOOKS.tsurugi.tryAttackDodge(engine, attacker, target)) return;
   // โทโนะ ชิกิ: หลบหลีก 5% (ตระกูลโทโนะ · ใจเย็น) / 15% (เดือดดาล)
   if (!accurate && CHAR_HOOKS.tohno.tryAttackDodge(engine, attacker, target)) return;
+  // การเดินทาง (ป่าไม้ต้องสาป กลางวัน): โจมตีพลาด 40% — ฝั่งผู้ตีพลาดเอง แต่ "แม่นยำ" ก็เจาะได้เหมือนด่านหลบ
+  if (!accurate && Journey.tryAttackMiss(engine, attacker, target)) return;
   // เอจิ สกิลติดตัว 1 (ผู้เล่นอันดับ 2): ผู้ชนะไปตีคนอื่นที่ไม่ใช่เอจิ -> 25% ขัดจังหวะแล้วสวนคืน
   if (CHAR_HOOKS.eiji.tryInterrupt(engine, attacker, target)) return;
 
@@ -6055,7 +6128,7 @@ function doAttack(byId, targetId) {
     oguriGoldAtk, victoryAtk, phenexPurgeAtk, miyakoUltAtk,
     doomLockonAtk, cardAtkBonus,
     triggerCircleAtk, triggerMultiAtk, triggerZeperionAtk, triggerLightBonus, triggerMultiHighestHp, triggerMultiLowHpPenalty,
-    triggerDarkAtk, muimiTowerAtk, mark42Atk,
+    triggerDarkAtk, muimiTowerAtk, mark42Atk, journeyAtkFx,
   } = computeAttackBase(engine, attacker, target);
   // ผกผัน (สถานะ Universal patch 2.2.1): โบนัสพลังโจมตีที่ควรได้ กลับกลายเป็นลดพลังโจมตีแทน (คำนวณรอบเพดานฐาน 1 หน่วย)
   if (invertActive(attacker)) base = Math.max(0, 1 - (base - 1));
@@ -6130,6 +6203,9 @@ function doAttack(byId, targetId) {
   dmg = CHAR_HOOKS.usagi.applyCrit(engine, attacker, dmg, usagiCritFx); // อุซากิ: คริติคอล 7% ต่อปรุๆ (×2)
   const kimCritFx = {};
   dmg = CHAR_HOOKS.kim.applyCrit(engine, attacker, dmg, kimCritFx); // Bamboo-Hatted Kim: Poise 1.2%/หน่วย (+หัว 15%) ×2
+  // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): คริติคอล 20% ×2 — ออกพร้อมคริติคอลของตัวละครในหมัดเดียว = ×3 (ไม่ใช่ ×4)
+  const journeyCritFx = {};
+  dmg = Journey.applyCrit(engine, dmg, !!(ortCritFx.crit || usagiCritFx.crit || kimCritFx.crit || eijiSwordFx.videoQueued), journeyCritFx);
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -6359,6 +6435,8 @@ function doAttack(byId, targetId) {
   if (ortCritFx.crit) addFx({ name: "คริติคอล ×2", img: CHAR_HOOKS.ort.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (CHAR_HOOKS.recruit.consumeHeadshot(attacker)) addFx({ name: "HeadShot +1", img: CHAR_HOOKS.recruit.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (mark42Atk > 0) addFx({ name: `เกราะ Mark 42 +${mark42Atk}`, img: Mark42.IMG.suit, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (journeyAtkFx) addFx({ name: journeyAtkFx.name, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (journeyCritFx.crit) addFx({ name: `อาณาจักรน้ำแข็ง — คริติคอล ${journeyCritFx.stacked ? "ซ้อน ×3" : "×2"} (${Journey.ICE_CRIT_PCT}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%)`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of kimAtkFx) addFx({ name, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   if (accurate) addFx({ name: "แม่นยำ — เจาะการหลบหลีก", img: CHAR_HOOKS.tohno.IMG.ultimate, by: attacker.name, color: colorOf(attacker) }, "atk");
@@ -6701,9 +6779,10 @@ function endTurn() {
   }
 
   // จบเทิร์นรอบนั้น +1 — ช่วงกลางวันได้แต้มสกิลเพิ่มอีก +1 (ระบบกลางวัน/กลางคืน)
-  const dayBonus = morningBonusActive(roundNumber); // patch 2.1.7: แจกเฉพาะเช้าที่ 2, 4, 6, ...
+  //  การเดินทาง: โบนัสนี้มาจากภูมิภาคแทน (1 กลางวัน = จบเทิร์นเลขคู่ · 7 = ทุกเทิร์น) — Journey.skillBonus
+  const dayBonus = Journey.skillBonus(engine, morningBonusActive(roundNumber)); // patch 2.1.7: แจกเฉพาะเช้าที่ 2, 4, 6, ...
   for (const p of alivePlayers()) {
-    let gain = dayBonus ? 2 : 1;
+    let gain = 1 + dayBonus;
     // ซาโตรุ อาเคฟุ (patch 2.0.8.2): สกิลติดตัว — รีเจนแต้มสกิลเพิ่ม +1 ทุกเทิร์น (ปิดได้ เช่น MOON*CELL)
     if (p.characterId === "satoru" && !passiveSealed(p)) gain += 1;
     // Ultraman Trigger: สกิลติดตัวฟื้นแต้มสกิลเพิ่มอีก 1 หน่วยทุกเทิร์น
@@ -6715,10 +6794,12 @@ function endTurn() {
     // เท็นโนจิ โคทาโร่ (สลับรากชีวิต): กลืนแต้มที่ควรฟื้นไปทำเป็นพลังชีวิตแทน
     addSkill(p, gain);
   }
-  if (dayBonus) lastLog.push("☀️ จบเทิร์นช่วงกลางวัน — ทุกคนได้แต้มสกิลเพิ่ม +1");
+  if (dayBonus) lastLog.push(Journey.active(engine)
+    ? `🗺️ ${Journey.AREAS[Journey.areaOf(roundNumber) - 1].name} — ทุกคนได้แต้มสกิลเพิ่ม +${dayBonus}`
+    : "☀️ จบเทิร์นช่วงกลางวัน — ทุกคนได้แต้มสกิลเพิ่ม +1");
   // ระบบเหรียญ (patch 2.2 full): จบเทิร์น +1 เหรียญให้ทุกคน (เพดาน 30 — เต็มแล้วไม่ได้เพิ่มจน spending ลดลง)
   if (!Seraph.active()) for (const p of alivePlayers()) {
-    const goldGain = GOLD_PER_TURN + (p.characterId === "hisakawa_sister" ? CHAR_HOOKS.hisakawa_sister.extraGoldRegen(p) : 0) + (p.characterId === "ignis" ? CHAR_HOOKS.ignis.extraGoldRegen(engine, p) : 0);
+    const goldGain = GOLD_PER_TURN + Journey.goldBonus(engine) + (p.characterId === "hisakawa_sister" ? CHAR_HOOKS.hisakawa_sister.extraGoldRegen(p) : 0) + (p.characterId === "ignis" ? CHAR_HOOKS.ignis.extraGoldRegen(engine, p) : 0);
     // เท็นโนจิ โคทาโร่ (สลับพลังงาน): กลืนเหรียญที่ควรได้ไปทำเป็นแต้มสกิลแทน
     addGold(p, goldGain);
   }
@@ -6736,6 +6817,10 @@ function endTurn() {
 
   // เทเปา (characters/tepeu.js): ครุ่นคิด (+แต้มสกิล) / ทำอาหาร (ส่ง "มื้อที่สุข" เข้าคลังเมื่อครบ) / ฉากหลังท่าไม้ตายนับถอยหลัง
   CHAR_HOOKS.tepeu.onTurnEndTick(engine);
+
+  // การเดินทาง: ผลจบเทิร์นของภูมิภาค (ของฟรี / เสียเหรียญ / ความเสียหายจากสนาม / สตั้น / ผุพัง)
+  //  อยู่หลังลูปลดเทิร์นสถานะ (สตั้น/ผุพังที่ติดตรงนี้จึงมีผลเต็มเทิร์นหน้า) และก่อนด่านกวาดคนตายด้านล่าง
+  Journey.onEndTurn(engine);
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
@@ -6794,8 +6879,8 @@ function endTurn() {
 
     // นับเฉพาะผู้เล่นจริง — ORT (ถ้าบุกเข้ามาแล้ว) ไม่ใช่ผู้ชิงชัย (ดู normalGameOver)
     if (!shidoRewound && normalGameOver()) return;
-    // ORT บุกเข้าสนามก่อนเทิร์นที่ 60 (โหมดปกติ)
-    if (maybeOrtInvades()) return;
+    // การเดินทาง: ข้ามเข้าภูมิภาคใหม่ -> ฉากแผนที่ก่อนแจกไพ่เทิร์นแรกของภูมิภาคนั้น
+    if (!shidoRewound && maybeJourneyAdvance()) return;
     gameState = "TRANSITION";
     startPhaseTimer(TRANSITION_TIME, dealRound);
     broadcastState();
@@ -6826,6 +6911,7 @@ function backToLobby() {
   yunaLongingUsed = false; yunaWindowEnd = 0; yunaEffect = null; yunaTargetId = null; yunaMusicSeq = 0; yunaLongingPendingId = null; yunaPity = 0;
   overloadForceActive = false;
   overloadForceCount = 0;
+  journeyScene = null;
   clearTurnSnapshot();
   kaiOverhaulSlots = []; // ไค ชิซากิ: ล้าง tracker Overhaul เมื่อกลับล็อบบี้
   lastLog = [];
@@ -7561,6 +7647,9 @@ const engine = {
   sfx(sound) { if (sound) io.emit("sfx", { sound }); }, // เสียงสั้นๆ ที่ทุกคนได้ยิน (ไม่มีป้าย) — เช่น โทโนะร้องตอนโดนตี
   // ผู้ลงมือของดาเมจก้อนนี้ติด "แม่นยำ" ไหม — ด่านหลบดาเมจจากสกิลของตัวละครต่างๆ (อิปโป/เอจิ/luminous) ใช้เช็ค
   sourceAccurate() { return !!effectSourceId && accurateActive(players[effectSourceId]); },
+  accurateActive,
+  journeyDotBonus() { return Journey.dotBonus(engine); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
+  journeyGiftItem, // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return colorOf(p); },
   nextTransformCounter() { return ++transformCounter; },
   // มีการแช่ทั้งสนามจากตัวละครอื่นอยู่ไหม (การไล่ล่าของคอนเนอร์ / การแข่งของไบรอน)

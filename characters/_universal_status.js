@@ -183,6 +183,12 @@ function cleanseDebuffs(p) {
   return purged;
 }
 
+// การเดินทาง (ป่าไม้ต้องสาป กลางคืน): ลุกไหม้/เลือดไหล/พิษร้าย มีโอกาสแรงขึ้น +1 ต่อการออกฤทธิ์
+//  ฮุคอยู่ที่ engine (server.js -> characters/_journey.js) — engine ปลอมในเทสต์ไม่มีฮุคนี้ = ไม่มีโบนัส
+function dotFieldBonus(engine) {
+  return (engine && typeof engine.journeyDotBonus === "function") ? (engine.journeyDotBonus() || 0) : 0;
+}
+
 // ---------- "พิษร้าย" (poison, สถานะ Universal patch 4.3) ----------
 //  ดีบัฟสองทางพร้อมกัน: ต้นเทิร์นเสียพลังชีวิต 1 (ลดเกราะก่อน) และตลอดเวลาที่ติดอยู่
 //  พลังโจมตีที่ทำได้ -1 (อ่านที่ computeAttackBase คู่กับ "อ่อนแอ")
@@ -201,10 +207,11 @@ function poisonAtkPenalty(p) {
 // ติกต้นเทิร์น — ท่อตายชุดเดียวกับลุกไหม้/เลือดไหล
 function tickPoison(engine, p) {
   if (!p || !p.alive || !(((p.statuses && p.statuses.poison) || 0) > 0)) return 0;
+  const dmg = 1 + dotFieldBonus(engine); // การเดินทาง (ป่าไม้ต้องสาป กลางคืน): 50% แรงขึ้น +1
   p._statusDamage = true;   // ดาเมจจากสถานะ ไม่ใช่จากสกิล/การโจมตี
-  engine.dealMixed(p, 1);   // ลดเกราะก่อน หมดเกราะจึงเข้าเลือดจริง
+  engine.dealMixed(p, dmg); // ลดเกราะก่อน หมดเกราะจึงเข้าเลือดจริง
   p._statusDamage = false;
-  engine.log(`🧪 ${p.name} พิษร้ายออกฤทธิ์ — เสียหาย -1 (ลดเกราะก่อน) และพลังโจมตี -1 (เหลืออีก ${p.statuses.poison} เทิร์น)`);
+  engine.log(`🧪 ${p.name} พิษร้ายออกฤทธิ์ — เสียหาย -${dmg}${dmg > 1 ? " (ป่าไม้ต้องสาป)" : ""} (ลดเกราะก่อน) และพลังโจมตี -1 (เหลืออีก ${p.statuses.poison} เทิร์น)`);
   engine.maybeBeatSave(p);
   engine.maybeBeatMode(p);
   engine.maybeWakeKotone(p);
@@ -355,10 +362,11 @@ function tickBurn(engine, p) {
   } else {
     // _statusDamage: บอกฮุคของตัวละครว่าก้อนนี้เป็น "ดาเมจจากสถานะ/ดีบัฟ" ไม่ใช่ดาเมจจากสกิลหรือการโจมตี
     //  (เอสคานอร์ใช้แยกว่าจะหัก Sun Charge ของร่าง Noon ไหม — ดู characters/escanor.js)
+    const dmg = 1 + dotFieldBonus(engine); // การเดินทาง (ป่าไม้ต้องสาป กลางคืน): 50% แรงขึ้น +1
     p._statusDamage = true;
-    engine.dealMixed(p, 1); // ลุกไหม้: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
+    engine.dealMixed(p, dmg); // ลุกไหม้: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
     p._statusDamage = false;
-    engine.log(`🔥 ${p.name} ลุกไหม้ — เสียหาย -1 (ลดเกราะก่อน) (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
+    engine.log(`🔥 ${p.name} ลุกไหม้ — เสียหาย -${dmg}${dmg > 1 ? " (ป่าไม้ต้องสาป)" : ""} (ลดเกราะก่อน) (เหลืออีก ${p.statuses.hburn - 1} หน่วย)`);
     engine.maybeBeatSave(p);
     engine.maybeBeatMode(p);
    
@@ -417,10 +425,11 @@ function tickBleed(engine, p) {
     const heal = engine.healHp(p, 1);
     engine.log(`❤️‍🩹 ${p.name} ${label} — เลือดไหลกลายเป็นการฟื้นฟู ฟื้นพลังชีวิต +${heal} (เหลืออีก ${p.statuses.hbleed - 1} หน่วย)`);
   } else {
+    const dmg = 1 + dotFieldBonus(engine); // การเดินทาง (ป่าไม้ต้องสาป กลางคืน): 50% แรงขึ้น +1
     p._statusDamage = true;   // ดาเมจจากสถานะ ไม่ใช่จากสกิล/การโจมตี (ดูคอมเมนต์ใน tickBurn)
-    engine.dealMixed(p, 1);   // เลือดไหล: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
+    engine.dealMixed(p, dmg); // เลือดไหล: ลดเกราะก่อน ถ้าไม่มีเกราะจึงเข้าเลือดจริง
     p._statusDamage = false;
-    engine.log(`🩸 ${p.name} เลือดไหล — เสียหาย -1 (ลดเกราะก่อน) (เหลืออีก ${p.statuses.hbleed - 1} หน่วย)`);
+    engine.log(`🩸 ${p.name} เลือดไหล — เสียหาย -${dmg}${dmg > 1 ? " (ป่าไม้ต้องสาป)" : ""} (ลดเกราะก่อน) (เหลืออีก ${p.statuses.hbleed - 1} หน่วย)`);
     engine.maybeBeatSave(p);
     engine.maybeBeatMode(p);
    

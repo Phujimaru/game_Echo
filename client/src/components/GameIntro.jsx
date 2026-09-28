@@ -27,7 +27,7 @@ const EMBERS = Array.from({ length: 14 }, () => ({
   t: 2.6 + Math.random() * 2.4,
 }));
 
-export default function GameIntro({ players, onDone }) {
+export default function GameIntro({ players, onDone, onOutro }) {
   const ordered = useMemo(() => [...players].sort((a, b) => a.position - b.position), [players]);
   const [index, setIndex] = useState(-1);
   const [outro, setOutro] = useState(false);
@@ -41,7 +41,7 @@ export default function GameIntro({ players, onDone }) {
       timers.push(setTimeout(() => setIndex(i), i * perMs));
     });
     timers.push(setTimeout(() => setIndex(ordered.length), ordered.length * perMs));
-    timers.push(setTimeout(() => setOutro(true), ordered.length * perMs + finaleMs));
+    timers.push(setTimeout(() => { setOutro(true); if (onOutro) onOutro(); }, ordered.length * perMs + finaleMs)); // onOutro: ให้ฉากถัดไป (แผนที่การเดินทาง) ขึ้นรอใต้ฉากนี้ก่อนเผย
     timers.push(setTimeout(() => onDone && onDone(), ordered.length * perMs + finaleMs + 1000));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps

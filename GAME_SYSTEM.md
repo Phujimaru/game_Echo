@@ -655,7 +655,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `playCutsceneVideo()` พักเพลงด้วย `suspendMusic()` จนกว่าจะออกจากคลิป และคืนเสียงหลัง autoplay บังคับปิดเสียงเมื่อผู้เล่นคลิก/กดแป้นพิมพ์
   เสียงพากย์ประกาศร่างต้องหยุดเมื่อออกจากฉาก · เสียงจบเทิร์นติดตามจาก PLAYING ผ่านคัตซีนถึง SUMMARY และเสียงโจมตีนับตาม `attack.id`
 - **สัดส่วนผสมเสียง (`client/src/audio.js`):** ระดับ = ฐานตามชนิด × ค่าปรับรายไฟล์ × `masterGain()`
-  ฐาน: เพลง `MUSIC_BASE` 0.5 · เอฟเฟกต์/เสียงพากย์ `SFX_BASE` 1 · คลิก `CLICK_BASE` 0.55 · วีดีโอ `VIDEO_BASE` 1 (เพลงถูกพักระหว่างวีดีโอ)
+  ฐาน: เพลง `MUSIC_BASE` 0.75 (เดิม 0.5 — ผู้เล่นบอกว่าเบาไป) · เอฟเฟกต์/เสียงพากย์ `SFX_BASE` 1 · คลิก `CLICK_BASE` 0.55 · วีดีโอ `VIDEO_BASE` 1 (เพลงถูกพักระหว่างวีดีโอ)
   ลูปเสียงเฉพาะกิจ (`startLoopSfx`) ใช้ฐานเพลง เพราะมันเล่นแทนเพลงประกอบ
   `LOUDNESS_GAIN` = ตารางค่าปรับรายไฟล์ (key = path) สร้างจากการวัด RMS แบบตัดช่วงเงียบ เป้า เพลง/เอฟเฟกต์ -14 · วีดีโอ -16 dBFS
   ค่าปรับลดได้อย่างเดียว (HTMLAudio `volume` เกิน 1 ไม่ได้) — ไฟล์ที่เบาเกินจึงถูกเข้ารหัสใหม่ให้ดังขึ้นที่ตัวไฟล์ (ต้นฉบับสำรองที่ R2 `_backup_audio/`)
@@ -714,15 +714,36 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 ## 10. กลางวัน/กลางคืน
 
 - สลับทุก **5 เทิร์น** (`CYCLE_TURNS`) เริ่มเกมเป็นกลางวัน — โหมด Overload กลับด้าน (5 เทิร์นแรกเป็นกลางคืน)
+- กฎสองข้อด้านล่าง **ใช้เฉพาะ Type Mercury** — โหมดสงครามทั่วไปใช้ผลของภูมิภาคแทนทั้งหมด (ข้อ 10.1)
 - **กลางวัน**: จบเทิร์นได้แต้มสกิล +1 แต่ **เฉพาะเช้าที่ 2, 4, 6, …** (`morningBonusActive`)
 - **กลางคืน**: สุ่ม 1 tier ของแต่ละคนแพงขึ้น +1 (`p.nightTaxTier`)
-- **เกราะฟื้น +1 ทุกเทิร์นเลขคู่** เหมือนกันทั้งวัน/คืน (บล็อกโดย `armorLocked` / `decay` / MOON*CELL)
+- **เกราะฟื้น +1 ทุกเทิร์นเลขคู่** เหมือนกันทั้งวัน/คืน (บล็อกโดย `armorLocked` / `decay` / MOON*CELL) — ภูมิภาค 5-7 ฟื้นทุกเทิร์น (`Journey.armorRegenDue`)
 - `cycleShift` = ตัวเลื่อนวงจรทั้งเกม (Lie Like Vortigern / ชเรด รีเซ็ตกลางคืน) — **ต้องคำนวณใหม่ตรงๆ ห้ามบวกสะสม** (มีคอมเมนต์เตือนบั๊กเดิมที่ `engine.extendNight`)
 - มิติมายาบรรเลงของ Bard **override วงจรทั้งหมด** (โลหิต = กลางวัน, วิญญาณ = กลางคืน)
 - **หลักสูตรของไบเลธมีเพลงแยกกลางวัน/กลางคืนต่อหลักสูตร** — `CHAR_HOOKS.byleth.activeMusic(engine, night)` เลือกไฟล์ให้
   `activeSkillMusic()` และฝั่ง client มี `MUSIC_POSITION_GROUPS` (`client/src/audio.js`) โดย **1 หลักสูตร = 1 กลุ่ม**
   - สลับ **กลางวัน↔กลางคืนของหลักสูตรเดิม** = อยู่กลุ่มเดียวกัน -> ไฟล์ใหม่ **เล่นต่อจากวินาทีเดิม** (ไม่สะดุด)
   - **สลับไปหลักสูตรอื่น** = คนละกลุ่ม + `transformAt` (seq) ขยับทุกครั้งที่กดท่าไม้ตาย -> เพลง **เริ่มจากต้นเสมอ**
+
+### 10.1 การเดินทาง 7 ภูมิภาค (ffa / duo / trio)
+
+โมดูลกลาง [characters/_journey.js](characters/_journey.js) (require ตรงเหมือน `_mark42` — ไม่ใช่ตัวละคร) · เทสต์ [tests/journey.test.js](tests/journey.test.js)
+- ภูมิภาค = `areaOf(roundNumber)` เปลี่ยนทุก `AREA_TURNS` (10) เทิร์น ค้างที่ 7 ถาวร — **ไม่มี state แยก** Overload Force/ย้อนเวลาชิโดจึงย้อนภูมิภาคเอง
+  กลางวัน/กลางคืนอ่านจาก `isNightRound()` (เทิร์น 1-5 ของภูมิภาคกลางวัน 6-10 กลางคืน · มิติมายาบรรเลงของ Bard ยังพลิกได้)
+- ผลของภูมิภาค **แทน** กฎวัน/คืนเดิม: `Journey.nightTaxOn()` (เหลือแค่ 1 กลางคืน) · `Journey.skillBonus()` (1 กลางวันเทิร์นคู่ / 7 ทุกเทิร์น)
+- จุดเสียบใน engine (ชื่อฟังก์ชันใน `_journey.js` → ที่เรียก):
+  `skillTax` → `useSkillCore()` **และ** `showCost()` ใน `buildStateFor` (ต้องคิดเหมือนกัน — สกิลราคา 0 ไม่โดน) ·
+  `skillMisses`/`skillRefund` → `useSkillCore()` ถัดจากด่านเหน็บชา (พลาด = คืนแต้ม+การ์ดราชินี แต่เสียโควตาเทิร์น) ·
+  `tryAttackMiss` → `doAttack()` ด่านสุดท้ายของชุดหลบ (แม่นยำเจาะได้) · `attackBonus` → `computeAttackBase()` (ungated) ·
+  `applyCrit` → `doAttack()` หลังคริติคอลของตัวละคร (ออกพร้อมกัน = ×3) · `dotBonus` → `engine.journeyDotBonus()` ใน tick ลุกไหม้/เลือดไหล/พิษร้าย ·
+  `filterShopRoll`/`shopStock` → `openShop()` (ช่องหลายชิ้นใช้ `stock`/`stockMax` — `sold` เป็น true ตอนหมดช่องเท่านั้น) ·
+  `goldBonus` + `onEndTurn` → `endTurn()` (หลังลูปลดเทิร์นสถานะ ก่อนกวาดคนตาย — สตั้น/ผุพังที่ติดจึงมีผลเต็มเทิร์นหน้า)
+- ความเสียหายจากสนาม (`fieldDamage`) ลดเกราะก่อน + ท่อกันตายชุดเดียวกับพิษร้าย และตั้ง `_statusDamage`
+- **ฉากแผนที่**: server พักเฟส CUTSCENE (ไม่มีคลิป) แบบเดียวกับฉากเปิดตัว ORT — `journeyScene` `{ seq, active, mode, area, fromArea }`
+  · `start` = ต่อท้าย `gameIntroHoldSeconds()` ใน `startMatch()` (+`JOURNEY_START_SECONDS` 6 — client เริ่มแผนที่ตั้งแต่ฉากเปิดตัวเริ่มปิดฉาก `onOutro`) · `advance` = `maybeJourneyAdvance()` ท้าย `endTurn`
+  ก่อนเทิร์นแรกของภูมิภาคใหม่ (+`JOURNEY_ADVANCE_SECONDS` 7) · เทสต์ที่ต้องการเทิร์น 1 ทันทีตั้ง env `JOURNEY_START_SECONDS=0`
+  · `state.journey` (`Journey.publicInfo`) ระหว่างฉาก advance แสดงภูมิภาค **ปลายทาง** แล้ว (ฉากหลัง/เพลงเปลี่ยนใต้แผนที่)
+- เพลง: `journey_<area>_<day|night>` + `journey_map` (ระหว่างฉากแผนที่) ใน `client/src/audio.js` — ไฟล์อยู่ `client/public/journey/` (R2)
 
 ---
 
@@ -772,11 +793,9 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `adjustIncomingDamage`) — ผู้เล่นที่ ORT ตีจนเลือดหมดไม่ตายใน `doAttack` แต่ตายตอนกวาดท้าย `endTurn` ซึ่งไม่มี `effectSourceId` แล้ว
 - ฉากเปิดตัว: server พักเฟส CUTSCENE (ไม่มีคลิป) `MERCURY_ARRIVAL_SECONDS` (env ย่อได้ในเทสต์) · client เล่น `OrtArrival`
   แทน `GameIntro` · อนิเมชันบนตัวบอสยิงผ่าน event `ortFx` (ไม่หยุดเกม) → `OrtBossPanel` เรียก `ortStage.play(kind)`
-- **โหมดปกติ (ffa/duo/trio): ORT บุกเข้าสนามก่อนเทิร์น `ORT_NORMAL_ROUND` (60)** ผ่าน `maybeOrtInvades()` ท้าย `endTurn` — 3 หลอด
-  พักเกมรอฉากเปิดตัวเหมือน Raid (`ortArrivalActive` + `state.ortArrival` บอก client ว่าเล่นฉากหรือไม่) · นั่งกลางด้านบน (`ORT_SEAT`)
-  · ORT เป็น **ระบบกำจัดผู้เล่น ไม่ใช่ผู้ชิงชัย**: `normalGameOver()` นับเฉพาะผู้เล่นจริง (เหลือคนเดียว/ทีมเดียว = ชนะ ·
-  ตายหมด = เสมอ) และ `checkOrtEarlyWin()` จบเกมทันทีเมื่อมีคนตายกลางเฟสจั่วจนเหลือคนเดียว (ท้าย hit/useSkill/useInventoryItem/หลังคลิป)
-- เทสต์: [tests/characters/ort.test.js](tests/characters/ort.test.js) · [tests/mercury.integration.test.js](tests/mercury.integration.test.js) · [tests/ort-invasion.test.js](tests/ort-invasion.test.js)
+- **โหมดปกติ (ffa/duo/trio) ไม่มี ORT แล้ว** — การบุกเทิร์น 60 (`maybeOrtInvades`) ถูกถอดออกเมื่อเพิ่มการเดินทาง (ข้อ 10.1)
+  ภูมิภาค 7 "จุดสิ้นสุดของโลก" ที่วนอยู่ถาวรเป็นตัวบีบให้เกมจบแทน · `normalGameOver()`/`checkOrtEarlyWin()` ยังนับเฉพาะผู้เล่นจริงเหมือนเดิม
+- เทสต์: [tests/characters/ort.test.js](tests/characters/ort.test.js) · [tests/mercury.integration.test.js](tests/mercury.integration.test.js)
 
 
 ## 12. โหมดทีม

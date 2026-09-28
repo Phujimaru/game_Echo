@@ -9,6 +9,8 @@ import VictoryScreen from "../components/VictoryScreen";
 import OrtBossPanel from "../raid/OrtBossPanel";
 import { RaidRespawn, RaidSurrender, RaidDeckDrawer } from "../raid/RaidOverlays";
 import ArenaBackdrop from "../components/ArenaBackdrop";
+import JourneyBackdrop from "../journey/JourneyBackdrop";
+import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
 import { socket } from "../socket";
@@ -601,6 +603,53 @@ function TransformNotice({ n }) {
   );
 }
 
+// ---------- การเดินทาง (ffa/duo/trio): ป้ายภูมิภาคใต้กล่อง "รอบที่" + หน้าต่างอ่านผลสนาม ----------
+//  ข้อความผลสนามมาจาก server (characters/_journey.js) ทั้งหมด — client ไม่เก็บตัวเลขบาลานซ์ซ้ำ
+function JourneyBadge({ journey, onOpen }) {
+  const a = journeyArea(journey.area);
+  return (
+    <button
+      onClick={() => { clickSound(); onOpen(); }}
+      className="jr-badge"
+      style={{ "--jr": a.color, "--jr-glow": a.glow }}
+      title="แตะเพื่อดูผลของภูมิภาคนี้"
+    >
+      <span className="jr-badge-num">{a.numeral}</span>
+      <span className="jr-badge-text">
+        <span className="jr-badge-name">{journey.name}</span>
+        <span className="jr-badge-sub">
+          {journey.night ? "🌙 กลางคืน" : "☀️ กลางวัน"}
+          {journey.turnsLeft != null ? ` · อีก ${journey.turnsLeft} เทิร์นถึงภูมิภาคถัดไป` : " · ปลายทางสุดท้าย"}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function JourneyInfoModal({ journey, onClose }) {
+  const a = journeyArea(journey.area);
+  const rows = [
+    journey.passive && { k: "ตลอดภูมิภาค", v: journey.passive, on: true },
+    { k: "☀️ กลางวัน", v: journey.day, on: !journey.night },
+    { k: "🌙 กลางคืน", v: journey.nightDesc, on: journey.night },
+  ].filter(Boolean);
+  return (
+    <AvModal label={`การเดินทาง · ภูมิภาคที่ ${journey.area}`} title={journey.name} onClose={onClose} width="min(34rem, 94vw)">
+      <div className="flex flex-col gap-2">
+        {rows.map((r) => (
+          <div key={r.k} className="rounded-xl px-3 py-2 border" style={{ borderColor: r.on ? `${a.color}aa` : "rgba(255,255,255,.1)", background: r.on ? `${a.color}1f` : "rgba(255,255,255,.03)", opacity: r.on ? 1 : 0.55 }}>
+            <div className="av-heading text-xs" style={{ color: r.on ? a.glow : "rgba(239,230,245,.6)" }}>{r.k}{r.on && r.k !== "ตลอดภูมิภาค" ? " (ตอนนี้)" : ""}</div>
+            <div className="text-sm leading-relaxed">{r.v}</div>
+          </div>
+        ))}
+        <div className="text-xs opacity-60 text-center mt-1">
+          {journey.turnsLeft != null ? `เดินทางต่อไปยังภูมิภาคถัดไปในอีก ${journey.turnsLeft} เทิร์น` : "สุดทางแล้ว — ภูมิภาคนี้จะอยู่ไปจนจบเกม"}
+        </div>
+      </div>
+    </AvModal>
+  );
+}
+
 // ป้ายหลักสูตรของไบเลธ — วางตำแหน่งเดียวกับป้าย Overload Force (เลื่อนลงถ้าโชว์พร้อมกัน)
 //  ทุกคนกดอ่านได้ว่าหลักสูตรที่เปิดอยู่ตอนนี้มีผลอะไรบ้าง (ไม่ใช่ปุ่มของเจ้าของท่าคนเดียว)
 function BylethCourseBadge({ course, shifted, onOpen }) {
@@ -649,14 +698,17 @@ function OverloadForceBadge() {
 // ---------- ฉากหลังกลางวัน/กลางคืน (patch 1.7) ----------
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
-function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph }) {
+function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey }) {
   // SE.RA.PH: โหมดนี้วาดฉากหลังของตัวเองไว้ข้างล่างแล้ว (สนามดวลวันที่ 5 กลางวัน/กลางคืน)
   //  ถ้าปล่อยให้กระดานเดิมวาดทับ จะกลายเป็นฉากหลังของเกมปกติแทน
   if (seraph) return null;
   const night = cycle === "night";
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-      <ArenaBackdrop cycle={cycle} round={round} />
+      {/* การเดินทาง (ffa/duo/trio): ฉากหลังประจำภูมิภาค แยกกลางวัน/กลางคืน แทนสนามดอกไม้เดิม */}
+      {journey
+        ? <JourneyBackdrop area={journey.area} night={journey.night} lowQ={lowQ} />
+        : <ArenaBackdrop cycle={cycle} round={round} />}
       {/* มิติมายาบรรเลง (Bard): โลหิต = ตอนเช้า / วิญญาณ = ตอนกลางคืน (ทับฉากหลังอื่นทั้งหมด) */}
       {bardBg && (
         <img
@@ -704,7 +756,8 @@ function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadFor
           className="absolute inset-0 w-full h-full object-cover bg-fade-in"
         />
       )}
-      <div className="absolute inset-0 bg-black/15" />
+      {/* ฉากหลังการเดินทางมีชั้นเกรดสีของตัวเองแล้ว (jb-grade) — ไม่ซ้อนดำเพิ่มอีกชั้น */}
+      {!journey && <div className="absolute inset-0 bg-black/15" />}
     </div>
   );
 }
@@ -2013,7 +2066,11 @@ function ShopModal({ shop, me, frozen, onClose }) {
                   <div className="av-heading text-xs leading-tight">{info.label(it)}</div>
                   <div className="text-[11px] leading-snug line-clamp-3" style={{ color: "rgba(239,230,245,.6)" }}>{info.desc}</div>
                   <div className="mt-auto w-full flex flex-col items-center gap-2 pt-2">
-                    <div className="av-label" style={{ fontSize: "0.7rem" }}>🪙 {it.price}</div>
+                    <div className="av-label" style={{ fontSize: "0.7rem" }}>
+                      🪙 {it.price}
+                      {/* การเดินทาง (ทุ่งดอกไม้ กลางคืน): ช่องนี้ซื้อได้หลายชิ้น */}
+                      {it.stockMax > 1 && !sold && <span style={{ color: "var(--av-gold-lit)" }}> · เหลือ {it.stock}/{it.stockMax}</span>}
+                    </div>
                     <AvButton
                       className="w-full py-1.5 text-xs px-2"
                       disabled={sold || owned || suitLock > 0 || !afford || frozen}
@@ -4115,6 +4172,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [supSel, setSupSel] = useState(null);                // ผู้วิงวอน: tier ที่กำลังรอจิ้มเป้าหมาย (ทั้งสามช่อง เลือกตัวเองได้)
   const [kaiCreateSel, setKaiCreateSel] = useState(false);   // ไค: โหมดเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์ (เลือกตัวเองได้)
   const [kaiPunishSel, setKaiPunishSel] = useState(false);   // ไค: โหมดเลือกเป้าหมายมือขวาแห่งการลงทัณฑ์ (เลือกตัวเองได้)
+  const [journeyInfoOpen, setJourneyInfoOpen] = useState(false);   // การเดินทาง: หน้าต่างอ่านผลของภูมิภาคปัจจุบัน
   const [bylethInfoOpen, setBylethInfoOpen] = useState(false);     // ไบเลธ: หน้าต่างอ่านผลของหลักสูตรที่เปิดอยู่ (ทุกคนเปิดได้)
   const [bylethSwordOpen, setBylethSwordOpen] = useState(false);   // ไบเลธ: หน้าต่างเลือกแบบของ "ดาบต้องสาป"
   const [bylethCourseOpen, setBylethCourseOpen] = useState(false);  // ไบเลธ: หน้าต่างเลือกหลักสูตรของท่าไม้ตาย
@@ -5553,7 +5611,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} />}
+      {!raid && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}
@@ -5603,6 +5661,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           </div>
           <BoardTimer phaseKey={`${phase}-${state.roundNumber}`} />
         </div>
+      )}
+      {state.journey && (phase === "PLAYING" || phase === "ATTACK" || phase === "SUMMARY") && (
+        <JourneyBadge journey={state.journey} onOpen={() => setJourneyInfoOpen(true)} />
       )}
       {/* ORT ชั้นที่กดได้ (แถบข้อมูล + พื้นที่คลิกโจมตี) — ต้องอยู่ในกรอบกระดานนี้ ไม่งั้นกรอบกินคลิกไปหมด */}
       {boss && (
@@ -6112,6 +6173,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {bylethSwordOpen && me && <BylethSwordModal me={me} onPick={pickBylethSword} onClose={() => setBylethSwordOpen(false)} />}
       {bylethCourseOpen && me && <BylethCourseModal me={me} onPick={pickBylethCourse} onClose={() => setBylethCourseOpen(false)} />}
       {bylethInfoOpen && <BylethCourseInfoModal course={state.bylethFieldFx} onClose={() => setBylethInfoOpen(false)} />}
+      {journeyInfoOpen && state.journey && <JourneyInfoModal journey={state.journey} onClose={() => setJourneyInfoOpen(false)} />}
 
       {/* ---------- แบนเนอร์รอบถัดไป ---------- */}
       {phase === "TRANSITION" && <RoundBanner round={state.roundNumber + 1} />}

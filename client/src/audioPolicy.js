@@ -14,14 +14,20 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
     }
     return { name: phase === "SERAPH_PLACE" ? "sc_rest" : "sc_day" };
   }
+  // การเดินทาง: ระหว่างฉากแผนที่ (เริ่มเกม / เข้าภูมิภาคใหม่) เพลง map.mp3 ทับทุกอย่าง — เริ่มใหม่ทุกฉาก (seq)
+  const journey = state?.journey;
+  if (journey?.scene?.active && ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) {
+    return { name: "journey_map", seq: journey.scene.seq };
+  }
   if (state?.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
   // Type Mercury: เพลงประจำตัว ORT ตลอดทั้ง Raid (รวมฉากเปิดตัว ORT ซึ่งเป็นเฟส CUTSCENE ที่ไม่มีคลิป)
   if (state?.mercury && ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) return { name: "ort_theme" };
-  // โหมดปกติ: ORT บุกเทิร์น 60 — เพลง ORT เฉพาะช่วงฉากเปิดตัว แล้วกลับไปเพลงสนามตามเดิม
   if (state?.ortArrival?.active && phase === "CUTSCENE") return { name: "ort_theme" };
   // ช่วงโจมตี: เพลงเฉพาะกิจทับเพลงกลางวัน/กลางคืน และเริ่มจากต้นทุกครั้งที่เข้าช่วง (attackSeq ขยับ)
   if (phase === "ATTACK" || phase === "ATTACKING") return { name: "battle_phase", seq: attackSeq };
   if (["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) {
+    // การเดินทาง (ffa/duo/trio): เพลงประจำภูมิภาค แยกกลางวัน/กลางคืน
+    if (journey) return { name: `journey_${journey.area}_${journey.night ? "night" : "day"}`, seq: cycleSeq };
     return { name: state.cycle === "night" ? "new_night" : "new_morning", seq: cycleSeq };
   }
   return { name: "main_home" };

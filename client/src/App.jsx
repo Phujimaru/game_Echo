@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { publishTick } from "./tickStore";
+import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker } from "./audioPolicy";
@@ -13,6 +13,7 @@ import VolumeControl from "./components/VolumeControl";
 import TransitionCurtain from "./components/TransitionCurtain";
 import GameIntro from "./components/GameIntro";
 import OrtArrival from "./raid/OrtArrival";
+import JourneyMap from "./journey/JourneyMap";
 
 const SESSION_KEY = 'echo_session';
 
@@ -25,6 +26,12 @@ function saveSessionToken(token) {
     if (token) localStorage.setItem(SESSION_KEY, token);
     else localStorage.removeItem(SESSION_KEY);
   } catch {}
+}
+
+// การเดินทาง: ความยาวฉากแผนที่ = เวลาที่ server ยังพักเกมเหลืออยู่ (หักเผื่อ 0.4 วิ) ไม่เกินความยาวที่ออกแบบไว้
+function journeyDurationMs(secondsLeft, designMs) {
+  const left = (Number(secondsLeft) || 0) * 1000 - 400;
+  return Math.max(3000, Math.min(designMs, left > 0 ? left : designMs));
 }
 
 export default function App() {
@@ -42,6 +49,12 @@ export default function App() {
   // Type Mercury: ฉากเปิดตัว ORT แทนฉากเปิดตัวผู้เล่น
   const [showArrival, setShowArrival] = useState(false);
   const arrivalSeqRef = useRef(null); // ฉากเปิดตัว ORT ครั้งที่เล่นไปแล้ว (กันเล่นซ้ำในการพักเกมรอบเดียวกัน)
+  // การเดินทาง: ฉากแผนที่ (start = ต่อจากฉากเปิดตัวผู้เล่น · advance = เข้าภูมิภาคใหม่) — server พักเกมรอไว้แล้ว
+  //  ความยาวฉากคิดจากเวลาที่เหลือของช่วงพัก (timeLeft) ทุกเครื่องจึงจบพร้อมกันแม้ฉากเปิดตัวของแต่ละเครื่องจะจบไม่พร้อมกัน
+  const [journeyMap, setJourneyMap] = useState(null); // { seq, mode, area, fromArea, durationMs }
+  const journeySeqRef = useRef(null);      // ฉากแผนที่ครั้งที่เล่น/จองไว้แล้ว (กันเล่นซ้ำจากบรอดแคสต์ถัดๆ ไป)
+  const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอฉากเปิดตัวผู้เล่นเล่นจบก่อน
+  const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (finishIntro อ่านว่าช่วงพักยังไม่หมด)
   const prevGameStateRef = useRef(null);
   const [roster, setRoster] = useState([]);
   const [takenChars, setTakenChars] = useState([]); // ตัวละคร unique ที่มีคนเลือกไปแล้ว (คอนเนอร์ RK800)
@@ -100,7 +113,19 @@ export default function App() {
       //  Type Mercury: ไม่มีฉากเปิดตัวผู้เล่น — เล่นฉากเปิดตัว ORT (ม่านเตือนภัย + "หายนะกำลังมาเยือน") แทน
       //  ฉากเปิดตัว ORT: เล่นเมื่อ server กำลังพักเกมรอฉากนี้จริง (ortArrival.active) — ทั้งตอนเริ่ม Raid และตอน ORT
       //  บุกเทิร์น 60 ของโหมดปกติ (ซึ่งเกิดกลางแมตช์) · รีคอนเนกต์หลังช่วงพักจะไม่เล่นซ้ำ เพราะ active เป็น false แล้ว
-      if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(s.gameState)) setShowArrival(false);
+      if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(s.gameState)) {
+        setShowArrival(false);
+        setJourneyMap(null);
+        pendingJourneyRef.current = null;
+      }
+      // การเดินทาง: ช่วงพักรอฉากแผนที่เริ่มใหม่ -> start รอฉากเปิดตัวจบก่อน · advance เล่นทันที
+      journeyStateRef.current = s.journey || null;
+      const jScene = s.journey?.scene;
+      if (jScene?.active && jScene.seq !== journeySeqRef.current) {
+        journeySeqRef.current = jScene.seq;
+        if (jScene.mode === "start") pendingJourneyRef.current = jScene;
+        else setJourneyMap({ ...jScene, durationMs: journeyDurationMs(s.timeLeft, 6000) });
+      }
       const arrival = s.ortArrival;
       if (arrival?.active && arrival.seq !== arrivalSeqRef.current) {
         arrivalSeqRef.current = arrival.seq;
@@ -228,7 +253,11 @@ export default function App() {
   const attackSeq = useRef(0);    // seq เพลงช่วงโจมตี: +1 ทุกครั้งที่เข้าช่วงโจมตี -> เริ่มเพลงใหม่เสมอ
   const prevAttackPhase = useRef(false);
   const phase = stage === "connected" && state ? state.gameState : null;
-  const cycle = stage === "connected" && state ? state.cycle : null;
+  // การเดินทาง: "ช่วงเวลา" = ภูมิภาค + กลางวัน/กลางคืน — เปลี่ยนภูมิภาคเมื่อไหร่เพลงประจำภูมิภาคเริ่มใหม่จากต้นเช่นกัน
+  const journeyNow = stage === "connected" ? state?.journey : null;
+  const cycle = stage === "connected" && state
+    ? (journeyNow ? `${journeyNow.area}-${journeyNow.night ? "night" : "day"}` : state.cycle)
+    : null;
   const skillMusic = stage === "connected" && state ? state.skillMusic : null;
   const skillMusicSeq = stage === "connected" && state ? state.skillMusicSeq : 0;
   const mandatoryCutscene = phase === "CUTSCENE" && state?.cutscene?.kind === "overloadForce";
@@ -285,7 +314,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph)]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);
@@ -328,10 +357,23 @@ export default function App() {
     curtainRef.current?.skip("game");
     setShowArrival(false);
   };
+  // การเดินทาง: ฉาก "การเดินทางเริ่มต้นขึ้น" ต่อจากฉากเปิดตัวถ้า server ยังพักเกมรออยู่ (รีคอนเนกต์หลังช่วงพัก = ข้าม)
+  //  เรียกตั้งแต่ฉากเปิดตัว "เริ่มปิดฉาก" (onOutro) — แผนที่ (z 60) ขึ้นรอใต้ฉากเปิดตัว (z 95) ที่กำลังจางหาย
+  //  ฉากเปิดตัวจึงเผยแผนที่แทนกระดานเกม · เรียกซ้ำจาก finishIntro ได้ (ครั้งที่สองไม่มีผล)
+  const startPendingJourney = () => {
+    const pending = pendingJourneyRef.current;
+    pendingJourneyRef.current = null;
+    const live = journeyStateRef.current?.scene;
+    if (pending && live?.active && live.seq === pending.seq) {
+      setJourneyMap({ ...pending, durationMs: journeyDurationMs(getTickSeconds(), 7000) });
+    }
+  };
   const finishIntro = () => {
     curtainRef.current?.skip("game");
     setShowIntro(false);
+    startPendingJourney();
   };
+  const finishJourneyMap = () => setJourneyMap(null);
 
   let screen;
   let screenKey;
@@ -398,7 +440,7 @@ export default function App() {
     screen = (
       <>
         <Game state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} muteScenes />
-        <GameIntro players={introPlayers} onDone={finishIntro} />
+        <GameIntro players={introPlayers} onDone={finishIntro} onOutro={startPendingJourney} />
       </>
     );
     screenKey = "gameintro";
@@ -416,6 +458,19 @@ export default function App() {
       <VolumeControl />
       <TransitionCurtain ref={curtainRef} screenKey={screenKey} />
       {screen}
+      {/* การเดินทาง: แผนที่ลอยทับกระดาน (server พักเกมในเฟส CUTSCENE ที่ไม่มีคลิป) — วางนอก screen
+          เพื่อไม่ให้ <Game> ถูก mount ใหม่ตอนเปิด/ปิดฉาก (กระดานทั้งจอ mount ใหม่ = กระตุก) */}
+      {journeyMap && !showArrival && stage === "connected" && (
+        <JourneyMap
+          key={journeyMap.seq}
+          mode={journeyMap.mode}
+          area={journeyMap.area}
+          fromArea={journeyMap.fromArea}
+          durationMs={journeyMap.durationMs}
+          lowQ={lowQ}
+          onDone={finishJourneyMap}
+        />
+      )}
     </>
   );
 }

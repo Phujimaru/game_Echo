@@ -26,8 +26,8 @@ function audioHarness(saved = null) {
   vm.runInContext(source, context);
   return { api: context, instances, window, Audio };
 }
-// ระดับที่คาดหวัง (ไม่รวมหลอดเสียง): เพลง 0.5 × ค่าปรับรายไฟล์ · เอฟเฟกต์ 1 × ค่าปรับรายไฟล์
-const MUSIC = (api, name) => 0.5 * api.soundGain(name);
+// ระดับที่คาดหวัง (ไม่รวมหลอดเสียง): เพลง 0.75 × ค่าปรับรายไฟล์ · เอฟเฟกต์ 1 × ค่าปรับรายไฟล์
+const MUSIC = (api, name) => 0.75 * api.soundGain(name);
 const SFX = (api, name) => 1 * api.soundGain(name);
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg || ''} ${a} != ${b}`);
 

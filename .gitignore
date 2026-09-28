@@ -17,3 +17,6 @@ client/public/item/
 
 # สื่อโหมด SE.RA.PH Moon Cell (ฉากหลัง GIF ~18 MB + ภาพสถานที่ + เพลง/SFX) — เก็บบน R2 เหมือนสื่ออื่น
 client/public/mooncell/
+
+# เพลงการเดินทาง 7 ภูมิภาค (~140 MB) — เก็บบน R2 เหมือนสื่ออื่น
+client/public/journey/
