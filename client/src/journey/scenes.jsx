@@ -893,24 +893,22 @@ function Area4({ night, lowQ }) {
           <path d={waveStrip(100, 40, 8)} stroke={C.wave} strokeWidth="2" fill="none" />
         </svg>
       </div>
-      {/* วังวนน้ำ: กล่องสี่เหลี่ยมจัตุรัสถูกบีบแนวตั้ง (static) แล้วหมุนชั้นใน (compositor ล้วน) */}
-      <div className="jb-abs" style={box(930 - 680, 650 - 680, 1360, 1360, { transform: "scaleY(0.3)" })}>
+      {/* วังวนน้ำ: กล่องสี่เหลี่ยมจัตุรัสถูกบีบแนวตั้ง (static) แล้วหมุนชั้นใน (compositor ล้วน)
+          แก้กระตุก: เดิมหมุน 2 ชั้นขนาด 1360 (เกือบเต็มจอทั้งคู่) -> เหลือชั้นหมุนชั้นเดียวขนาด 1000
+          รวมเกลียวนอก+ใน (พื้นที่ texture ที่ต้องวาดทุกเฟรมลดลงราว 4 เท่า) */}
+      <div className="jb-abs" style={box(930 - 500, 650 - 500, 1000, 1000, { transform: "scaleY(0.3)" })}>
         <div className="jb-fill" style={{ background: C.disc, borderRadius: "50%" }} />
-        <div className="jb-fill jb-spin" style={{ animationDuration: "34s" }}>
+        <div className="jb-fill jb-spin" style={{ animationDuration: "26s" }}>
           <svg viewBox="-680 -680 1360 1360" aria-hidden="true">
             {g.arms.map((d, i) => (
               <path key={i} d={d} stroke={C.arm} strokeWidth={i % 2 ? 7 : 12} fill="none" strokeLinecap="round" opacity={i % 2 ? 0.6 : 0.4} />
             ))}
-          </svg>
-        </div>
-        <div className="jb-fill" style={{ transform: "scale(0.55)" }}>
-          <div className="jb-fill jb-spin" style={{ animationDuration: "15s" }}>
-            <svg viewBox="-680 -680 1360 1360" aria-hidden="true">
+            <g transform="scale(0.55) rotate(30)">
               {g.inner.map((d, i) => (
                 <path key={i} d={d} stroke={C.armThin} strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.55" />
               ))}
-            </svg>
-          </div>
+            </g>
+          </svg>
         </div>
         <div className="jb-fill" style={{ background: "radial-gradient(closest-side, #01070c 0%, rgba(1,7,12,0.85) 9%, transparent 16%)" }} />
       </div>
@@ -1156,33 +1154,44 @@ function Area6({ night, lowQ }) {
       {night ? (
         <>
           <StarLayers seed={611} n={80} y1={440} />
+          {/* แสงเหนือ: ขอบซ้าย-ขวาจางด้วย <mask> ใน SVG (วาดครั้งเดียวติดไปกับ texture)
+              แทน CSS mask-image เดิมที่ทำให้การ์ดจอต้องทำ mask ใหม่ทุกเฟรมระหว่างขยับ (สาเหตุกระตุก) */}
+          <svg className="jb-defs" width="0" height="0" aria-hidden="true">
+            <defs>
+              <linearGradient id={`${uid}auFade`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stopColor="#fff" stopOpacity="0" />
+                <stop offset="0.22" stopColor="#fff" stopOpacity="1" />
+                <stop offset="0.78" stopColor="#fff" stopOpacity="1" />
+                <stop offset="1" stopColor="#fff" stopOpacity="0" />
+              </linearGradient>
+              <mask id={`${uid}auMask`} maskContentUnits="objectBoundingBox">
+                <rect width="1" height="1" fill={`url(#${uid}auFade)`} />
+              </mask>
+              <linearGradient id={`${uid}au1`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#7cf5c8" stopOpacity="0" />
+                <stop offset="0.45" stopColor="#5ef0b0" stopOpacity="0.55" />
+                <stop offset="1" stopColor="#3fb8ff" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id={`${uid}au2`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#c58bff" stopOpacity="0" />
+                <stop offset="0.5" stopColor="#8f7bff" stopOpacity="0.45" />
+                <stop offset="1" stopColor="#5ee8ff" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
           <div className="jb-abs jb-aurora" style={box(-100, 10, 1100, 380, { animationDuration: "16s" })}>
             <svg viewBox="0 0 1100 380" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id={`${uid}au1`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#7cf5c8" stopOpacity="0" />
-                  <stop offset="0.45" stopColor="#5ef0b0" stopOpacity="0.55" />
-                  <stop offset="1" stopColor="#3fb8ff" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d="M 0 150 C 180 60 320 220 520 130 C 700 50 880 190 1100 110 L 1100 300 C 880 360 700 230 520 320 C 320 400 180 250 0 330 Z" fill={`url(#${uid}au1)`} />
+              <path mask={`url(#${uid}auMask)`} d="M 0 150 C 180 60 320 220 520 130 C 700 50 880 190 1100 110 L 1100 300 C 880 360 700 230 520 320 C 320 400 180 250 0 330 Z" fill={`url(#${uid}au1)`} />
             </svg>
           </div>
           <div className="jb-abs jb-aurora" style={box(640, 40, 1100, 340, { animationDuration: "21s", animationDelay: "-8s" })}>
             <svg viewBox="0 0 1100 340" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id={`${uid}au2`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#c58bff" stopOpacity="0" />
-                  <stop offset="0.5" stopColor="#8f7bff" stopOpacity="0.45" />
-                  <stop offset="1" stopColor="#5ee8ff" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d="M 0 120 C 220 40 380 190 600 100 C 800 30 940 150 1100 90 L 1100 260 C 940 320 800 200 600 280 C 380 360 220 220 0 300 Z" fill={`url(#${uid}au2)`} />
+              <path mask={`url(#${uid}auMask)`} d="M 0 120 C 220 40 380 190 600 100 C 800 30 940 150 1100 90 L 1100 260 C 940 320 800 200 600 280 C 380 360 220 220 0 300 Z" fill={`url(#${uid}au2)`} />
             </svg>
           </div>
           <div className="jb-abs jb-aurora" style={box(300, 80, 900, 260, { animationDuration: "13s", animationDelay: "-4s" })}>
             <svg viewBox="0 0 900 260" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M 0 110 C 160 50 300 160 460 90 C 620 30 760 120 900 70 L 900 180 C 760 230 620 140 460 200 C 300 260 160 170 0 220 Z" fill={`url(#${uid}au1)`} opacity="0.7" />
+              <path mask={`url(#${uid}auMask)`} d="M 0 110 C 160 50 300 160 460 90 C 620 30 760 120 900 70 L 900 180 C 760 230 620 140 460 200 C 300 260 160 170 0 220 Z" fill={`url(#${uid}au1)`} opacity="0.7" />
             </svg>
           </div>
         </>
@@ -1231,11 +1240,11 @@ function Area6({ night, lowQ }) {
           </svg>
         </div>
       ))}
+      {/* แก้กระตุก: เดิมแผ่นหิมะเต็มจอ 2 แผ่น + เกล็ด 52-60 -> เหลือแผ่นเดียว (เกล็ดใหญ่ชั้นใกล้) + เกล็ด 36-40 */}
       <div className="jb-parts" aria-hidden="true">
-        <div className={`jb-snowsheet s1${night ? " is-night" : ""}`} />
         <div className={`jb-snowsheet s2${night ? " is-night" : ""}`} />
       </div>
-      <Particles kind={night ? "snowNight" : "snow"} n={night ? 52 : 60} seed={night ? 631 : 632} lowQ={lowQ} />
+      <Particles kind={night ? "snowNight" : "snow"} n={night ? 36 : 40} seed={night ? 631 : 632} lowQ={lowQ} />
     </>
   );
 }

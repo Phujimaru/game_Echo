@@ -203,9 +203,14 @@
   from { opacity: 0.2; transform: translate3d(0, -0.6cqh, 0) scaleY(0.9); }
   to { opacity: 0.75; transform: translate3d(0, 0.6cqh, 0) scaleY(1.12); }
 }
+/* ขอบจางของแสงเหนืออยู่ใน SVG <mask> แล้ว (ดู Area6) — ห้ามใช้ CSS mask-image กับชั้นที่ขยับ (กระตุก) */
+.jb-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
 .jb-aurora {
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
   transform-origin: 50% 0%;
   will-change: transform, opacity;
   animation: jbAurora 16s ease-in-out infinite alternate;
