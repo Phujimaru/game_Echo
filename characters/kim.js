@@ -370,8 +370,8 @@ module.exports = {
   },
   applyCrit(engine, attacker, dmg, fx) {
     if (!isKim(attacker)) return dmg;
-    // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): อัตราคริของสนามบวกเข้าไปในอัตราของ Poise — ทอยครั้งเดียว ×2 เท่าเดิม
-    const field = engine.journeyCritBonus ? engine.journeyCritBonus() : 0;
+    // อัตราคริเพิ่ม (อาณาจักรน้ำแข็ง กลางวัน / คำสั่งขั้นเด็ดขาดของไรเนส) บวกเข้าไปในอัตราของ Poise — ทอยครั้งเดียว ×2 เท่าเดิม
+    const field = engine.critBonusFor ? engine.critBonusFor(attacker) : 0; // สนาม + บัฟอัตราคริ (ไรเนส)
     fx.field = field > 0;
     return this.rollCrit(engine, attacker, dmg, fx, field);
   },

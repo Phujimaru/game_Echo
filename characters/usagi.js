@@ -255,8 +255,8 @@ module.exports = {
   // คริติคอล 7% ต่อปรุๆ 1 หน่วย — คูณยอดสุทธิท้ายสุด (แพทเทิร์นเดียวกับดาบของเอจิ / ORT)
   applyCrit(engine, attacker, dmg, fx) {
     if (!isUsagi(attacker) || dmg <= 0) return dmg;
-    // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): อัตราคริของสนามบวกเข้าไปในอัตราของปรุๆ — ทอยครั้งเดียว ×2 เท่าเดิม
-    const field = (engine.journeyCritBonus ? engine.journeyCritBonus() : 0) / 100;
+    // อัตราคริเพิ่ม (อาณาจักรน้ำแข็ง กลางวัน / คำสั่งขั้นเด็ดขาดของไรเนส) บวกเข้าไปในอัตราของปรุๆ — ทอยครั้งเดียว ×2 เท่าเดิม
+    const field = (engine.critBonusFor ? engine.critBonusFor(attacker) : 0) / 100; // สนาม + บัฟอัตราคริ (ไรเนส)
     const chance = (attacker.usagiPuru || 0) * PURU_CRIT + field;
     if (!(Math.random() < chance)) return dmg;
     fx.crit = true;

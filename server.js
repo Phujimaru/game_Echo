@@ -2315,6 +2315,7 @@ function resetCombat(p) {
   CHAR_HOOKS.the_supplicant.resetCombat(p);
   CHAR_HOOKS.oberon_summer.resetCombat(p);  // โอเบรอน (ฤดูร้อน): คูลดาวน์/ล็อกรายช่อง + สตั้นที่จองไว้ (ติดที่เป้าหมาย)
   CHAR_HOOKS.artoria_caster.resetCombat(p); // จอมเวทย์ อาร์โทเรีย: คูลดาวน์สกิลพื้นฐาน/สกิลรอง
+  CHAR_HOOKS.reines.resetCombat(p);         // ไรเนส เอลเมลลอย: คูลดาวน์สกิลพื้นฐาน/ท่าไม้ตาย
   CHAR_HOOKS.usagi.resetCombat(p); // อุซากิ: โควตาสกิลพื้นฐาน / ปรุๆ / ข้อเสนอสลับไพ่ / โจทย์คณิต (ติดที่ผู้ถูกทำโจทย์)
   CHAR_HOOKS.kim.resetCombat(p); // Bamboo-Hatted Kim: ฝักดาบ/Poise/บัพ/คูลดาวน์ + เหน็บชาที่จองไว้ (ติดที่ผู้ถูกมอบ)
   CHAR_HOOKS.recruit.resetCombat(p); // Recruit: กระสุน / โควตาเตรียมตัว / ตัวนับเกราะ / คูลดาวน์ / QTE ที่ค้าง
@@ -2749,7 +2750,7 @@ function buildStateFor(viewerId) {
         // อุซากิ: ปรุๆ (เห็นทุกคน) · ข้อเสนอสลับไพ่ / โจทย์คณิต (เห็นเฉพาะเจ้าตัว — ไม่ส่งเฉลย)
         usagi: p.characterId === "usagi" ? CHAR_HOOKS.usagi.publicState(p) : undefined,
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)
@@ -3518,6 +3519,7 @@ function buyShopItem(id, itemId) {
   p.gold -= item.price;
   p.inventory.push({ uid: `${item.id}_${p.inventory.length}_${Date.now()}`, type: item.type, value: item.value, size: item.size, ammo: item.ammo, price: item.price });
   lastLog.push(`🛍️ ${p.name} ซื้อ ${shopItemName(item)} จากร้านค้ามายา (-${item.price} เหรียญ)`);
+  CHAR_HOOKS.reines.onShopBuy(engine, p, item); // ไรเนส (คุณนายใหญ่): 20% ได้เพิ่มอีก 1 ชิ้นฟรี (ไม่หักสต็อก)
   // คอนเนอร์ (วิเคราะห์สถานการณ์): "ซื้อของ" เป็น 1 ใน 4 การกระทำที่คอนเนอร์ต้องคาดการณ์
   CHAR_HOOKS.conner.onShopBuy(engine, p);
   broadcastState();
@@ -4556,6 +4558,8 @@ function useSkillCore(id, tier, targets, item) {
   if (isOberonSummer && !CHAR_HOOKS.oberon_summer.canUseSkill(engine, p, tier, targets)) return;
   const isArtoria = p.characterId === "artoria_caster";
   if (isArtoria && !CHAR_HOOKS.artoria_caster.canUseSkill(engine, p, tier, targets)) return;
+  const isReines = p.characterId === "reines";
+  if (isReines && !CHAR_HOOKS.reines.canUseSkill(engine, p, tier, targets)) return;
   // ---------- Recruit (characters/recruit.js) ----------
   //  คูลดาวน์ · กระสุนพอ · ไม่มี QTE/การเลือกเป้าค้าง · Desert Eagle / Barrett ต้องเลือกเป้าก่อนกด
   const isRecruitPick = p.characterId === "recruit";
@@ -4859,6 +4863,7 @@ function useSkillCore(id, tier, targets, item) {
   if (isKimPick) flashSuffix = CHAR_HOOKS.kim.applyInstantSkill(engine, p, tier) || flashSuffix;
   if (isOberonSummer) flashSuffix = CHAR_HOOKS.oberon_summer.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   if (isArtoria) flashSuffix = CHAR_HOOKS.artoria_caster.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
+  if (isReines) flashSuffix = CHAR_HOOKS.reines.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   if (isRecruitPick) flashSuffix = CHAR_HOOKS.recruit.applyInstantSkill(engine, p, tier, targets) || flashSuffix; // เปิด QTE
   if (isStrikerPick) flashSuffix = CHAR_HOOKS.striker.applyInstantSkill(engine, p, tier, item) || flashSuffix;
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : null; // ขีปนาวุธ: ยิงหลังวีดีโอ
@@ -5879,7 +5884,7 @@ function computeAttackBase(engine, attacker, target) {
   const journeyAtkFx = Journey.attackBonus(engine);
   const journeyAtk = journeyAtkFx ? journeyAtkFx.amount : 0;
   // โอเบรอน (ฤดูร้อน) / จอมเวทย์ อาร์โทเรีย: บัฟพลังโจมตีที่แจกให้คนอื่น — ungated แยกคนละสถานะจึงซ้อนกันได้
-  const giftAtk = CHAR_HOOKS.oberon_summer.atkBonus(attacker) + CHAR_HOOKS.artoria_caster.atkBonus(attacker);
+  const giftAtk = CHAR_HOOKS.oberon_summer.atkBonus(attacker) + CHAR_HOOKS.artoria_caster.atkBonus(attacker) + CHAR_HOOKS.reines.atkBonus(attacker);
   const base = baseHook + hookBonus + mark42Atk + journeyAtk + giftAtk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
     + (yuiRockAtk ? CHAR_HOOKS.yui.ROCK_ATK : 0) + (yuiMelodyAtk ? CHAR_HOOKS.yui.MELODY_ATK : 0)
     + cardAtkBonus;
@@ -6223,9 +6228,10 @@ function doAttack(byId, targetId) {
   const kimCritFx = {};
   dmg = CHAR_HOOKS.kim.applyCrit(engine, attacker, dmg, kimCritFx); // Bamboo-Hatted Kim: Poise 1.2%/หน่วย (+หัว 15%) ×2
   // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): ตัวละครที่ไม่มีอัตราคริเอง ได้คริติคอล 20% ×2
-  //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้ +20% บวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.journeyCritBonus)
+  //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้อัตราเพิ่มบวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.critBonusFor)
+  //  + บัฟอัตราคริของไรเนส (คำสั่งขั้นเด็ดขาด) ทอยรวมกับสนามครั้งเดียว
   const journeyCritFx = {};
-  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx);
+  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker));
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -6451,15 +6457,16 @@ function doAttack(byId, targetId) {
   const addFx = (x, side) => { if (x) fxSkills.push({ ...x, side }); };
   for (const fx of hisakawaAttackFx || []) addFx(fx, fx.side || "atk");
   if (isOrt(target) && dmg > 0) ortFx("hit");
-  if (usagiCritFx.crit) addFx({ name: `ปรุๆ คริติคอล ×2 (${usagiCritFx.chance}%${usagiCritFx.field ? " รวมอาณาจักรน้ำแข็ง" : ""})`, img: CHAR_HOOKS.usagi.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (usagiCritFx.crit) addFx({ name: `ปรุๆ คริติคอล ×2 (${usagiCritFx.chance}%${usagiCritFx.field ? " รวมโบนัสอัตราคริ" : ""})`, img: CHAR_HOOKS.usagi.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (ortCritFx.crit) addFx({ name: "คริติคอล ×2", img: CHAR_HOOKS.ort.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (CHAR_HOOKS.recruit.consumeHeadshot(attacker)) addFx({ name: "HeadShot +1", img: CHAR_HOOKS.recruit.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (mark42Atk > 0) addFx({ name: `เกราะ Mark 42 +${mark42Atk}`, img: Mark42.IMG.suit, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (journeyAtkFx) addFx({ name: journeyAtkFx.name, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of CHAR_HOOKS.oberon_summer.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.oberon_summer.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of CHAR_HOOKS.artoria_caster.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.artoria_caster.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
-  if (journeyCritFx.crit) addFx({ name: `อาณาจักรน้ำแข็ง — คริติคอล ×2 (${Journey.ICE_CRIT_PCT}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
-  if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%${kimCritFx.field ? " รวมอาณาจักรน้ำแข็ง" : ""})`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
+  for (const name of CHAR_HOOKS.reines.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.reines.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (journeyCritFx.crit) addFx({ name: `คริติคอล ×2 (${journeyCritFx.pct}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%${kimCritFx.field ? " รวมโบนัสอัตราคริ" : ""})`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of kimAtkFx) addFx({ name, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   if (accurate) addFx({ name: "แม่นยำ — เจาะการหลบหลีก", img: CHAR_HOOKS.tohno.IMG.ultimate, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (tohnoBurstFx.fired) addFx({ name: `มองเห็นแล้ว!! — ระเบิดรอยร้าว ${tohnoBurstFx.cracks} ขั้น (+${tohnoBurstFx.cracks})`, img: CHAR_HOOKS.tohno.IMG.ultimate, by: attacker.name, color: colorOf(attacker) }, "atk");
@@ -7673,7 +7680,8 @@ const engine = {
   sourceAccurate() { return !!effectSourceId && accurateActive(players[effectSourceId]); },
   accurateActive,
   journeyDotBonus() { return Journey.dotBonus(engine); },
-  journeyCritBonus() { return Journey.critBonus(engine); }, // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน) — อ่านใน applyCrit ของอุซากิ/Kim // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
+  // อัตราคริเพิ่ม (%) ของผู้โจมตี = สนาม (อาณาจักรน้ำแข็ง กลางวัน) + บัฟคำสั่งขั้นเด็ดขาด (ไรเนส) — อ่านใน applyCrit ของอุซากิ/Kim
+  critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
   journeyGiftItem, // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return colorOf(p); },
   nextTransformCounter() { return ++transformCounter; },

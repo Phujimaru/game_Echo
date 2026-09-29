@@ -2128,6 +2128,42 @@ const CHARACTERS = [
     },
   },
   {
+    // ---------- ไรเนส เอลเมลลอย — ระดับกลาง — ดู characters/reines.js ----------
+    id: "reines",
+    name: "ไรเนส เอลเมลลอย",
+    avatar: 0,
+    difficulty: "medium",
+    img: "/characters/reines/reines.jpg",
+    passive: {
+      name: "คุณนายใหญ่",
+      desc: "ซื้อของจากร้านค้า 1 ชิ้น มีโอกาส 20% ได้เพิ่มอีก 1 ชิ้นฟรี (ยกเว้นสินค้าที่มีได้ชิ้นเดียว: ปืนหน่วย GUTS Select / Hyper Key Trigger / Trigger Dark Key / เกราะ Mark 42)",
+    },
+    basic: {
+      name: "คำแนะนำชั้นครู",
+      desc: "ทำงานก่อนเปิดการ์ด (คูลดาวน์ 3 เทิร์น): มอบ \"คุ้มครอง\" ให้ทุกคน 1 เทิร์น และฟื้นแต้มสกิลให้ทุกคน 1 แต้ม ยกเว้นตัวเอง · โหมด duo/trio มอบให้ตัวเองและเพื่อนร่วมทีมเท่านั้น",
+      cost: 2,
+      img: "/characters/reines/reines_skill1.jpeg",
+      instant: true,
+      effect: null, // จัดการใน characters/reines.js
+    },
+    secondary: {
+      name: "คำสั่งขั้นเด็ดขาด",
+      desc: "ทำงานก่อนเปิดการ์ด: เลือกผู้เล่น 1 คน (เลือกตัวเองได้ · โหมด duo/trio เลือกได้เฉพาะเพื่อนร่วมทีม) พลังโจมตี +1 และอัตราคริติคอล +20% (2 เทิร์น) และมอบ \"โชคลาภ\" 1 หน่วย · ให้คนเดิมซ้ำ = ได้โชคลาภเพิ่ม ส่วนพลังโจมตี/อัตราคริแค่ต่ออายุ · หลังใช้ ไรเนสรับความเสียหาย 1 หน่วย (ลดเกราะก่อน)",
+      cost: 4,
+      img: "/characters/reines/reines_skill2.jpg",
+      instant: true,
+      effect: null,
+    },
+    ultimate: {
+      name: "แผนการลับสุดยอดชั้นครู",
+      desc: "ทำงานก่อนเปิดการ์ด (คูลดาวน์ 5 เทิร์น): ฝ่ายตรงข้ามทุกคนติด \"เปราะบาง\" และ \"อ่อนแอ\" 3 เทิร์น และแต้มสกิลลดลง 1 แต้ม (การลดแต้มสกิลต้านไม่ได้) · ไรเนสฟื้นพลังชีวิต 3 หน่วย",
+      cost: 6,
+      img: "/characters/reines/reines_skill3.jpg",
+      instant: true,
+      effect: null,
+    },
+  },
+  {
     // ---------- Bamboo-Hatted Kim — พิเศษ · เลือกได้คนเดียวต่อเกม — ดู characters/kim.js ----------
     //  พลังชีวิต 8 / เกราะ 2 (maxHpOf/maxArmorOf ใน server.js อ่านจาก CHAR_HOOKS.kim)
     id: "kim",

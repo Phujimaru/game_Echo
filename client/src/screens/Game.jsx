@@ -1494,6 +1494,7 @@ const STATUS_INFO = {
   obsDream:    { icon: "💤", label: "จุดจบของความฝัน", cls: "bg-echo-hp", desc: "จุดจบของความฝัน (โอเบรอน ฤดูร้อน): พลังโจมตี +4 เฉพาะเทิร์นนี้ — จบเทิร์นแล้วจะติดสตั้น 3 เทิร์น (ต้านสถานะผิดปกติกันได้)" },
   obsLark:     { icon: "🐦", label: "นกจาบยามเช้า", cls: "bg-echo-magenta", desc: "นกจาบยามเช้า (โอเบรอน ฤดูร้อน): เมื่อเริ่มเทิร์นถัดไปจะเสียพลังชีวิต 2 หน่วยแบบไม่สนเกราะ (ต้านสถานะกันไม่ได้)" },
   artCaliburn: { icon: "⚔️", label: "Around Caliburn", cls: "bg-echo-hp", desc: "Around Caliburn (อาร์โทเรีย): พลังโจมตี +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด (ไรเนส): พลังโจมตี +1 และอัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-gold text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   usagiMath:  { icon: "🧮", label: "โจทย์คณิต (เทิร์นที่เหลือ)", cls: "bg-echo-magenta", desc: "ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ (อุซากิ): ตอนกดและต้นเทิร์นถัดไปอีก 2 เทิร์น ฝ่ายตรงข้ามทุกคนต้องทำโจทย์คณิต 3 ข้อ ข้อละ 5 วินาที — ผิด/ไม่ทัน = ความเสียหาย 1 ต่อข้อ · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   yuiRock:    { icon: "\u{1F3B8}", label: "girl don't cry", cls: "bg-echo-gold text-gray-900", desc: "girl don't cry (ยุย): พลังโจมตี +1 · และคนที่แต้มสกิลน้อยที่สุดในวงจะได้รับแต้มสกิล +1 ทุกเทิร์น (ประเมินใหม่ทุกเทิร์น)" },
@@ -4702,7 +4703,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (tier === "secondary" && ch?.id === "usagi") { setUsagiSel(true); setSkillOpen(false); return; }
     // โอเบรอน (ฤดูร้อน) สกิลรอง/ท่าไม้ตาย · อาร์โทเรีย สกิลรอง: เข้าโหมดเลือกเป้าหมายกลาง (เลือกตัวเองได้)
     if (ch?.id === "oberon_summer" && (tier === "secondary" || tier === "ultimate")) { setGiftSel({ tier, anyone: true, name: ch[tier]?.name }); setSkillOpen(false); return; }
-    if (ch?.id === "artoria_caster" && tier === "secondary") { setGiftSel({ tier, anyone: false, name: ch[tier]?.name }); setSkillOpen(false); return; }
+    if ((ch?.id === "artoria_caster" || ch?.id === "reines") && tier === "secondary") { setGiftSel({ tier, anyone: false, name: ch[tier]?.name }); setSkillOpen(false); return; }
     // สไตรเกอร์ ยูเรก้า: ระบบขีปนาวุธ เลือกจำนวนนัดก่อน (เป็นเกียรติมากครับ ส่งคำขออนุมัติตรงๆ)
     if (tier === "ultimate" && ch?.id === "striker" && !me?.striker?.reactor) { setStrikerMissileOpen(true); setSkillOpen(false); return; }
     // Recruit: Desert Eagle / Barrett เลือกเป้าก่อน แล้ว server เปิด QTE ให้ · FAMAS กดแล้วเล่น QTE เลย

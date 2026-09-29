@@ -48,6 +48,7 @@ const tsurugi = require("./tsurugi");
 const usagi = require("./usagi"); // อุซากิ (เอาฮา · unique)
 const oberon_summer = require("./oberon_summer"); // โอเบรอน (ฤดูร้อน) — ระดับกลาง
 const artoria_caster = require("./artoria_caster"); // จอมเวทย์ อาร์โทเรีย — ระดับง่าย
+const reines = require("./reines"); // ไรเนส เอลเมลลอย — ระดับกลาง
 const kim = require("./kim"); // Bamboo-Hatted Kim (พิเศษ · unique)
 const recruit = require("./recruit"); // Recruit (ยาก · QTE)
 const striker = require("./striker"); // สไตรเกอร์ ยูเรก้า (พิเศษ · ผู้เล่น 2 คนบังคับร่วมกัน)
@@ -98,6 +99,7 @@ const CHARACTER_MODULES = [
   usagi,
   oberon_summer,
   artoria_caster,
+  reines,
   kim,
   recruit,
   striker,

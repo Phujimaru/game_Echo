@@ -169,18 +169,21 @@ module.exports = {
     return null;
   },
   // 6 กลางวัน: อัตราคริติคอลที่สนามให้ (%) — ตัวละครที่มีระบบคริเอง (OWN_CRIT_CHARS) บวกค่านี้เข้าไปในการทอยของตัวเอง
-  //  ผ่าน engine.journeyCritBonus() · ไม่มีการคูณซ้อน: หมัดหนึ่งคริได้ครั้งเดียว ×2 เสมอ
+  //  ผ่าน engine.critBonusFor(p) (สนาม + บัฟอัตราคริของตัวละคร เช่น คำสั่งขั้นเด็ดขาดของไรเนส) · หมัดหนึ่งคริได้ครั้งเดียว ×2 เสมอ
   critBonus(engine) {
     return is(engine, 6, "day") ? ICE_CRIT_PCT : 0;
   },
   // 6 กลางวัน: คริติคอลของสนามสำหรับตัวละครที่ไม่มีอัตราคริของตัวเอง (โอกาส 20% ×2)
-  applyCrit(engine, attacker, dmg, fx) {
+  //  extraPct = อัตราคริจากบัฟอื่นที่ไม่ใช่สนาม (ไรเนส) — รวมกันแล้วทอยครั้งเดียว
+  applyCrit(engine, attacker, dmg, fx, extraPct = 0) {
     if (!(dmg > 0) || OWN_CRIT_CHARS.has(attacker.characterId)) return dmg;
-    const pct = this.critBonus(engine);
+    const pct = this.critBonus(engine) + extraPct;
     if (!pct || !roll(pct)) return dmg;
     fx.crit = true;
+    fx.pct = pct;
     return dmg * 2;
   },
+  OWN_CRIT_CHARS,
 
   // ---------- 3 กลางคืน: ดาเมจสถานะต่อเนื่อง ----------
   dotBonus(engine) {
