@@ -79,7 +79,7 @@ const IMG = {
   ult1: `${DIR}/สกิลอัลติเมต/Card Yield My Flesh.webp`,
   ult2: `${DIR}/สกิลอัลติเมต/Card To Claim Their Bones.webp`,
 };
-const VIDEO = { awake: `${DIR}/Bamboo-Hatted Kim Awake Vedio.mp4` };
+const VIDEO = { awake: `${DIR}/New Awakening.mp4` }; // เปลี่ยนจาก "Bamboo-Hatted Kim Awake Vedio.mp4" (เข้ารหัสใหม่ตามมาตรฐานสตรีม)
 // คีย์เสียงฝั่ง client (client/src/audio.js)
 const SFX = { basic: "kim_draw", secondary: "kim_overthrow", stance: "kim_counter", bones: "kim_bones" };
 const MUSIC = "kim_awake";
@@ -420,6 +420,10 @@ module.exports = {
     return n;
   },
   hasCounter(p) { return isKim(p) && (p.kim.bones || (p.statuses.kimCounter || 0) > 0); },
+  // Counter Stance สวนกลับได้เทิร์นละ 1 ครั้ง (ทั้งจากโจมตีปกติและดาเมจจากสกิล) — ครั้งต่อไปในเทิร์นเดียวกันไม่สวน
+  stanceReady(engine, k) {
+    return (k.statuses.kimCounter || 0) > 0 && k.kim.stanceRound !== engine.roundNumber;
+  },
   // สวนกลับดาเมจจากสกิลที่จองไว้ — คืน true ถ้ามีการสวนเกิดขึ้น (ผู้เรียก broadcast)
   flushCounters(engine) {
     let fired = false;
@@ -431,7 +435,7 @@ module.exports = {
         const a = engine.players[id];
         if (!k.alive || !a || !a.alive || engine.sameTeam(k, a)) continue;
         if (k.kim.bones) this.counterBones(engine, k, a);
-        else if ((k.statuses.kimCounter || 0) > 0) this.counterStance(engine, k, a);
+        else if (this.stanceReady(engine, k)) this.counterStance(engine, k, a);
         else continue;
         fired = true;
       }
@@ -454,7 +458,7 @@ module.exports = {
     }
     if (!attacker.alive || engine.sameTeam(target, attacker) || !(dmg > 0)) return null;
     if (k.bones) return this.counterBones(engine, target, attacker);
-    if ((target.statuses.kimCounter || 0) > 0) return this.counterStance(engine, target, attacker);
+    if (this.stanceReady(engine, target)) return this.counterStance(engine, target, attacker);
     return null;
   },
   hitBack(engine, kim, t, n) {
@@ -468,6 +472,7 @@ module.exports = {
     }
   },
   counterStance(engine, kim, attacker) {
+    kim.kim.stanceRound = engine.roundNumber; // ใช้สิทธิ์สวนของเทิร์นนี้แล้ว
     const fx = {};
     const dmg = this.rollCrit(engine, kim, this.counterBase(kim), fx);
     engine.withEffectSource(kim, () => {

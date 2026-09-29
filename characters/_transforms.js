@@ -165,7 +165,7 @@ module.exports = function buildTransforms(img) {
     strikerTiming:    { img: strikerChar.IMG.base,    video: strikerChar.VIDEO.timing,    title: "อาศัยจังหวะ", label: "โจมตีสวนกลับ", seconds: 10, music: null, afterReveal: false },
     recruitFail: { img: recruitChar.IMG.skill1, video: recruitChar.VIDEO.fail, title: "Desert Eagle", label: "ยิงพลาด", seconds: 2, music: null, afterReveal: false, noIntro: true },
     recruitUlt:  { img: recruitChar.IMG.skill3, video: recruitChar.VIDEO.ult,  title: "Barrett M82A1", label: "ยิงโดน", seconds: 10, music: null, afterReveal: false },
-    kimAwake:    { img: kimChar.IMG.awake, video: kimChar.VIDEO.awake, title: "Awake", label: "ฝักดาบที่เต็มไปด้วยความขุ่นเคือง", seconds: 11, music: null, afterReveal: false },
+    kimAwake:    { img: kimChar.IMG.awake, video: kimChar.VIDEO.awake, title: "Awake", label: "ฝักดาบที่เต็มไปด้วยความขุ่นเคือง", seconds: 10, music: null, afterReveal: false },
     // อุซากิ: เล่นทุกครั้ง (queueCutscene) — ท่าไม้ตายตอนกด / สกิลรองตอนกด "เอา" แล้วค่อยสลับไพ่
     usagiUlt:    { img: usagiChar.IMG.skill3, video: usagiChar.VIDEO.ult,  title: "ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ", label: "โจทย์คณิต 3 เทิร์น", seconds: 3, music: null, afterReveal: false },
     usagiSwap:   { img: usagiChar.IMG.skill2, video: usagiChar.VIDEO.swap, title: "ปรุ้ต.....", label: "สลับไพ่ทั้งมือ", seconds: 5, music: null, afterReveal: false },
@@ -215,7 +215,7 @@ module.exports = function buildTransforms(img) {
     // Escanor: วิดีโอเต็มจอของแต่ละเหตุการณ์เล่นได้ครั้งเดียวต่อแมตช์/ต่อผู้เล่นผ่าน triggerCutscene
     // seconds วัดจาก mvhd จริงและเผื่อเวลาตัดฉาก ~1 วินาที เพื่อไม่ให้วิดีโอถูกตัดก่อนจบ
     escanorMorning: { img: "/characters/escanor/ร่าง เช้า Profile.png", video: "/characters/escanor/ร่าง เช้า Animation.mp4", title: "ESCANOR", label: "เข้าสู่ร่าง Morning", seconds: 19, music: null, afterReveal: false },
-    escanorLastStand: { img: "/characters/escanor/Last Stand Profile.png", video: "/characters/escanor/Last Stand.mp4", title: "LAST STAND", label: "คืนชีพ", seconds: 6, music: null, afterReveal: false },
+    escanorLastStand: { img: "/characters/escanor/Last Stand Profile.png", video: "/characters/escanor/New Last Stand.mp4", title: "LAST STAND", label: "คืนชีพ", seconds: 4, music: null, afterReveal: false }, // คลิปใหม่ 2.8 วิ + การ์ดเปิดตัว ~1 วิ
     escanorBasic1: { img: "/characters/escanor/สกิลพื้นฐาน/สกิลพื้นฐาน 1 บอลเพลิงสุริยะ.png.jpg", video: "/characters/escanor/สกิลพื้นฐาน/สกิลพื้นฐาน 1 บอลเพลิงสุริยะ.mp4", title: "บอลเพลิงสุริยะ", label: "ใช้สกิลพื้นฐาน", seconds: 12, music: null, afterReveal: false },
     escanorSecondary1: { img: "/characters/escanor/สกิลรอง/สกิลรอง 1 เพลิงปะทุ.jpg", video: "/characters/escanor/สกิลรอง/สกิลรอง 1 เพลิงปะทุ.mp4", title: "เพลิงปะทุ", label: "โจมตี", seconds: 7, music: null, afterReveal: false },
     escanorUltimate1: { img: "/characters/escanor/สกิลอัลติเมต/Rhitta.jpg", video: "/characters/escanor/สกิลอัลติเมต/สกิลอัลติเมต 1 Divin Axe Rhitta.mp4", title: "DIVIN AXE RHITTA", label: "โจมตี", seconds: 12, music: null, afterReveal: false },

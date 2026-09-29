@@ -125,6 +125,19 @@ test('Counter Stance: ถูกโจมตีปกติแล้วสวน�
   assert.equal(K.statuses.kimCounter, 2, 'สวนได้ตลอดอายุสถานะ');
 });
 
+test('Counter Stance สวนกลับได้เทิร์นละ 1 ครั้ง · เทิร์นถัดไปสวนได้อีก', () => {
+  const { K, T } = setup();
+  engine.useSkill('K', 'secondary');
+  T.hp = 7; T.armor = 0;
+  withRandom(0.99, () => attack('T', 'K'));
+  assert.equal(T.hp, 6, 'ครั้งแรกสวน');
+  withRandom(0.99, () => attack('T', 'K'));
+  assert.equal(T.hp, 6, 'ครั้งที่สองในเทิร์นเดียวกันไม่สวน');
+  engine.setRoundNumber(engine.roundNumber + 1);
+  withRandom(0.99, () => attack('T', 'K'));
+  assert.equal(T.hp, 5, 'เทิร์นใหม่สวนได้อีก');
+});
+
 test('จักเฉือนเลือดเนื้อตน (หัว): จั่วไม่ได้ แต้ม 0 แพ้ -> To Claim Their Bones + Yield My Flesh = รวมร่าง', () => {
   const { K, T } = setup();
   K.kim.coin = 'heads';
