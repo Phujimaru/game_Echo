@@ -3,7 +3,7 @@
 //
 //  "ผู้เล่นทุกคน" = ffa: ทุกคนที่ยังอยู่ (รวมฝ่ายตรงข้าม) · โหมดทีม/Raid: ตัวเอง + เพื่อนร่วมทีมเท่านั้น
 //  สกิลพื้นฐาน เสน่ห์แห่งความหวัง (0 แต้ม · คูลดาวน์ 5 เทิร์น) — ทำงานก่อนเปิดการ์ด
-//    ผู้เล่นทุกคน พลังโจมตี +1 (3 เทิร์น) และแต้มสกิล +3
+//    ผู้เล่นทุกคน แต้มสกิล +3 (เดิมมีพลังโจมตี +1 ด้วย — ถอดออกตามคำขอผู้เล่น)
 //  สกิลรอง ผู้พิทักษ์ทะเลสาบ (0 แต้ม · คูลดาวน์ 2 เทิร์น) — ทำงานก่อนเปิดการ์ด
 //    เลือก 1 คน (โหมดทีม: ตัวเอง/เพื่อนร่วมทีม · ffa: ใครก็ได้) แต้มสกิล +1 และ "ความหวัง" 2 เทิร์น
 //  ท่าไม้ตาย Around Caliburn (8 แต้ม · วีดีโอทุกครั้งที่กด) — ทำงานก่อนเปิดการ์ด
@@ -11,7 +11,7 @@
 //  สกิลติดตัว หัวใจที่บริสุทธิ์ — ต้นเทิร์นที่ 3, 6, 9, … หลบหลีก 1 สแตค (อยู่ 1 เทิร์น ใช้ได้ 1 ครั้ง) + ฟื้นพลังชีวิต 2
 //  บัฟเฉพาะตัว "ความหวัง" (artHope) — ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
 //
-//  พลังโจมตี +1 ของสกิลพื้นฐาน (artCharm) กับท่าไม้ตาย (artCaliburn) เป็นคนละสถานะ จึงซ้อนกันได้ (+2)
+//  พลังโจมตี +1 ของท่าไม้ตาย (artCaliburn) กดซ้ำ = รีเซ็ตเวลากลับเป็น 3 เทิร์น ไม่ซ้อน
 //  คูลดาวน์เก็บเป็นเลขรอบ: กดเทิร์น N คูลดาวน์ 5 = กดได้อีกเทิร์น N+5
 // ============================================================
 
@@ -25,8 +25,6 @@ const IMG = {
 };
 const VIDEO = { ult: `${DIR}/artoria_caster_skill3.mp4` };
 
-const CHARM_ATK = 1;
-const CHARM_TURNS = 3;
 const CHARM_SKILL = 3;
 const CHARM_COOLDOWN = 5;
 const LAKE_SKILL = 1;
@@ -55,7 +53,7 @@ function pickTarget(engine, p, targets) {
 module.exports = {
   id: ID,
   IMG, VIDEO,
-  CHARM_ATK, CHARM_SKILL, CHARM_COOLDOWN, LAKE_COOLDOWN, CALIBURN_HEAL, HEART_EVERY, HEART_HEAL,
+  CHARM_SKILL, CHARM_COOLDOWN, LAKE_COOLDOWN, CALIBURN_HEAL, HEART_EVERY, HEART_HEAL,
 
   resetCombat(p) {
     p.artCharmReady = 0; // เสน่ห์แห่งความหวัง: กดได้อีกเมื่อ roundNumber >= ค่านี้
@@ -65,11 +63,10 @@ module.exports = {
   // พลังโจมตีจากท่าของอาร์โทเรีย (ungated — อ่านที่ computeAttackBase ใครติดก็ได้)
   atkBonus(p) {
     if (!p || !p.statuses) return 0;
-    return ((p.statuses.artCharm || 0) > 0 ? CHARM_ATK : 0) + ((p.statuses.artCaliburn || 0) > 0 ? CALIBURN_ATK : 0);
+    return (p.statuses.artCaliburn || 0) > 0 ? CALIBURN_ATK : 0;
   },
   atkFx(p) {
     const out = [];
-    if ((p.statuses.artCharm || 0) > 0) out.push(`เสน่ห์แห่งความหวัง +${CHARM_ATK}`);
     if ((p.statuses.artCaliburn || 0) > 0) out.push(`Around Caliburn +${CALIBURN_ATK}`);
     return out;
   },
@@ -88,11 +85,8 @@ module.exports = {
     if (tier === "basic") {
       p.artCharmReady = round + CHARM_COOLDOWN;
       const list = allies(engine, p);
-      for (const o of list) {
-        engine.applyBuff(o, "artCharm", CHARM_ATK, CHARM_TURNS);
-        engine.addSkill(o, CHARM_SKILL);
-      }
-      engine.log(`🌸 ${p.name} เสน่ห์แห่งความหวัง — ${list.length} คน พลังโจมตี +${CHARM_ATK} (${CHARM_TURNS} เทิร์น) และแต้มสกิล +${CHARM_SKILL}`);
+      for (const o of list) engine.addSkill(o, CHARM_SKILL);
+      engine.log(`🌸 ${p.name} เสน่ห์แห่งความหวัง — ${list.length} คน แต้มสกิล +${CHARM_SKILL}`);
       return "";
     }
     if (tier === "secondary") {

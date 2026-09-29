@@ -51,13 +51,13 @@ test('ข้อมูล: ระดับง่าย · ราคา 0/0/8', ()
   assert.deepEqual([c.basic.cost, c.secondary.cost, c.ultimate.cost], [0, 0, 8]);
 });
 
-test('เสน่ห์แห่งความหวัง: ffa ทุกคน +1 พลังโจมตี 3 เทิร์น + แต้มสกิล 3 · คูลดาวน์ 5 เทิร์น', () => {
+test('เสน่ห์แห่งความหวัง: ffa ทุกคนแต้มสกิล +3 (ไม่เพิ่มพลังโจมตี) · คูลดาวน์ 5 เทิร์น', () => {
   const { A, M, T } = setup();
   const r0 = engine.roundNumber;
   engine.useSkill('A', 'basic');
   for (const p of [A, M, T]) {
-    assert.equal(p.statuses.artCharm, 3);
     assert.equal(p.skillPoints, 3);
+    assert.equal(art.atkBonus(p), 0, 'ไม่เพิ่มพลังโจมตีแล้ว');
   }
   A.skillUsedRound = false;
   assert.equal(art.canUseSkill(engine, A, 'basic'), false);
@@ -94,15 +94,18 @@ test('ความหวัง: ออกหมัดโจมตีปกติ
   assert.equal(T.skillPoints, before + 1);
 });
 
-test('พลังโจมตีจากสกิลพื้นฐานกับท่าไม้ตายซ้อนกันได้ (+2)', () => {
+test('Around Caliburn กดซ้ำ: พลังโจมตี +1 รีเซ็ตเวลา ไม่ซ้อน', () => {
   const { A, T } = setup();
-  engine.useSkill('A', 'basic');
+  A.skillPoints = 8;
+  engine.useSkill('A', 'ultimate');
+  A.statuses.artCaliburn = 1;
   A.skillUsedRound = false;
   A.skillPoints = 8;
   engine.useSkill('A', 'ultimate');
+  assert.equal(A.statuses.artCaliburn, 3, 'รีเซ็ตกลับเป็น 3 เทิร์น');
   T.hp = 7; T.armor = 0; T.evadeStacks = []; delete T.statuses.evade;
   attack('A', 'T');
-  assert.equal(T.hp, 4, 'พลังโจมตี 1 + 1 + 1');
+  assert.equal(T.hp, 5, 'พลังโจมตี 1 + 1 (ไม่ใช่ +2)');
 });
 
 test('Around Caliburn: ทุกคน +1 พลังโจมตี · หลบหลีก 1 · ล้างดีบัฟล่าสุด · ฟื้น 2 · วีดีโอทุกครั้ง', () => {
