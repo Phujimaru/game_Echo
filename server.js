@@ -1473,6 +1473,9 @@ function onCardDrawn(p, card) {
 }
 // แดง/เขียว/เหลือง ครบ 3 ใบ: ประเมินครั้งเดียวตอนเปิดไพ่ (lock) จากมือสุดท้ายทั้งหมด
 function applyLockColorTriggers(p) {
+  // ไพ่ฟ้าปกติทำงานตอนจั่ว — แต่ไพ่ที่ถูกเปลี่ยนสีทีหลัง (นางเงือกน้อยของแอนเดอร์เซน) ต้องได้ผลตอนเปิดไพ่
+  //  checkBlueTrigger นับชุดที่ให้ผลไปแล้ว (colorTrigger.blue) จึงเรียกซ้ำได้โดยไม่ให้ผลซ้ำ
+  if (p.colorTrigger) checkBlueTrigger(p);
   for (const color of ["red", "green", "yellow"]) {
     const n = Math.floor(p.cards.filter((c) => c.color === color).length / 3);
     if (n <= 0) continue;
@@ -2316,6 +2319,7 @@ function resetCombat(p) {
   CHAR_HOOKS.oberon_summer.resetCombat(p);  // โอเบรอน (ฤดูร้อน): คูลดาวน์/ล็อกรายช่อง + สตั้นที่จองไว้ (ติดที่เป้าหมาย)
   CHAR_HOOKS.artoria_caster.resetCombat(p); // จอมเวทย์ อาร์โทเรีย: คูลดาวน์สกิลพื้นฐาน/สกิลรอง
   CHAR_HOOKS.reines.resetCombat(p);         // ไรเนส เอลเมลลอย: คูลดาวน์สกิลพื้นฐาน/ท่าไม้ตาย
+  CHAR_HOOKS.andersen.resetCombat(p);       // แอนเดอร์เซน: คูลดาวน์สกิลพื้นฐาน + ตัวนับไพ่ที่จั่วเอง
   CHAR_HOOKS.usagi.resetCombat(p); // อุซากิ: โควตาสกิลพื้นฐาน / ปรุๆ / ข้อเสนอสลับไพ่ / โจทย์คณิต (ติดที่ผู้ถูกทำโจทย์)
   CHAR_HOOKS.kim.resetCombat(p); // Bamboo-Hatted Kim: ฝักดาบ/Poise/บัพ/คูลดาวน์ + เหน็บชาที่จองไว้ (ติดที่ผู้ถูกมอบ)
   CHAR_HOOKS.recruit.resetCombat(p); // Recruit: กระสุน / โควตาเตรียมตัว / ตัวนับเกราะ / คูลดาวน์ / QTE ที่ค้าง
@@ -2749,8 +2753,9 @@ function buildStateFor(viewerId) {
         ortLostTurns: mine ? CHAR_HOOKS.ort.lostTurnsLeft(engine, p) : 0,
         // อุซากิ: ปรุๆ (เห็นทุกคน) · ข้อเสนอสลับไพ่ / โจทย์คณิต (เห็นเฉพาะเจ้าตัว — ไม่ส่งเฉลย)
         usagi: p.characterId === "usagi" ? CHAR_HOOKS.usagi.publicState(p) : undefined,
+        andersen: p.characterId === "andersen" ? CHAR_HOOKS.andersen.publicState(p) : undefined, // ตัวนับไพ่ที่จั่วเอง
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)
@@ -4073,6 +4078,7 @@ function hit(id) {
     drawn = drawCardFor(p);
     if (drawn) p.cards.push(drawn);
   }
+  let drewCount = drawn ? 1 : 0; // แอนเดอร์เซน (สุดยอดนักเขียน): นับเฉพาะไพ่ที่ผู้เล่นกดจั่วเอง
   if (drawn) {
     onCardDrawn(p, drawn); CHAR_HOOKS.escanor.onCardDraw(engine, p); CHAR_HOOKS.eiji.onCardDraw(engine, p);
   }
@@ -4084,9 +4090,11 @@ function hit(id) {
     if (extra) {
       p.cards.push(extra);
       onCardDrawn(p, extra);
+      drewCount++;
       lastLog.push(`🌀 ${p.name} อยู่ในสภาพชา — จั่วติดมาอีกใบ (${cardLabel(extra)})`);
     }
   }
+  CHAR_HOOKS.andersen.onPlayerDraw(engine, p, drewCount);
   // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): การจั่วไพ่ทำให้เครียด +1 — นับครั้งเดียวต่อเทิร์นไม่ว่าจะจั่วกี่ใบ
   //  นับเฉพาะตอนได้ไพ่จริง (กองหมดกลางคัน = ไม่นับ)
   // โปรดิวเซอร์ (โคฮารุ): ไพ่ใบแรกของเทิร์นถูกพลิกเครื่องหมายเป็นลบ — ต้องทำ "ก่อน" onCardDrawn
@@ -4560,6 +4568,8 @@ function useSkillCore(id, tier, targets, item) {
   if (isArtoria && !CHAR_HOOKS.artoria_caster.canUseSkill(engine, p, tier, targets)) return;
   const isReines = p.characterId === "reines";
   if (isReines && !CHAR_HOOKS.reines.canUseSkill(engine, p, tier, targets)) return;
+  const isAndersen = p.characterId === "andersen";
+  if (isAndersen && !CHAR_HOOKS.andersen.canUseSkill(engine, p, tier, targets, item)) return;
   // ---------- Recruit (characters/recruit.js) ----------
   //  คูลดาวน์ · กระสุนพอ · ไม่มี QTE/การเลือกเป้าค้าง · Desert Eagle / Barrett ต้องเลือกเป้าก่อนกด
   const isRecruitPick = p.characterId === "recruit";
@@ -4864,6 +4874,7 @@ function useSkillCore(id, tier, targets, item) {
   if (isOberonSummer) flashSuffix = CHAR_HOOKS.oberon_summer.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   if (isArtoria) flashSuffix = CHAR_HOOKS.artoria_caster.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   if (isReines) flashSuffix = CHAR_HOOKS.reines.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
+  if (isAndersen) flashSuffix = CHAR_HOOKS.andersen.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
   if (isRecruitPick) flashSuffix = CHAR_HOOKS.recruit.applyInstantSkill(engine, p, tier, targets) || flashSuffix; // เปิด QTE
   if (isStrikerPick) flashSuffix = CHAR_HOOKS.striker.applyInstantSkill(engine, p, tier, item) || flashSuffix;
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : null; // ขีปนาวุธ: ยิงหลังวีดีโอ
@@ -6231,7 +6242,7 @@ function doAttack(byId, targetId) {
   //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้อัตราเพิ่มบวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.critBonusFor)
   //  + บัฟอัตราคริของไรเนส (คำสั่งขั้นเด็ดขาด) ทอยรวมกับสนามครั้งเดียว
   const journeyCritFx = {};
-  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker));
+  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker) + CHAR_HOOKS.andersen.critBonus(attacker));
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -6664,6 +6675,7 @@ function endTurn() {
       if (k === "chill") continue;  // ชิวๆครับน้องๆ (Apple guy): คงอยู่จนกว่าจะถูกโจมตี ไม่ลดเทิร์น
       // โหมงานหนัก (โคโตเนะ patch พิเศษ): คงอยู่ 3 เทิร์นแล้วหมดเอง (หรือลบก่อนด้วย Sleeping time ตอนกลางคืน)
       // ksleep (Sleeping time patch 2.1.3): นับถอยหลังตามปกติ 2 เทิร์นตายตัว — ตื่นเองแล้วรับ [เช้าที่สดใส] (ดูด้านล่าง)
+      if (k === "andInk") continue;  // แอนเดอร์เซน: ลดตัวนับเองหลังแจกแต้มสกิลใน andersen.onEndTurn
       if (k === "hbleed") continue;  // เลือดไหล (patch 2.5): ลดลงเองในตอนต้นเทิร์นหลังสร้างผล (tickBleed) ไม่ลดซ้ำที่นี่
       if (k === "hburn") continue;   // ลุกไหม้ (ฮิคารุ patch 2.1.3): ลดลงเองในตอนต้นเทิร์นหลังสร้างผล (ดูด้านล่าง) ไม่ลดซ้ำที่นี่
       if (k === "melody") continue;  // ท่วงทำนอง (ชเรด เอลัน): สแตคถาวร สะสมจนครบ 5 เพื่อรวมร่าง
@@ -6852,6 +6864,7 @@ function endTurn() {
   Journey.onEndTurn(engine);
   // โอเบรอน (ฤดูร้อน): สตั้นจากจุดจบของความฝัน (ต้องอยู่หลังลูปลดเทิร์น = เต็ม 3 เทิร์นถัดไป) + สกิลติดตัวหน้าไหว้หลังหลอก
   CHAR_HOOKS.oberon_summer.onEndTurn(engine);
+  CHAR_HOOKS.andersen.onEndTurn(engine); // แอนเดอร์เซน: แต้มสกิล +1 ทุกจบเทิร์นจากท่าไม้ตาย (andInk)
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
@@ -7681,7 +7694,7 @@ const engine = {
   accurateActive,
   journeyDotBonus() { return Journey.dotBonus(engine); },
   // อัตราคริเพิ่ม (%) ของผู้โจมตี = สนาม (อาณาจักรน้ำแข็ง กลางวัน) + บัฟคำสั่งขั้นเด็ดขาด (ไรเนส) — อ่านใน applyCrit ของอุซากิ/Kim
-  critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
+  critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p) + CHAR_HOOKS.andersen.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
   journeyGiftItem, // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return colorOf(p); },
   nextTransformCounter() { return ++transformCounter; },
@@ -7720,6 +7733,7 @@ const engine = {
   hasBlackSparklence,
   hasGutsWeapon,
   hit,
+  lock, // เปิดไพ่ (เทสต์ใช้ตรวจผลไพ่ครบชุดตอนเปิดไพ่)
   get shopItems() { return shopItems; },
   setShopItems(v) { shopItems = v; },
   NETRAMANA_KILL_CHANCE,

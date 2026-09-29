@@ -9,7 +9,7 @@ const LEVEL = 3;
 const DIFFICULTY_GROUPS = [
   { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["hikaru", "mageslayer", "ignis", "daichi", "artoria_caster"] },
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines"] },
-  { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno"] },
+  { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["appleguy", "dan", "usagi"] },
   { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["satoru"] },
   { key: "impossible", label: "ทักษิณ จะโปรหาบิดาท่านหรือ?", color: "#450a0a", order: ["nanaya", "princess_shiki"] },

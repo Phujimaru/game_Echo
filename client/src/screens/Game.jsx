@@ -1494,6 +1494,9 @@ const STATUS_INFO = {
   obsDream:    { icon: "💤", label: "จุดจบของความฝัน", cls: "bg-echo-hp", desc: "จุดจบของความฝัน (โอเบรอน ฤดูร้อน): พลังโจมตี +4 เฉพาะเทิร์นนี้ — จบเทิร์นแล้วจะติดสตั้น 3 เทิร์น (ต้านสถานะผิดปกติกันได้)" },
   obsLark:     { icon: "🐦", label: "นกจาบยามเช้า", cls: "bg-echo-magenta", desc: "นกจาบยามเช้า (โอเบรอน ฤดูร้อน): เมื่อเริ่มเทิร์นถัดไปจะเสียพลังชีวิต 2 หน่วยแบบไม่สนเกราะ (ต้านสถานะกันไม่ได้)" },
   artCaliburn: { icon: "⚔️", label: "Around Caliburn", cls: "bg-echo-hp", desc: "Around Caliburn (อาร์โทเรีย): พลังโจมตี +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  andView:     { icon: "👁️", label: "มุมมองใหม่", cls: "bg-echo-gold text-gray-900", desc: "มุมมองใหม่ (แอนเดอร์เซน): เทิร์นนี้ท่าไม้ตาย Märchen Meines Lebens มีโอกาสเกิดผลแต่ละอย่าง +25% (25% -> 50%)" },
+  andInk:      { icon: "✒️", label: "หมึกแห่งเรื่องเล่า", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): จบเทิร์นได้แต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  andCrit:     { icon: "📖", label: "บทที่งดงาม", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): อัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด (ไรเนส): พลังโจมตี +1 และอัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-gold text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   usagiMath:  { icon: "🧮", label: "โจทย์คณิต (เทิร์นที่เหลือ)", cls: "bg-echo-magenta", desc: "ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ (อุซากิ): ตอนกดและต้นเทิร์นถัดไปอีก 2 เทิร์น ฝ่ายตรงข้ามทุกคนต้องทำโจทย์คณิต 3 ข้อ ข้อละ 5 วินาที — ผิด/ไม่ทัน = ความเสียหาย 1 ต่อข้อ · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
@@ -3840,6 +3843,22 @@ function ConnorPredictModal({ me, players, onSubmit, onClose }) {
 }
 
 // ---------- ยุย: เลือกเพลงก่อนเริ่ม QTE (เพลงชุบชีวิตต้องเลือกคนตายด้วย) ----------
+// แอนเดอร์เซน "นางเงือกน้อยของฉัน": เลือกสีก่อน แล้วค่อยเข้าโหมดเลือกเป้าหมาย (สำเร็จ 50% — ไม่สำเร็จได้สีอื่นทั้งมือ)
+function AndersenColorModal({ onPick, onClose }) {
+  return (
+    <AvModal label="นางเงือกน้อยของฉัน" title="เลือกสีที่จะเปลี่ยนไพ่ทั้งมือ" onClose={onClose} width="min(30rem, 94vw)">
+      <div className="text-sm opacity-75 mb-3">โอกาสเปลี่ยนเป็นสีที่เลือก 50% — ถ้าไม่สำเร็จ ไพ่ทั้งมือจะเปลี่ยนเป็นสีอื่นสีเดียวกันแทน · ผลไพ่ครบชุดออกตอนเปิดไพ่</div>
+      <div className="grid grid-cols-2 gap-2">
+        {CARD_COLOR_OPTIONS.map((c) => (
+          <button key={c.key} onClick={() => { clickSound(); onPick(c.key); }} className={`${c.swatch} rounded-xl py-3 font-black text-white text-hard border border-black/30 hover:scale-[1.03] transition`}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+    </AvModal>
+  );
+}
+
 function YuiSongModal({ me, onPick, onClose }) {
   const [pick, setPick] = useState(null);
   const [target, setTarget] = useState(null);
@@ -4207,6 +4226,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [brianKeyOpen, setBrianKeyOpen] = useState(false);
   const [brianSel, setBrianSel] = useState(false);           // ไบรอัน: โหมดเลือกเป้าหมายของ "การแข่งที่มีเดิมพัน"
   const [connorPredictOpen, setConnorPredictOpen] = useState(false); // คอนเนอร์: โมดัลวิเคราะห์สถานการณ์ (เลือกเป้าหมาย + เรียงลำดับ)
+  const [andersenColorOpen, setAndersenColorOpen] = useState(false); // แอนเดอร์เซน: หน้าต่างเลือกสีของ "นางเงือกน้อยของฉัน"
   const [giftSel, setGiftSel] = useState(null);              // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: { tier, anyone } ที่กำลังรอจิ้มเป้าหมาย
   const [supSel, setSupSel] = useState(null);                // ผู้วิงวอน: tier ที่กำลังรอจิ้มเป้าหมาย (ทั้งสามช่อง เลือกตัวเองได้)
   const [kaiCreateSel, setKaiCreateSel] = useState(false);   // ไค: โหมดเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์ (เลือกตัวเองได้)
@@ -4703,6 +4723,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (tier === "secondary" && ch?.id === "usagi") { setUsagiSel(true); setSkillOpen(false); return; }
     // โอเบรอน (ฤดูร้อน) สกิลรอง/ท่าไม้ตาย · อาร์โทเรีย สกิลรอง: เข้าโหมดเลือกเป้าหมายกลาง (เลือกตัวเองได้)
     if (ch?.id === "oberon_summer" && (tier === "secondary" || tier === "ultimate")) { setGiftSel({ tier, anyone: true, name: ch[tier]?.name }); setSkillOpen(false); return; }
+    // แอนเดอร์เซน: สกิลพื้นฐานเลือกใครก็ได้ · สกิลรองเลือกสีก่อนแล้วค่อยเลือกเป้าหมาย
+    if (ch?.id === "andersen" && tier === "basic") { setGiftSel({ tier, anyone: true, name: ch[tier]?.name }); setSkillOpen(false); return; }
+    if (ch?.id === "andersen" && tier === "secondary") { setAndersenColorOpen(true); setSkillOpen(false); return; }
     if ((ch?.id === "artoria_caster" || ch?.id === "reines") && tier === "secondary") { setGiftSel({ tier, anyone: false, name: ch[tier]?.name }); setSkillOpen(false); return; }
     // สไตรเกอร์ ยูเรก้า: ระบบขีปนาวุธ เลือกจำนวนนัดก่อน (เป็นเกียรติมากครับ ส่งคำขออนุมัติตรงๆ)
     if (tier === "ultimate" && ch?.id === "striker" && !me?.striker?.reactor) { setStrikerMissileOpen(true); setSkillOpen(false); return; }
@@ -4848,8 +4871,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   };
   // เลือกเป้าหมายมือซ้ายแห่งการรังสรรค์/มือขวาแห่งการลงทัณฑ์ (ไค ชิซากิ) -> ส่งไป server ทันที
   // เลือกเป้าหมายของผู้วิงวอน (Prayer / Armor of Faith / Mark of Judgment) -> ส่งไป server ทันที
+  const pickAndersenColor = (color) => {
+    setAndersenColorOpen(false);
+    setGiftSel({ tier: "secondary", anyone: false, item: color, name: ch?.secondary?.name });
+  };
   const pickGift = (id) => {
-    socket.emit("useSkill", { tier: giftSel.tier, targets: [id] });
+    socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
     setGiftSel(null);
   };
   const pickSup = (id) => {
@@ -5109,12 +5136,13 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   useEffect(() => {
     if (usagiSel && (phase !== "PLAYING" || done)) setUsagiSel(false);
     if (giftSel && (phase !== "PLAYING" || done)) setGiftSel(null);
+    if (andersenColorOpen && (phase !== "PLAYING" || done)) setAndersenColorOpen(false);
     if (recruitSel && (phase !== "PLAYING" || done)) setRecruitSel(null);
     if (recruitPrepOpen && (phase !== "PLAYING" || done)) setRecruitPrepOpen(false);
     if (strikerMissileOpen && (phase !== "PLAYING" || done)) setStrikerMissileOpen(false);
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
-  }, [usagiSel, giftSel, usagiItemOpen, recruitSel, recruitPrepOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -5652,6 +5680,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {brianKeyOpen && me && <BrianKeyModal me={me} onPick={pickBrianKey} onClose={() => { clickSound(); setBrianKeyOpen(false); }} />}
         {connorPredictOpen && me && <ConnorPredictModal me={me} players={state.players} onSubmit={submitConnorPredict} onClose={() => { clickSound(); setConnorPredictOpen(false); }} />}
         {yuiSongOpen && me && <YuiSongModal me={me} onPick={pickYuiSong} onClose={() => setYuiSongOpen(false)} />}
+        {andersenColorOpen && <AndersenColorModal onPick={pickAndersenColor} onClose={() => { clickSound(); setAndersenColorOpen(false); }} />}
       </div>
     );
   }
@@ -6274,6 +6303,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {brianKeyOpen && me && <BrianKeyModal me={me} onPick={pickBrianKey} onClose={() => { clickSound(); setBrianKeyOpen(false); }} />}
         {connorPredictOpen && me && <ConnorPredictModal me={me} players={state.players} onSubmit={submitConnorPredict} onClose={() => { clickSound(); setConnorPredictOpen(false); }} />}
         {yuiSongOpen && me && <YuiSongModal me={me} onPick={pickYuiSong} onClose={() => setYuiSongOpen(false)} />}
+        {andersenColorOpen && <AndersenColorModal onPick={pickAndersenColor} onClose={() => { clickSound(); setAndersenColorOpen(false); }} />}
       </div>
     </div>
   );
