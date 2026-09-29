@@ -1261,11 +1261,12 @@ body {
   box-shadow: 0 0 14px 1px rgba(232, 191, 90, 0.7);
 }
 
-/* การเดินทาง: ป้ายภูมิภาคใต้กล่อง "รอบที่" (สีตามภูมิภาค --jr / --jr-glow จาก journey/areas.js) */
+/* การเดินทาง: ป้ายภูมิภาคแถวบนสุด ถัดจากกล่อง "รอบที่" (สีตามภูมิภาค --jr / --jr-glow จาก journey/areas.js)
+   เดิมอยู่ใต้กล่อง "รอบที่" แล้วไปทับที่นั่งคู่แข่งมุมซ้ายบน — แถวบนสุดเหนือที่นั่งว่างเสมอ */
 .jr-badge {
   position: absolute;
-  top: 5.3rem;
-  left: 0.9rem;
+  top: 0.95rem;
+  left: 13.2rem;
   z-index: 5;
   display: flex;
   align-items: center;

@@ -5693,8 +5693,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   }
 
   // ---- จอคอม/แท็บเล็ต: กระดานเดิม (ออกแบบที่ 900px, auto-fit) ----
-  const DESIGN_W = Math.max(900, vp.w);
-  const scale = vp.w / DESIGN_W;
+  //  ย่อทั้งตามความกว้าง (ต่ำกว่า 900px) และ "ตามความสูง" (เตี้ยกว่า MIN_DESIGN_H):
+  //  ที่นั่งคู่แข่งวางเป็น % ของความสูง แต่แผงเรา/การ์ด/ปุ่มเป็น px ตายตัว — จอเตี้ย (เช่น 1650×796
+  //  ของเบราว์เซอร์ที่มีแถบเครื่องมือ/ซูม 125%) ที่นั่งจึงเลื่อนลงมาทับแผงเรา · ย่อแล้วพื้นที่ออกแบบสูงพอเสมอ
+  const MIN_DESIGN_H = 920;
+  const scale = Math.min(vp.w / Math.max(900, vp.w), Math.min(1, vp.h / MIN_DESIGN_H));
+  const DESIGN_W = vp.w / scale;
   const designH = vp.h / scale;
 
   return (
