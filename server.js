@@ -1162,19 +1162,39 @@ function eijiUltFieldActive() {
 //  ⚠️ ต้องตัดสินจาก "สนามยังถูกแช่อยู่ไหม" ไม่ใช่ "ไรเดอร์คนที่เพิ่งกดเปิด/ปิด"
 //  ไม่งั้นพอไรเดอร์สองคนเปิด Clock Up ซ้อนกัน พอคนหนึ่งกดปิด เวลาจะเด้งกลับมา  10 วิ
 //  ทั้งที่อีกคนยังแช่สนามอยู่ (บัคที่เจอจริงตอนไรเดอร์สองคนสู้กัน)
+// Clock Up: เวลาที่เหลือ "ตอนสนามเริ่มถูกแช่" — คลายเมื่อไหร่ (ไรเดอร์เปิดไพ่ครบ / กดปิด) เวลาเดินต่อจากค่านี้
+//  (เดิมบังคับเหลือ 10 วิทุกครั้ง) · Clock Up เปิดค้างมาตั้งแต่ต้นเทิร์น = เวลาเต็มของเฟสจั่วไพ่ เริ่มนับตอนคลาย
+//  null = สนามไม่ได้ถูกแช่อยู่
+let clockUpResumeSeconds = null;
+function normalCardSeconds() {
+  return eijiUltFieldActive() ? CHAR_HOOKS.eiji.ULT_CARD_TIME : CARD_TIME;
+}
 function syncClockUpPhaseTime() {
   if (gameState !== "PLAYING") return;
   const Z = CHAR_HOOKS.daisuke;
-  if (Z.freezeHosts(engine).length) timeLeft = Z.CLOCK_UP_SAFETY; // ยังมีไรเดอร์แช่สนามอยู่: เวลาหยุดในสายตาผู้เล่น
-  else timeLeft = Math.min(timeLeft, Z.CLOCK_UP_CARD_TIME);      // คลายหมดแล้ว: กลับสู่เวลาสั้นๆ ไม่ค้างที่ 90 วิ
+  if (Z.freezeHosts(engine).length) {
+    // เพิ่งเริ่มแช่ (ไม่ใช่ไรเดอร์คนที่สองเปิดซ้อน): จำเวลาที่เหลือไว้ก่อน แล้วเวลาหยุดในสายตาผู้เล่น
+    if (clockUpResumeSeconds == null) clockUpResumeSeconds = Math.max(1, timeLeft);
+    timeLeft = Z.CLOCK_UP_SAFETY;
+  } else {
+    timeLeft = takeClockUpResume(); // คลายหมดแล้ว: เดินต่อจากเวลาที่เหลือตอนกด
+  }
+}
+// เวลาที่ต้องคืนตอนคลาย Clock Up แล้วล้างค่าที่จำไว้ (ไม่มีค่า = เวลาเต็มของเฟสจั่วไพ่)
+function takeClockUpResume() {
+  const s = clockUpResumeSeconds != null ? clockUpResumeSeconds : normalCardSeconds();
+  clockUpResumeSeconds = null;
+  return s;
 }
 function cardPhaseSeconds() {
   // คาซามะ ไดสุเกะ (Clock Up): "เวลาหยุด" = ตั้งเวลายาวมากไว้เป็นตาข่ายกันห้องค้าง
   //  แล้วให้ฝั่ง client ไม่โชว์เป็นนาฬิกา (แพทเทิร์นเดียวกับ SERAPH_PLACE_SAFETY_SECONDS)
   //  ห้าม clearPhaseTimer() ทิ้งเฉยๆ ไม่งั้นไดสุเกะหลุดเน็ตแล้วห้องจะค้างถาวร
   const clockUp = CHAR_HOOKS.daisuke.cardPhaseSeconds(engine);
+  // แช่ตั้งแต่ต้นเทิร์น: คลายเมื่อไหร่ได้เวลาเต็มของเฟสจั่วไพ่ (นับตั้งแต่ไรเดอร์เปิดไพ่)
+  clockUpResumeSeconds = clockUp ? normalCardSeconds() : null;
   if (clockUp) return clockUp;
-  return eijiUltFieldActive() ? CHAR_HOOKS.eiji.ULT_CARD_TIME : CARD_TIME;
+  return normalCardSeconds();
 }
 // เอจิ สกิลติดตัว 1: บีบเวลาที่เหลือของเฟสจั่วการ์ดลง n วินาที (เหลืออย่างน้อย 1 วิ) — คืนเวลาที่เหลือจริง
 function reduceCardTimer(n) {
@@ -4153,7 +4173,7 @@ function lock(id) {
   p.locked = true;
   // คาซามะ ไดสุเกะ (Clock Up): เจ้าของท่ากดเปิดไพ่ = เวลากลับมาเดิน เหลือให้คนอื่นแค่ 10 วิ
   //  ต้องตั้งตัวจับเวลาใหม่ก่อน checkAllLocked() เผื่อกรณีคนอื่นล็อกครบพอดีแล้วเปิดไพ่ทันที
-  if (CHAR_HOOKS.daisuke.onHostLockIn(engine, p)) startPhaseTimer(CHAR_HOOKS.daisuke.CLOCK_UP_CARD_TIME, resolveRound);
+  if (CHAR_HOOKS.daisuke.onHostLockIn(engine, p)) startPhaseTimer(takeClockUpResume(), resolveRound);
   broadcastState();
   checkAllLocked();
 }

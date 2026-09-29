@@ -220,15 +220,26 @@ test('วีดีโอ Clock Up เล่นทุกครั้งที่�
 
 test('Clock Up กลางเทิร์น: เวลาต้องหยุดตั้งแต่เทิร์นที่กด ไม่ใช่เทิร์นถัดไป', () => {
   const { S } = setup();
-  engine.startPhaseTimer(60, () => {});
-  assert.equal(engine.buildStateFor(S.id).timeLeft, 60);
+  engine.startPhaseTimer(37, () => {});
+  assert.equal(engine.buildStateFor(S.id).timeLeft, 37);
   engine.useSkill(S.id, 'basic');      // CAST OFF
   engine.useSkill(S.id, 'secondary');  // CLOCK UP
   assert.equal(engine.buildStateFor(S.id).timeLeft, Y.CLOCK_UP_SAFETY,
     'กดกลางเฟสจั่วไพ่แล้วเวลาต้องหยุดทันที — ไม่ใช่รอเทิร์นหน้า');
   engine.useSkill(S.id, 'secondary');  // CLOCK OVER
-  assert.equal(engine.buildStateFor(S.id).timeLeft, Y.CLOCK_UP_CARD_TIME,
-    'กดปิดแล้วต้องไม่ค้างเวลาตาข่ายไว้ 90 วิ');
+  assert.equal(engine.buildStateFor(S.id).timeLeft, 37,
+    'กดปิดแล้วเวลาเดินต่อจากที่เหลือตอนกด (ไม่บังคับเหลือ 10 วิ และไม่ค้างตาข่าย 90 วิ)');
+  engine.clearPhaseTimer();
+});
+
+test('Clock Up กลางเทิร์น: เจ้าของท่าเปิดไพ่แล้วเวลาเดินต่อจากที่เหลือตอนกด', () => {
+  const { S } = setup();
+  engine.startPhaseTimer(42, () => {});
+  engine.useSkill(S.id, 'basic');      // CAST OFF
+  engine.useSkill(S.id, 'secondary');  // CLOCK UP
+  assert.equal(engine.buildStateFor(S.id).timeLeft, Y.CLOCK_UP_SAFETY);
+  engine.lock(S.id);
+  assert.equal(engine.buildStateFor(S.id).timeLeft, 42);
   engine.clearPhaseTimer();
 });
 

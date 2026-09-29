@@ -48,6 +48,9 @@ LOBBY → TEAM_MODE → TEAM_SETUP → PLAYING ⇄ CUTSCENE → SUMMARY → ATTA
 | `TRANSITION` | แบนเนอร์ "รอบที่ N" | `TRANSITION_TIME` 3s |
 | `GAMEOVER` | ประกาศผู้ชนะสุดท้าย | – |
 
+Clock Up (ไรเดอร์ Zect): ระหว่างแช่ตั้งตาข่าย 90 วิ แล้วจำเวลาที่เหลือไว้ที่ `clockUpResumeSeconds` — คลาย (เปิดไพ่ครบ/กดปิด) = เดินต่อจากค่านั้น
+  ผ่าน `takeClockUpResume()` (แช่ตั้งแต่ต้นเทิร์น = เวลาเต็มของเฟส) · เดิมบังคับเหลือ 10 วิ
+
 `startPhaseTimer(seconds, onExpire)` (`:847`) มีตัวเดียวทั้งเกม — ต้อง `clearPhaseTimer()` ทุกครั้งที่เปลี่ยนเฟส
 
 ---

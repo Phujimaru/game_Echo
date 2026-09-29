@@ -21,7 +21,6 @@ const PUT_ON_EVERY = 3;      // ...ทุก 3 เทิร์นที่อย
 
 // ---------- Clock Up / Clock Over ----------
 const CLOCK_UP_DRAIN = 2;      // แต้มสกิลที่เสียต่อเทิร์นระหว่าง Clock Up (จ่ายไม่ไหว = ปิดเอง)
-const CLOCK_UP_CARD_TIME = 10; // เจ้าของท่าเปิดไพ่ครบทุกคนแล้ว คนอื่นเหลือเวลาเท่านี้
 const CLOCK_UP_SAFETY = 90;    // ตาข่ายกันห้องค้าง: ถ้าไม่มีใครกดอะไรเลย เฟสจบเองเมื่อครบ
                                //  ยาวกว่าเวลาจั่วปกติมากจนไม่รบกวนการเล่นจริง และ client ไม่โชว์เป็นนาฬิกา
 
@@ -50,7 +49,7 @@ function resetCombat(p) {
 //  มีไรเดอร์เปิดพร้อมกันหลายคน = ทุกคนที่เปิดอยู่ขยับได้หมด คนที่เหลือถูกแช่
 // ไรเดอร์ที่ "ยังแช่สนามอยู่" = เปิด Clock Up และยังไม่ได้กดเปิดไพ่
 //  ⭐ หัวใจของสกิล: การแช่เป็นของ "รายเทิร์น" ไม่ใช่ของตัวโทกเกิล
-//  พอเจ้าของท่ากดเปิดไพ่ ทุกคนต้องขยับได้ทันทีในเทิร์นนั้น (เหลือเวลา 10 วิ)
+//  พอเจ้าของท่ากดเปิดไพ่ ทุกคนต้องขยับได้ทันทีในเทิร์นนั้น (เวลาเดินต่อจากที่เหลือตอนกด — server เก็บค่าไว้)
 //  แล้วค่อยไปแช่ใหม่ตอนขึ้นเทิร์นใหม่ (startRound รีเซ็ต p.locked = false ให้เอง)
 function freezeHosts(engine) {
   return clockUpHosts(engine).filter((p) => !p.locked);
@@ -90,7 +89,7 @@ function onHostLockIn(engine, p) {
     engine.log(`⏱️ ${p.name} เปิดไพ่แล้ว — แต่เวลายังไม่เดิน รออีก ${waiting.length} คนที่ยังอยู่ใน Clock Up`);
     return false;
   }
-  engine.log(`⏱️ Clock Up คลายออก — เวลากลับมาเดิน เหลือ ${CLOCK_UP_CARD_TIME} วินาทีสำหรับทุกคน`);
+  engine.log(`⏱️ Clock Up คลายออก — เวลากลับมาเดินต่อจากที่เหลืออยู่ตอนกด`);
   return true;
 }
 
@@ -155,7 +154,6 @@ module.exports = {
   PUT_ON_HEAL,
   PUT_ON_EVERY,
   CLOCK_UP_DRAIN,
-  CLOCK_UP_CARD_TIME,
   CLOCK_UP_SAFETY,
   ZECT_DODGE,
   ZECT_MIRROR_ATK,

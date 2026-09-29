@@ -144,7 +144,7 @@ test('Clock Up: เวลาเฟสเป็นตาข่ายกันห�
   assert.ok(daisuke.CLOCK_UP_SAFETY > 60, 'ต้องยาวพอจนไม่ไปรบกวนการเล่นจริง');
 });
 
-test('Clock Up: กดเปิดไพ่แล้วเวลาเดินต่อ เหลือ 10 วิ', () => {
+test('Clock Up: เจ้าของท่าเปิดไพ่แล้วการแช่คลายทันที', () => {
   const { D, A } = setup();
   daisuke.toggleCass(engine, D);
   daisuke.setClockUp(engine, D, true);
@@ -153,7 +153,6 @@ test('Clock Up: กดเปิดไพ่แล้วเวลาเดิน�
   assert.equal(daisuke.onHostLockIn(engine, D), true, 'เจ้าของท่าเปิดไพ่ครบทุกคน = ต้องตั้งเวลาใหม่');
   // และพอเจ้าของท่าเปิดไพ่แล้ว การแช่ต้องคลายทันทีในเทิร์นนั้น
   assert.equal(daisuke.actionBlocked(engine, A), false, 'เปิดไพ่แล้วคนอื่นต้องขยับได้ทันที');
-  assert.equal(daisuke.CLOCK_UP_CARD_TIME, 10);
 });
 
 test('Clock Up: เสียแต้มสกิล 2/เทิร์น และปิดตัวเองเมื่อจ่ายไม่ไหว', () => {
