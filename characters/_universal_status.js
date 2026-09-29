@@ -85,8 +85,9 @@ function stripLatestBuff(p) {
 }
 
 function applyBuff(p, key, amount, turns) {
-  //  ประทับลำดับไว้เฉพาะบัฟ — Rider Slash ต้องรู้ว่าเป้าหมายเพิ่งได้บัฟไหนมาล่าสุด
-  if (BUFF_KEYS.includes(key)) {
+  //  ประทับลำดับไว้ให้บัฟ (Rider Slash ต้องรู้ว่าเป้าหมายเพิ่งได้บัฟไหนมาล่าสุด)
+  //  และดีบัฟที่ล้างได้ (ล้างดีบัฟ "ที่โดนล่าสุด" ของโอเบรอนฤดูร้อน/อาร์โทเรีย — cleanseLatestDebuff)
+  if (BUFF_KEYS.includes(key) || BASIC_DEBUFF_CLEAR.includes(key) || SOFT_DEBUFF_STEP.includes(key)) {
     p.statusAt = p.statusAt || {};
     p.statusAt[key] = ++buffSeq;
   }
@@ -313,6 +314,34 @@ function blindActive(p) {
   return !!p && ((p.statuses && p.statuses.blind) || 0) > 0;
 }
 
+// ล้างดีบัฟ "ที่โดนล่าสุด" 1 อย่าง — ลำดับตัดสินจากตราเวลา statusAt (applyBuff/applyDebuff/applyBleed ประทับให้)
+//  ดีบัฟที่ตัวละครเขียน p.statuses ตรงๆ ไม่มีตราเวลา = ถือว่าเก่ากว่าตัวที่มีตรา · เสมอกัน -> เทิร์นเหลือมากกว่า -> ชื่อคีย์
+//  ล้างทั้งก้อน ยกเว้นดีบัฟที่ "ล้างได้ทีละขั้น" (SOFT_DEBUFF_STEP: เส้นชีวิต/คำสาป/ช็อต) ลดลง 1
+//  คืนคีย์ที่ถูกล้าง หรือ null ถ้าไม่มีดีบัฟที่ล้างได้เลย
+function cleanseLatestDebuff(p) {
+  if (!p || !p.statuses) return null;
+  let best = null;
+  for (const k of BASIC_DEBUFF_CLEAR.concat(SOFT_DEBUFF_STEP)) {
+    const turns = p.statuses[k] || 0;
+    if (!(turns > 0)) continue;
+    const at = (p.statusAt && p.statusAt[k]) || 0;
+    if (!best || at > best.at || (at === best.at && (turns > best.turns || (turns === best.turns && k < best.key)))) {
+      best = { key: k, at, turns };
+    }
+  }
+  if (!best) return null;
+  const k = best.key;
+  if (SOFT_DEBUFF_STEP.includes(k)) {
+    p.statuses[k]--;
+    if (p.statuses[k] > 0) return k;
+  }
+  delete p.statuses[k];
+  if (p.statusAmt) delete p.statusAmt[k];
+  if (p.statusAt) delete p.statusAt[k];
+  if (k === "mageslayerMark") delete p.mageslayerMarks; // ผู้สังหารเมจ: ล้าง map ผู้ร่ายที่ผูกกับตราด้วย
+  return k;
+}
+
 // ล้างดีบัฟ "ทีละ 1 ขั้น" (patch 3.4.5) — ลดตัวนับของดีบัฟตัวแรกที่เจอลง 1 ไม่ใช่ลบทั้งสถานะทิ้ง
 //  ตัวอย่างตามสเปค: "เลือดไหล 6" -> "เลือดไหล 5" · "ภาระเวท 5 เทิร์น" -> "ภาระเวท 4 เทิร์น"
 //  ตัวนับใน p.statuses คือ "เทิร์นที่เหลือ" หรือ "จำนวนสแตค" แล้วแต่สถานะ — ลด 1 หมายถึงลดหน่วยนั้น
@@ -399,6 +428,8 @@ function applyBleed(p, n) {
   if (resistActive(p)) return 0;
   const before = (p.statuses.hbleed || 0);
   p.statuses.hbleed = Math.min(HBLEED_MAX, before + n);
+  p.statusAt = p.statusAt || {};
+  p.statusAt.hbleed = ++buffSeq; // ตราเวลาให้ "ล้างดีบัฟที่โดนล่าสุด" (cleanseLatestDebuff)
   return p.statuses.hbleed - before;
 }
 
@@ -470,10 +501,11 @@ const EVADE_STACK_TURNS = 2; // หลบหลีก: แต่ละสแต�
 
 // ให้สแตคหลบหลีกใหม่ 1 สแตค (อายุ EVADE_STACK_TURNS เทิร์นของตัวเอง) — ไม่เกิน EVADE_STACK_MAX สแตคพร้อมกัน
 // คืน true ถ้าให้สำเร็จ, false ถ้าเต็มเพดานอยู่แล้ว (ไม่ต่ออายุสแตคเดิมที่มีอยู่)
-function grantEvadeStack(p) {
+//  turns = อายุของสแตคนี้ (ค่าเริ่มต้น EVADE_STACK_TURNS) — สกิลติดตัวอาร์โทเรียให้สแตคอายุ 1 เทิร์น
+function grantEvadeStack(p, turns = EVADE_STACK_TURNS) {
   p.evadeStacks = p.evadeStacks || [];
   if (p.evadeStacks.length >= EVADE_STACK_MAX) return false;
-  p.evadeStacks.push(EVADE_STACK_TURNS);
+  p.evadeStacks.push(turns);
   p.statuses.evade = p.evadeStacks.length;
   return true;
 }
@@ -542,6 +574,7 @@ module.exports = {
   SOFT_DEBUFF_STEP,
   cleanseDebuffs,
   cleanseOneStep,
+  cleanseLatestDebuff,
   coolReduction,
   applyPoison,
   poisonAtkPenalty,

@@ -62,6 +62,10 @@ const FILES = {
   usagi_theme: "/characters/usagi/usagi_theme.mp3",
   // Bamboo-Hatted Kim: เสียงกดสกิล / เสียงสวนกลับ / เพลงร่าง Awake (เล่นค้างถาวรหลังเข้าร่าง)
   kim_draw: "/characters/Bamboo-Hatted Kim/สกิลพื้นฐาน/สกิลพื้นฐาน ชักดาบ.mp3",
+  // โอเบรอน (ฤดูร้อน): เสียงตอนกดสกิลแต่ละช่อง (ส่งชื่อมากับ skillFlash)
+  oberon_summer_skill1: "/characters/oberon(summer)/oberon_summer_skill1.m4a",
+  oberon_summer_skill2: "/characters/oberon(summer)/oberon_summer_skill2.m4a",
+  oberon_summer_skill3: "/characters/oberon(summer)/oberon_summer_skill3.m4a",
   kim_overthrow: "/characters/Bamboo-Hatted Kim/สกิลรอง/สกิลรอง ฟาดฟันลง 01.mp3",
   kim_counter: "/characters/Bamboo-Hatted Kim/สกิลรอง/สกิลรอง ฟาดฟันลง 02.mp3",
   kim_bones: "/characters/Bamboo-Hatted Kim/Yield My Flesh To Claim Their Bones.wav",

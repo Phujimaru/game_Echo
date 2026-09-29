@@ -48,6 +48,7 @@ const {
   SOFT_DEBUFF_STEP,
   cleanseDebuffs,
   cleanseOneStep,
+  cleanseLatestDebuff,
   coolReduction,
   applyPoison,
   poisonAtkPenalty,
@@ -2312,6 +2313,8 @@ function resetCombat(p) {
   CHAR_HOOKS.ippo.resetCombat(p);    // อิปโป: อัตราหลบสะสม / Dempsey Charge / คูลดาวน์รายสกิล
   // ผู้วิงวอน: คลังคำวิงวอน/โควตาสกิล 2 ครั้ง/เทิร์น + ฟิลด์ "ผู้ถูกตราพิพากษา" ซึ่งอยู่ที่ตัวเป้าหมาย (จึงล้างให้ทุกคน)
   CHAR_HOOKS.the_supplicant.resetCombat(p);
+  CHAR_HOOKS.oberon_summer.resetCombat(p);  // โอเบรอน (ฤดูร้อน): คูลดาวน์/ล็อกรายช่อง + สตั้นที่จองไว้ (ติดที่เป้าหมาย)
+  CHAR_HOOKS.artoria_caster.resetCombat(p); // จอมเวทย์ อาร์โทเรีย: คูลดาวน์สกิลพื้นฐาน/สกิลรอง
   CHAR_HOOKS.usagi.resetCombat(p); // อุซากิ: โควตาสกิลพื้นฐาน / ปรุๆ / ข้อเสนอสลับไพ่ / โจทย์คณิต (ติดที่ผู้ถูกทำโจทย์)
   CHAR_HOOKS.kim.resetCombat(p); // Bamboo-Hatted Kim: ฝักดาบ/Poise/บัพ/คูลดาวน์ + เหน็บชาที่จองไว้ (ติดที่ผู้ถูกมอบ)
   CHAR_HOOKS.recruit.resetCombat(p); // Recruit: กระสุน / โควตาเตรียมตัว / ตัวนับเกราะ / คูลดาวน์ / QTE ที่ค้าง
@@ -2745,6 +2748,9 @@ function buildStateFor(viewerId) {
         ortLostTurns: mine ? CHAR_HOOKS.ort.lostTurnsLeft(engine, p) : 0,
         // อุซากิ: ปรุๆ (เห็นทุกคน) · ข้อเสนอสลับไพ่ / โจทย์คณิต (เห็นเฉพาะเจ้าตัว — ไม่ส่งเฉลย)
         usagi: p.characterId === "usagi" ? CHAR_HOOKS.usagi.publicState(p) : undefined,
+        // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster")
+          ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)
         kim: CHAR_HOOKS.kim.publicState(p),
@@ -3801,6 +3807,8 @@ function dealRound() {
     CHAR_HOOKS.yaguruma.onRoundStartTick(engine, p);
     CHAR_HOOKS.kagami.onRoundStartTick(engine, p);
     CHAR_HOOKS.usagi.onRoundStartTick(engine, p);
+    CHAR_HOOKS.oberon_summer.onRoundStartTick(engine, p);  // นกจาบยามเช้า: เป้าหมายเสียพลังชีวิต 2 ทะลุเกราะ
+    CHAR_HOOKS.artoria_caster.onRoundStartTick(engine, p); // หัวใจที่บริสุทธิ์: เทิร์นที่ 3, 6, 9, … หลบหลีก + ฟื้นพลังชีวิต
     CHAR_HOOKS.tsurugi.onRoundStartTick(engine, p);
 
     // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2): ดาเมจต่อเนื่องทุก 2 เทิร์น ----------
@@ -4543,6 +4551,11 @@ function useSkillCore(id, tier, targets, item) {
   //  คูลดาวน์รายช่อง (เลขรอบ) · ท่าไม้ตายทั้งสองกดไม่ได้ระหว่างบัพรวมร่าง · ท่าที่ 2 ต้องมีพลังชีวิตพอจ่าย
   const isKimPick = p.characterId === "kim";
   if (isKimPick && !CHAR_HOOKS.kim.canUseSkill(engine, p, tier)) return;
+  // โอเบรอน (ฤดูร้อน) / จอมเวทย์ อาร์โทเรีย: ทุกช่องลงผลในโมดูลของตัวเอง (effect: null)
+  const isOberonSummer = p.characterId === "oberon_summer";
+  if (isOberonSummer && !CHAR_HOOKS.oberon_summer.canUseSkill(engine, p, tier, targets)) return;
+  const isArtoria = p.characterId === "artoria_caster";
+  if (isArtoria && !CHAR_HOOKS.artoria_caster.canUseSkill(engine, p, tier, targets)) return;
   // ---------- Recruit (characters/recruit.js) ----------
   //  คูลดาวน์ · กระสุนพอ · ไม่มี QTE/การเลือกเป้าค้าง · Desert Eagle / Barrett ต้องเลือกเป้าก่อนกด
   const isRecruitPick = p.characterId === "recruit";
@@ -4685,7 +4698,7 @@ function useSkillCore(id, tier, targets, item) {
     if (p.statuses.freecast <= 0) delete p.statuses.freecast;
     lastLog.push(`👸 ${p.name} การ์ดราชินี — ใช้สกิลนี้โดยไม่เสียแต้มสกิล`);
   }
-  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
+  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.oberon_summer.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
   if (isKaiPick) p.kaiSkillUsesRound = (p.kaiSkillUsesRound || 0) + 1;
   if (isTakumiPick) p.takumiSkillUsesRound = (p.takumiSkillUsesRound || 0) + 1;
   // "คำสาป" (สถานะ Universal): กดสกิลสำเร็จแล้ว = เสียพลังชีวิต 1 หน่วย (1 ครั้ง/เทิร์น)
@@ -4844,6 +4857,8 @@ function useSkillCore(id, tier, targets, item) {
   //  สกิลที่ไม่ได้ผูกกับสถานะ (รถแบทโมบิล + ทั้งสามช่องของร่างรถ) ลงผลผ่าน applyInstantSkill
   if (isIppoPick) flashSuffix = CHAR_HOOKS.ippo.applyInstantSkill(engine, p, tier) || flashSuffix;
   if (isKimPick) flashSuffix = CHAR_HOOKS.kim.applyInstantSkill(engine, p, tier) || flashSuffix;
+  if (isOberonSummer) flashSuffix = CHAR_HOOKS.oberon_summer.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
+  if (isArtoria) flashSuffix = CHAR_HOOKS.artoria_caster.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   if (isRecruitPick) flashSuffix = CHAR_HOOKS.recruit.applyInstantSkill(engine, p, tier, targets) || flashSuffix; // เปิด QTE
   if (isStrikerPick) flashSuffix = CHAR_HOOKS.striker.applyInstantSkill(engine, p, tier, item) || flashSuffix;
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : null; // ขีปนาวุธ: ยิงหลังวีดีโอ
@@ -4958,6 +4973,7 @@ function useSkillCore(id, tier, targets, item) {
     //  (ฝั่ง client คุมเอง ดู ConnorPredictModal) ตอนกดยืนยันคือตอนที่คิดเสร็จแล้ว เพลงต้องหยุดพอดี
     const flashSound = (isTepeuCook || isTepeuPonder) ? "tepeu_skill1_2" : isHisakawaSkill ? CHAR_HOOKS.hisakawa_sister.skillVoice(p, tier, skill)
       : isKimPick ? CHAR_HOOKS.kim.skillSound(p, tier) // Bamboo-Hatted Kim: เสียงชักดาบ / ฟาดฟันลง
+      : isOberonSummer ? CHAR_HOOKS.oberon_summer.skillSound(p, tier) // โอเบรอน (ฤดูร้อน): เสียงประจำแต่ละช่อง
       : isTohnoSkill ? CHAR_HOOKS.tohno.skillSound(p, tier) : null; // โทโนะ: เสียงพากย์สุ่มตอนกดสกิลรอง/ท่าไม้ตาย
     // อิสึกะ ชิโด "ฝากด้วยนะตัวฉัน": สกิลเงียบ — ห้ามมีแบนเนอร์ให้ใครเห็นว่าเขากดอะไรไป
     if (!CHAR_HOOKS.shido.silentSkill(p, tier)) {
@@ -5862,7 +5878,9 @@ function computeAttackBase(engine, attacker, target) {
   // การเดินทาง: ป่าไม้ต้องสาป กลางวัน (ตีโดนแรงขึ้น +1) / จุดสิ้นสุดของโลก กลางคืน (ทุกคน +1) — ผลสนาม ungated
   const journeyAtkFx = Journey.attackBonus(engine);
   const journeyAtk = journeyAtkFx ? journeyAtkFx.amount : 0;
-  const base = baseHook + hookBonus + mark42Atk + journeyAtk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
+  // โอเบรอน (ฤดูร้อน) / จอมเวทย์ อาร์โทเรีย: บัฟพลังโจมตีที่แจกให้คนอื่น — ungated แยกคนละสถานะจึงซ้อนกันได้
+  const giftAtk = CHAR_HOOKS.oberon_summer.atkBonus(attacker) + CHAR_HOOKS.artoria_caster.atkBonus(attacker);
+  const base = baseHook + hookBonus + mark42Atk + journeyAtk + giftAtk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
     + (yuiRockAtk ? CHAR_HOOKS.yui.ROCK_ATK : 0) + (yuiMelodyAtk ? CHAR_HOOKS.yui.MELODY_ATK : 0)
     + cardAtkBonus;
   return {
@@ -5922,6 +5940,7 @@ function doAttack(byId, targetId) {
   //  วางไว้ตรงนี้ (ก่อนคิดดาเมจ) เพราะนับที่ "ได้ออกหมัด" ไม่ใช่ "ตีโดน" — ดันหลบได้ก็ยังนับให้
   CHAR_HOOKS.dan.onChasedAttacked(engine, attacker, target);
   CHAR_HOOKS.usagi.onAttack(engine, attacker);
+  CHAR_HOOKS.artoria_caster.onAttack(engine, attacker); // ความหวัง: ออกหมัด (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
   // Bamboo-Hatted Kim: จำว่าออกหมัด (ก่อนด่านหลบทั้งหมด) — ถูกหลบ = ฝักดาบ +10 ตัดสินที่หมัดถัดไป/endTurn
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
   // โทโนะ ชิกิ: หมัดนี้เป็นหมัดแบบไหน (ธรรมดา / เชือดเฉือน / ระเบิดรอยร้าว) — ใช้สถานะที่รอไว้ตอนออกหมัด
@@ -6437,6 +6456,8 @@ function doAttack(byId, targetId) {
   if (CHAR_HOOKS.recruit.consumeHeadshot(attacker)) addFx({ name: "HeadShot +1", img: CHAR_HOOKS.recruit.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (mark42Atk > 0) addFx({ name: `เกราะ Mark 42 +${mark42Atk}`, img: Mark42.IMG.suit, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (journeyAtkFx) addFx({ name: journeyAtkFx.name, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
+  for (const name of CHAR_HOOKS.oberon_summer.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.oberon_summer.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
+  for (const name of CHAR_HOOKS.artoria_caster.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.artoria_caster.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (journeyCritFx.crit) addFx({ name: `อาณาจักรน้ำแข็ง — คริติคอล ×2 (${Journey.ICE_CRIT_PCT}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%${kimCritFx.field ? " รวมอาณาจักรน้ำแข็ง" : ""})`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of kimAtkFx) addFx({ name, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
@@ -6822,6 +6843,8 @@ function endTurn() {
   // การเดินทาง: ผลจบเทิร์นของภูมิภาค (ของฟรี / เสียเหรียญ / ความเสียหายจากสนาม / สตั้น / ผุพัง)
   //  อยู่หลังลูปลดเทิร์นสถานะ (สตั้น/ผุพังที่ติดตรงนี้จึงมีผลเต็มเทิร์นหน้า) และก่อนด่านกวาดคนตายด้านล่าง
   Journey.onEndTurn(engine);
+  // โอเบรอน (ฤดูร้อน): สตั้นจากจุดจบของความฝัน (ต้องอยู่หลังลูปลดเทิร์น = เต็ม 3 เทิร์นถัดไป) + สกิลติดตัวหน้าไหว้หลังหลอก
+  CHAR_HOOKS.oberon_summer.onEndTurn(engine);
 
   for (const p of Object.values(players)) {
     if (p.alive && p.hp <= 0) {
@@ -7724,6 +7747,7 @@ const engine = {
   applySpellburden,
   cleanseDebuffs,
   cleanseOneStep,
+  cleanseLatestDebuff,
   coolReduction,
   BASIC_DEBUFF_CLEAR,
   SOFT_DEBUFF_STEP,

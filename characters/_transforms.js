@@ -21,6 +21,7 @@ const daisukeChar = require("./daisuke");
 const yagurumaChar = require("./yaguruma");
 const kagamiChar = require("./kagami");
 const usagiChar = require("./usagi"); // อุซากิ: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
+const artoriaChar = require("./artoria_caster"); // จอมเวทย์ อาร์โทเรีย: วีดีโอท่าไม้ตาย
 const mark42 = require("./_mark42"); // เกราะ Mark 42 (ไอเทมร้านค้า): path วีดีโอชุดเดียวกับไฟล์ระบบ
 const strikerChar = require("./striker"); // สไตรเกอร์ ยูเรก้า: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const recruitChar = require("./recruit"); // Recruit: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
@@ -166,6 +167,8 @@ module.exports = function buildTransforms(img) {
     // อุซากิ: เล่นทุกครั้ง (queueCutscene) — ท่าไม้ตายตอนกด / สกิลรองตอนกด "เอา" แล้วค่อยสลับไพ่
     usagiUlt:    { img: usagiChar.IMG.skill3, video: usagiChar.VIDEO.ult,  title: "ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ", label: "โจทย์คณิต 3 เทิร์น", seconds: 3, music: null, afterReveal: false },
     usagiSwap:   { img: usagiChar.IMG.skill2, video: usagiChar.VIDEO.swap, title: "ปรุ้ต.....", label: "สลับไพ่ทั้งมือ", seconds: 5, music: null, afterReveal: false },
+    // จอมเวทย์ อาร์โทเรีย: วีดีโอท่าไม้ตายเล่นทุกครั้งที่กด (queueCutscene) — คลิปยาว 13.9 วิ
+    artoriaUlt:  { img: artoriaChar.IMG.skill3, video: artoriaChar.VIDEO.ult, title: "Around Caliburn", label: "พรแห่งทะเลสาบ", seconds: 14, music: null, afterReveal: false },
     yuiSongFail: { img: yuiImg.skill3, video: "/characters/yui/skill3/yui_skill3_false.mp4", title: "เสียงเพี้ยน",    label: "บรรเลงล้มเหลว",   seconds: 4, music: null, afterReveal: false },
     yuiDead:     { img: yuiImg.base,   video: "/characters/yui/yui_dead.mp4",                title: "ความปรารถนา",    label: "คำอธิษฐานเป็นจริง", seconds: 16, music: null, afterReveal: false },
     // ---------- อิสึกะ ชิโด (patch 2.9 new) ----------
