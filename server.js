@@ -1473,9 +1473,9 @@ function onCardDrawn(p, card) {
 }
 // แดง/เขียว/เหลือง ครบ 3 ใบ: ประเมินครั้งเดียวตอนเปิดไพ่ (lock) จากมือสุดท้ายทั้งหมด
 function applyLockColorTriggers(p) {
-  // ไพ่ฟ้าปกติทำงานตอนจั่ว — แต่ไพ่ที่ถูกเปลี่ยนสีทีหลัง (นางเงือกน้อยของแอนเดอร์เซน) ต้องได้ผลตอนเปิดไพ่
-  //  checkBlueTrigger นับชุดที่ให้ผลไปแล้ว (colorTrigger.blue) จึงเรียกซ้ำได้โดยไม่ให้ผลซ้ำ
-  if (p.colorTrigger) checkBlueTrigger(p);
+  // ไพ่ฟ้าทำงานตอนจั่วเท่านั้น (กติกากลาง) — ข้อยกเว้นเดียว: มือที่ถูก "นางเงือกน้อยของฉัน" (แอนเดอร์เซน)
+  //  เปลี่ยนเป็นสีฟ้าในเทิร์นนี้ ได้ผลตอนเปิดไพ่ (checkBlueTrigger นับชุดที่ให้ผลไปแล้ว จึงไม่ให้ผลซ้ำ)
+  if (p.colorTrigger && p.andBlueRound === roundNumber) checkBlueTrigger(p);
   for (const color of ["red", "green", "yellow"]) {
     const n = Math.floor(p.cards.filter((c) => c.color === color).length / 3);
     if (n <= 0) continue;

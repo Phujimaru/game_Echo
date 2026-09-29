@@ -100,6 +100,13 @@ test('เปลี่ยนเป็นไพ่ฟ้าแล้วได้�
   assert.equal(H.statuses.resist, 1);
 });
 
+test('กติกากลางไม่เปลี่ยน: ไพ่ฟ้าที่ไม่ได้มาจากท่าของแอนเดอร์เซน ไม่ถูกเช็คซ้ำตอนเปิดไพ่', () => {
+  const { M } = setup();
+  M.cards = [card(2, 'blue'), card(3, 'blue'), card(4, 'blue')]; // ยัดเข้ามือตรงๆ ไม่ผ่านการจั่ว
+  engine.lock('M');
+  assert.equal(M.statuses.resist, undefined);
+});
+
 test('Märchen Meines Lebens: ทุกคนฟื้น 2 · บัฟสุ่ม 25% แยกกัน · วีดีโอทุกครั้ง · แต้มสกิล +1 ทุกจบเทิร์น 3 เทิร์น', () => {
   const { H, M, T } = setup();
   withRandom(0, () => engine.useSkill('H', 'ultimate')); // ทอยติดทุกอย่าง
