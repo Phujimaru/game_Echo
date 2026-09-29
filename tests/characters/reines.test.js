@@ -56,46 +56,44 @@ test('ข้อมูล: ระดับกลาง · ราคา 2/4/6', ()
   assert.deepEqual([c.basic.cost, c.secondary.cost, c.ultimate.cost], [2, 4, 6]);
 });
 
-test('คำแนะนำชั้นครู: ffa ทุกคนได้คุ้มครอง 1 เทิร์น · ทุกคนยกเว้นไรเนสแต้มสกิล +1 · คูลดาวน์ 3', () => {
-  const { R, M, T } = setup();
-  for (const p of [M, T]) p.skillPoints = 2;
+test('คำแนะนำชั้นครู: เลือก 1 คน หลบหลีก 1 ครั้ง + อัตราคริ +30% อยู่ 3 เทิร์น · คูลดาวน์ 3', () => {
+  const { R, M } = setup();
   const r0 = engine.roundNumber;
-  engine.useSkill('R', 'basic');
-  for (const p of [R, M, T]) assert.equal(p.statuses.guard, 1);
-  assert.equal(R.skillPoints, 6, 'จ่าย 2 ไม่ได้ +1');
-  assert.equal(M.skillPoints, 3);
-  assert.equal(T.skillPoints, 3);
+  engine.useSkill('R', 'basic', ['M']);
+  assert.equal(M.statuses.evade, 1);
+  assert.deepEqual(M.evadeStacks, [3], 'หลบหลีกอยู่ 3 เทิร์น');
+  assert.equal(M.statuses.reinesCrit, 3);
+  assert.equal(rei.critBonus(M), 30);
+  assert.equal(R.skillPoints, 6);
   R.skillUsedRound = false;
-  assert.equal(rei.canUseSkill(engine, R, 'basic'), false);
+  assert.equal(rei.canUseSkill(engine, R, 'basic', ['M']), false);
   engine.setRoundNumber(r0 + 3);
-  assert.equal(rei.canUseSkill(engine, R, 'basic'), true);
-  // คุ้มครอง 1 ลบโจมตีปกติฐาน 1
-  T.hp = 7; T.armor = 0;
-  attack('M', 'T');
-  assert.equal(T.hp, 7);
+  assert.equal(rei.canUseSkill(engine, R, 'basic', ['M']), true);
 });
 
-test('คำแนะนำชั้นครู โหมดทีม: เฉพาะตัวเองและเพื่อนร่วมทีม', () => {
-  const { R, M, T } = setup({ mode: 'duo', teams: true });
-  engine.useSkill('R', 'basic');
-  assert.equal(M.statuses.guard, 1);
-  assert.equal(T.statuses.guard, undefined);
-  assert.equal(R.statuses.guard, 1);
+test('คำแนะนำชั้นครู: เลือกตัวเองได้ · โหมดทีมเลือกศัตรูไม่ได้', () => {
+  const { R, T } = setup({ mode: 'duo', teams: true });
+  const sp = R.skillPoints;
+  engine.useSkill('R', 'basic', ['T']);
+  assert.equal(T.statuses.reinesCrit, undefined);
+  assert.equal(R.skillPoints, sp);
+  engine.useSkill('R', 'basic', ['R']);
+  assert.equal(R.statuses.reinesCrit, 3);
 });
 
-test('คำสั่งขั้นเด็ดขาด: พลังโจมตี +1 อัตราคริ +20% 2 เทิร์น + โชคลาภ · ให้ซ้ำ = โชคลาภเพิ่ม บัฟแค่ต่ออายุ · ไรเนสเสียเกราะ 1', () => {
+test('คำสั่งขั้นเด็ดขาด: พลังโจมตี +1 อัตราคริ +20% 3 เทิร์น + โชคลาภ 2 · ให้ซ้ำ = โชคลาภเพิ่ม บัฟแค่ต่ออายุ · ไรเนสเสียเกราะ 1', () => {
   const { R, M } = setup();
   engine.useSkill('R', 'secondary', ['M']);
-  assert.equal(M.statuses.reinesCmd, 2);
-  assert.equal(M.statuses.fortune, 1);
+  assert.equal(M.statuses.reinesCmd, 3);
+  assert.equal(M.statuses.fortune, 2);
   assert.equal(rei.atkBonus(M), 1);
   assert.equal(rei.critBonus(M), 20);
   assert.equal(R.armor, 1, 'ความเสียหาย 1 ลดเกราะก่อน');
   M.statuses.reinesCmd = 1;
   R.skillUsedRound = false;
   engine.useSkill('R', 'secondary', ['M']);
-  assert.equal(M.statuses.reinesCmd, 2, 'ต่ออายุ');
-  assert.equal(M.statuses.fortune, 2, 'โชคลาภเพิ่ม');
+  assert.equal(M.statuses.reinesCmd, 3, 'ต่ออายุ');
+  assert.equal(M.statuses.fortune, 3, 'โชคลาภเพิ่ม (เพดาน 3)');
   assert.equal(rei.atkBonus(M), 1, 'พลังโจมตีไม่ซ้อน');
 });
 
@@ -106,12 +104,32 @@ test('คำสั่งขั้นเด็ดขาด: เลือกตั
   assert.equal(T.statuses.reinesCmd, undefined);
   assert.equal(R.skillPoints, sp, 'ไม่หักแต้ม');
   engine.useSkill('R', 'secondary', ['R']);
-  assert.equal(R.statuses.reinesCmd, 2);
+  assert.equal(R.statuses.reinesCmd, 3);
+});
+
+test('อัตราคริของสกิลพื้นฐานกับสกิลรองรวมกันได้ (+50%)', () => {
+  const { R, M } = setup();
+  engine.useSkill('R', 'basic', ['M']);
+  R.skillUsedRound = false;
+  engine.useSkill('R', 'secondary', ['M']);
+  assert.equal(rei.critBonus(M), 50);
+});
+
+test('คุณนายใหญ่: ผู้ติดคำสั่งขั้นเด็ดขาดออกหมัด (ถูกหลบก็นับ) ไรเนสฟื้นแต้มสกิล +2', () => {
+  const { R, T } = setup();
+  engine.useSkill('R', 'secondary', ['M']);
+  R.skillPoints = 0;
+  T.statuses.evade = 1; T.evadeStacks = [2]; // T หลบ 100%
+  attack('M', 'T');
+  assert.equal(R.skillPoints, 2);
+  attack('T', 'M');
+  assert.equal(R.skillPoints, 2, 'คนที่ไม่มีบัฟออกหมัดไม่นับ');
 });
 
 test('อัตราคริ +20%: ตัวละครทั่วไปทอยคริ ×2 · อุซากิบวกเข้าอัตราของตัวเอง (ไม่คูณซ้อน)', () => {
   const { M, T } = setup();
   M.statuses.reinesCmd = 2;
+  M.reinesCmdBy = null;
   T.hp = 7; T.armor = 0;
   withRandom(0, () => attack('M', 'T'));
   assert.equal(T.hp, 3, '(1 + 1) × 2 = 4');

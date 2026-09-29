@@ -1497,7 +1497,8 @@ const STATUS_INFO = {
   andView:     { icon: "👁️", label: "มุมมองใหม่", cls: "bg-echo-gold text-gray-900", desc: "มุมมองใหม่ (แอนเดอร์เซน): เทิร์นนี้ท่าไม้ตาย Märchen Meines Lebens มีโอกาสเกิดผลแต่ละอย่าง +25% (25% -> 50%)" },
   andInk:      { icon: "✒️", label: "หมึกแห่งเรื่องเล่า", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): จบเทิร์นได้แต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   andCrit:     { icon: "📖", label: "บทที่งดงาม", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): อัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
-  reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด (ไรเนส): พลังโจมตี +1 และอัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด (ไรเนส): พลังโจมตี +1 และอัตราคริติคอล +20% (คริครั้งเดียว ×2) · ออกหมัดโจมตีปกติแล้วไรเนสฟื้นแต้มสกิล +2 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  reinesCrit:  { icon: "📘", label: "คำแนะนำชั้นครู", cls: "bg-echo-hp", desc: "คำแนะนำชั้นครู (ไรเนส): อัตราคริติคอล +30% (รวมกับคำสั่งขั้นเด็ดขาดได้ · คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-gold text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   usagiMath:  { icon: "🧮", label: "โจทย์คณิต (เทิร์นที่เหลือ)", cls: "bg-echo-magenta", desc: "ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ (อุซากิ): ตอนกดและต้นเทิร์นถัดไปอีก 2 เทิร์น ฝ่ายตรงข้ามทุกคนต้องทำโจทย์คณิต 3 ข้อ ข้อละ 5 วินาที — ผิด/ไม่ทัน = ความเสียหาย 1 ต่อข้อ · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   yuiRock:    { icon: "\u{1F3B8}", label: "girl don't cry", cls: "bg-echo-gold text-gray-900", desc: "girl don't cry (ยุย): พลังโจมตี +1 · และคนที่แต้มสกิลน้อยที่สุดในวงจะได้รับแต้มสกิล +1 ทุกเทิร์น (ประเมินใหม่ทุกเทิร์น)" },
@@ -4726,6 +4727,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     // แอนเดอร์เซน: สกิลพื้นฐานเลือกใครก็ได้ · สกิลรองเลือกสีก่อนแล้วค่อยเลือกเป้าหมาย
     if (ch?.id === "andersen" && tier === "basic") { setGiftSel({ tier, anyone: true, name: ch[tier]?.name }); setSkillOpen(false); return; }
     if (ch?.id === "andersen" && tier === "secondary") { setAndersenColorOpen(true); setSkillOpen(false); return; }
+    if (ch?.id === "reines" && tier === "basic") { setGiftSel({ tier, anyone: false, name: ch[tier]?.name }); setSkillOpen(false); return; }
     if ((ch?.id === "artoria_caster" || ch?.id === "reines") && tier === "secondary") { setGiftSel({ tier, anyone: false, name: ch[tier]?.name }); setSkillOpen(false); return; }
     // สไตรเกอร์ ยูเรก้า: ระบบขีปนาวุธ เลือกจำนวนนัดก่อน (เป็นเกียรติมากครับ ส่งคำขออนุมัติตรงๆ)
     if (tier === "ultimate" && ch?.id === "striker" && !me?.striker?.reactor) { setStrikerMissileOpen(true); setSkillOpen(false); return; }

@@ -5957,6 +5957,7 @@ function doAttack(byId, targetId) {
   CHAR_HOOKS.dan.onChasedAttacked(engine, attacker, target);
   CHAR_HOOKS.usagi.onAttack(engine, attacker);
   CHAR_HOOKS.artoria_caster.onAttack(engine, attacker); // ความหวัง: ออกหมัด (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
+  CHAR_HOOKS.reines.onAttack(engine, attacker); // คุณนายใหญ่: ผู้ติดคำสั่งขั้นเด็ดขาดออกหมัด -> ไรเนสฟื้นแต้มสกิล +2
   // Bamboo-Hatted Kim: จำว่าออกหมัด (ก่อนด่านหลบทั้งหมด) — ถูกหลบ = ฝักดาบ +10 ตัดสินที่หมัดถัดไป/endTurn
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
   // โทโนะ ชิกิ: หมัดนี้เป็นหมัดแบบไหน (ธรรมดา / เชือดเฉือน / ระเบิดรอยร้าว) — ใช้สถานะที่รอไว้ตอนออกหมัด
