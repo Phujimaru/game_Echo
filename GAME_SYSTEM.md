@@ -644,6 +644,8 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   (Dance Lession กลางคืน) ต้องทำงานได้ในโหมดทีมด้วย
 - เทสต์: [tests/spellburden.test.js](tests/spellburden.test.js)
 
+- **ล้างดีบัฟ "ที่โดนล่าสุด"** `cleanseLatestDebuff(p)` (โอเบรอนฤดูร้อน/อาร์โทเรีย): `applyBuff`/`applyDebuff`/`applyBleed` ประทับ `p.statusAt` ให้ดีบัฟในรายการที่ล้างได้ด้วย (เดิมเฉพาะบัฟ)
+  ดีบัฟที่เขียน `p.statuses` ตรงๆ ไม่มีตรา = ถือว่าเก่ากว่า · `SOFT_DEBUFF_STEP` ลดทีละ 1 ที่เหลือล้างทั้งก้อน
 - `applyDebuff()` คืน `false` ถ้าโดน `resist` กัน — `BASIC_DEBUFF_CLEAR` คือรายการที่ต้านสถานะล้างได้ทั้งหมด, `SOFT_DEBUFF_STEP` (`dawn`, `deathline`) ล้างได้ทีละ 1 สแตค
 - **`evade` เป็นกรณีพิเศษ**: ตัวจริงอยู่ใน `p.evadeStacks` (array อายุต่อสแตค, สูงสุด 3 สแตค × 2 เทิร์น) — `p.statuses.evade` เป็นแค่ mirror ใช้ `grantEvadeStack`/`consumeEvadeStack`/`tickEvadeStacks` เท่านั้น ห้ามแตะตรงๆ
 
