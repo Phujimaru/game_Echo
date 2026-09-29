@@ -159,9 +159,10 @@ module.exports = {
     const heads = p.kim.coin === "heads" && p.hp <= 4 ? HEADS_CRIT : 0;
     return Math.round((poise + heads) * 10) / 10;
   },
-  rollCrit(engine, p, dmg, fx) {
+  // bonus = อัตราคริเพิ่มจากสนาม (%) — ส่งมาเฉพาะโจมตีปกติ (applyCrit) ไม่ใช่การสวนกลับ
+  rollCrit(engine, p, dmg, fx, bonus = 0) {
     if (!isKim(p) || dmg <= 0) return dmg;
-    const chance = this.critChance(p);
+    const chance = Math.round((this.critChance(p) + bonus) * 10) / 10;
     if (!(Math.random() * 100 < chance)) return dmg;
     this.addPoise(p, -CRIT_POISE_COST);
     fx.crit = true;
@@ -369,7 +370,10 @@ module.exports = {
   },
   applyCrit(engine, attacker, dmg, fx) {
     if (!isKim(attacker)) return dmg;
-    return this.rollCrit(engine, attacker, dmg, fx);
+    // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): อัตราคริของสนามบวกเข้าไปในอัตราของ Poise — ทอยครั้งเดียว ×2 เท่าเดิม
+    const field = engine.journeyCritBonus ? engine.journeyCritBonus() : 0;
+    fx.field = field > 0;
+    return this.rollCrit(engine, attacker, dmg, fx, field);
   },
   // หมัดของ Kim ลงแล้ว (หลังดาเมจ) — คืนชื่อเอฟเฟกต์ไว้โชว์บนการ์ดสรุป
   onAttackLanded(engine, attacker, target, dmg) {

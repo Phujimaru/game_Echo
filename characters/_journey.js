@@ -24,7 +24,9 @@ const WHIRL_SHOP_MIN_PRICE = 5;   // 4 กลางวัน: ร้านสุ
 const WHIRL_TOLL_PCT = 25;        // 4 กลางคืน: จบเทิร์นเสีย 2 เหรียญ
 const WHIRL_TOLL_GOLD = 2;
 const DESERT_REFUND = 2;          // 5 กลางคืน: ใช้สกิลได้แต้มคืน (ไม่เกินที่จ่ายจริง)
-const ICE_CRIT_PCT = 20;          // 6 กลางวัน: โจมตีปกติคริติคอล ×2
+const ICE_CRIT_PCT = 20;          // 6 กลางวัน: โจมตีปกติคริติคอล ×2 (ตัวละครที่มีอัตราคริเอง = บวกเพิ่มเข้าไปในอัตรานั้น)
+// ตัวละครที่ทอยคริติคอลเองใน applyCrit ของตัวเอง — สนามบวกอัตราเข้าไปในการทอยนั้นแทนการทอยแยก
+const OWN_CRIT_CHARS = new Set(["usagi", "kim", "ort"]);
 const ICE_STUN_PCT = 15;          // 6 กลางคืน: จบเทิร์นติดสตั้น 1 เทิร์น
 const END_DECAY_PCT = 50;         // 7 กลางวัน: จบเทิร์นติดผุพัง 1 เทิร์น
 
@@ -62,7 +64,7 @@ const AREAS = [
   {
     id: 6, name: "อาณาจักรน้ำแข็ง",
     passive: "เกราะฟื้น +1 ทุกเทิร์น",
-    day: `โจมตีปกติมีโอกาส ${ICE_CRIT_PCT}% คริติคอล ×2 (ซ้อนกับคริติคอลของตัวละครเป็น ×3)`,
+    day: `โจมตีปกติมีโอกาส ${ICE_CRIT_PCT}% คริติคอล ×2 (ตัวละครที่มีอัตราคริอยู่แล้ว ได้อัตราคริเพิ่ม +${ICE_CRIT_PCT}% แทน — ยังคูณ ×2 เท่าเดิม)`,
     night: `จบเทิร์นมีโอกาส ${ICE_STUN_PCT}% ติดสตั้น 1 เทิร์น (ไม่โดนซ้ำเทิร์นติดกัน · ต้านสถานะกันได้)`,
   },
   {
@@ -166,12 +168,18 @@ module.exports = {
     if (is(engine, 7, "night")) return { amount: 1, name: "จุดสิ้นสุดของโลก — พลังโจมตี +1" };
     return null;
   },
-  // 6 กลางวัน: คริติคอล ×2 — ถ้าคริติคอลของตัวละครออกอยู่แล้ว (×2) จะกลายเป็น ×3 แทน ×4
-  applyCrit(engine, dmg, charCrit, fx) {
-    if (!is(engine, 6, "day") || !(dmg > 0) || !roll(ICE_CRIT_PCT)) return dmg;
+  // 6 กลางวัน: อัตราคริติคอลที่สนามให้ (%) — ตัวละครที่มีระบบคริเอง (OWN_CRIT_CHARS) บวกค่านี้เข้าไปในการทอยของตัวเอง
+  //  ผ่าน engine.journeyCritBonus() · ไม่มีการคูณซ้อน: หมัดหนึ่งคริได้ครั้งเดียว ×2 เสมอ
+  critBonus(engine) {
+    return is(engine, 6, "day") ? ICE_CRIT_PCT : 0;
+  },
+  // 6 กลางวัน: คริติคอลของสนามสำหรับตัวละครที่ไม่มีอัตราคริของตัวเอง (โอกาส 20% ×2)
+  applyCrit(engine, attacker, dmg, fx) {
+    if (!(dmg > 0) || OWN_CRIT_CHARS.has(attacker.characterId)) return dmg;
+    const pct = this.critBonus(engine);
+    if (!pct || !roll(pct)) return dmg;
     fx.crit = true;
-    fx.stacked = !!charCrit;
-    return charCrit ? Math.floor(dmg * 1.5) : dmg * 2;
+    return dmg * 2;
   },
 
   // ---------- 3 กลางคืน: ดาเมจสถานะต่อเนื่อง ----------

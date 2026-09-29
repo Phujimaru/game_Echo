@@ -735,7 +735,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `skillTax` → `useSkillCore()` **และ** `showCost()` ใน `buildStateFor` (ต้องคิดเหมือนกัน — สกิลราคา 0 ไม่โดน) ·
   `skillMisses`/`skillRefund` → `useSkillCore()` ถัดจากด่านเหน็บชา (พลาด = คืนแต้ม+การ์ดราชินี แต่เสียโควตาเทิร์น) ·
   `tryAttackMiss` → `doAttack()` ด่านสุดท้ายของชุดหลบ (แม่นยำเจาะได้) · `attackBonus` → `computeAttackBase()` (ungated) ·
-  `applyCrit` → `doAttack()` หลังคริติคอลของตัวละคร (ออกพร้อมกัน = ×3) · `dotBonus` → `engine.journeyDotBonus()` ใน tick ลุกไหม้/เลือดไหล/พิษร้าย ·
+  `applyCrit` → `doAttack()` หลังคริติคอลของตัวละคร — เฉพาะตัวที่ไม่มีอัตราคริเอง · อุซากิ/Kim ได้ `critBonus` (+20%) บวกเข้าการทอยของตัวเองผ่าน `engine.journeyCritBonus()` (คริได้ครั้งเดียว ×2 ไม่คูณซ้อน) · `dotBonus` → `engine.journeyDotBonus()` ใน tick ลุกไหม้/เลือดไหล/พิษร้าย ·
   `filterShopRoll`/`shopStock` → `openShop()` (ช่องหลายชิ้นใช้ `stock`/`stockMax` — `sold` เป็น true ตอนหมดช่องเท่านั้น) ·
   `goldBonus` + `onEndTurn` → `endTurn()` (หลังลูปลดเทิร์นสถานะ ก่อนกวาดคนตาย — สตั้น/ผุพังที่ติดจึงมีผลเต็มเทิร์นหน้า)
 - ความเสียหายจากสนาม (`fieldDamage`) ลดเกราะก่อน + ท่อกันตายชุดเดียวกับพิษร้าย และตั้ง `_statusDamage`

@@ -211,12 +211,22 @@ test('5 ทะเลทราย: เกราะฟื้นทุกเทิ�
   assert.equal(Journey.skillRefund(engine, 0), 0);
 });
 
-test('6 อาณาจักรน้ำแข็ง: คริติคอล ×2 (ซ้อน ×3) · กลางคืนสตั้น ไม่โดนซ้ำเทิร์นติดกัน · ต้านสถานะกันได้', () => {
+test('6 อาณาจักรน้ำแข็ง: คริติคอล 20% ×2 (ตัวละครที่มีอัตราคริ = บวกเข้าอัตราเดิม ไม่คูณซ้อน) · กลางคืนสตั้น ไม่โดนซ้ำเทิร์นติดกัน · ต้านสถานะกันได้', () => {
   const { p0, p1 } = setup();
   engine.setRoundNumber(51);
-  assert.equal(withRandom(0, () => Journey.applyCrit(engine, 2, false, {})), 4);
-  assert.equal(withRandom(0, () => Journey.applyCrit(engine, 4, true, {})), 6);
-  assert.equal(withRandom(0.5, () => Journey.applyCrit(engine, 2, false, {})), 2);
+  assert.equal(withRandom(0, () => Journey.applyCrit(engine, p0, 2, {})), 4);
+  assert.equal(withRandom(0.5, () => Journey.applyCrit(engine, p0, 2, {})), 2);
+  assert.equal(Journey.critBonus(engine), 20);
+  // ตัวละครที่มีอัตราคริเอง: สนามไม่ทอยแยก (กันคูณซ้อน) แต่บวก +20% เข้าไปในการทอยของตัวเอง
+  const usagi = require('../characters/usagi.js');
+  const bunny = { ...p0, characterId: 'usagi', usagiPuru: 0 };
+  assert.equal(withRandom(0, () => Journey.applyCrit(engine, bunny, 2, {})), 2);
+  assert.equal(withRandom(0.19, () => usagi.applyCrit(engine, bunny, 2, {})), 4, '0 ปรุๆ + สนาม 20% = คริได้');
+  assert.equal(withRandom(0.21, () => usagi.applyCrit(engine, bunny, 2, {})), 2);
+  assert.equal(withRandom(0.19, () => usagi.applyCrit(engine, { ...bunny, usagiPuru: 1 }, 3, {})), 6, 'ไม่เกิน ×2');
+  engine.setRoundNumber(41);
+  assert.equal(withRandom(0.19, () => usagi.applyCrit(engine, bunny, 2, {})), 2, 'นอกอาณาจักรน้ำแข็งไม่มีโบนัส');
+  engine.setRoundNumber(51);
 
   engine.setRoundNumber(56);
   p1.statuses.resist = 1;

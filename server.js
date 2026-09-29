@@ -6203,9 +6203,10 @@ function doAttack(byId, targetId) {
   dmg = CHAR_HOOKS.usagi.applyCrit(engine, attacker, dmg, usagiCritFx); // อุซากิ: คริติคอล 7% ต่อปรุๆ (×2)
   const kimCritFx = {};
   dmg = CHAR_HOOKS.kim.applyCrit(engine, attacker, dmg, kimCritFx); // Bamboo-Hatted Kim: Poise 1.2%/หน่วย (+หัว 15%) ×2
-  // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): คริติคอล 20% ×2 — ออกพร้อมคริติคอลของตัวละครในหมัดเดียว = ×3 (ไม่ใช่ ×4)
+  // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน): ตัวละครที่ไม่มีอัตราคริเอง ได้คริติคอล 20% ×2
+  //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้ +20% บวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.journeyCritBonus)
   const journeyCritFx = {};
-  dmg = Journey.applyCrit(engine, dmg, !!(ortCritFx.crit || usagiCritFx.crit || kimCritFx.crit || eijiSwordFx.videoQueued), journeyCritFx);
+  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx);
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -6431,13 +6432,13 @@ function doAttack(byId, targetId) {
   const addFx = (x, side) => { if (x) fxSkills.push({ ...x, side }); };
   for (const fx of hisakawaAttackFx || []) addFx(fx, fx.side || "atk");
   if (isOrt(target) && dmg > 0) ortFx("hit");
-  if (usagiCritFx.crit) addFx({ name: `ปรุๆ คริติคอล ×2 (${usagiCritFx.chance}%)`, img: CHAR_HOOKS.usagi.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (usagiCritFx.crit) addFx({ name: `ปรุๆ คริติคอล ×2 (${usagiCritFx.chance}%${usagiCritFx.field ? " รวมอาณาจักรน้ำแข็ง" : ""})`, img: CHAR_HOOKS.usagi.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (ortCritFx.crit) addFx({ name: "คริติคอล ×2", img: CHAR_HOOKS.ort.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (CHAR_HOOKS.recruit.consumeHeadshot(attacker)) addFx({ name: "HeadShot +1", img: CHAR_HOOKS.recruit.IMG.base, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (mark42Atk > 0) addFx({ name: `เกราะ Mark 42 +${mark42Atk}`, img: Mark42.IMG.suit, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (journeyAtkFx) addFx({ name: journeyAtkFx.name, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
-  if (journeyCritFx.crit) addFx({ name: `อาณาจักรน้ำแข็ง — คริติคอล ${journeyCritFx.stacked ? "ซ้อน ×3" : "×2"} (${Journey.ICE_CRIT_PCT}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
-  if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%)`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (journeyCritFx.crit) addFx({ name: `อาณาจักรน้ำแข็ง — คริติคอล ×2 (${Journey.ICE_CRIT_PCT}%)`, img: null, by: attacker.name, color: colorOf(attacker) }, "atk");
+  if (kimCritFx.crit) addFx({ name: `Poise คริติคอล ×2 (${kimCritFx.chance}%${kimCritFx.field ? " รวมอาณาจักรน้ำแข็ง" : ""})`, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   for (const name of kimAtkFx) addFx({ name, img: displayImg(attacker), by: attacker.name, color: colorOf(attacker) }, "atk");
   if (accurate) addFx({ name: "แม่นยำ — เจาะการหลบหลีก", img: CHAR_HOOKS.tohno.IMG.ultimate, by: attacker.name, color: colorOf(attacker) }, "atk");
   if (tohnoBurstFx.fired) addFx({ name: `มองเห็นแล้ว!! — ระเบิดรอยร้าว ${tohnoBurstFx.cracks} ขั้น (+${tohnoBurstFx.cracks})`, img: CHAR_HOOKS.tohno.IMG.ultimate, by: attacker.name, color: colorOf(attacker) }, "atk");
@@ -7648,7 +7649,8 @@ const engine = {
   // ผู้ลงมือของดาเมจก้อนนี้ติด "แม่นยำ" ไหม — ด่านหลบดาเมจจากสกิลของตัวละครต่างๆ (อิปโป/เอจิ/luminous) ใช้เช็ค
   sourceAccurate() { return !!effectSourceId && accurateActive(players[effectSourceId]); },
   accurateActive,
-  journeyDotBonus() { return Journey.dotBonus(engine); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
+  journeyDotBonus() { return Journey.dotBonus(engine); },
+  journeyCritBonus() { return Journey.critBonus(engine); }, // การเดินทาง (อาณาจักรน้ำแข็ง กลางวัน) — อ่านใน applyCrit ของอุซากิ/Kim // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
   journeyGiftItem, // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return colorOf(p); },
   nextTransformCounter() { return ++transformCounter; },
