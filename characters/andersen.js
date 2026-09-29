@@ -49,7 +49,7 @@ const teamish = (engine) => engine.teamModeActive() || engine.mercuryActive();
 const roll = (pct) => Math.random() * 100 < pct;
 
 function allies(engine, src) {
-  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish(engine) || o.id === src.id || engine.sameTeam(src, o)));
+  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish(engine) || o.id === src.id || engine.isAlly(src, o)));
 }
 function pickAnyone(engine, targets) {
   const t = engine.players[Array.isArray(targets) ? targets[0] : null];
@@ -58,7 +58,7 @@ function pickAnyone(engine, targets) {
 function pickAlly(engine, p, targets) {
   const t = pickAnyone(engine, targets);
   if (!t) return null;
-  if (teamish(engine) && t.id !== p.id && !engine.sameTeam(p, t)) return null;
+  if (teamish(engine) && t.id !== p.id && !engine.isAlly(p, t)) return null;
   return t;
 }
 function cardName(c) {

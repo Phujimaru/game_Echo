@@ -43,7 +43,7 @@ const isOberon = (p) => !!p && p.characterId === ID;
 // ผู้รับผลดี "ทุกคน": โหมดทีม/Raid = ตัวเอง + เพื่อนร่วมทีม · ffa = ทุกคนที่ยังอยู่ (ไม่รวม ORT)
 function allies(engine, src) {
   const teamish = engine.teamModeActive() || engine.mercuryActive();
-  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish || o.id === src.id || engine.sameTeam(src, o)));
+  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish || o.id === src.id || engine.isAlly(src, o)));
 }
 function pickTarget(engine, targets) {
   const t = engine.players[Array.isArray(targets) ? targets[0] : null];

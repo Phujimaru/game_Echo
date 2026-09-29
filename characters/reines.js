@@ -52,12 +52,12 @@ const isReines = (p) => !!p && p.characterId === ID;
 const teamish = (engine) => engine.teamModeActive() || engine.mercuryActive();
 
 function enemies(engine, src) {
-  return engine.alivePlayers().filter((o) => o.id !== src.id && !(teamish(engine) && engine.sameTeam(src, o)));
+  return engine.alivePlayers().filter((o) => o.id !== src.id && !(teamish(engine) && engine.isAlly(src, o)));
 }
 function pickTarget(engine, p, targets) {
   const t = engine.players[Array.isArray(targets) ? targets[0] : null];
   if (!t || !t.alive || engine.isOrt(t)) return null;
-  if (teamish(engine) && t.id !== p.id && !engine.sameTeam(p, t)) return null; // โหมดทีม: มอบให้ตัวเอง/เพื่อนร่วมทีมเท่านั้น
+  if (teamish(engine) && t.id !== p.id && !engine.isAlly(p, t)) return null; // โหมดทีม: มอบให้ตัวเอง/เพื่อนร่วมทีมเท่านั้น
   return t;
 }
 // ของที่มีได้ชิ้นเดียว — คุณนายใหญ่ไม่แถม

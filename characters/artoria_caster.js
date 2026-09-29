@@ -40,13 +40,13 @@ const isArtoria = (p) => !!p && p.characterId === ID;
 
 function allies(engine, src) {
   const teamish = engine.teamModeActive() || engine.mercuryActive();
-  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish || o.id === src.id || engine.sameTeam(src, o)));
+  return engine.alivePlayers().filter((o) => !engine.isOrt(o) && (!teamish || o.id === src.id || engine.isAlly(src, o)));
 }
 function pickTarget(engine, p, targets) {
   const t = engine.players[Array.isArray(targets) ? targets[0] : null];
   if (!t || !t.alive || engine.isOrt(t)) return null;
   const teamish = engine.teamModeActive() || engine.mercuryActive();
-  if (teamish && t.id !== p.id && !engine.sameTeam(p, t)) return null; // โหมดทีม: มอบให้ตัวเอง/เพื่อนร่วมทีมเท่านั้น
+  if (teamish && t.id !== p.id && !engine.isAlly(p, t)) return null; // โหมดทีม: มอบให้ตัวเอง/เพื่อนร่วมทีมเท่านั้น
   return t;
 }
 

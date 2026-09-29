@@ -920,6 +920,14 @@ function startPhaseTimer(seconds, onExpire) {
 function teamModeActive() {
   return gameMode === "duo" || gameMode === "trio";
 }
+// "เป็นพวกเดียวกัน" สำหรับการมอบผลดี (ซัพพอร์ต) — duo/trio: ทีมเดียวกัน · Type Mercury: ผู้เล่นจริงทุกคน
+//  ต่างจาก sameTeam() ตรงที่ไม่มีข้อยกเว้น explicitTargetIds ของ Mercury (ข้อยกเว้นนั้นมีไว้ให้ผลเสียที่
+//  ผู้เล่นกดเลือกเองลงเพื่อนได้ — ถ้าใช้ sameTeam ตัดสิน "เลือกเพื่อนได้ไหม" เพื่อนที่ถูกเลือกจะกลายเป็นคนนอกทีมทันที)
+function isAlly(a, b) {
+  if (!a || !b || a.id === b.id) return false;
+  if (mercuryActive()) return !isOrt(a) && !isOrt(b);
+  return !!(teamModeActive() && a.teamId && b.teamId && a.teamId === b.teamId);
+}
 
 // ============================================================
 //  QTE (Quick Time Event) — ระบบกลาง ใช้ร่วมกันได้ทุกตัวละคร
@@ -7656,6 +7664,7 @@ const engine = {
   remainingTeamWinInfo,
   get winningTeamId() { return winningTeamId; },
   teamModeActive,
+  isAlly, // ซัพพอร์ต: ตัดสินว่ามอบผลดี/เลือกเป็นเป้าหมายได้ไหม (ไม่ใช้ sameTeam — ดูคอมเมนต์ที่ตัวฟังก์ชัน)
   sameTeam,
   friendlyEffectBlocked,
   withEffectSource,
