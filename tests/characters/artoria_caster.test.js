@@ -51,7 +51,7 @@ test('ข้อมูล: ระดับง่าย · ราคา 0/0/8', ()
   assert.deepEqual([c.basic.cost, c.secondary.cost, c.ultimate.cost], [0, 0, 8]);
 });
 
-test('เสน่ห์แห่งความหวัง: ffa ทุกคนแต้มสกิล +3 (ไม่เพิ่มพลังโจมตี) · คูลดาวน์ 5 เทิร์น', () => {
+test('เสน่ห์แห่งความหวัง: ffa ทุกคนแต้มสกิล +3 (ไม่เพิ่มพลังโจมตี) · คูลดาวน์ 3 เทิร์น', () => {
   const { A, M, T } = setup();
   const r0 = engine.roundNumber;
   engine.useSkill('A', 'basic');
@@ -61,10 +61,10 @@ test('เสน่ห์แห่งความหวัง: ffa ทุกค�
   }
   A.skillUsedRound = false;
   assert.equal(art.canUseSkill(engine, A, 'basic'), false);
-  engine.setRoundNumber(r0 + 4);
+  engine.setRoundNumber(r0 + 2);
   assert.equal(art.canUseSkill(engine, A, 'basic'), false);
-  engine.setRoundNumber(r0 + 5);
-  assert.equal(art.canUseSkill(engine, A, 'basic'), true, 'กดเทิร์น N กดได้อีกเทิร์น N+5');
+  engine.setRoundNumber(r0 + 3);
+  assert.equal(art.canUseSkill(engine, A, 'basic'), true, 'กดเทิร์น N กดได้อีกเทิร์น N+3');
 });
 
 test('เสน่ห์แห่งความหวัง โหมดทีม: เฉพาะตัวเองและเพื่อนร่วมทีม', () => {
