@@ -3476,7 +3476,8 @@ function openShop() {
 //    sold = ครบเพดานแล้ว (client ใช้ sold ตัดสินว่ากดซื้อได้ไหม) · stock/stockMax ส่งไปโชว์ "เหลือ x/3"
 //  · คลื่นวงวนน้ำ กลางวัน: ช่องที่ยังไม่มีใครซื้อและราคาต่ำกว่า 5 ถูกสุ่มใหม่เป็นของราคา 5 ขึ้นไป
 function refreshShopForJourney() {
-  if (!shopItems.length || Seraph.active()) return;
+  // ทุกโหมด (รวม SE.RA.PH) ใช้ตัวนับ bought ตัดสิน sold — ผลของภูมิภาคทำงานเฉพาะโหมดที่มีการเดินทาง (Journey.is/shopStock)
+  if (!shopItems.length) return;
   if (Journey.is(engine, 4, "day")) {
     for (let i = 0; i < shopItems.length; i++) {
       const it = shopItems[i];
