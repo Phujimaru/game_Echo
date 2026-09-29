@@ -78,9 +78,13 @@ export function CycleScene({ c }) {
   const night = c.cycle === "night";
   const accent = night ? "#aab4ff" : "#f6ad3c";
   const title = night ? "ราตรีมาเยือน" : "รุ่งอรุณมาถึง";
-  const sub = night
-    ? "สุ่มสกิลพื้นฐาน/สกิลรองแพงขึ้น +1 ทุกเทิร์น"
-    : "จบเทิร์นได้แต้มสกิลเพิ่ม +1";
+  // การเดินทาง (ffa/duo/trio): ผลกลางวัน/กลางคืนมาจากภูมิภาคที่อยู่ (server ส่งข้อความมา) — ข้อความตายตัวด้านล่าง
+  //  เป็นกติกาวัน/คืนเดิมที่เหลือใช้แค่ Type Mercury (เดิมโชว์ข้อความนี้ทุกภูมิภาค = ไม่ตรงกับผลจริง)
+  const sub = c.journey
+    ? `${c.journey.name} — ${c.journey.text}`
+    : night
+      ? "สุ่มสกิลพื้นฐาน/สกิลรองแพงขึ้น +1 ทุกเทิร์น"
+      : "จบเทิร์นได้แต้มสกิลเพิ่ม +1 (เช้าที่ 2, 4, 6, …)";
 
   const flock = useMemo(() => {
     const rnd = seeded(night ? 8811 : 4422);
@@ -145,7 +149,7 @@ export function CycleScene({ c }) {
           {title}
         </div>
         <div
-          className="av-heading text-base px-5 py-1.5 rounded-full"
+          className="av-heading text-base px-5 py-1.5 rounded-2xl max-w-[44rem] text-center leading-snug"
           style={{ background: "rgba(6,4,12,.62)", border: `1px solid ${accent}66`, color: "rgba(239,230,245,.9)" }}
         >
           {sub}

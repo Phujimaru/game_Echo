@@ -5157,10 +5157,15 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // แบนเนอร์สลับกลางวัน/กลางคืน: เด้งเมื่อ cycle เปลี่ยนระหว่างแมตช์ แล้วหายเอง
   useEffect(() => {
     if (prevCycle.current && state.cycle && prevCycle.current !== state.cycle && !muteScenes) {
-      pushScene("cycle", { cycle: state.cycle });
+      const j = state.journey;
+      pushScene("cycle", {
+        cycle: state.cycle,
+        // การเดินทาง: ผลของช่วงเวลานี้ตามภูมิภาคที่อยู่ (ไม่ใช่กติกาวัน/คืนเดิม)
+        journey: j ? { name: j.name, text: state.cycle === "night" ? j.nightDesc : j.day } : null,
+      });
     }
     prevCycle.current = state.cycle;
-  }, [state.cycle, muteScenes, pushScene]);
+  }, [state.cycle, state.journey, muteScenes, pushScene]);
   useEffect(() => {
     if (hakunoCmdOpen && !hakunoCmdUsable) setHakunoCmdOpen(false);
   }, [hakunoCmdOpen, hakunoCmdUsable]);
