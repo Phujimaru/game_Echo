@@ -2594,8 +2594,9 @@ function buildStateFor(viewerId) {
     players: Object.values(players).map((p) => {
       const mine = p.id === viewerId;
       const show = mine || revealAll;
-      // Type Mercury: เพื่อนร่วมทีม (ผู้เล่นจริงด้วยกัน) เห็นแต้มการ์ดกันตลอดเวลา — ORT ยังถูกซ่อนตามปกติ
-      const teamReveal = mercuryActive() && !!viewer && !isOrt(viewer) && !isOrt(p);
+      // โหมดทีม (duo/trio) และ Type Mercury: เพื่อนร่วมทีมเห็นแต้มการ์ดกันตลอดเวลา — ศัตรู/ORT ยังถูกซ่อนตามปกติ
+      //  isAlly: duo/trio = ทีมเดียวกัน · Mercury = ผู้เล่นจริงทุกคน (ไม่ใช้ sameTeam เพราะข้อยกเว้น explicitTargetIds)
+      const teamReveal = !!viewer && isAlly(viewer, p);
       // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ ทำงานอยู่ — บังตากระดานทั้งหมด (score/cards/hp/armor/shield ของทุกคนรวมตัวเอง, แต้มสกิลของทุกคนยกเว้นตัวเอง)
       const takumiBlackout = takumiBlackoutActive();
       // "ตาบอด" (สถานะ Universal patch 3.4 / ผลพ่วงของ "ลงทัณฑ์"): ผู้ที่ติดสถานะมองไม่เห็นอะไรเลย

@@ -791,7 +791,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   (เกินครึ่งห้องจบทันที / หมดเวลา `MERCURY_SURRENDER_SECONDS` นับเฉพาะคนที่กด เสมอ = สู้ต่อ)
 - `sameTeam()` คืน true ระหว่างผู้เล่นจริงทุกคนในโหมดนี้ (ตีกันเอง/ผลหมู่ลงเพื่อนไม่ได้) · **ยกเว้นเป้าที่ผู้เล่นกดเลือกเอง**
   ในสกิล/ไอเทมที่กำลังทำงาน (`withExplicitTargets` ห่อ `useSkill`/`useInventoryItem` และส่งต่อไปถึงผลหลังวีดีโอใน
-  `pausePlayingForCutscene`) — มอบบัฟ/รับศิษย์ให้เพื่อนจึงเกิดผลจริง · เพื่อนร่วมทีมเห็นแต้มกันตลอด (`teamReveal`)
+  `pausePlayingForCutscene`) — มอบบัฟ/รับศิษย์ให้เพื่อนจึงเกิดผลจริง · เพื่อนร่วมทีมเห็นแต้มกันตลอด (`teamReveal` ใน `buildStateFor` — ใช้ทั้ง Mercury และ duo/trio ผ่าน `isAlly()`)
 - **วิวัฒนาการนับการสังหารจาก "ผู้ทำดาเมจล่าสุดในเทิร์นเดียวกัน"** (`p.lastDamageSourceId`/`lastDamageRound` บันทึกที่
   `adjustIncomingDamage`) — ผู้เล่นที่ ORT ตีจนเลือดหมดไม่ตายใน `doAttack` แต่ตายตอนกวาดท้าย `endTurn` ซึ่งไม่มี `effectSourceId` แล้ว
 - ฉากเปิดตัว: server พักเฟส CUTSCENE (ไม่มีคลิป) `MERCURY_ARRIVAL_SECONDS` (env ย่อได้ในเทสต์) · client เล่น `OrtArrival`

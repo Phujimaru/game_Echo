@@ -5782,7 +5782,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* ผู้เล่นคนอื่น (โหมด Raid: เพื่อนร่วมทีมเรียงแถวใต้ ORT และเห็นแต้มกันตลอด) */}
       {seatOthers.map((p, i) => (
         <OtherPlayer
-          alwaysScore={raid}
+          alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
           key={p.id}
           p={p}
           phase={phase}
