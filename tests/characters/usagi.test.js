@@ -82,7 +82,7 @@ test('math questions always have integer answers', () => {
   }
 });
 
-test('ultimate: opponents (not teammates, not ORT) get 3 questions for 3 turns; wrong answers hurt', () => {
+test('ultimate: opponents (not teammates, not ORT) get 3 questions for 3 turns — starting the moment it is pressed; wrong answers hurt', () => {
   const u = bunny({ teamId: 'A' });
   const mate = player('mate', { teamId: 'A' });
   const foe = player('foe', { teamId: 'B', hp: 4, armor: 1 });
@@ -90,8 +90,10 @@ test('ultimate: opponents (not teammates, not ORT) get 3 questions for 3 turns; 
   const { engine } = makeEngine({ u, mate, foe, boss });
   usagi.applyInstantSkill(engine, u, 'ultimate');
   assert.equal(usagi.canUseSkill(engine, u, 'ultimate'), false, 'cannot stack while active');
+  // endTurn() ของ engine จริงลดตัวนับ 1 ต่อเทิร์น — จำลองตรงนี้ (ต้นเทิร์นไม่ลดเองแล้ว)
+  const endTurn = () => { if (--u.statuses.usagiMath <= 0) delete u.statuses.usagiMath; };
   for (let turn = 0; turn < 3; turn++) {
-    usagi.onRoundStartAfterLoop(engine);
+    if (turn > 0) usagi.onRoundStartAfterLoop(engine); // เทิร์นแรกแจกไปแล้วตอนกด
     assert.ok(foe.usagiQuiz, `turn ${turn + 1}: the opponent gets a quiz`);
     assert.equal(mate.usagiQuiz || null, null, 'teammates are skipped');
     assert.equal(boss.usagiQuiz || null, null, 'ORT gets no quiz — it just takes the full hit');
@@ -100,6 +102,7 @@ test('ultimate: opponents (not teammates, not ORT) get 3 questions for 3 turns; 
     usagi.answerQuiz(engine, foe, qz.items[1].a + 1);   // ผิด
     usagi.answerQuiz(engine, foe, qz.items[2].a);       // ถูก
     assert.equal(foe.usagiQuiz, null, 'finished');
+    endTurn();
   }
   usagi.onRoundStartAfterLoop(engine);
   assert.equal(foe.usagiQuiz, null, 'no 4th turn');
@@ -111,8 +114,7 @@ test('quiz clock pauses during cutscenes and unanswered questions count as wrong
   const u = bunny();
   const foe = player('foe', { hp: 7, armor: 0 });
   const { engine } = makeEngine({ u, foe });
-  usagi.applyInstantSkill(engine, u, 'ultimate');
-  usagi.onRoundStartAfterLoop(engine);
+  usagi.applyInstantSkill(engine, u, 'ultimate'); // แจกโจทย์ทันทีตอนกด
   foe.usagiQuiz.deadline = Date.now() + 3000;
   engine.gameState = 'CUTSCENE';
   usagi.syncPause(engine);

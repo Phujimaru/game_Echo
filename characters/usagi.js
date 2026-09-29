@@ -8,7 +8,10 @@
 //    เอา = วีดีโอ usagi_skill2 แล้วสลับไพ่ทั้งมือกัน (ไพ่แตกก็ติดไปด้วย · ทั้งคู่จั่วต่อได้ตามปกติ)
 //    ไม่เอา / ไม่ตอบก่อนเปิดไพ่ = ไม่สลับ (แต้มที่จ่ายไปไม่คืน)
 //  ท่าไม้ตาย ฮัยย๊ะ ฮ๊ะ ปรุๆ อิอิ อิยะ ฮ๊ะ (6 แต้ม) — วีดีโอ usagi_skill3 + เพลง usagi_theme 3 เทิร์น
-//    ต้นเทิร์นทั้ง 3 เทิร์นถัดไป ฝ่ายตรงข้ามทุกคน (ไม่รวมเพื่อนร่วมทีม) ต้องทำโจทย์คณิต 3 ข้อ ข้อละ 5 วินาที
+//    รวม 3 เทิร์น: เทิร์นที่กด (แจกโจทย์ทันทีตอนกด — นาฬิกาหยุดระหว่างวีดีโอ) + ต้นเทิร์นของอีก 2 เทิร์นถัดไป
+//    ฝ่ายตรงข้ามทุกคน (ไม่รวมเพื่อนร่วมทีม) ต้องทำโจทย์คณิต 3 ข้อ ข้อละ 5 วินาที
+//    p.statuses.usagiMath = เทิร์นที่เหลือ "รวมเทิร์นนี้" — ลดที่ลูปลดเทิร์นของ endTurn() จุดเดียว
+//    (บั๊กเดิม: ลดทั้งตอนแจกโจทย์ต้นเทิร์นและตอนจบเทิร์น = ทำงานแค่รอบเดียว)
 //    ORT (บอต) ทำโจทย์ไม่ได้ = รับความเสียหายเต็ม 3 ทุกเทิร์น
 //    ตอบผิด/ไม่ทัน = ความเสียหาย 1 ต่อข้อ (ลดเกราะก่อน) · ระหว่างคัตซีน นาฬิกาโจทย์หยุด
 //    ระบบเดียวกับ QTE: เก็บเส้นตาย (ms) ไว้ที่ server แล้วตัดสินตอนคำตอบมาถึง — ไม่มี setTimeout ฝั่ง server
@@ -77,13 +80,17 @@ module.exports = {
       }
     } else p.usagiPuruIdle = 0;
   },
-  // หลังลูปต้นเทิร์น (ทุกคนได้ไพ่ใบแรกแล้ว): ท่าไม้ตายยังทำงาน -> แจกโจทย์ให้ฝ่ายตรงข้าม
+  // หลังลูปต้นเทิร์น (ทุกคนได้ไพ่ใบแรกแล้ว): ท่าไม้ตายยังทำงาน -> แจกโจทย์ให้ฝ่ายตรงข้าม (เทิร์นที่ 2 และ 3)
   onRoundStartAfterLoop(engine) {
     for (const u of Object.values(engine.players)) {
       if (!isUsagi(u) || !u.alive || !((u.statuses.usagiMath || 0) > 0)) continue;
-      u.statuses.usagiMath--;
-      const left = u.statuses.usagiMath;
-      if (left <= 0) delete u.statuses.usagiMath;
+      this.dealQuizzes(engine, u);
+    }
+  },
+  // แจกโจทย์ 1 ชุดให้ฝ่ายตรงข้ามทุกคน — ไม่แตะตัวนับเทิร์น (endTurn ลดให้)
+  dealQuizzes(engine, u) {
+    {
+      const left = Math.max(0, (u.statuses.usagiMath || 0) - 1); // เทิร์นที่เหลือหลังเทิร์นนี้
       let n = 0;
       for (const t of Object.values(engine.players)) {
         if (t === u || !t.alive || engine.sameTeam(u, t) || t.usagiQuiz) continue;
@@ -146,6 +153,8 @@ module.exports = {
       p.statuses.usagiMath = QUIZ_TURNS;
       p.transformAt = engine.nextTransformCounter(); // เพลง usagi_theme เริ่มใหม่ทุกครั้งที่กด
       engine.queueCutscene(p, "usagiUlt"); // วีดีโอทุกครั้งที่กด
+      // ทำงานทันทีตอนกด = เทิร์นที่ 1 ของ 3 — นาฬิกาโจทย์หยุดระหว่างวีดีโอ (syncPause) แล้วเดินต่อเมื่อกลับเฟสจั่วไพ่
+      this.dealQuizzes(engine, p);
       return "";
     }
     return "";

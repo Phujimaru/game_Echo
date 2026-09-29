@@ -451,11 +451,12 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 - สกิลรองเป็น 2 จังหวะ: `useSkill` จ่ายแต้ม + ตั้ง `p.usagiSwapOffer` (แต้มเป้าหมายส่งให้เจ้าตัวคนเดียวใน `buildStateFor`)
   → socket `usagiSwapAnswer` เอา = `pausePlayingForCutscene` (วีดีโอก่อน) แล้วสลับ `cards` ทั้งมือ · ไม่ตอบก่อนเปิดไพ่ = ไม่เอา
 - ท่าไม้ตาย = **ระบบโจทย์คณิต** ยืมแนวคิด QTE: เก็บเส้นตายเป็น ms ที่ `p.usagiQuiz` ของผู้ถูกทำโจทย์ ไม่มี setTimeout ฝั่ง server
-  · แจกที่ `onRoundStartAfterLoop` · `usagiMath` (NO_TICK) = เทิร์นที่เหลือ ลดเองตอนแจก · **นาฬิกาหยุดเมื่อไม่ได้อยู่เฟส PLAYING**
+  · แจก **ทันทีตอนกด** (เทิร์นที่ 1) แล้วแจกต่อที่ `onRoundStartAfterLoop` (เทิร์นที่ 2-3) ผ่าน `dealQuizzes()` · `usagiMath` = เทิร์นที่เหลือรวมเทิร์นนี้
+    ลดที่ลูปลดเทิร์นของ `endTurn()` **จุดเดียว** (บั๊กเดิม: ลดทั้งตอนแจกและตอนจบเทิร์น = ทำงานรอบเดียว) · **นาฬิกาหยุดเมื่อไม่ได้อยู่เฟส PLAYING** (ระหว่างวีดีโอท่าไม้ตาย)
     (`syncPause` ที่หัว `broadcastState`) · client ได้ `leftMs` ไม่ใช่เวลาเครื่อง server · ไม่ส่งเฉลย · ค้างอยู่ = `pendingAnswer` ของ
     `checkAllLocked` และ `resolveRound` กวาดข้อที่เหลือเป็นผิด · ข้ามเพื่อนร่วมทีม (`sameTeam`) · ORT ไม่ได้โจทย์แต่รับดาเมจเต็ม 3 ทุกเทิร์น (ORT สวนกลับอุซากิตามปกติ)
 - สกิลติดตัว ปรุๆ: `onAttack` ก่อนด่านหลบใน `doAttack` (นับแม้โดนหลบ) · คริติคอลคูณยอดสุทธิถัดจากของ ORT · ATK +1 ผ่าน `damageBonus`
-- เทสต์: [tests/characters/usagi.test.js](tests/characters/usagi.test.js)
+- เทสต์: [tests/characters/usagi.test.js](tests/characters/usagi.test.js) · [tests/characters/usagi-ult.integration.test.js](tests/characters/usagi-ult.integration.test.js)
 
 **Bamboo-Hatted Kim (พิเศษ · unique)** — `characters/kim.js` · พลังชีวิต 8 / เกราะ 2
 - ฝักดาบ +3-10 เมื่อ**ได้รับความเสียหายทุกชนิด** (`adjustIncomingDamage` + `onSoftDamage` ใน `damageSoft`) · +3-8 เมื่อสร้างความเสียหาย > 0 รวมการสวนกลับ
