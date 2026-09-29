@@ -1736,9 +1736,36 @@ function statusEntries(p, full) {
 // compact = ไอคอนล้วน ไม่มีข้อความชื่อ + จำกัดจำนวนแถวด้วย max แล้วยุบที่เหลือเป็นป้าย "+N"
 //  ใช้กับการ์ดผู้เล่นอื่น/เป้าหมาย (บัฟ/ดีบัฟเยอะแล้วแถวยาวจนอ่านไม่รู้เรื่อง) — แตะที่การ์ดเพื่อดูรายละเอียดเต็มแทน (onInspect เดิม)
 //  ปกติ (ไม่ compact) ยังมีชื่อเต็มเหมือนเดิม ใช้กับแผงตัวเราเองที่มีพื้นที่กว้างกว่า
-function StatusChips({ p, left, compact, max = 5 }) {
+// grid = แผงของตัวเอง (จอคอม): ตาราง 3 คอลัมน์ × 2 แถวตายตัว ชื่อยาวย่อด้วย … — เกิน 6 สถานะ
+//  ช่องสุดท้ายเป็น "+N" ให้กดดูทั้งหมด (เดิมป้ายเต็มชื่อตัดบรรทัดอิสระ แถวที่ 3 ถูกกล่องสูง 2 แถวตัดครึ่ง = จอพัง)
+const STATUS_GRID_MAX = 6;
+function StatusChips({ p, left, compact, grid, max = 5 }) {
   const items = statusEntries(p);
   if (!items.length) return null;
+  if (grid) {
+    const cut = items.length > STATUS_GRID_MAX;
+    const shown = cut ? items.slice(0, STATUS_GRID_MAX - 1) : items;
+    return (
+      <div className="grid grid-cols-3 gap-1 mt-1 w-full">
+        {shown.map((it) => (
+          <span
+            key={it.key}
+            title={`${it.label}${it.amt > 0 ? ` +${it.amt}` : ""}${showStatusValue(it) ? ` x${it.v}` : ""} — ${it.desc}`}
+            className={`flex items-center gap-1 min-w-0 text-xs px-1.5 py-0.5 rounded-md font-bold border border-black/25 shadow ${it.cls}`}
+          >
+            <span className="shrink-0">{it.icon}</span>
+            <span className="truncate">{it.label}{it.amt > 0 ? ` +${it.amt}` : ""}</span>
+            {showStatusValue(it) && <span className="shrink-0 opacity-90">{it.v}</span>}
+          </span>
+        ))}
+        {cut && (
+          <span className="flex items-center justify-center text-xs px-1.5 py-0.5 rounded-md font-black bg-black/65 border border-white/25 text-white">
+            +{items.length - shown.length} แตะดูทั้งหมด
+          </span>
+        )}
+      </div>
+    );
+  }
   const shown = compact ? items.slice(0, max) : items;
   const overflow = compact ? items.length - shown.length : 0;
   return (
@@ -6001,11 +6028,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <button
                   type="button"
                   onClick={() => { clickSound(); setStatusViewId(me.id); }}
-                  className="p-status-click flex items-start mt-2.5 -ml-1 px-1 py-0.5 max-w-[19rem] sm:max-w-[30rem] max-h-[64px] overflow-hidden"
+                  className="p-status-click flex items-start mt-2.5 -ml-1 px-1 py-0.5 w-[19rem] sm:w-[30rem] max-h-[64px] overflow-hidden"
                   title="แตะเพื่อดูรายละเอียดสถานะ+เวลาคงเหลือ"
                 >
                   {me.hisakawa ? <span className="text-xs opacity-60 text-hard whitespace-nowrap">แตะดูสถานะรวม</span>
-                    : meStatuses.length > 0 ? <StatusChips p={me} left /> : <span className="text-xs opacity-60 text-hard whitespace-nowrap">ไม่มีสถานะ</span>}
+                    : meStatuses.length > 0 ? <StatusChips p={me} left grid /> : <span className="text-xs opacity-60 text-hard whitespace-nowrap">ไม่มีสถานะ</span>}
                 </button>
               </div>
             </div>
