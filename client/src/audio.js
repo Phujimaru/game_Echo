@@ -247,6 +247,7 @@ const VIDEO_BASE = 1;
 const LOUDNESS_GAIN = {
   "/characters/Bamboo-Hatted Kim/Limbus Company OST - Intervallo VII-2 Boss Battle Theme [-Lu6w6_P1NA].mp3": 0.49,
   "/characters/Recruit/สกิลอันติเมต/สกิลอัลติเมติ.mp4": 0.44,
+  "/characters/reines/reines_skill3.mp4": 0.77, // ไรเนส: วีดีโอท่าไม้ตาย -13.8 dBFS (เป้าวีดีโอ -16)
   "/characters/Recruit/โจมตีปกติ/โจมตีปกติ.mov": 0.66,
   "/characters/appleguy/appleguy_final.mp4": 0.4,
   "/characters/bard/bard_dim.mp4": 0.33,
