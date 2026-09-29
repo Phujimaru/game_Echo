@@ -3466,13 +3466,33 @@ function openShop() {
     if (rolled.ammo === "hyper_trigger") hypers++;
     shopItems.push({ id: `shop_${shopRoundSeq}_${i}`, ...rolled, sold: false, soldTo: null });
   }
-  // การเดินทาง (ทุ่งดอกไม้ กลางคืน): ช่องละหลายชิ้น — stock = ที่เหลือ · soldTo = คนซื้อชิ้นล่าสุด
-  //  sold จะเป็น true ตอนของหมดช่องเท่านั้น (client ใช้ sold ตัดสินว่ากดซื้อได้ไหมเหมือนเดิม)
-  for (const it of shopItems) {
-    const stock = Journey.shopStock(engine, it);
-    if (stock > 1) { it.stock = stock; it.stockMax = stock; }
-  }
+  refreshShopForJourney();
   lastLog.push(`🏪 ร้านค้ามายาเปิดแล้ว! มีสินค้า ${shopItems.length} ชิ้น: ${shopItems.map(shopItemName).join(", ")}`);
+}
+// การเดินทาง: ผลของภูมิภาคที่มีต่อร้านค้า "คิดใหม่ทุกต้นเทิร์น" (เรียกจาก dealRound + ตอนร้านเปิด + หลังซื้อ)
+//  ร้านเปิดทุก 5 เทิร์นแต่ของค้างอยู่ข้ามช่วงเวลา — เดิมคิดผลครั้งเดียวตอนเปิดร้าน ผลจึงช้ากว่าช่วงจริงทั้งช่วง
+//  (ร้านเทิร์น 15 ที่เปิดตอนกลางวันยังซื้อได้ช่องละ 1 ชิ้นตลอดกลางคืน 16-19 ของทุ่งดอกไม้)
+//  · ทุ่งดอกไม้ กลางคืน: ช่องละหลายชิ้น — นับที่ซื้อไปแล้ว (bought) เทียบเพดานของช่วงเวลาปัจจุบัน
+//    sold = ครบเพดานแล้ว (client ใช้ sold ตัดสินว่ากดซื้อได้ไหม) · stock/stockMax ส่งไปโชว์ "เหลือ x/3"
+//  · คลื่นวงวนน้ำ กลางวัน: ช่องที่ยังไม่มีใครซื้อและราคาต่ำกว่า 5 ถูกสุ่มใหม่เป็นของราคา 5 ขึ้นไป
+function refreshShopForJourney() {
+  if (!shopItems.length || Seraph.active()) return;
+  if (Journey.is(engine, 4, "day")) {
+    for (let i = 0; i < shopItems.length; i++) {
+      const it = shopItems[i];
+      if ((it.bought || 0) > 0 || it.sold || it.price >= Journey.WHIRL_SHOP_MIN_PRICE) continue;
+      const rolled = Journey.filterShopRoll(engine, () => rollShopItem(false, false, false)); // ไม่เพิ่มของโควตา (ปืน/Hyper/Mark 42)
+      shopItems[i] = { id: `${it.id}_w`, ...rolled, sold: false, soldTo: null };
+    }
+  }
+  for (const it of shopItems) {
+    // ของที่ขายไปก่อนมีตัวนับ bought (ร้านจาก snapshot/เวอร์ชันเก่า) ถือว่าซื้อไป 1 ชิ้น
+    if (it.bought == null) it.bought = it.sold ? 1 : 0;
+    const limit = Journey.shopStock(engine, it);
+    it.sold = it.bought >= limit;
+    if (limit > 1) { it.stock = Math.max(0, limit - it.bought); it.stockMax = limit; }
+    else { delete it.stock; delete it.stockMax; }
+  }
 }
 // การเดินทาง (ทุ่งดอกไม้ กลางวัน): ของฟรีราคาไม่เกิน 5 ที่ใช้ได้ทันที — ไม่มีกระสุน (ใช้ไม่ได้ถ้าไม่มีปืน)
 function journeyGiftItem() {
@@ -3527,9 +3547,9 @@ function buyShopItem(id, itemId) {
   if (item.type === "mark42" && !Mark42.canBuy(engine, p)) return; // มีชุดอยู่แล้ว / ชุดเพิ่งพังจากการต่อสู้ (10 เทิร์น)
   if (item.type === "gutsAmmo" && item.ammo === "hyper_trigger" && (p.characterId === "ignis" || hasBlackSparklence(p))) return;
   if (item.type === "gutsAmmo" && (item.ammo === "hyper_trigger" || item.ammo === "trigger_dark_key") && p.inventory.some((it) => it.type === "gutsAmmo" && it.ammo === item.ammo)) return;
-  if (item.stock > 1) item.stock--;       // ทุ่งดอกไม้ กลางคืน: ยังเหลือชิ้นในช่องนี้
-  else { item.sold = true; item.stock = 0; }
+  item.bought = (item.bought || 0) + 1; // ทุ่งดอกไม้ กลางคืน: ช่องละหลายชิ้น (refreshShopForJourney คิด sold/stock ใหม่)
   item.soldTo = p.id;
+  refreshShopForJourney();
   p.gold -= item.price;
   p.inventory.push({ uid: `${item.id}_${p.inventory.length}_${Date.now()}`, type: item.type, value: item.value, size: item.size, ammo: item.ammo, price: item.price });
   lastLog.push(`🛍️ ${p.name} ซื้อ ${shopItemName(item)} จากร้านค้ามายา (-${item.price} เหรียญ)`);
@@ -3742,6 +3762,7 @@ function dealRound() {
   //  SE.RA.PH: เติมสต็อกใหม่ทุกวัน เพราะ "ร้านสะดวกซื้อ" เป็น 1 ใน 5 สถานที่ที่เลือกได้ทุกวัน
   if (Seraph.active()) { if (Seraph.currentDay() === 1) openShop(); } // เปิดครั้งเดียวต่อรอบ ใช้สต็อกเดิมทั้งรอบ
   else if (roundNumber % SHOP_INTERVAL_TURNS === 0) openShop();
+  else refreshShopForJourney(); // การเดินทาง: ผลต่อร้านค้าตามช่วงเวลาของเทิร์นนี้ (ร้านค้างมาจากเทิร์นก่อน)
   // ยูนะ ไอดอลประจำสนาม: ม้วนลูกเต๋าทุกๆ 5 เทิร์น เริ่มจากเทิร์นที่ 16 (16, 21, 26, ...)
   //  เอจิ: ระหว่างท่าไม้ตาย ไม่ว่ายังก็ตาม บังคับเปิดสนามอยู่ ยูนะจะไม่เกิดขึ้นเองแบบปกติ
   //  SE.RA.PH: ยูนะปิดทั้งโหมด (SERAPH_MOONCELL.md §12)
@@ -7706,7 +7727,8 @@ const engine = {
   journeyDotBonus() { return Journey.dotBonus(engine); },
   // อัตราคริเพิ่ม (%) ของผู้โจมตี = สนาม (อาณาจักรน้ำแข็ง กลางวัน) + บัฟคำสั่งขั้นเด็ดขาด (ไรเนส) — อ่านใน applyCrit ของอุซากิ/Kim
   critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p) + CHAR_HOOKS.andersen.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
-  journeyGiftItem, // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
+  journeyGiftItem,
+  refreshShopForJourney, // เทสต์: จำลองการขึ้นเทิร์นใหม่ของร้านค้า // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return colorOf(p); },
   nextTransformCounter() { return ++transformCounter; },
   // มีการแช่ทั้งสนามจากตัวละครอื่นอยู่ไหม (การไล่ล่าของคอนเนอร์ / การแข่งของไบรอน)

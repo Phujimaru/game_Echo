@@ -137,6 +137,46 @@ test('2 ทุ่งดอกไม้: กลางวันได้ของ�
   }
 });
 
+test('2 ทุ่งดอกไม้: ร้านที่เปิดตอนกลางวัน (เทิร์น 15) ซื้อได้ช่องละ 3 ชิ้นทันทีที่เข้ากลางคืน (16) — ไม่ต้องรอร้านรอบถัดไป', () => {
+  const { p0, p1 } = setup();
+  for (const p of [p0, p1]) p.gold = 30;
+  engine.setRoundNumber(15);
+  engine.openShop();
+  const potion = engine.shopItems.find((it) => it.type !== 'gutsGun' && it.type !== 'mark42' && it.ammo !== 'hyper_trigger' && it.ammo !== 'trigger_dark_key');
+  engine.setGameState('PLAYING');
+  engine.buyShopItem('p0', potion.id);
+  assert.equal(potion.sold, true, 'กลางวันช่องละ 1 ชิ้น');
+  engine.setRoundNumber(16);
+  engine.refreshShopForJourney(); // ต้นเทิร์นใหม่
+  assert.equal(potion.sold, false, 'กลางคืนซื้อต่อได้');
+  assert.equal(potion.stock, 2, 'ซื้อไปแล้ว 1 จาก 3');
+  engine.buyShopItem('p1', potion.id);
+  engine.buyShopItem('p1', potion.id);
+  assert.equal(potion.sold, true);
+  engine.setRoundNumber(21);
+  engine.refreshShopForJourney();
+  assert.equal(potion.stock, undefined, 'พ้นกลางคืนแล้วกลับเป็นช่องละ 1');
+});
+
+test('4 คลื่นวงวนน้ำ: เข้ากลางวัน (เทิร์น 31) ร้านที่ค้างจากเทิร์น 30 เหลือแต่ของราคา 5 ขึ้นไปทันที · ของที่ซื้อไปแล้วไม่ถูกเปลี่ยน', () => {
+  const { p0 } = setup();
+  p0.gold = 30;
+  engine.setRoundNumber(30);
+  engine.setShopItems([
+    { id: 'a', type: 'armor', value: 1, price: 3, sold: false, soldTo: null },
+    { id: 'b', type: 'armor', value: 1, price: 3, sold: false, soldTo: null },
+    { id: 'c', type: 'resist', price: 5, sold: false, soldTo: null },
+  ]);
+  engine.setGameState('PLAYING');
+  engine.buyShopItem('p0', 'b');
+  engine.setRoundNumber(31);
+  engine.refreshShopForJourney();
+  const shop = engine.shopItems;
+  assert.ok(shop.find((it) => it.id.startsWith('a')).price >= 5, 'ช่องถูกที่ยังไม่มีคนซื้อถูกสุ่มใหม่');
+  assert.equal(shop.find((it) => it.id === 'b').price, 3, 'ช่องที่ซื้อไปแล้วคงเดิม');
+  assert.equal(shop.find((it) => it.id === 'c').price, 5);
+});
+
 test('3 ป่าไม้ต้องสาป: สกิลแพงขึ้น +1 (ราคา 0 ยังฟรี) · กลางวันโจมตีพลาด 40% / โดนแรงขึ้น +1', () => {
   const { p0, p1 } = setup();
   engine.setRoundNumber(1);
