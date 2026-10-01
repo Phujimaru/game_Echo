@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
-import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, DOOM_WEAPON_SOUNDS } from "./audio";
+import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker } from "./audioPolicy";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
@@ -15,6 +15,8 @@ import OrtArrival from "./raid/OrtArrival";
 import JourneyMap from "./journey/JourneyMap";
 import GlobeDive from "./oc/intro/GlobeDive";
 import { OcScreen } from "./oc/ui";
+import { SharedGlobeStage } from "./globe/SharedGlobe";
+import { GLOBE_SCREENS } from "./components/TransitionCurtain";
 
 const SESSION_KEY = 'echo_session';
 
@@ -40,6 +42,7 @@ export default function App() {
   const [state, setState] = useState(null);
 
   // เสียงที่ดังบ่อยที่สุดในเกม: โหลดไว้ตั้งแต่เปิดหน้า ไม่ให้ไปสะดุดกลางแมตช์
+  useEffect(() => installClickSound(), []); // เสียงคลิกทุกการกดทั้งเกม
   useEffect(() => { prewarmSfx(["action_button", "change_cutscene", "trun_change", "buy_something", "sc_noti", "sc_noti2", "sc_glitch"]); }, []);
   const curtainRef = useRef(null); // ม่านเปลี่ยนฉาก — ควบคุมจังหวะปิด/เปิดจอตอนสลับหน้า
   // กันดับเบิ้ลคลิก/กดรัวบนปุ่มนำทาง (ถัดไป/ยืนยัน/ย้อนกลับ) ไม่ให้ยิงคำสั่งเปลี่ยนฉากซ้อนกัน
@@ -57,6 +60,7 @@ export default function App() {
   const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอฉากเปิดตัวผู้เล่นเล่นจบก่อน
   const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (finishIntro อ่านว่าช่วงพักยังไม่หมด)
   const prevGameStateRef = useRef(null);
+  const screenKeyRef = useRef("setup"); // หน้าปัจจุบัน (navigate ใช้ตัดสินว่าต้องมีม่านไหม)
   const [roster, setRoster] = useState([]);
   const [takenChars, setTakenChars] = useState([]); // ตัวละคร unique ที่มีคนเลือกไปแล้ว (คอนเนอร์ RK800)
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): ช่องคู่หูที่ยังว่าง (หน้าเลือกตัวละคร) + บทบาทของเครื่องนี้ ("pilot" | "gunner" | null)
@@ -329,7 +333,7 @@ export default function App() {
   const confirmCharacter = (characterId, extra) => {
     if (navLockRef.current) return;
     navLockRef.current = true;
-    curtainRef.current?.holdCover("forward");
+    // 5.1.2: ไม่ปิดจอรอ server แล้ว — หน้าเลือกตัวค้างอยู่จนเข้าห้องรอ (ลูกโลกร่วมเลื่อนไปเป็นฉากเปลี่ยนหน้า)
     // สไตรเกอร์ ยูเรก้า: เข้าร่วมเป็นคู่หูของตัวละครคู่ที่รออยู่ (ไม่ใช้ที่นั่งของตัวเอง)
     if (extra && extra.copilot) { socket.emit("joinCopilot", { name, characterId }); return; }
     socket.emit("join", { name, position, color, characterId, ...(extra || {}) });
@@ -348,6 +352,12 @@ export default function App() {
   const navigate = (targetScreenKey, applyFn) => {
     if (navLockRef.current) return;
     navLockRef.current = true;
+    // ระหว่างหน้าก่อนเข้าเกม: ไม่มีม่าน — สลับทันที แล้วให้ลูกโลกร่วมเลื่อนไปตำแหน่งของหน้าใหม่
+    if (GLOBE_SCREENS.has(targetScreenKey) && GLOBE_SCREENS.has(screenKeyRef.current)) {
+      applyFn();
+      setTimeout(() => { navLockRef.current = false; }, 500);
+      return;
+    }
     curtainRef.current?.preTrigger(targetScreenKey);
     setTimeout(applyFn, 660); // ~กลางช่วงที่ละอองบังจอทึบสนิท (ดู avVeilGust)
     setTimeout(() => { navLockRef.current = false; }, 1860); // ~ยาวกว่าอนิเมชันม่านทั้งหมดเล็กน้อย
@@ -449,8 +459,9 @@ export default function App() {
     screenKey = "game";
   }
 
+  useLayoutEffect(() => { screenKeyRef.current = screenKey; });
   return (
-    <>
+    <SharedGlobeStage active={GLOBE_SCREENS.has(screenKey)}>
       <VolumeControl />
       <TransitionCurtain ref={curtainRef} screenKey={screenKey} />
       {screen}
@@ -476,6 +487,6 @@ export default function App() {
           onDone={finishJourneyMap}
         />
       )}
-    </>
+    </SharedGlobeStage>
   );
 }

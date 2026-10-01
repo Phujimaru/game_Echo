@@ -679,7 +679,28 @@ export function stopSfx(a, playId) {
   a.pause();
 }
 export function sfxPlayId(a) { return a ? a._echoPlay : undefined; }
-export function clickSound() { playSfx("action_button"); }
+// เสียงคลิก (click.mp3) — กันเล่นซ้อน: ตัวดักทั้งหน้า (installClickSound) กับโค้ดที่เรียกเองในจังหวะเดียวกันจะดังครั้งเดียว
+let lastClickAt = 0;
+export function clickSound() {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  if (now - lastClickAt < 90) return;
+  lastClickAt = now;
+  playSfx("action_button");
+}
+// ทุกการกด (ปุ่ม/ลิงก์/สวิตช์/ป้ายบนลูกโลก) มีเสียงคลิกเสมอ — ปุ่มธีมใหม่ไม่ต้องเรียก clickSound เอง
+//  การกดบนลูกโลก (canvas) ไม่ใช่ element พวกนี้ — หน้าจอต้องเรียก clickSound() เองตอนเลือกของบนโลก
+//  ไม่อยากให้ดัง: ใส่ data-no-click-sound ที่ element หรือบรรพบุรุษ
+const CLICKABLE = 'button, a[href], [role="button"], input[type="checkbox"], input[type="radio"], select, summary, label[for], .oc-tag, [data-click-sound]';
+export function installClickSound(root = typeof document !== "undefined" ? document : null) {
+  if (!root) return () => {};
+  const onClick = (e) => {
+    const el = e.target instanceof Element ? e.target.closest(CLICKABLE) : null;
+    if (!el || el.disabled || el.getAttribute("aria-disabled") === "true" || el.closest("[data-no-click-sound]")) return;
+    clickSound();
+  };
+  root.addEventListener("click", onClick, true);
+  return () => root.removeEventListener("click", onClick, true);
+}
 
 // ---------- ลูปเสียงเฉพาะกิจ (ช่องอิสระ ไม่ยุ่งกับ BGM หลัก) ----------
 //  ใช้กับเสียงที่ต้องเล่น "ตราบใดที่ UI ฝั่งเราเปิดอยู่" เท่านั้น — ไม่ได้ผูกกับ state ของ server

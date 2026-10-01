@@ -2,6 +2,9 @@ import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } fr
 import "../oc/ui-extra/curtain.css";
 
 export const SCREEN_ORDER = { splash: 0, setup: 1, character: 2, connecting: 2.5, lobby: 3, gameintro: 3.5, ortarrival: 3.5, game: 4 };
+// หน้าก่อนเข้าเกมใช้ลูกโลกร่วมเลื่อนเป็นฉากเปลี่ยนหน้าแทน — สลับกันเองไม่ต้องมีม่าน (5.1.2)
+export const GLOBE_SCREENS = new Set(["setup", "character", "connecting", "lobby"]);
+const quiet = (a, b) => GLOBE_SCREENS.has(a) && GLOBE_SCREENS.has(b);
 
 // ม่านเปลี่ยนฉาก ORDEAL CALL: แผ่นขาวเฉียงมีกริดกวาดผ่านจอ (ขอบนำ/ขอบท้าย = แถบฟ้าน้ำแข็ง + เส้นม่วง ECHO บาง)
 //  โหมด sweep (preTrigger / เปลี่ยน screenKey): ปิดจอทึบช่วง ~420–1000ms แล้วกวาดออก จบใน 1.8 วิ
@@ -77,9 +80,10 @@ const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, r
     preTrigger(targetKey) {
       const order = SCREEN_ORDER[targetKey] ?? 0;
       const dir = order >= prevOrder.current ? "forward" : "back";
+      const silent = quiet(prevKey.current, targetKey);
       prevKey.current = targetKey;
       prevOrder.current = order;
-      playSweep(dir);
+      if (!silent) playSweep(dir);
     },
     holdCover(dir = "forward") {
       startHold(dir);
@@ -104,8 +108,10 @@ const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, r
     if (screenKey === prevKey.current) return;
     const order = SCREEN_ORDER[screenKey] ?? 0;
     const dir = order >= prevOrder.current ? "forward" : "back";
+    const silent = quiet(prevKey.current, screenKey);
     prevKey.current = screenKey;
     prevOrder.current = order;
+    if (silent && !(liveRef.current.mode === "hold" && liveRef.current.visible)) return;
 
     const holding = liveRef.current.mode === "hold" && liveRef.current.visible;
     if (holding) {

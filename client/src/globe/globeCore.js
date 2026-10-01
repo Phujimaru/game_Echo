@@ -212,12 +212,16 @@ export function createGlobe(canvas, opts = {}) {
   let dragEnabled = opts.drag !== false;
   const frameFns = new Set(), clickFns = new Set(), hoverFns = new Set();
   let dragHandler = null; // (phase, info) => boolean — หน้าจอรับการลากเอง (คืน true = กินอีเวนต์นี้)
+  let layoutRate = 0.02;  // ส่วนที่ "ยังเหลือ" หลังผ่านไป 1 วิ (น้อย = ไหลไวกว่า) — setLayout ส่งค่าอื่นได้
 
   // ---------- pointer ----------
+  //  evEl = element ที่รับเมาส์ (ปกติคือ canvas) · โหมดลูกโลกร่วม (SharedGlobe) หน้าจอแต่ละหน้าส่ง div โปร่งใส
+  //  ของตัวเองมาแทน (setEventTarget) เพราะ canvas จริงอยู่ชั้นล่างสุดใต้หน้าจอ
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let drag = null;
+  let evEl = canvas;
   const setRay = (ev) => {
-    const r = canvas.getBoundingClientRect();
+    const r = evEl.getBoundingClientRect();
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     return ray;
@@ -225,14 +229,14 @@ export function createGlobe(canvas, opts = {}) {
   const onDown = (ev) => {
     drag = { x: ev.clientX, y: ev.clientY, moved: 0, yaw, pitch, custom: false, vel: null, pt: 0, px: ev.clientX };
     if (dragHandler && dragHandler("down", { ev, ray: setRay(ev) })) drag.custom = true;
-    canvas.setPointerCapture?.(ev.pointerId);
+    evEl.setPointerCapture?.(ev.pointerId);
   };
   const onMove = (ev) => {
     if (!drag) { hoverFns.forEach((fn) => fn(ev, setRay(ev))); return; }
     const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
     drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
     if (drag.moved <= 4) return;
-    canvas.dataset.dragging = "1";
+    evEl.dataset.dragging = "1";
     if (drag.custom) { dragHandler("move", { ev, dx, dy }); return; }
     if (!dragEnabled) return;
     targetYaw = null;
@@ -243,7 +247,7 @@ export function createGlobe(canvas, opts = {}) {
     drag.px = ev.clientX; drag.pt = now;
   };
   const onUp = (ev) => {
-    const d = drag; drag = null; delete canvas.dataset.dragging;
+    const d = drag; drag = null; delete evEl.dataset.dragging;
     if (!d) return;
     const click = d.moved <= 4;
     if (d.custom) dragHandler("up", { ev, click });
@@ -251,12 +255,13 @@ export function createGlobe(canvas, opts = {}) {
     if (!d.custom && dragEnabled && d.vel != null && performance.now() - d.pt < 80) fling = Math.max(-14, Math.min(14, d.vel * 6));
   };
   const onLeave = (ev) => { if (!drag) hoverFns.forEach((fn) => fn(null, null, ev)); };
-  canvas.addEventListener("pointerdown", onDown);
-  canvas.addEventListener("pointermove", onMove);
-  canvas.addEventListener("pointerup", onUp);
-  canvas.addEventListener("pointercancel", onUp);
-  canvas.addEventListener("pointerleave", onLeave);
-  canvas.style.touchAction = "none";
+  const listen = (el, on) => {
+    const f = on ? "addEventListener" : "removeEventListener";
+    el[f]("pointerdown", onDown); el[f]("pointermove", onMove); el[f]("pointerup", onUp);
+    el[f]("pointercancel", onUp); el[f]("pointerleave", onLeave);
+    if (on) el.style.touchAction = "none";
+  };
+  listen(evEl, true);
 
   // ---------- ขนาด ----------
   let W = 1, H = 1;
@@ -275,7 +280,7 @@ export function createGlobe(canvas, opts = {}) {
     if (!alive) return;
     // เฟรมแรก timestamp ของ rAF อาจเก่ากว่า performance.now() ตอนสร้าง → dt ติดลบ (clock ห้ามติดลบ)
     const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; clock += dt;
-    const k = REDUCED ? 1 : 1 - Math.pow(0.02, dt);
+    const k = REDUCED ? 1 : 1 - Math.pow(layoutRate, dt);
     cur.x += (target.x - cur.x) * k; cur.y += (target.y - cur.y) * k; cur.s += (target.s - cur.s) * k;
     world.position.set(cur.x, cur.y, 0); world.scale.setScalar(cur.s);
     if (!drag || drag.custom || !dragEnabled) {
@@ -294,10 +299,19 @@ export function createGlobe(canvas, opts = {}) {
   raf = requestAnimationFrame(frame);
 
   const core = {
-    THREE, renderer, scene, camera, world, tilt, spin, globe, halo, sand, canvas,
+    THREE, renderer, scene, camera, world, tilt, spin, globe, halo, sand,
+    /** element ที่รับเมาส์ (ใช้ตั้ง data-* ให้ cursor) — ปกติคือ canvas */
+    get canvas() { return evEl; },
     get clock() { return clock; },
-    /** เลื่อน/ย่อโลก (ค่อยๆ ไหลไป) · instant = กระโดดทันที */
-    setLayout(l, instant) { Object.assign(target, l); if (instant || REDUCED) Object.assign(cur, target); },
+    /** เลื่อน/ย่อโลก (ค่อยๆ ไหลไป) · instant = กระโดดทันที · rate = ความไหล (ค่าเริ่มต้น 0.02 ≈ ถึงใน ~1 วิ, 0.15 ≈ ช้านุ่มๆ ~2 วิ) */
+    setLayout(l, instant, rate = 0.02) { layoutRate = rate; Object.assign(target, l); if (instant || REDUCED) Object.assign(cur, target); },
+    /** ย้ายตัวรับเมาส์ไปที่ element อื่น (null = กลับเป็น canvas) */
+    setEventTarget(el) {
+      const next = el || canvas;
+      if (next === evEl) return;
+      listen(evEl, false); drag = null; delete evEl.dataset.dragging;
+      evEl = next; listen(evEl, true);
+    },
     setAutoSpin(v) { autoSpin = REDUCED ? 0 : v; },
     setDrag(v) { dragEnabled = !!v; },
     setDragHandler(fn) { dragHandler = fn; },
@@ -339,9 +353,7 @@ export function createGlobe(canvas, opts = {}) {
     get size() { return { w: W, h: H }; },
     dispose() {
       alive = false; cancelAnimationFrame(raf); ro.disconnect();
-      canvas.removeEventListener("pointerdown", onDown); canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp); canvas.removeEventListener("pointercancel", onUp);
-      canvas.removeEventListener("pointerleave", onLeave);
+      listen(evEl, false);
       e.textures.delete(tex); tex.dispose();
       scene.traverse((o) => { o.geometry?.dispose?.(); const m = o.material; if (m) (Array.isArray(m) ? m : [m]).forEach((x) => { if (x.map && x.map !== tex) x.map.dispose(); x.dispose(); }); });
       renderer.dispose();
