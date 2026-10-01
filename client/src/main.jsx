@@ -10,9 +10,13 @@ import "./seraph/seraph.css"; // เลเยอร์ SE.RA.PH — ต้อง
 
 // ?seraph = หน้าดูฉากของโหมด SE.RA.PH (งานภาพล้วน ไม่ต่อ socket) — ดู seraph/Preview.jsx
 const seraphPreview = new URLSearchParams(location.search).has("seraph");
+// ?arena=1..3 = หน้าดูสนาม 2.5D (เฉพาะ dev) — ดู journey/arena/ArenaPreview.jsx
+const ArenaPreview = import.meta.env.DEV && new URLSearchParams(location.search).has("arena")
+  ? React.lazy(() => import("./journey/arena/ArenaPreview.jsx"))
+  : null;
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {seraphPreview ? <SeraphPreview /> : <App />}
+    {ArenaPreview ? <React.Suspense fallback={null}><ArenaPreview /></React.Suspense> : seraphPreview ? <SeraphPreview /> : <App />}
   </React.StrictMode>
 );

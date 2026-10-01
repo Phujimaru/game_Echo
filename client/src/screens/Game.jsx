@@ -10,6 +10,8 @@ import OrtBossPanel from "../raid/OrtBossPanel";
 import { RaidRespawn, RaidSurrender, RaidDeckDrawer } from "../raid/RaidOverlays";
 import ArenaBackdrop from "../components/ArenaBackdrop";
 import JourneyBackdrop from "../journey/JourneyBackdrop";
+import ArenaScene, { ARENA_STEM, ARENA_CARD_SCALE } from "../journey/arena/ArenaScene";
+import { arenaLayout, hasArena } from "../journey/arena/arenaData";
 import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
@@ -656,19 +658,38 @@ function OverloadForceBadge() {
   );
 }
 
+// สนามประลอง 2.5D: spec = "จำนวนคนอื่น~กว้าง~สูง~สีเรา|สีคนอื่น…" (สตริงเดียว memo ง่าย) → ผังที่นั่งชุดเดียวกับ GameBoard
+const ARENA_FALLBACK_COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
+function ArenaBackground({ area, night, lowQ, spec }) {
+  const { W, H, seats } = useMemo(() => {
+    const [n, w, h, colors] = spec.split("~");
+    const lay = arenaLayout(Number(w), Number(h), area, Number(n));
+    const cols = colors.split("|");
+    return {
+      W: Number(w), H: Number(h),
+      seats: [{ phi: 90, col: cols[0] || ARENA_FALLBACK_COLS[0], me: true },
+        ...lay.others.map((o, i) => ({ phi: o.phi, col: cols[i + 1] || ARENA_FALLBACK_COLS[(i + 1) % 7] }))],
+    };
+  }, [spec, area]);
+  return <ArenaScene area={area} night={night} lowQ={lowQ} W={W} H={H} seats={seats} />;
+}
+
 // ---------- ฉากหลังกลางวัน/กลางคืน (patch 1.7) ----------
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
-function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey }) {
+function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey, arena }) {
   // SE.RA.PH: โหมดนี้วาดฉากหลังของตัวเองไว้ข้างล่างแล้ว (สนามดวลวันที่ 5 กลางวัน/กลางคืน)
   //  ถ้าปล่อยให้กระดานเดิมวาดทับ จะกลายเป็นฉากหลังของเกมปกติแทน
   if (seraph) return null;
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
       {/* การเดินทาง (ffa/duo/trio): ฉากหลังประจำภูมิภาค แยกกลางวัน/กลางคืน แทนสนามดอกไม้เดิม */}
-      {journey
-        ? <JourneyBackdrop area={journey.area} night={journey.night} lowQ={lowQ} />
-        : <ArenaBackdrop cycle={cycle} round={round} />}
+      {/*  ภูมิภาค I–III (5.1.8): สนามประลอง 2.5D มุมกล้องเฉียง 55° — ที่นั่งบนพื้นสนามตรงกับการ์ดผู้เล่น (arena = ผังจาก GameBoard) */}
+      {journey && arena
+        ? <ArenaBackground area={journey.area} night={journey.night} lowQ={lowQ} spec={arena} />
+        : journey
+          ? <JourneyBackdrop area={journey.area} night={journey.night} lowQ={lowQ} />
+          : <ArenaBackdrop cycle={cycle} round={round} />}
       {/* มิติมายาบรรเลง (Bard): โลหิต = ตอนเช้า / วิญญาณ = ตอนกลางคืน (ทับฉากหลังอื่นทั้งหมด) */}
       {bardBg && (
         <img
@@ -2371,13 +2392,14 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
   const seatScale = slot[2];
+  const fromBottom = slot[3] === "bottom"; // สนาม 2.5D: จุดยึด = ขอบล่างกลางการ์ด (ยืนบนเส้นแสงเหนือฐานที่นั่ง)
   return (
     <div
       ref={hostRef}
       // Tailwind v4: -translate-x-1/2 ใช้ property `translate` แยกจาก `transform` — ใส่ทั้งคู่ = เลื่อนซ้ำ 2 เท่า
       //  ที่นั่งแบบย่อ (โหมด Raid) จึงเลื่อนกึ่งกลางใน transform เองแทนคลาส
       className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[236px]"}`}
-      style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null) }}
+      style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null) }}
     >
       <div
         onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
@@ -3882,6 +3904,18 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const slots = raid ? raidSlots(seatOthers.length)
     : invader ? (ORT_SIDE_SLOTS[Math.min(seatOthers.length, 6)] || [])
     : (SLOTS[Math.min(others.length, 6)] || []);
+  // สนามประลอง 2.5D (ภูมิภาค I–III, จอคอม): คนอื่นนั่งครึ่งวงด้านไกลของสนาม เราอยู่ฝั่งใกล้กล้อง
+  //  ตำแหน่งที่นั่งคำนวณจากสูตรเดียวกับฉากหลัง (arenaLayout) → การ์ดวาง "ขอบล่าง" ตรงปลายเส้นแสงเหนือฐานที่นั่งพอดี
+  const arenaArea = !raid && !invader && state.journey && vp.w >= 768 && hasArena(state.journey.area) ? state.journey.area : 0;
+  const arenaSeatN = seatOthers.length;
+  const vpW = vp.w, vpH = vp.h;
+  const arenaLay = arenaArea ? arenaLayout(vpW, vpH, arenaArea, arenaSeatN) : null; // คำนวณเบา ไม่ต้อง memo
+  const arenaColorKey = arenaArea ? [me?.color, ...seatOthers.map((p) => p.color)].join("|") : "";
+  // ฉากหลังได้แค่ค่าพื้นฐาน (ภูมิภาค/จำนวน/สี/ขนาดจอ) — ArenaBackground memo เองแล้วค่อยสร้างฉาก (หนัก) เมื่อค่าเปลี่ยน
+  const arenaBg = arenaArea ? `${arenaSeatN}~${vpW}~${vpH}~${arenaColorKey}` : null;
+  const arenaSlots = arenaLay
+    ? arenaLay.others.map((o) => [((o.y - ARENA_STEM * (vp.h / 900) * o.s) / vp.h) * 100, (o.x / vp.w) * 100, o.s * ARENA_CARD_SCALE, "bottom"])
+    : null;
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): เครื่องนี้บังคับส่วนไหน — นักบิน (จั่ว/เปิดการ์ด/โจมตี/ซ่อม) · พลปืน (สกิล/ร้านค้า/ไอเทม)
   const meRec = state.players.find((pl) => pl.id === state.youId);
   const isPairChar = !!meRec?.pair && !!pairRole;
@@ -5092,7 +5126,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} />}
+      {!raid && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} arena={arenaBg} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}
@@ -5110,7 +5144,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           <DeckPile size="lg" onClick={() => setDeckOpen(true)} />
         </RaidDeckDrawer>
       ) : (
-        <div className="absolute inset-x-0 top-[40%] flex justify-center pointer-events-none">
+        <div
+          className={`absolute inset-x-0 ${arenaLay ? "" : "top-[40%]"} flex justify-center pointer-events-none`}
+          // สนาม 2.5D: กองการ์ดตั้งอยู่บนแท่นกลางสนาม (ขอบล่างกองตรงหน้าบนของแท่น)
+          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)" } : undefined}
+        >
           <div className="bd-deck relative grid place-items-center">
             <img src="/image/logo_current.webp" alt="" className="relative h-16 sm:h-20 w-auto opacity-20" />
             <div className="absolute inset-0 grid place-items-center">
@@ -5183,7 +5221,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           key={p.id}
           p={p}
           phase={phase}
-          slot={slots[i] || [50, 50]}
+          slot={(arenaSlots || slots)[i] || [50, 50]}
           targetable={isTargetable(p, iAmAttacker, targetChain)}
           picked={!!anataSel && anataSel.includes(p.id)}
           onAttack={(id) => resolveAttackPick(id, targetChain)}
