@@ -13,6 +13,7 @@ import TransitionCurtain from "./components/TransitionCurtain";
 import OrtArrival from "./raid/OrtArrival";
 import MatchIntro from "./oc/intro/MatchIntro";
 import RegionTravel from "./oc/intro/RegionTravel";
+import { ghostScreen } from "./oc/intro/screenGhost";
 import { OcScreen } from "./oc/ui";
 import { SharedGlobeStage } from "./globe/SharedGlobe";
 import { GLOBE_SCREENS } from "./components/TransitionCurtain";
@@ -47,8 +48,9 @@ export default function App() {
   // กันดับเบิ้ลคลิก/กดรัวบนปุ่มนำทาง (ถัดไป/ยืนยัน/ย้อนกลับ) ไม่ให้ยิงคำสั่งเปลี่ยนฉากซ้อนกัน
   const navLockRef = useRef(false);
   // ฉากเปิดแมตช์ (LOBBY -> เกม): MatchIntro = เปิดตัวผู้เล่นรอบลูกโลก + ดิ่งลงภูมิภาคเริ่มต้น บนลูกโลกใบเดียว
-  //  intro = overlay ที่กำลังเล่น (วางนอก screen) · showIntro = กระดานยังเป็นตัวชั่วคราว (muteScenes) ใต้ฉาก
-  //  MatchIntro เรียก onHandoff ตอนฉากทึบบังจอ -> สลับเป็นกระดานตัวจริงข้างใต้ก่อนเผย
+  //  intro = overlay ที่กำลังเล่น (วางนอก screen) · showIntro = ช่วงที่ยังไม่มีกระดาน (screenKey "gameintro" = หน้าลูกโลก
+  //  → SharedGlobeStage ยังเปิด ลูกโลกใบเดิมของหน้าเลือกโหมดไหลต่อเข้าฉากเปิดแมตช์โดยไม่ตัด)
+  //  MatchIntro เรียก onHandoff ตอนแฟลชขาวทึบ (จังหวะชนผิวโลก) -> ปิดลูกโลกร่วม + mount กระดานใต้แฟลช
   const [intro, setIntro] = useState(null); // { key, players, area }
   const [showIntro, setShowIntro] = useState(false);
   // Type Mercury: ฉากเปิดตัว ORT แทนฉากเปิดตัวผู้เล่น
@@ -144,6 +146,7 @@ export default function App() {
         curtainRef.current?.skip("game");
       } else if (!wasInMatch && nowInMatch && !s.seraph) {
         curtainRef.current?.skip("gameintro");
+        ghostScreen(".ocl"); // หน้าเลือกโหมด/จัดทีมจางหายแทนการหายวับ (ลูกโลกอยู่ต่อในฉากเปิดแมตช์)
         setIntro({ key: Date.now(), players: s.players, area: s.journey?.scene?.area || 1 });
         setShowIntro(true);
       }
@@ -450,12 +453,9 @@ export default function App() {
     );
     screenKey = "ortarrival";
   } else if (showIntro) {
-    // แมตช์เพิ่งเริ่ม -> กระดานชั่วคราว (ไม่เล่นคลิป) อยู่ใต้ฉากเปิดแมตช์ (MatchIntro นอก screen) จนฉากส่งต่อ (handoffIntro)
-    screen = (
-      <>
-        <Game state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} muteScenes />
-      </>
-    );
+    // แมตช์เพิ่งเริ่ม -> ยังไม่มีกระดาน: ฉากเปิดแมตช์ (MatchIntro นอก screen) ใช้ลูกโลกร่วมใบเดิม (กระดานทึบจะบังฉากร่วม)
+    //  กระดาน mount ตอนส่งต่อ (handoffIntro) ใต้แฟลชขาวของจังหวะชน
+    screen = null;
     screenKey = "gameintro";
   } else if (state.seraph) {
     // SE.RA.PH Moon Cell: มีฉาก/HUD ของตัวเอง (วันที่ 5 ส่งต่อให้ <Game> ข้างในอีกที)

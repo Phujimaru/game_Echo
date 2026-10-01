@@ -3,7 +3,8 @@ import "../oc/ui-extra/curtain.css";
 
 export const SCREEN_ORDER = { splash: 0, setup: 1, character: 2, connecting: 2.5, lobby: 3, gameintro: 3.5, ortarrival: 3.5, game: 4 };
 // หน้าก่อนเข้าเกมใช้ลูกโลกร่วมเลื่อนเป็นฉากเปลี่ยนหน้าแทน — สลับกันเองไม่ต้องมีม่าน (5.1.2)
-export const GLOBE_SCREENS = new Set(["setup", "character", "connecting", "lobby"]);
+//  gameintro = ฉากเปิดแมตช์ (MatchIntro) ใช้ลูกโลกร่วมใบเดิมต่อจากหน้าเลือกโหมด จนจังหวะชนผิวโลก (5.1.6)
+export const GLOBE_SCREENS = new Set(["setup", "character", "connecting", "lobby", "gameintro"]);
 const quiet = (a, b) => GLOBE_SCREENS.has(a) && GLOBE_SCREENS.has(b);
 
 // ม่านเปลี่ยนฉาก ORDEAL CALL: แผ่นขาวเฉียงมีกริดกวาดผ่านจอ (ขอบนำ/ขอบท้าย = แถบฟ้าน้ำแข็ง + เส้นม่วง ECHO บาง)

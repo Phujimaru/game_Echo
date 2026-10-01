@@ -112,7 +112,21 @@ export function createDiveCamera(core, { lowQ = false, wrapEl = null } = {}) {
   const setFov = (fov) => {
     if (Math.abs(fov - lastFov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); lastFov = fov; }
   };
+  const near0 = camera.near;
   return {
+    /** คืนค่ากล้อง/ละออง/แสงบรรยากาศ/กรอบ (ใช้กับลูกโลกร่วมที่ยังอยู่ต่อหลังฉากถูกยกเลิกกลางคัน) */
+    restore() {
+      camera.near = near0;
+      camera.fov = 32;
+      camera.position.copy(C0);
+      camera.rotation.set(0, 0, 0);
+      camera.updateProjectionMatrix();
+      lastFov = 32;
+      if (sandMat) sandMat.opacity = sand0;
+      if (core.halo?.material?.uniforms?.k) core.halo.material.uniforms.k.value = 1;
+      const wrap = typeof wrapEl === "function" ? wrapEl() : wrapEl;
+      if (wrap) { wrap.style.transform = ""; wrap.style.filter = ""; }
+    },
     // opts.scaleWrap = false: พร่าอย่างเดียวไม่ขยาย (ขยายกรอบตอน canvas เพิ่งสร้าง = ResizeObserver วัดขนาดผิด)
     frame(P, e, d, { blurFrom = 0.8, scaleWrap = true, shake = true } = {}) {
       cam.copy(C0).lerp(look.copy(P).multiplyScalar(1.1), e);

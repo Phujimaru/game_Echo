@@ -1,43 +1,50 @@
 // ============================================================
-//  ฉากเปิดแมตช์ ORDEAL CALL — ฉากเปิดตัวผู้เล่น + ดิ่งลงภูมิภาคเริ่มต้น ต่อเนื่องบนลูกโลกใบเดียว
+//  ฉากเปิดแมตช์ ORDEAL CALL — ต่อจากหน้าเลือกโหมดบน "ลูกโลกร่วม" ใบเดิม (ไม่ตัดฉาก)
 //  <MatchIntro players area lowQ onOutro onHandoff onDone />
 //
-//  1) ลูกโลกกลางจอ · ผู้เล่นมาประจำที่ทีละคน (ตราหกเหลี่ยม + ชื่อ + ตัวละคร) เส้นโยงลงหมุดบนผิวโลก
-//  2) รวมแถว: วงโคจรวาดรอบโลก + หัวข้อ
-//  3) ไม่ตัดฉาก: ป้ายผู้เล่นหดลงหมุด → โลกหมุนหาภูมิภาคเริ่มต้น → ล็อก → ดิ่งชนผิวโลก → แฟลช/คลื่นกระแทก → จางเผยกระดาน
+//  1) โลกใบเดิมของหน้าเลือกโหมดเลื่อน/ย่อมากลางจอ · การ์ดผู้เล่นไหลเข้ามาทีละใบแล้วโคจรรอบโลก (วงรีเอียง 1–2 วง)
+//  2) รวมแถว: หัวข้อ "เริ่มการประลอง" + วงโคจรเรือง · การ์ดยังโคจรต่อ
+//  3) การ์ดไหลออก → โลกหมุนเข้าหาภูมิภาคเริ่มต้น (หมุนต่อเนื่องมาตั้งแต่ต้นฉาก) → ล็อก → ดิ่งชนผิวโลก
+//     → แฟลชขาวทึบ: onHandoff (App ปิดลูกโลกร่วม + mount กระดานใต้แฟลช) → แฟลชจางเผยกระดาน
+//
+//  ลูกโลก: GlobeCanvas โหมดร่วม (canvas อยู่ใน SharedGlobeStage ชั้นล่างสุด — App ถือว่า "gameintro" เป็นหน้าลูกโลก)
+//   ฉากนี้โปร่งใส (ไม่มีพื้นของตัวเอง) · ถอด GlobeCanvas ทันทีที่ส่งต่อ ไม่ให้สร้าง canvas ใหม่ตอนฉากร่วมปิด
 //
 //  สัญญาเวลา (ต้องตรงกับ server/lobby.js gameIntroHoldSeconds()):
-//    perMs = clamp(round(4200/n), 620..1000) · คนที่ i มาที่ 120 + i*perMs · รวมแถวที่ L = n*perMs
-//    X = L + 2900 → เรียก onOutro() — App คืน { area, durationMs } ถ้า server ยังพักเกมรอฉากดิ่ง (โหมดการเดินทาง)
-//      มีฉากดิ่ง: เล่นต่อ durationMs (App คิดจากเวลาพักที่เหลือ ≤ 7 วิ) แล้ว onDone
-//      ไม่มี: จางหาย 1 วิ แล้ว onDone (ความยาวเท่าฉากเปิดตัวเดิม)
-//    onHandoff = จังหวะที่ฉากนี้ทึบบังจอ → App สลับกระดานเป็นตัวจริงข้างใต้ (X+80ms หรือ X ถ้าไม่มีฉากดิ่ง)
+//    perMs = clamp(round(4200/n), 620..1000) · การ์ดใบที่ i เข้าที่ 120 + i*perMs · รวมแถวที่ L = n*perMs
+//    X = L + 2900 → onOutro() — App คืน { area, durationMs } ถ้า server ยังพักเกมรอฉากดิ่ง (โหมดการเดินทาง)
+//      มีฉากดิ่ง: ยาว D = durationMs (≤ 7 วิ) · ส่งต่อที่ชน (0.82D + 0.1 ของช่วงเผย) · onDone ที่ X + D
+//      ไม่มี: การ์ดไหลออก + ม่านขาว · ส่งต่อที่ X+600 · onDone ที่ X+1300 (server พักเกินนี้อย่างน้อย 1 วิ)
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import GlobeCanvas from "../../globe/GlobeCanvas";
 import { regionDir } from "../../globe/globeCore";
 import { clampJourneyArea } from "../../journey/areas";
 import {
-  REDUCED, clamp01, easeOutCubic, easeInOutCubic, span, aimAngles, setAim, createMarker, createDiveCamera,
+  REDUCED, clamp01, easeOutCubic, easeInOutCubic, span, aimAngles, setAim, nearYaw, createMarker, createDiveCamera,
 } from "./diveKit";
 import { DiveStreaks, DiveReticle, RegionTag, DiveImpact, Chrome } from "./DiveFx";
 import "./dive.css";
 import "./intro.css";
 
 const FINALE_MS = 2900;
-const OUTRO_MS = 1000;
 const FIRST_MS = 120;
-const HANDOFF_MS = 80;
-const SWEEP = 2.6;      // มุมที่โลกหมุนเข้าหาภูมิภาคเริ่มต้น (เรเดียน)
-const DRIFT = 0.12;     // โลกหมุนช้าๆ ระหว่างเปิดตัว (เรเดียน/วินาที)
-// สัดส่วนเวลาของช่วงดิ่ง (คูณ D) — ลุคเดิมของ GlobeDive
-const T = { title: 0.1, lock: 0.28, dive: 0.52, crash: 0.82 };
+const FLOW_IN_MS = 1100;
+const FLOW_OUT_MS = 650;
+const OUT_HANDOFF_MS = 600;   // ไม่มีฉากดิ่ง: ม่านขาวทึบแล้ว → ส่งต่อ
+const OUT_DONE_MS = 1300;
+const SWEEP = 2.6;            // โลกหมุนอย่างน้อยเท่านี้ก่อนหยุดที่ภูมิภาคเริ่มต้น (เรเดียน)
+const ORBIT_SPEED = 0.5;      // ความเร็วการ์ดบนวงโคจร (เรเดียน/วินาที)
+const T = { title: 0.1, lock: 0.28, dive: 0.52, crash: 0.82 }; // สัดส่วนเวลาช่วงดิ่ง (คูณ D) — ลุคเดิมของ GlobeDive
+const HANDOFF_REV = 0.1;      // ส่งต่อหลังเริ่มชน = 10% ของช่วงเผย (แฟลชทึบเต็มช่วง 7–26%)
 const VIEW_H = 2 * 6 * Math.tan((16 * Math.PI) / 180);
 const DEG = Math.PI / 180;
-const FULL = { x: 0, y: 0, s: 1 }; // ตำแหน่งโลกช่วงดิ่ง (ลุคเดิมของ GlobeDive)
+const FULL = { x: 0, y: 0, s: 1 };
+const TAU = Math.PI * 2;
 
 const pad2 = (n) => String(Math.max(0, Math.floor(Number(n) || 0))).padStart(2, "0");
 const introPerMs = (n) => Math.max(620, Math.min(1000, Math.round(4200 / Math.max(1, n))));
+const easeInCubic = (t) => t * t * t;
 
 function useViewport() {
   const read = () => ({ w: window.innerWidth || 1600, h: window.innerHeight || 900 });
@@ -50,50 +57,33 @@ function useViewport() {
   return vp;
 }
 
-/**
- * ที่นั่งรอบลูกโลก (พิกเซลจอ) — สลับซ้าย/ขวาตามลำดับการมา เรียงบน→ล่างในแต่ละฝั่ง
- *  x,y = ขอบด้านในของป้าย (ฝั่งที่หันเข้าโลก) · pin = ทิศของหมุดบนผิวโลก (หน่วยฉาก หันเข้ากล้อง)
- */
-function introGeometry(w, h, n) {
+/** ตำแหน่งโลกช่วงเปิดตัว (หน่วยฉาก) — กลางจอ ต่ำลงเล็กน้อยให้หัวข้อซ้ายบน */
+function introLayout(w, h) {
   const ppu = h / VIEW_H;
-  const r = Math.max(140, Math.min(h * 0.285, w * 0.2));
-  const cx = w / 2, cy = h / 2 + h * 0.035;
-  const layout = { x: 0, y: -(cy - h / 2) / ppu, s: r / ppu };
-  const R = r * 1.2 + 26;
-  const nl = Math.ceil(n / 2), nr = n - nl;
-  const spanY = Math.max(60, Math.min(cy - 150, h - cy - 96));
-  const tMax = Math.min(56 * DEG, Math.asin(Math.min(1, spanY / R)));
-  const step = Math.min(nl > 1 ? (2 * tMax) / (nl - 1) : 0, 36 * DEG);
-  const seats = [];
-  for (let i = 0; i < n; i++) {
-    const left = i % 2 === 0;
-    const k = Math.floor(i / 2);
-    const count = left ? nl : nr;
-    const t = (k - (count - 1) / 2) * step;
-    const sx = left ? -1 : 1;
-    const f = 0.62;
-    const px = sx * f * Math.cos(t), py = -f * Math.sin(t);
-    seats.push({
-      side: left ? "l" : "r", t,
-      x: cx + sx * R * Math.cos(t), y: cy + R * Math.sin(t),
-      pin: [px, py, Math.sqrt(Math.max(0, 1 - px * px - py * py))],
-    });
-  }
-  return { layout, cx, cy, r, R, seats };
+  const r = Math.max(130, Math.min(h * 0.25, w * 0.17));
+  return { x: 0, y: -(h * 0.03) / ppu, s: r / ppu };
 }
 
-function Seat({ p, seat, leaving, index }) {
+/** วงโคจร: n ≤ 3 = วงเดียว · มากกว่านั้นสองวงไขว้กัน หมุนสวนทาง */
+function orbitPlan(n) {
+  const rings = n > 3
+    ? [{ tilt: -9 * DEG, dir: 1, k: 1 }, { tilt: 12 * DEG, dir: -1, k: 1.13 }]
+    : [{ tilt: -8 * DEG, dir: 1, k: 1 }];
+  const counts = rings.map((_, r) => Array.from({ length: n }, (_, i) => i).filter((i) => i % rings.length === r).length);
+  const slots = Array.from({ length: n }, (_, i) => {
+    const r = i % rings.length;
+    const j = Math.floor(i / rings.length);
+    return { ring: r, theta0: Math.PI / 2 + (j / counts[r]) * TAU + r * (Math.PI / Math.max(1, counts[r])) };
+  });
+  return { rings, slots };
+}
+
+function OrbitCard({ p, cardRef }) {
   const [broken, setBroken] = useState(false);
   const src = p.character?.img || p.img;
-  const style = {
-    top: `${seat.y}px`,
-    ...(seat.side === "l" ? { right: `calc(100% - ${seat.x}px)` } : { left: `${seat.x}px` }),
-    "--c": p.color || "#3d8bd9",
-    "--k": index,
-  };
   return (
-    <div className={`ocx-seat ${seat.side}${leaving ? " is-leave" : ""}`} style={style}>
-      <div className="ocx-seat-in">
+    <div className="ocx-card" ref={cardRef} style={{ "--c": p.color || "#3d8bd9" }}>
+      <div className="ocx-card-in">
         <span className="ocx-hex" aria-hidden="true">
           <span className="ocx-hex-face">
             {src && !broken
@@ -118,35 +108,41 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   const perMs = introPerMs(n);
   const L = n * perMs;
   const X = L + FINALE_MS;
+  const plan = useMemo(() => orbitPlan(Math.max(1, n)), [n]);
 
   const vp = useViewport();
-  const geo = useMemo(() => introGeometry(vp.w, vp.h, Math.max(1, n)), [vp.w, vp.h, n]);
-  const geoRef = useRef(geo);
-  useLayoutEffect(() => { geoRef.current = geo; });
+  const layout = useMemo(() => introLayout(vp.w, vp.h), [vp.w, vp.h]);
 
-  const [seen, setSeen] = useState(0);           // ผู้เล่นที่มาประจำที่แล้ว
+  const [seen, setSeen] = useState(0);            // การ์ดที่ไหลเข้ามาแล้ว
   const [lineup, setLineup] = useState(false);
-  const [mode, setMode] = useState("intro");     // intro | dive | out
-  const [dive, setDive] = useState(null);        // { area, D }
-  const [dphase, setDphase] = useState(0);       // ช่วงดิ่ง: 0 หมุนเข้า · 1 หัวข้อ · 2 ล็อก · 3 ดิ่ง · 4 ชน/เผย
+  const [mode, setMode] = useState("intro");      // intro | dive | out
+  const [dive, setDive] = useState(null);         // { area, D }
+  const [dphase, setDphase] = useState(0);        // ช่วงดิ่ง: 0 หมุนเข้า · 1 หัวข้อ · 2 ล็อก · 3 ดิ่ง · 4 ชน/เผย
+  const [handed, setHanded] = useState(false);    // ส่งต่อแล้ว — ลูกโลกร่วมปิด ห้าม render GlobeCanvas อีก
 
   const cbRef = useRef({ onOutro, onHandoff, onDone });
   useLayoutEffect(() => { cbRef.current = { onOutro, onHandoff, onDone }; });
-  // เส้นเวลาที่ลูป 3D อ่าน (ไม่ผ่าน React)
-  const tlRef = useRef({ start: 0, dive: null });
-  const tetherRefs = useRef([]);
+  const tlRef = useRef({ start: 0, dive: null, out: false });
+  const cardRefs = useRef([]);
+  const orbitRefs = useRef([]);
   const reticleRef = useRef(null);
   const tagRef = useRef(null);
   const altRef = useRef(null);
-  const globeWrapRef = useRef(null);
 
   useEffect(() => {
     const timers = [];
     const at = (ms, fn) => timers.push(setTimeout(fn, Math.max(0, ms)));
-    let finished = false;
+    let finished = false, handedOff = false;
+    const handoff = () => {
+      if (handedOff) return;
+      handedOff = true;
+      setHanded(true);
+      cbRef.current.onHandoff?.();
+    };
     const done = () => {
       if (finished) return;
       finished = true;
+      handoff();
       cbRef.current.onDone?.();
     };
     for (let i = 0; i < n; i++) at(FIRST_MS + i * perMs, () => setSeen(i + 1));
@@ -159,16 +155,17 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
         tlRef.current.dive = { at: performance.now(), D, area: a };
         setDive({ area: a, D });
         setMode("dive");
-        at(HANDOFF_MS, () => cbRef.current.onHandoff?.());
         at(T.title * D, () => setDphase(1));
         at(T.lock * D, () => setDphase(2));
         at(T.dive * D, () => setDphase(3));
         at(T.crash * D, () => setDphase(4));
+        at((T.crash + (1 - T.crash) * HANDOFF_REV) * D, handoff);
         at(D, done);
       } else {
+        tlRef.current.out = true;
         setMode("out");
-        cbRef.current.onHandoff?.();
-        at(OUTRO_MS, done);
+        at(OUT_HANDOFF_MS, handoff);
+        at(OUT_DONE_MS, done);
       }
     });
     return () => timers.forEach(clearTimeout);
@@ -177,65 +174,32 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   }, []);
 
   const onReady = (core) => {
-    const { THREE, world, scene } = core;
+    const { THREE, camera } = core;
     const start = performance.now();
     tlRef.current.start = start;
     core.setAutoSpin(0);
     core.setDrag(false);
-    // เปิดฉาก: โลกเล็กแล้วขยายเข้าที่ (ตำแหน่งปลายทางมาจาก prop layout ของ GlobeCanvas)
-    const L0 = geoRef.current.layout;
-    core.setLayout({ ...L0, s: L0.s * 0.72 }, true);
-    core.setLayout(L0, false, 0.05);
+    // โหมดประหยัด: ซ่อนละอองดาวของลูกโลกร่วมระหว่างฉาก (คืนตอนถอด)
+    const sandShown = core.sand ? core.sand.visible : false;
+    if (lowQ && core.sand) core.sand.visible = false;
+    // canvas จริงของลูกโลกร่วม — ใส่ภาพพร่า/ขยายตอนใกล้ชน
+    const stageEl = () => core.renderer?.domElement?.parentElement || null;
 
-    // ทิศเป้าหมายของภูมิภาคเริ่มต้น — หมุนโลกล่วงหน้าให้ช่วงดิ่งหมุนเข้าหามันพอดี SWEEP เรเดียน
-    //  (คิดตอนเฟรมแรก — spin/tilt ของ core ถูกตั้งค่าในลูปเฟรม)
+    // ทิศของโลก: หมุนต่อเนื่องเส้นเดียวตั้งแต่เปิดฉากจนหยุดที่ภูมิภาคเริ่มต้น (จบที่ X + 0.28D)
+    //  มุมรวม Θ ≡ yaw ของเป้าหมาย (mod 2π) และไม่น้อยกว่า SWEEP · เริ่มจาก world.rotation = 0 (ต่อจากหน้าเลือกโหมด)
     let aimArea = clampJourneyArea(area);
-    let aim = null;
     let target = regionDir(aimArea - 1);
-    const yawAt = (ms) => aim.yaw - SWEEP - (REDUCED ? 0 : DRIFT * Math.max(0, X - ms) / 1000);
+    let wraps = null, lastYaw = null;
+    const totalTurn = (yaw) => {
+      lastYaw = lastYaw == null ? yaw : nearYaw(lastYaw, yaw); // ไม่ให้กระโดด 2π ตอนข้าม ±π
+      if (wraps == null) wraps = Math.ceil((SWEEP - lastYaw) / TAU);
+      return lastYaw + wraps * TAU;
+    };
 
-    // หมุดของผู้เล่นบนผิวโลก — ไม่หมุนตามโลก (อยู่ในชั้นของตัวเอง ตามตำแหน่ง/ขนาดของ world)
-    const pinRoot = new THREE.Group();
-    scene.add(pinRoot);
-    const Z = new THREE.Vector3(0, 0, 1), Y = new THREE.Vector3(0, 1, 0);
-    const disposables = [];
-    const ringGeo = new THREE.RingGeometry(0.034, 0.044, 40);
-    const pulseGeo = new THREE.RingGeometry(0.03, 0.035, 40);
-    const dotGeo = new THREE.SphereGeometry(0.02, 16, 12);
-    const beamGeo = new THREE.CylinderGeometry(0.0045, 0.0045, 0.16, 8, 1, true);
-    disposables.push(ringGeo, pulseGeo, dotGeo, beamGeo);
-    const pins = ordered.map((p, i) => {
-      const seat = geoRef.current.seats[i];
-      const dir = new THREE.Vector3(...seat.pin).normalize();
-      const color = new THREE.Color(p.color || "#3d8bd9");
-      const g = new THREE.Group();
-      g.position.copy(dir).multiplyScalar(1.006);
-      const face = new THREE.Group();
-      face.quaternion.setFromUnitVectors(Z, dir);
-      g.add(face);
-      const mk = (geo, opacity) => {
-        const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
-        disposables.push(m);
-        return new THREE.Mesh(geo, m);
-      };
-      const dot = mk(dotGeo, 1);
-      const ring = mk(ringGeo, 0.95);
-      const pulse = mk(pulseGeo, 0.8);
-      face.add(ring, pulse);
-      g.add(dot);
-      const beam = mk(beamGeo, 0.55);
-      beam.quaternion.setFromUnitVectors(Y, dir);
-      beam.position.copy(dir).multiplyScalar(0.08);
-      g.add(beam);
-      g.scale.setScalar(0.001);
-      pinRoot.add(g);
-      return { g, pulse, dot, at: FIRST_MS + i * perMs, wp: new THREE.Vector3(), seat: i };
-    });
-
-    const diveCam = createDiveCamera(core, { lowQ, wrapEl: () => globeWrapRef.current });
+    let diveCam = null;
     let marker = null;
     const P = new THREE.Vector3();
-    const easeBack = (t) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+    const ring = { cx: 0, cy: 0, r: 1 };
 
     const off = core.onFrame(() => {
       const now = performance.now();
@@ -243,47 +207,71 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
       const dv = tlRef.current.dive;
 
       // ---------- ทิศของโลก ----------
-      if (!aim) aim = aimAngles(core, target);
-      if (dv && dv.area !== aimArea) { // ภูมิภาคจริงไม่ตรงกับที่เดาไว้ (ปกติเป็น 1 เสมอ)
-        aimArea = dv.area;
-        target = regionDir(aimArea - 1);
-        aim = aimAngles(core, target);
-      }
-      if (!dv) {
-        setAim(core, yawAt(Math.min(ms, X)), 0);
+      if (dv && dv.area !== aimArea) { aimArea = dv.area; target = regionDir(aimArea - 1); lastYaw = null; }
+      const aim = aimAngles(core, target);
+      const theta = totalTurn(aim.yaw);
+      const turnEnd = X + T.lock * (dv ? dv.D : 7000);
+      if (REDUCED) {
+        if (dv) setAim(core, aim.yaw, aim.pitch);
       } else {
-        const du = (now - dv.at) / dv.D;
-        const k = REDUCED ? 1 : easeInOutCubic(span(du, 0, T.lock));
-        setAim(core, aim.yaw - SWEEP * (1 - k), aim.pitch * k);
+        const k = easeInOutCubic(clamp01(ms / turnEnd));
+        const pk = dv ? easeInOutCubic(span(now - dv.at, 0, T.lock * dv.D)) : 0;
+        setAim(core, theta * k, aim.pitch * pk);
       }
 
-      // ---------- หมุดผู้เล่น ----------
-      pinRoot.position.copy(world.position);
-      pinRoot.scale.copy(world.scale);
-      pinRoot.updateMatrixWorld(true);
-      const leaveK = dv ? easeOutCubic(span(now - dv.at, 0, 520)) : 0;
-      const lineupK = ms >= L ? span(ms, L, L + 900) : 0;
-      const lines = tetherRefs.current;
-      for (const pin of pins) {
-        const a = span(ms, pin.at, pin.at + 420);
-        let s = a > 0 ? easeBack(a) : 0.001;
-        if (leaveK > 0) s *= 1 - leaveK;
-        pin.g.scale.setScalar(Math.max(0.001, s));
-        const pz = (((ms - pin.at) / 1200) % 1 + 1) % 1;
-        const flash = lineupK > 0 && lineupK < 1 ? 1 + lineupK * 4 : 0;
-        pin.pulse.scale.setScalar(flash || 1 + pz * 2.6);
-        pin.pulse.material.opacity = flash ? 0.9 * (1 - lineupK) : 0.8 * (1 - pz);
-        const el = lines[pin.seat];
-        if (el && a > 0) {
-          pin.g.getWorldPosition(pin.wp);
-          const sp = core.project(pin.wp);
-          el.setAttribute("x2", sp.x.toFixed(1));
-          el.setAttribute("y2", sp.y.toFixed(1));
+      // ---------- การ์ดโคจร ----------
+      const { w: W, h: H } = core.size;
+      const ppu = H / VIEW_H;
+      ring.cx = W / 2 + core.world.position.x * ppu;
+      ring.cy = H / 2 - core.world.position.y * ppu;
+      ring.r = core.world.scale.x * ppu;
+      const aBase = Math.min(ring.r * 1.55 + 64, W / 2 - 300);
+      const hexPx = n > 4 ? Math.max(60, Math.min(84, H * 0.085)) : Math.max(68, Math.min(96, H * 0.1));
+      const cardOff = (hexPx + 170) / 2 - hexPx / 2; // กลางการ์ดอยู่ขวาของจุดยึด (กลางตรา) เท่านี้
+      plan.rings.forEach((rg, r) => {
+        const el = orbitRefs.current[r];
+        if (!el) return;
+        const a = aBase * rg.k, b = a * 0.3;
+        el.setAttribute("transform", `translate(${ring.cx.toFixed(1)} ${ring.cy.toFixed(1)}) rotate(${(rg.tilt / DEG).toFixed(2)})`);
+        el.style.setProperty("--a", a.toFixed(1));
+        for (const path of el.children) {
+          // ครึ่งหน้า (ล่าง ใกล้กล้อง) กับครึ่งหลัง (บน หลังโลก)
+          const front = path.dataset.half === "front";
+          path.setAttribute("d", `M ${a.toFixed(1)} 0 A ${a.toFixed(1)} ${b.toFixed(1)} 0 0 ${front ? 1 : 0} ${(-a).toFixed(1)} 0`);
         }
-      }
+      });
+      const t = ms / 1000;
+      const out = dv ? now - dv.at : tlRef.current.out ? ms - X : -1;
+      ordered.forEach((_, i) => {
+        const el = cardRefs.current[i];
+        if (!el) return;
+        const slot = plan.slots[i];
+        const rg = plan.rings[slot.ring];
+        const a = aBase * rg.k, b = a * 0.3;
+        const tIn = FIRST_MS + i * perMs;
+        const kin = easeOutCubic(span(ms, tIn, tIn + FLOW_IN_MS));
+        const kout = out >= 0 ? easeInCubic(span(out, i * 45, i * 45 + FLOW_OUT_MS)) : 0;
+        let th = slot.theta0 + rg.dir * (REDUCED ? 0 : ORBIT_SPEED * t);
+        th -= rg.dir * 1.3 * (1 - kin);  // ไหลเข้าเป็นเกลียว
+        th += rg.dir * 1.2 * kout;       // ไหลออกตามทาง
+        const m = 1 + 1.9 * (1 - kin) + 2.2 * kout;
+        const ex = a * m * Math.cos(th), ey = b * m * Math.sin(th);
+        const x = ex * Math.cos(rg.tilt) - ey * Math.sin(rg.tilt);
+        const y = ex * Math.sin(rg.tilt) + ey * Math.cos(rg.tilt);
+        const depth = Math.sin(th);                       // +1 หน้าโลก (ล่าง) · −1 หลังโลก (บน)
+        const s = (0.72 + 0.28 * (depth + 1) / 2) * (1 + 0.25 * (1 - kin));
+        // ครึ่งหลังของวงที่ทับหน้าโลก = อยู่หลังโลก → จางลง (คิดจากกลางการ์ด ไม่ใช่จุดยึด)
+        const dist = Math.hypot(x + cardOff * s, y);
+        const behind = depth < 0 ? clamp01((ring.r * 1.15 - dist) / (ring.r * 0.55)) * clamp01(-depth * 2.5) : 0;
+        const op = kin * (1 - kout) * (1 - 0.85 * behind) * (0.8 + 0.2 * (depth + 1) / 2);
+        el.style.transform = `translate3d(${(ring.cx + x).toFixed(1)}px, ${(ring.cy + y).toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
+        el.style.opacity = op.toFixed(3);
+        el.style.zIndex = String(10 + Math.round((depth + 1) * 10));
+      });
 
       if (!dv) return;
       // ---------- ช่วงดิ่ง (ลุคเดิมของ GlobeDive) ----------
+      if (!diveCam) diveCam = createDiveCamera(core, { lowQ, wrapEl: stageEl });
       const u = (now - dv.at) / dv.D;
       if (!marker) marker = createMarker(core, target);
       P.copy(target);
@@ -299,16 +287,17 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
       const tag = tagRef.current;
       if (tag) tag.style.transform = `translate3d(${sp.x.toFixed(1)}px, ${sp.y.toFixed(1)}px, 0)`;
       if (altRef.current) {
-        const alt = Math.max(0, core.camera.position.length() - 1);
+        const alt = Math.max(0, camera.position.length() - 1);
         altRef.current.textContent = (alt * 1000).toFixed(1).padStart(7, "0");
       }
     });
 
     return () => {
       off();
-      scene.remove(pinRoot);
-      disposables.forEach((x) => x.dispose());
-      world.rotation.set(0, 0, 0);
+      // ฉากร่วมอาจอยู่ต่อ (เช่นกลับห้องรอกลางฉาก) — คืนค่าที่ฉากนี้แก้ไว้ (ของ 3D/กล้อง/world ถูก scopeCore เก็บกวาด)
+      diveCam?.restore();
+      if (core.sand) core.sand.visible = sandShown;
+      core.world.rotation.set(0, 0, 0);
     };
   };
 
@@ -330,32 +319,26 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   return (
     <div
       className={rootCls}
-      style={{ "--rev": `${Math.round((1 - T.crash) * D)}ms`, "--per": `${perMs}ms`, "--hex": n > 4 ? "clamp(78px, 11vh, 104px)" : "clamp(88px, 13vh, 122px)" }}
+      style={{ "--rev": `${Math.round((1 - T.crash) * D)}ms`, "--hex": n > 4 ? "clamp(60px, 8.5vh, 84px)" : "clamp(68px, 10vh, 96px)" }}
     >
       <div className="ocd-bg" aria-hidden="true" />
-      <div className="ocd-globe" ref={globeWrapRef}>
-        <GlobeCanvas shared={false} layout={diving ? FULL : geo.layout} layoutRate={0.04} drag={false} sand={!lowQ} autoSpin={0} onReady={onReady} />
-      </div>
+      {!handed && (
+        <div className="ocd-globe">
+          <GlobeCanvas layout={diving ? FULL : layout} layoutRate={diving ? 0.04 : 0.09} drag={false} autoSpin={0} onReady={onReady} />
+        </div>
+      )}
 
-      {/* วงโคจร + เส้นโยงที่นั่งถึงหมุดบนผิวโลก */}
-      <svg className="ocx-orbit" aria-hidden="true">
-        <circle className="ocx-orbit-ring" cx={geo.cx} cy={geo.cy} r={geo.R} pathLength="1" />
-        <circle className="ocx-orbit-sweep" cx={geo.cx} cy={geo.cy} r={geo.R + 8} pathLength="1" />
-        {ordered.map((p, i) => {
-          if (i >= seen) return null;
-          const s = geo.seats[i];
-          return (
-            <g key={p.id} className="ocx-tether" style={{ "--c": p.color || "#3d8bd9" }}>
-              <line
-                ref={(el) => { tetherRefs.current[i] = el; }}
-                x1={s.x} y1={s.y} x2={s.x} y2={s.y} pathLength="1"
-              />
-            </g>
-          );
-        })}
-      </svg>
+      {/* วงโคจร (ตำแหน่ง/ขนาดตั้งจาก JS ตามลูกโลกทุกเฟรม) — หลังส่งต่อไม่มีลูปเฟรมแล้ว จึงถอดทิ้ง */}
+      {!handed && <svg className="ocx-orbit" aria-hidden="true">
+        {plan.rings.map((_, r) => (
+          <g key={r} ref={(el) => { orbitRefs.current[r] = el; }} className={`ocx-ring r${r}`}>
+            <path data-half="back" className="ocx-ring-back" />
+            <path data-half="front" className="ocx-ring-front" pathLength="1" />
+          </g>
+        ))}
+      </svg>}
 
-      {ordered.map((p, i) => (i < seen ? <Seat key={p.id} p={p} seat={geo.seats[i]} leaving={leaving} index={i} /> : null))}
+      {!handed && ordered.map((p, i) => (i < seen ? <OrbitCard key={p.id} p={p} cardRef={(el) => { cardRefs.current[i] = el; }} /> : null))}
 
       <div className="ocx-title" aria-hidden={!lineup}>
         <h1 className="ocx-title-h">เริ่มการประลอง</h1>
@@ -378,6 +361,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
           : <span className="ocd-mark is-r oc-latin"><b>{pad2(seen)}</b> / {pad2(n)}</span>}
       </Chrome>
 
+      {mode === "out" && <div className="ocx-veil" aria-hidden="true" />}
       {diving && <DiveImpact area={A} lowQ={lowQ} />}
     </div>
   );
