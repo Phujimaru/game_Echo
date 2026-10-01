@@ -51,6 +51,25 @@ app.get("/version", (req, res) => {
   res.json({ version: GAME_VERSION });
 });
 
+// ห้องที่ exe เปิด (มี ECHO_VERSION) รับเฉพาะแอป ECHO เวอร์ชันเดียวกัน — exe ต่อท้าย user agent ด้วย
+//  "ECHO-Desktop/<เวอร์ชัน>" กันคนเปิดผ่านเบราว์เซอร์ตรงๆ ข้ามด่านตรวจเวอร์ชัน (/version ด้านบนยังถามได้เสมอ)
+//  รันแบบเว็บ/dev ไม่มี ECHO_VERSION = ไม่จำกัด
+const DESKTOP_UA = process.env.ECHO_VERSION ? `ECHO-Desktop/${process.env.ECHO_VERSION}` : null;
+function fromDesktopApp(userAgent) {
+  return !DESKTOP_UA || (userAgent || "").split(" ").includes(DESKTOP_UA);
+}
+if (DESKTOP_UA) {
+  app.use((req, res, next) => {
+    if (fromDesktopApp(req.get("user-agent"))) return next();
+    res.status(403).type("text/plain; charset=utf-8")
+      .send(`ห้องนี้เข้าได้เฉพาะผ่านโปรแกรม ECHO เวอร์ชัน ${process.env.ECHO_VERSION} เท่านั้น`);
+  });
+  io.use((socket, next) => {
+    if (fromDesktopApp(socket.handshake.headers["user-agent"])) return next();
+    next(new Error("desktop-only"));
+  });
+}
+
 // gzip ให้ index.html + bundle js/css ของ vite (637 KB -> ~170 KB) — compression ข้ามไฟล์ที่บีบมาแล้ว
 //  อย่าง jpg/png/webp/mp3/mp4 ให้เองอยู่แล้ว จึงไม่เปลืองซีพียูฟรี ๆ กับไฟล์สื่อ
 app.use(compression());

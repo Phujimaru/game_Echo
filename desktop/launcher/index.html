@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'" />
+  <title>ECHO</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Kanit:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="launcher.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="brand">
+      <h1>ECHO</h1>
+      <p class="tagline">Blackjack Skill Battle</p>
+    </header>
+
+    <p id="message" class="notice" hidden></p>
+
+    <!-- หน้าแรก -->
+    <section id="home" class="panel">
+      <button id="go-host" class="btn primary">สร้างห้อง</button>
+      <button id="go-join" class="btn">เข้าร่วม</button>
+      <button id="quit" class="btn ghost">ออกจากเกม</button>
+    </section>
+
+    <!-- สร้างห้อง -->
+    <section id="host" class="panel" hidden>
+      <h2>สร้างห้อง</h2>
+      <p id="host-status" class="muted">กำลังเปิดห้อง…</p>
+      <div id="host-ready" hidden>
+        <p class="label">ส่ง IP นี้ให้เพื่อน</p>
+        <div id="ip-list" class="ip-list"></div>
+        <p id="no-radmin" class="warn" hidden>
+          ไม่พบ IP ของ Radmin VPN (ขึ้นต้น 26.) — เปิด Radmin VPN และเข้าเครือข่ายเดียวกับเพื่อนก่อน
+          ถ้าเล่นบ้านเดียวกันใช้ IP วงแลนด้านบนแทนได้
+        </p>
+        <p class="hint">ถ้า Windows ถามเรื่อง Firewall ให้ติ๊ก <b>Public</b> และ <b>Private</b> แล้วกดอนุญาต ไม่งั้นเพื่อนจะเข้าห้องไม่ได้</p>
+        <button id="enter-room" class="btn primary">เข้าห้อง</button>
+      </div>
+      <button id="host-back" class="btn ghost">ปิดห้องและย้อนกลับ</button>
+    </section>
+
+    <!-- เข้าร่วม -->
+    <section id="join" class="panel" hidden>
+      <h2>เข้าร่วม</h2>
+      <form id="join-form">
+        <label class="label" for="join-ip">IP ของคนที่เปิดห้อง</label>
+        <input id="join-ip" class="input" placeholder="26.123.45.67" autocomplete="off" spellcheck="false" />
+        <button id="join-go" class="btn primary" type="submit">เข้าร่วม</button>
+      </form>
+      <p id="join-error" class="warn" hidden></p>
+      <button id="join-back" class="btn ghost" type="button">ย้อนกลับ</button>
+    </section>
+
+    <footer class="foot">
+      <span id="version"></span>
+      <span>F11 เต็มจอ · F10 ออกจากห้อง</span>
+    </footer>
+  </main>
+  <script src="launcher.js"></script>
+</body>
+</html>

@@ -70,7 +70,11 @@
 
 **ลำดับงาน:**
 1. ✅ endpoint `/version` ใน [server/app.js](../server/app.js) (ตอบ `{ version }` จาก `ECHO_VERSION`, ไม่มี = `"dev"`, `no-store` + CORS `*`) + เทสต์ `tests/version-endpoint.test.js`
-2. `desktop/` โครงพื้นฐาน: หน้าสร้างห้อง/เข้าร่วม, fork server, หา IP Radmin, ด่านที่ 3
+2. ✅ `desktop/` โครงพื้นฐาน (Electron 44) — `main.js` (หน้าต่างเต็มจอ, IPC, เข้าร่วม+ด่านที่ 3, จำ IP ล่าสุดใน `%APPDATA%/ECHO/settings.json`), `room.js` (เช็คพอร์ต → `utilityProcess.fork` → รอ `/version`), `preload.js` (เปิด `window.echo` ให้เฉพาะหน้า `file:`), `launcher/` (หน้าแรกภาษาไทย โทนม่วง-ทอง)
+   - ผู้ใช้เลือก: **เปิดมาเต็มจอ** (F11 สลับ, F10 ออกจากห้องพร้อม dialog ยืนยัน) · **เข้าห้องได้เฉพาะจาก exe** — exe ต่อท้าย user agent ด้วย `ECHO-Desktop/<เวอร์ชัน>` และ `server/app.js` ปฏิเสธ HTTP (403) + socket (`desktop-only`) ที่ไม่มี token เวอร์ชันเดียวกัน เมื่อรันด้วย `ECHO_VERSION` (`/version` ถามได้เสมอ)
+   - รัน dev: `cd desktop && npm install && npm start` (`start.js` ล้าง `ELECTRON_RUN_AS_NODE` ที่เทอร์มินัลของ VS Code/Claude ตั้งค้างไว้) · `ECHO_WINDOWED=1` = ไม่เต็มจอ · `ECHO_ASSET_BASE_URL` = ส่งต่อเป็น `ASSET_BASE_URL` ให้ server ของห้อง (ตอน dev ไม่ตั้งก็ได้ ใช้สื่อใน `client/dist`)
+   - ทดสอบแล้วด้วยการขับแอปผ่าน `--remote-debugging-port` (CDP): สร้างห้อง, เข้าห้องตัวเอง, เบราว์เซอร์ธรรมดาได้ 403, หน้าเกมไม่มี `window.echo`, ปิดแอปแล้ว server ปิดตาม, เข้าร่วมด้วย IP ผิดรูปแบบ/ไม่มีห้อง ขึ้นข้อความถูก · **ยังไม่ได้ทดสอบ:** dialog ของ F10 (กดจริง), เล่นข้าม 2 เครื่องผ่าน Radmin
+   - หน้า splash ของเกมยังเขียน "เวอร์ชัน 4.0" — ต้องถามผู้ใช้ก่อนออก 5.0.0 ว่าจะเปลี่ยนไหม
 3. แคชไฟล์สื่อ + manifest + ทดสอบกรอวิดีโอ (Range)
 4. electron-updater + ด่านที่ 1 + สคริปต์ปล่อยเวอร์ชัน
 5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin

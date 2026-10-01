@@ -6,7 +6,7 @@ const reactRefresh = require("eslint-plugin-react-refresh").default;
 
 module.exports = [
   {
-    ignores: ["node_modules/**", "client/node_modules/**", "client/dist/**"],
+    ignores: ["node_modules/**", "client/node_modules/**", "client/dist/**", "desktop/node_modules/**", "desktop/dist/**"],
   },
   // server.js + server/**/*.js + characters/*.js + tests/*.js — Node CommonJS
   {
@@ -21,6 +21,28 @@ module.exports = [
       "no-unused-vars": ["warn", { args: "none", caughtErrorsIgnorePattern: "^_" }],
       "no-empty": ["warn", { allowEmptyCatch: true }],
     },
+  },
+  // desktop/*.js — Electron main/preload (Node CommonJS) · desktop/launcher/*.js — หน้าแรกของโปรแกรม (browser script)
+  {
+    files: ["desktop/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "commonjs",
+      globals: { ...globals.node, location: "readonly" },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      "no-empty": ["warn", { allowEmptyCatch: true }],
+    },
+  },
+  {
+    files: ["desktop/launcher/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "script",
+      globals: globals.browser,
+    },
+    rules: js.configs.recommended.rules,
   },
   // client/src/**  — browser + JSX + React
   {
