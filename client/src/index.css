@@ -5,15 +5,19 @@
 @import "./avalon-screens.css" layer(components);
 @import "./arena.css" layer(components);
 
-/* ---------- ธีมสี ECHO (spec 7.1) ---------- */
+/* ---------- ธีมสี ECHO — ORDEAL CALL (5.1): กระดานในเกมเป็นกระจกน้ำเงินเข้ม เน้นด้วยฟ้าน้ำแข็ง/ขาว ม่วง ECHO = ของเรา/ท่าไม้ตาย ---------- */
 @theme {
   --color-echo-purple: #9b4f96;
   --color-echo-purpledark: #6e2c7a;
-  --color-echo-navy: #170c25;
-  --color-echo-bg: #0a0612;
-  --color-echo-hp: #c0392b;
-  --color-echo-armor: #3b82c4;
+  --color-echo-purplelight: #c99ad6;
+  --color-echo-navy: #12264a;
+  --color-echo-bg: #081a33;
+  --color-echo-hp: #d2455b;
+  --color-echo-armor: #3d8bd9;
+  /* ทองเดิมของ Avalon — คงไว้ให้โหมด SE.RA.PH (seraph/) ที่ยังใช้ธีมของตัวเอง กระดานปกติใช้ echo-ice แทน */
   --color-echo-gold: #e8bf5a;
+  /* สีเน้นหลักของกระดาน ORDEAL CALL (แทนทอง): ฟ้าน้ำแข็ง */
+  --color-echo-ice: #bee3f8;
   --color-echo-cyan: #22d3ee;
   --color-echo-magenta: #e83e8c;
 
@@ -135,7 +139,7 @@ body {
   0% { opacity: 0; transform: scale(0.4) rotate(-4deg); text-shadow: 0 0 0 rgba(0,0,0,0); }
   15% { opacity: 1; transform: scale(1.18) rotate(2deg); text-shadow: 0 0 40px rgba(155,79,150,0.9), 0 0 80px rgba(155,79,150,0.5); }
   30% { transform: scale(0.94) rotate(-1deg); }
-  45%, 70% { opacity: 1; transform: scale(1) rotate(0deg); text-shadow: 0 0 26px rgba(229,179,59,0.85); }
+  45%, 70% { opacity: 1; transform: scale(1) rotate(0deg); text-shadow: 0 0 26px rgba(190,227,248,0.85); }
   100% { opacity: 0; transform: scale(1.12) rotate(0deg); text-shadow: 0 0 0 rgba(0,0,0,0); }
 }
 .round-banner { position: relative; animation: bannerPop 3s cubic-bezier(0.2, 0.9, 0.25, 1) forwards; }
@@ -152,7 +156,7 @@ body {
   height: 4px;
   width: 0;
   transform: translateX(-50%);
-  background: linear-gradient(90deg, transparent, var(--color-echo-gold), transparent);
+  background: linear-gradient(90deg, transparent, var(--color-echo-ice), transparent);
   animation: bannerUnderline 3s ease forwards;
 }
 
@@ -1047,8 +1051,8 @@ body {
   box-shadow: 0 0 16px -4px rgba(34, 211, 238, 0.65);
 }
 .p-hs-action-reveal {
-  border-color: var(--color-echo-gold);
-  box-shadow: 0 0 16px -4px rgba(229, 179, 59, 0.65);
+  border-color: var(--color-echo-ice);
+  box-shadow: 0 0 16px -4px rgba(190, 227, 248, 0.65);
 }
 
 /* หลอด SP แนวนอน — ช่องเดี่ยวขยายใหญ่ขึ้นเพื่อเน้นแท็กแต้มสกิล */
@@ -1115,13 +1119,16 @@ body {
   background: linear-gradient(160deg, rgba(192, 57, 43, 0.3), rgba(9, 9, 13, 0.95));
 }
 
-/* ===== BOARD AVALON ===== */
+/* ===== BOARD — ORDEAL CALL (5.1) =====
+   แผงทุกชิ้นบนกระดานเป็นกระจกน้ำเงินเข้ม (--oc-navy) ตัดมุมเฉียง (--oc-cut) วางบนฉากหลังภูมิภาค
+   เน้นด้วยฟ้าน้ำแข็ง/ขาว · ม่วง ECHO ใช้กับของตัวเรา/ท่าไม้ตาย/ปุ่มยืนยัน · เลือด = แดงชาด · เกราะ = ฟ้าเข้ม->ฟ้า
+   ข้อความไทยห้ามมี letter-spacing / uppercase */
 
 .p-player-frame {
-  border-radius: 16px 16px 9px 9px;
-  outline: 2px solid var(--p-frame-color, #6d2f83);
+  border-radius: 4px;
+  outline: 2px solid var(--p-frame-color, #3d8bd9);
   outline-offset: 2px;
-  background: linear-gradient(165deg, rgba(31, 18, 47, 0.92), rgba(9, 5, 15, 0.96));
+  background: linear-gradient(165deg, rgba(18, 38, 72, 0.92), rgba(7, 18, 38, 0.96));
 }
 .p-player-frame.p-player-frame-live {
   animation: pFrameBreathe 3.2s ease-in-out infinite;
@@ -1133,83 +1140,103 @@ body {
 
 .p-name-tag {
   font-family: var(--font-av-thai);
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  letter-spacing: 0;
   clip-path: none;
   border-left: none;
-  border-top: 1px solid var(--p-frame-color, #6d2f83);
-  border-radius: 0 0 9px 9px;
-  background: linear-gradient(100deg, rgba(10, 6, 18, 0.94), rgba(22, 13, 34, 0.9));
+  border-top: 1px solid var(--p-frame-color, #3d8bd9);
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(100deg, rgba(8, 20, 40, 0.94), rgba(18, 38, 72, 0.9));
 }
 
+/* ตัวล็อกเป้าหมาย: วงแหวน/มุมสีขาวอมฟ้า (เดิมทอง) */
 .p-target-ring {
   inset: -16%;
-  border: 1px dashed rgba(255, 233, 168, 0.7);
+  border: 1px dashed rgba(234, 243, 252, 0.75);
 }
-.p-target-ring::before { border-color: rgba(232, 191, 90, 0.35); }
+.p-target-ring::before { border-color: rgba(127, 184, 230, 0.4); }
 .p-target-corner {
-  border-color: #ffe9a8;
-  filter: drop-shadow(0 0 7px rgba(255, 233, 168, 0.95));
+  border-color: #ffffff;
+  filter: drop-shadow(0 0 7px rgba(127, 184, 230, 0.95));
 }
 .p-target-badge {
   font-family: var(--font-av-thai);
-  border-radius: 999px;
-  color: #1f1604;
-  background: linear-gradient(120deg, #ffe9a8, #c9992f);
-  box-shadow: 0 4px 16px -2px rgba(232, 191, 90, 0.85);
+  font-weight: 700;
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  color: #ffffff;
+  background: linear-gradient(120deg, var(--oc-hp, #d2455b), #9b2d44);
+  box-shadow: none;
 }
 
 .p-chip {
   font-family: var(--font-av-thai);
+  letter-spacing: 0;
+  text-transform: none;
   transform: none;
-  border-radius: 999px;
+  border-radius: 2px;
 }
 .p-chip > * { transform: none; }
 
+/* ปุ่มจั่ว/เปิดไพ่: กระจกน้ำเงินตัดมุม — จั่ว = ขอบฟ้า · เปิดไพ่ = ม่วง ECHO (ปุ่มยืนยันของเรา) */
 .p-hs-action {
-  border-radius: 999px;
-  border: 1px solid rgba(185, 95, 196, 0.42);
-  background: linear-gradient(140deg, rgba(31, 17, 47, 0.95), rgba(9, 5, 15, 0.93));
-  box-shadow: inset 0 1px 0 rgba(232, 196, 239, 0.14);
+  border-radius: 0;
+  clip-path: var(--oc-cut);
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  background: linear-gradient(160deg, rgba(24, 52, 94, 0.94), rgba(10, 24, 48, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(127, 184, 230, 0.18);
   transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), filter 0.16s ease, box-shadow 0.2s ease;
 }
 .p-hs-action-draw {
-  border-color: rgba(185, 95, 196, 0.8);
-  box-shadow: 0 0 22px -7px rgba(185, 95, 196, 0.95), inset 0 1px 0 rgba(232, 196, 239, 0.2);
+  border-color: rgba(127, 184, 230, 0.85);
+  box-shadow: inset 0 0 0 1px rgba(127, 184, 230, 0.55), inset 0 -3px 0 rgba(127, 184, 230, 0.45);
 }
 .p-hs-action-reveal {
-  border-color: #e8bf5a;
-  box-shadow: 0 0 24px -7px rgba(232, 191, 90, 0.95), inset 0 1px 0 rgba(255, 233, 168, 0.26);
+  border-color: var(--oc-echo-glow, #c99ad6);
+  background: linear-gradient(135deg, var(--oc-echo-deep, #6e2c7a), var(--oc-echo, #9b4f96));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(201, 154, 214, 0.6);
 }
-.p-hs-action:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.16); }
+.p-hs-action:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.14); }
+.p-hs-action:focus-visible { outline: 2px solid var(--oc-sky, #7fb8e6); outline-offset: 2px; }
 
 .p-sp-cell {
-  border-radius: 2px;
+  border-radius: 0;
   clip-path: polygon(26% 0, 100% 0, 74% 100%, 0 100%);
 }
 
+/* กระเป๋า/ร้านค้า: แท่งกระจกน้ำเงินต่อกัน ตัดมุมทั้งกลุ่ม */
 .p-hs-tab-group {
-  border-radius: 16px;
-  border: 1px solid rgba(185, 95, 196, 0.35);
-  box-shadow: 0 14px 26px -10px rgba(0, 0, 0, 0.8);
+  border-radius: 0;
+  clip-path: var(--oc-cut);
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  box-shadow: none;
+  background: var(--oc-navy, rgba(18, 38, 72, 0.84));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .p-hs-tab-bag {
-  background: linear-gradient(140deg, rgba(109, 47, 131, 0.55), rgba(9, 5, 15, 0.95));
-  border-bottom: 1px solid rgba(185, 95, 196, 0.28);
+  background: linear-gradient(140deg, rgba(61, 139, 217, 0.32), rgba(10, 24, 48, 0.2));
+  border-bottom: 1px solid rgba(127, 184, 230, 0.3);
 }
 .p-hs-tab-shop {
-  background: linear-gradient(140deg, rgba(94, 63, 8, 0.6), rgba(9, 5, 15, 0.95));
+  background: linear-gradient(140deg, rgba(155, 79, 150, 0.32), rgba(10, 24, 48, 0.2));
 }
-.p-hs-tab { font-family: var(--font-av-thai); }
+.p-hs-tab { font-family: var(--font-av-thai); color: var(--oc-navy-text, #eaf3fc); }
+.p-hs-tab:hover { filter: brightness(1.18); }
 
-.p-status-click { border-radius: 12px; }
+.p-status-click { border-radius: 2px; }
 
 .p-panel {
-  border-radius: 16px;
-  border: 1px solid rgba(185, 95, 196, 0.32);
-  background: linear-gradient(160deg, rgba(31, 18, 47, 0.95), rgba(10, 6, 17, 0.97));
+  border-radius: 0;
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  background: linear-gradient(160deg, rgba(18, 38, 72, 0.95), rgba(8, 20, 40, 0.97));
 }
 .p-panel::before { display: none; }
+
+/* แถบเลื่อนบนกระดาน: ฟ้า (เดิมม่วง) */
+.p-scroll { scrollbar-color: var(--oc-sky, #7fb8e6) rgba(255, 255, 255, 0.06); }
+.p-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--oc-ice, #bee3f8), var(--oc-azure, #3d8bd9)); border-radius: 0; }
+.p-scroll::-webkit-scrollbar-thumb:hover { background: var(--oc-sky, #7fb8e6); }
 
 /* มุมซ้ายบน ไม่ใช่กลางบน — ช่องการ์ดผู้เล่นแถวบนสุดอยู่ที่ top 4-9% กลางจอ ถ้าวางกลางจะทับกันเสมอ */
 .bd-top {
@@ -1221,9 +1248,11 @@ body {
   gap: 0.85rem;
   padding: 0.4rem 1rem 0.45rem;
   overflow: hidden;
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
-  background: linear-gradient(100deg, rgba(46, 17, 69, 0.92), rgba(10, 6, 17, 0.94));
-  border-bottom: 1px solid rgba(232, 191, 90, 0.55);
+  clip-path: var(--oc-cut);
+  background: var(--oc-navy, rgba(18, 38, 72, 0.84));
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .bd-top::after {
   content: "";
@@ -1232,8 +1261,8 @@ body {
   right: 12%;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #ffe9a8, transparent);
-  box-shadow: 0 0 14px 1px rgba(232, 191, 90, 0.7);
+  background: linear-gradient(90deg, transparent, #ffffff, transparent);
+  box-shadow: 0 0 12px 1px rgba(127, 184, 230, 0.7);
 }
 
 /* การเดินทาง: ป้ายภูมิภาคแถวบนสุด ถัดจากกล่อง "รอบที่" (สีตามภูมิภาค --jr / --jr-glow จาก journey/areas.js)
@@ -1248,14 +1277,18 @@ body {
   gap: 0.6rem;
   max-width: 22rem;
   padding: 0.3rem 0.9rem 0.3rem 0.35rem;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
-  background: linear-gradient(100deg, rgba(10, 6, 17, 0.9), rgba(10, 6, 17, 0.72));
-  border-bottom: 1px solid var(--jr);
+  clip-path: var(--oc-cut);
+  background: var(--oc-navy, rgba(18, 38, 72, 0.84));
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  box-shadow: inset 0 -2px 0 var(--jr);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   text-align: left;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
 .jr-badge:hover { transform: translateX(2px); }
+.jr-badge:focus-visible { outline: 2px solid var(--oc-sky, #7fb8e6); outline-offset: 2px; }
 .jr-badge-num {
   display: grid;
   place-items: center;
@@ -1264,14 +1297,14 @@ body {
   padding: 0 0.3rem;
   border: 1px solid var(--jr);
   color: var(--jr-glow);
-  font-family: var(--font-av-display);
-  font-weight: 900;
-  font-size: 0.95rem;
+  font-family: var(--font-av-numeral);
+  font-weight: 400;
+  font-size: 0.85rem;
   background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--jr) 35%, transparent), transparent 75%);
 }
 .jr-badge-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.jr-badge-name { color: var(--jr-glow); font-weight: 800; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jr-badge-sub { color: rgba(239, 230, 245, 0.65); font-size: 0.68rem; white-space: nowrap; }
+.jr-badge-name { font-family: var(--font-av-thai); color: #ffffff; font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jr-badge-sub { color: var(--oc-navy-mute, #9db8da); font-size: 0.68rem; white-space: nowrap; }
 
 .bd-timer {
   position: relative;
@@ -1281,12 +1314,12 @@ body {
   height: 2.7rem;
 }
 .bd-timer svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.bd-timer-ring { fill: none; stroke: rgba(185, 95, 196, 0.35); stroke-width: 2; }
+.bd-timer-ring { fill: none; stroke: rgba(127, 184, 230, 0.3); stroke-width: 2; }
 .bd-timer-arc {
   fill: none;
-  stroke: #ffe9a8;
+  stroke: #ffffff;
   stroke-width: 2.5;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
   transition: stroke-dashoffset 0.9s linear, stroke 0.4s ease;
@@ -1300,26 +1333,28 @@ body {
 
 .bd-deck {
   position: relative;
-  border-radius: 14px;
+  border-radius: 4px;
 }
 .bd-deck::before {
   content: "";
   position: absolute;
   inset: -14px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 191, 90, 0.26), transparent 68%);
+  background: radial-gradient(circle, rgba(190, 227, 248, 0.3), transparent 68%);
   pointer-events: none;
 }
 
+/* ช่องสกิล: แผงน้ำเงินมุมเหลี่ยม แถบบนสีตามระดับ (พื้นฐาน = ฟ้า / รอง = น้ำแข็ง / ท่าไม้ตาย = ม่วง ECHO) */
 .bd-skill {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 14px 14px 6px 6px;
-  background: linear-gradient(165deg, rgba(31, 18, 47, 0.95), rgba(9, 5, 15, 0.96));
+  border-radius: 3px;
+  background: linear-gradient(165deg, rgba(18, 38, 72, 0.95), rgba(7, 18, 38, 0.96));
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, box-shadow 0.22s ease;
 }
 .bd-skill[data-usable="true"]:hover { transform: translateY(-4px) scale(1.03); filter: brightness(1.1); }
+.bd-skill:focus-visible { outline: 2px solid var(--oc-sky, #7fb8e6); outline-offset: 3px; }
 .bd-skill-bar {
   position: absolute;
   top: 0;
@@ -1328,6 +1363,18 @@ body {
   height: 4px;
   z-index: 10;
 }
+.bd-skill[data-tier="ultimate"] .bd-skill-bar {
+  height: 5px;
+  background: linear-gradient(90deg, var(--oc-echo-deep, #6e2c7a), var(--oc-echo, #9b4f96) 55%, var(--oc-echo-glow, #c99ad6)) !important;
+}
+.bd-skill[data-tier="ultimate"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(110, 44, 122, 0.55), transparent 46%);
+}
 .bd-skill-cost {
   position: absolute;
   top: 0.35rem;
@@ -1335,9 +1382,10 @@ body {
   z-index: 12;
   min-width: 1.35rem;
   padding: 0 0.3rem;
-  border-radius: 999px;
+  border-radius: 0;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
   font-family: var(--font-av-display);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 0.78rem;
   line-height: 1.35rem;
   text-align: center;
@@ -1355,9 +1403,9 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 62% at 50% 50%, rgba(109, 47, 131, 0.5), transparent 70%),
-    radial-gradient(ellipse 120% 40% at 50% 50%, rgba(232, 196, 239, 0.14), transparent 70%),
-    rgba(6, 3, 10, 0.46);
+    radial-gradient(ellipse 80% 62% at 50% 50%, rgba(61, 139, 217, 0.42), transparent 70%),
+    radial-gradient(ellipse 120% 40% at 50% 50%, rgba(220, 235, 250, 0.16), transparent 70%),
+    rgba(5, 13, 28, 0.46);
   animation: acWash 2s ease both;
 }
 .dc-card {
@@ -1367,18 +1415,18 @@ body {
   width: 56px;
   height: 78px;
   margin: -39px 0 0 -28px;
-  border-radius: 9px;
-  background: linear-gradient(150deg, #7b3a90 0%, #2e1145 58%, #0c0614 100%);
-  border: 1px solid rgba(232, 196, 239, 0.55);
-  box-shadow: 0 12px 26px -10px rgba(0, 0, 0, 0.95), 0 0 20px -4px rgba(185, 95, 196, 0.85);
+  border-radius: 4px;
+  background: linear-gradient(150deg, #3d8bd9 0%, #183462 58%, #0b1d3a 100%);
+  border: 1px solid rgba(220, 235, 250, 0.7);
+  box-shadow: 0 12px 26px -10px rgba(3, 10, 24, 0.95), 0 0 20px -4px rgba(127, 184, 230, 0.85);
   animation: dcCard cubic-bezier(0.25, 0.7, 0.35, 1) both;
 }
 .dc-card::after {
   content: "";
   position: absolute;
   inset: 5px;
-  border-radius: 5px;
-  border: 1px solid rgba(232, 196, 239, 0.28);
+  border-radius: 2px;
+  border: 1px solid rgba(220, 235, 250, 0.32);
 }
 @keyframes dcCard {
   0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.25); opacity: 0; }
@@ -1394,56 +1442,54 @@ body {
   height: 24vmin;
   margin: -12vmin 0 0 -12vmin;
   border-radius: 50%;
-  border: 3px solid #e8c4ef;
-  box-shadow: 0 0 70px 16px rgba(185, 95, 196, 0.6), inset 0 0 50px 10px rgba(232, 196, 239, 0.28);
+  border: 3px solid #dcebfa;
+  box-shadow: 0 0 70px 16px rgba(127, 184, 230, 0.6), inset 0 0 50px 10px rgba(220, 235, 250, 0.28);
   animation: acRing 2s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .dc-text { animation: acText 2s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-/* ===== การ์ดผู้เล่น: แผ่นป้ายทรงเฉพาะตัว (ยอดแหลมกลาง มุมบนเฉียง มุมล่างตัด) =====
-   ไม่ใช้สี่เหลี่ยมมุมมนสำเร็จรูป — รูปทรงวาดด้วย clip-path เส้นเดียวกันทั้งขอบทองและแผ่นใน
-   ขอบทอง = ตัวการ์ดเอง / แผ่นใน = .pc-plate ที่ inset เข้ามา 3px จึงเหลือขอบทองรอบรูป */
+/* ===== การ์ดผู้เล่น: กรอบกระจกน้ำเงินตัดมุมเฉียง (มุมบนซ้าย/ล่างขวา) แบบต้นแบบ ORDEAL CALL =====
+   ขอบ = ตัวการ์ดเอง (เส้นฟ้าบาง + สีประจำที่นั่งที่มุมบนซ้าย) / แผ่นใน = .pc-plate ที่ inset เข้ามา 1.5px */
 .pc-card {
-  --pc-shape: polygon(
-    0 26px, 17px 9px,
-    40% 9px, 45.5% 0, 54.5% 0, 60% 9px,
-    calc(100% - 17px) 9px, 100% 26px,
-    100% calc(100% - 20px), calc(100% - 15px) 100%,
-    15px 100%, 0 calc(100% - 20px)
-  );
+  --pc-shape: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   position: relative;
-  padding: 3px;
+  padding: 1.5px;
   clip-path: var(--pc-shape);
-  background: linear-gradient(152deg, #ffe9a8 0%, var(--p-frame-color, #6d2f83) 34%, #c9992f 68%, #4a2a12 100%);
-  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.85));
+  background:
+    linear-gradient(135deg, var(--p-frame-color, #3d8bd9) 0 16%, rgba(127, 184, 230, 0.55) 34%, rgba(127, 184, 230, 0.32) 70%, rgba(220, 235, 250, 0.6) 100%);
+  filter: drop-shadow(0 14px 22px rgba(3, 10, 24, 0.6));
 }
-/* clip-path ตัด outline ทิ้ง ตัวที่ยังมีชีวิตจึงเต้นด้วยความสว่างของขอบทองแทน */
+/* clip-path ตัด outline ทิ้ง ตัวที่ยังมีชีวิตจึงเต้นด้วยความสว่างของขอบแทน */
 .pc-card-live { animation: pcPlateBreathe 3.4s ease-in-out infinite; }
 @keyframes pcPlateBreathe {
-  0%, 100% { filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.85)) brightness(1); }
-  50% { filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.85)) brightness(1.22); }
+  0%, 100% { filter: drop-shadow(0 14px 22px rgba(3, 10, 24, 0.6)) brightness(1); }
+  50% { filter: drop-shadow(0 14px 26px rgba(3, 10, 24, 0.6)) brightness(1.15); }
 }
 .pc-plate {
   position: absolute;
-  inset: 3px;
+  inset: 1.5px;
   clip-path: var(--pc-shape);
   background:
-    repeating-linear-gradient(118deg, rgba(232, 191, 90, 0.05) 0 1px, transparent 1px 8px),
-    linear-gradient(158deg, rgba(41, 24, 61, 0.98), rgba(8, 4, 14, 0.99));
+    linear-gradient(180deg, rgba(127, 184, 230, 0.1), transparent 38%),
+    var(--oc-navy, rgba(18, 38, 72, 0.84));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-.pc-inner { position: relative; padding: 13px 11px 9px; }
-
-/* ยอดตราบนสุด: เพชรทองคร่อมรอยหยักของรูปทรง พร้อมเส้นทองสองข้าง */
-.pc-crest {
+/* แถบสีประจำที่นั่งบนสุด — บอกว่าเป็นของใครได้จากระยะไกลเหมือนต้นแบบ */
+.pc-plate::before {
+  content: "";
   position: absolute;
-  top: -1px;
-  left: 50%;
-  width: 54px;
-  height: 27px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.9));
+  top: 0;
+  left: 14px;
+  width: 38%;
+  height: 3px;
+  background: var(--p-frame-color, #3d8bd9);
+  box-shadow: 0 0 10px var(--p-frame-color, #3d8bd9);
 }
+.pc-inner { position: relative; padding: 12px 11px 9px; }
+
+/* ยอดตราเดิม (เพชรทองกลางบน) — รูปทรงใหม่ไม่มียอดแหลมแล้ว ซ่อนไว้ */
+.pc-crest { display: none; }
 
 /* เส้นคั่นแนวตั้งระหว่างรูปกับค่าสถานะ มีเพชรคั่นกลาง */
 .pc-rule {
@@ -1452,7 +1498,7 @@ body {
   width: 1px;
   align-self: stretch;
   margin: 2px 2px;
-  background: linear-gradient(180deg, transparent, rgba(232, 191, 90, 0.75) 22%, rgba(232, 191, 90, 0.75) 78%, transparent);
+  background: linear-gradient(180deg, transparent, rgba(127, 184, 230, 0.6) 22%, rgba(127, 184, 230, 0.6) 78%, transparent);
 }
 .pc-rule-gem {
   position: absolute;
@@ -1461,7 +1507,7 @@ body {
   width: 7px;
   height: 7px;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 0 4px rgba(232, 191, 90, 0.9));
+  filter: drop-shadow(0 0 4px rgba(127, 184, 230, 0.9));
 }
 
 .pc-main { display: flex; gap: 9px; align-items: stretch; }
@@ -1471,28 +1517,28 @@ body {
   width: 76px;
   height: 94px;
   overflow: hidden;
-  /* รูปก็ไม่ใช่สี่เหลี่ยม — มุมบนซ้ายกับล่างขวาถูกเฉือน ให้รับกับรูปทรงของแผ่นป้าย */
-  clip-path: polygon(0 11px, 11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%);
-  background: linear-gradient(135deg, #9b4f96, #7d3a78);
-  box-shadow: inset 0 0 0 1px rgba(232, 191, 90, 0.4);
+  /* รูปตัดมุมแบบเดียวกับกรอบ */
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  background: linear-gradient(135deg, #3d8bd9, #12264a);
+  box-shadow: inset 0 0 0 1px rgba(127, 184, 230, 0.4);
 }
 .pc-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
 .pc-name-text {
   font-family: var(--font-av-thai);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.92rem;
   line-height: 1.34;
-  color: #fff;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 4px rgba(3, 10, 24, 0.8);
 }
 
 /* แถววัดค่า — เลือดกับเกราะแยกกันด้วยไอคอน ตัวเลข และรูปทรงช่อง ไม่ใช่แค่สี
    (ผู้เล่นรายงานว่าเกจสีล้วนดูไม่ออกว่าอันไหนคืออะไร) */
 .sr { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.sr-ico { width: 15px; height: 15px; flex: 0 0 auto; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85)); }
+.sr-ico { width: 15px; height: 15px; flex: 0 0 auto; filter: drop-shadow(0 1px 2px rgba(3, 10, 24, 0.85)); }
 /* รอยร้าว (โทโนะ ชิกิ): วงม่วงรอบไอคอนเกราะ — เติมตามจำนวนขั้น 1-8 */
 .sr-crack { position: relative; display: inline-flex; flex: 0 0 auto; }
 .sr-crack-ring {
@@ -1502,9 +1548,10 @@ body {
 .sr-sp-label {
   flex: 0 0 auto;
   width: 15px;
+  font-family: var(--font-av-display);
   font-size: 0.56rem;
-  font-weight: 900;
-  color: var(--av-gold-mid, #e8bf5a);
+  font-weight: 700;
+  color: var(--oc-echo-glow, #c99ad6);
   text-align: center;
 }
 .sr-track { display: flex; gap: 2px; flex: 1 1 auto; min-width: 0; }
@@ -1513,15 +1560,15 @@ body {
   flex: 0 0 auto;
   font-family: var(--font-av-display);
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(3, 10, 24, 0.9);
   min-width: 34px;
   text-align: right;
 }
-.sr-max { opacity: 0.55; font-size: 0.84em; }
+.sr-max { color: var(--oc-navy-mute, #9db8da); font-size: 0.84em; }
 
 /* หลอดต่อเนื่อง: ใช้เมื่อเพดานสูงจนช่องแยกแคบเกินกว่าจะนับไหว
    ขีดแบ่งทุกหน่วยยังวาดทับอยู่ (--n = จำนวนหน่วยรวมส่วนเกินเพดาน) จึงยังนับได้ถ้าอยากนับ */
@@ -1534,23 +1581,25 @@ body {
   background: repeating-linear-gradient(
     90deg,
     transparent 0 calc(100% / var(--n, 8) - 1px),
-    rgba(0, 0, 0, 0.7) calc(100% / var(--n, 8) - 1px) calc(100% / var(--n, 8))
+    rgba(7, 18, 38, 0.75) calc(100% / var(--n, 8) - 1px) calc(100% / var(--n, 8))
   );
 }
-.sr[data-kind="hp"] .sr-solid { border-radius: 999px; }
+.sr[data-kind="hp"] .sr-solid { border-radius: 1px; }
 .sr[data-kind="ar"] .sr-solid { clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%); }
 
-/* เลือด = แคปซูลมน · เกราะ = ทรงโล่ปลายแหลมลง — ต่างกันแม้มองเป็นภาพขาวดำ */
-.sr[data-kind="hp"] .sr-cell { border-radius: 999px; }
+/* เลือด = แท่งเหลี่ยม · เกราะ = ทรงโล่ปลายแหลมลง · แต้มสกิล = ขนานเฉียง — ต่างกันแม้มองเป็นภาพขาวดำ */
+.sr[data-kind="hp"] .sr-cell { border-radius: 1px; }
 .sr[data-kind="ar"] .sr-cell { clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%); }
 .sr[data-kind="sp"] .sr-cell { clip-path: polygon(26% 0, 100% 0, 74% 100%, 0 100%); height: 8px; }
-.sr-hp { background: linear-gradient(180deg, #ff9aa3, #bf2038); box-shadow: 0 0 6px rgba(255, 96, 118, 0.75); }
-.sr-ar { background: linear-gradient(180deg, #a9d8ff, #3b82c4); filter: drop-shadow(0 0 4px rgba(90, 160, 230, 0.85)); }
+.sr-hp { background: linear-gradient(180deg, #f07b8c, var(--oc-hp, #d2455b) 55%, #b8324a); box-shadow: 0 0 6px rgba(210, 69, 91, 0.6); }
+.sr-ar { background: linear-gradient(180deg, var(--oc-ice, #bee3f8), var(--oc-sky, #7fb8e6) 45%, var(--oc-azure, #3d8bd9)); filter: drop-shadow(0 0 4px rgba(127, 184, 230, 0.75)); }
 /* Recruit [Armor]: เกราะพิเศษวาดสีส้ม */
 .sr[data-tone="orange"] .sr-ar { background: linear-gradient(180deg, #fed7aa, #f97316); filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.85)); }
-.sr-tmp { background: linear-gradient(180deg, #ffe9a8, #c9992f); box-shadow: 0 0 6px rgba(232, 191, 90, 0.8); }
-.sr-sp { background: linear-gradient(90deg, #ffe9a8, #c9992f); filter: drop-shadow(0 0 3px rgba(232, 191, 90, 0.9)); }
-.sr-off { background: rgba(255, 255, 255, 0.11); }
+/* ส่วนเกินเพดาน (เลือดชั่วคราว/เกราะศรัทธา): ขาวน้ำแข็ง */
+.sr-tmp { background: linear-gradient(180deg, #ffffff, var(--oc-ice, #bee3f8)); box-shadow: 0 0 6px rgba(234, 243, 252, 0.8); }
+/* แต้มสกิล: ม่วง ECHO (ทรัพยากรของตัวละคร) */
+.sr-sp { background: linear-gradient(90deg, #ead2f0, var(--oc-echo-glow, #c99ad6) 40%, var(--oc-echo, #9b4f96)); filter: drop-shadow(0 0 3px rgba(201, 154, 214, 0.85)); }
+.sr-off { background: rgba(255, 255, 255, 0.1); }
 
 /* ขนาดใหญ่สำหรับแผงตัวเอง — พื้นที่แถวล่างเหลือเยอะ ปล่อยให้ยืดได้เต็มที่ */
 .sr-big { gap: 9px; }
@@ -1560,8 +1609,7 @@ body {
 .sr-big .sr-solid { height: 19px; }
 .sr-big .sr-track { flex: 0 1 auto; gap: 3px; }
 
-/* แถบสถานะ: จองที่ไว้ตลอดแม้ยังว่าง ความสูงการ์ดจึงไม่กระตุกตอนสถานะมา/ไป
-   เส้นคั่นจางหัวท้ายพร้อมเพชรกลาง วาดจาก gradient ล้วน */
+/* แถบสถานะ: จองที่ไว้ตลอดแม้ยังว่าง ความสูงการ์ดจึงไม่กระตุกตอนสถานะมา/ไป */
 .pc-foot {
   position: relative;
   display: flex;
@@ -1580,47 +1628,48 @@ body {
   inset-inline: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 191, 90, 0.55) 18%, rgba(232, 191, 90, 0.55) 82%, transparent);
+  background: var(--oc-navy-line, rgba(127, 184, 230, 0.35));
 }
-.pc-foot::after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  transform: translateX(-50%) rotate(45deg);
-  background: var(--av-gold-mid, #e8bf5a);
-  box-shadow: 0 0 5px rgba(232, 191, 90, 0.9);
-}
+.pc-foot::after { content: none; }
 
 .pc-ready {
   font-family: var(--font-av-thai);
   font-size: 0.64rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
   color: #06210f;
   background: linear-gradient(120deg, #8ff0b5, #21a95a);
-  box-shadow: 0 3px 12px -2px rgba(33, 169, 90, 0.9);
+  box-shadow: none;
 }
 
 .pc-extra { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .pc-extra-inline { justify-content: flex-start; }
 .pc-extra-chip {
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
-  padding: 2px 6px;
-  border-radius: 999px;
+  padding: 3px 6px;
+  border-radius: 0;
   white-space: nowrap;
-  background: rgba(6, 3, 12, 0.8);
-  border: 1px solid rgba(232, 191, 90, 0.28);
+  background: rgba(7, 18, 38, 0.8);
+  border: 1px solid var(--oc-navy-line, rgba(127, 184, 230, 0.35));
 }
 
-/* ===== แผงตัวเอง: รูปซึมจางหลังแผง ไม่กินช่องของตัวเอง ===== */
-.self-panel { position: relative; }
+/* ===== แผงตัวเอง: กระจกน้ำเงินตัดมุม + เส้นม่วง ECHO ด้านซ้าย (ของเรา) — รูปซึมจางอยู่ในแผง ===== */
+.self-panel {
+  position: relative;
+  padding: 12px 18px 10px 16px;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  background:
+    linear-gradient(90deg, var(--oc-echo-glow, #c99ad6) 0 3px, transparent 3px),
+    var(--oc-navy, rgba(18, 38, 72, 0.84));
+  box-shadow: inset 0 0 0 1px var(--oc-navy-line, rgba(127, 184, 230, 0.35));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 .self-bleed {
   position: absolute;
   left: -22px;
@@ -1628,7 +1677,7 @@ body {
   bottom: -12px;
   width: 210px;
   z-index: 0;
-  opacity: 0.26;
+  opacity: 0.3;
   pointer-events: none;
   filter: saturate(0.8) contrast(1.06);
   -webkit-mask-image: radial-gradient(72% 76% at 28% 46%, #000 26%, transparent 76%);
@@ -1640,11 +1689,13 @@ body {
   border-bottom: 1px solid transparent;
   transition: border-color 0.16s ease, color 0.16s ease;
 }
-.self-name:hover { color: var(--av-gold-lit, #ffe9a8); border-bottom-color: rgba(232, 191, 90, 0.7); }
+.self-name:hover { color: var(--oc-echo-glow, #c99ad6); border-bottom-color: rgba(201, 154, 214, 0.7); }
+.self-name:focus-visible { outline: 2px solid var(--oc-sky, #7fb8e6); outline-offset: 2px; }
 .self-vitals { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 
 /* ฝาแฝดฮิซากาวะ: กล่องค่าของแต่ละคน — ทรงเฉือนมุมให้เข้าชุดกับแผ่นป้ายใบอื่น */
 .twin-vital {
   clip-path: polygon(0 9px, 9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
   border-radius: 0;
+  background: rgba(7, 18, 38, 0.6) !important;
 }

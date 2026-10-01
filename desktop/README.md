@@ -9,7 +9,7 @@
 | `room.js` | เปิด `server.js` เป็น process แยก (`utilityProcess`) เมื่อกด "สร้างห้อง" |
 | `updater.js` | ด่านที่ 1 — เวอร์ชันต้องตรงกับ R2 มีใหม่ = โหลด ติดตั้ง แล้วเปิดใหม่เอง |
 | `media.js` | ด่านที่ 2 — โหลดไฟล์สื่อตาม manifest มาแคชในเครื่อง และตอบไฟล์สื่อให้หน้าเกมจากแคช |
-| `launcher/` | หน้าแรกของโปรแกรม |
+| `launcher/` | หน้าแรกของโปรแกรม (ธีม ORDEAL CALL) · `launcher/vendor/` = ลูกโลก (`globe.js` build จาก `client/src/globe`) + เพลง `main5.0.mp3` + โลโก้ — สร้างอัตโนมัติตอน `npm start` / `npm run dist` ด้วย `scripts/build-launcher-vendor.js` ไม่ track ใน git |
 | `config.js` | URL ของ R2 |
 | `scripts/` | เตรียมโค้ดเกม (`stage-game.js`), สร้าง manifest, ปล่อยเวอร์ชัน (`release.js`) |
 
@@ -25,6 +25,7 @@ npm start
 ```
 
 - `ECHO_WINDOWED=1` — เปิดเป็นหน้าต่าง ไม่เต็มจอ
+- `npm start` build `launcher/vendor/` ก่อนเปิดทุกครั้ง (ข้ามถ้าต้นทางไม่เปลี่ยน) · build เองได้ด้วย `node scripts/build-launcher-vendor.js --force`
 - ตอน dev จะข้ามด่านที่ 1 และ 2 และใช้ไฟล์สื่อจาก `client/public` ตรง ๆ
   ตั้ง `ECHO_MEDIA_MANIFEST` (path หรือ URL) / `ECHO_UPDATE_URL` ถ้าอยากทดสอบด่านเหล่านั้น
 

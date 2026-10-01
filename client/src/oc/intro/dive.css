@@ -1,0 +1,145 @@
+/* ============================================================
+   ฉากเริ่มการเดินทาง (GlobeDive) — ลูกโลกหมุนเข้า → ล็อก → ดิ่งชน → เผยกระดาน
+   z 60 = ใต้ฉากเปิดตัว (95) ที่กำลังจาง · --rev = ช่วงเผย · --dive = ช่วงดิ่ง
+   ห้าม letter-spacing / uppercase กับข้อความไทย
+   ============================================================ */
+.ocd {
+  position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: auto; user-select: none;
+  color: var(--oc-ink); font: 300 15px/1.5 var(--oc-f-body);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ocd.is-crash { pointer-events: none; }
+.ocd-bg { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 46%, #fff 0%, var(--oc-snow) 46%, #e2ecf7 100%); }
+.ocd-bg::before {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(61, 139, 217, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 139, 217, 0.055) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.ocd-globe { position: absolute; inset: 0; transform-origin: 50% 50%; }
+.ocd.is-crash .ocd-bg,
+.ocd.is-crash .ocd-globe,
+.ocd.is-crash .ocd-chrome,
+.ocd.is-crash .ocd-reticle,
+.ocd.is-crash .ocd-tag-anchor,
+.ocd.is-crash .ocd-head { animation: ocd-hide 0.01s linear calc(var(--rev) * 0.07) both; }
+@keyframes ocd-hide { to { opacity: 0; visibility: hidden; } }
+@keyframes ocd-fade { from { opacity: 0; } }
+
+.ocd-chrome { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.ocd-mark { position: absolute; top: 22px; left: 52px; font: 500 11px/1 var(--oc-f-ui); color: var(--oc-ink-2); font-variant-numeric: tabular-nums; }
+.ocd-mark.is-r { top: auto; bottom: 22px; left: auto; right: 52px; }
+.ocd-mark b { color: var(--oc-azure); font-weight: 600; }
+
+.ocd-head {
+  position: absolute; top: 64px; left: 52px; z-index: 4; display: flex; flex-direction: column; gap: 10px;
+  opacity: 0; transform: translateY(10px); transition: opacity 0.5s ease, transform 0.6s var(--ease-out);
+}
+.ocd-p1 .ocd-head, .ocd-p2 .ocd-head { opacity: 1; transform: none; }
+.ocd-p3 .ocd-head { transition-duration: 0.3s; }
+.ocd-kicker { font: 400 12px/1 var(--oc-f-logo); letter-spacing: 0.4em; color: var(--oc-azure); }
+.ocd-title { margin: 0; font: 600 clamp(32px, 3vw, 46px)/1.15 var(--oc-f-ui); color: var(--oc-ink); }
+.ocd-head::after { content: ""; display: block; width: 180px; height: 1px; background: linear-gradient(90deg, var(--oc-echo) 0 34%, var(--oc-line) 34%); }
+
+/* วงเล็บเล็งเป้าตามจุดบนลูกโลก (ตำแหน่ง+สเกลตั้งจาก JS) */
+.ocd-reticle { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; pointer-events: none; will-change: transform; }
+.ocd-ret-box { position: absolute; left: -64px; top: -64px; width: 128px; height: 128px; opacity: 0; transform: scale(1.7); transition: opacity 0.25s ease, transform 0.42s cubic-bezier(0.5, 0, 0.2, 1); }
+.ocd-ret-box i { position: absolute; width: 22px; height: 22px; border: 2px solid var(--oc-azure); transition: border-color 0.2s 0.4s; }
+.ocd-ret-box .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.ocd-ret-box .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.ocd-ret-box .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.ocd-ret-box .br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.ocd-p2 .ocd-ret-box, .ocd-p3 .ocd-ret-box { opacity: 1; transform: none; }
+.ocd-p2 .ocd-ret-box i, .ocd-p3 .ocd-ret-box i { border-color: var(--oc-echo); }
+.ocd-ret-cross {
+  position: absolute; left: -90px; top: -90px; width: 180px; height: 180px; opacity: 0; transition: opacity 0.3s ease 0.2s;
+  background:
+    linear-gradient(var(--oc-azure), var(--oc-azure)) 50% 0 / 1px 22px no-repeat,
+    linear-gradient(var(--oc-azure), var(--oc-azure)) 50% 100% / 1px 22px no-repeat,
+    linear-gradient(var(--oc-azure), var(--oc-azure)) 0 50% / 22px 1px no-repeat,
+    linear-gradient(var(--oc-azure), var(--oc-azure)) 100% 50% / 22px 1px no-repeat;
+}
+.ocd-p2 .ocd-ret-cross, .ocd-p3 .ocd-ret-cross { opacity: 0.8; }
+
+/* ป้ายภูมิภาคข้างเป้า */
+.ocd-tag-anchor { position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 4; }
+.ocd-tag {
+  position: absolute; left: 132px; top: 0; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 6px; padding: 14px 18px 14px 16px; min-width: 240px; white-space: nowrap;
+  background: rgba(255, 255, 255, 0.86); border: 1px solid var(--oc-line); box-shadow: inset 3px 0 0 var(--oc-echo), 0 18px 40px -24px rgba(28, 63, 110, 0.45);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: 0; clip-path: inset(0 100% 0 0); transition: opacity 0.2s ease, clip-path 0.45s var(--ease-out);
+}
+.ocd-tag-line { position: absolute; right: 100%; top: 50%; width: 60px; height: 1px; background: var(--oc-azure); }
+.ocd-p2 .ocd-tag, .ocd-p3 .ocd-tag { opacity: 1; clip-path: inset(-2px -2px -2px -80px); transition-delay: 0.25s; }
+.ocd-p3 .ocd-tag { opacity: 0; transition: opacity 0.3s ease 0.45s; }
+.ocd-tag-k { font: 600 13px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
+.ocd-tag-k b { font: 400 12px/1 var(--oc-f-logo); color: var(--oc-echo); margin-left: 4px; }
+.ocd-tag-name { font: 600 26px/1.25 var(--oc-f-ui); color: var(--oc-ink); }
+.ocd-tag-geo { font: 500 11px/1 var(--oc-f-ui); color: var(--oc-azure); font-variant-numeric: tabular-nums; }
+
+/* เส้นความเร็วตอนดิ่ง */
+.ocd-streaks { position: absolute; inset: 0; z-index: 2; pointer-events: none; animation: ocd-fade 0.4s ease both; }
+.ocd-streaks i {
+  position: absolute; left: 50%; top: 50%; width: var(--w); height: 1.5px; transform-origin: 0 50%;
+  background: linear-gradient(90deg, transparent, rgba(61, 139, 217, 0.75));
+  animation: ocd-streak 0.5s linear infinite both;
+}
+.ocd-streaks i.is-echo { background: linear-gradient(90deg, transparent, rgba(155, 79, 150, 0.8)); height: 2px; }
+@keyframes ocd-streak {
+  0% { transform: rotate(var(--a)) translateX(5vmax) scaleX(0.2); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(70vmax) scaleX(1); opacity: 0; }
+}
+
+/* ชน: แฟลชขาว + คลื่นกระแทก แล้วจางเผยกระดาน */
+.ocd-flash {
+  position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 50%, #fff 0%, #f6faff 55%, #dcebf8 100%);
+}
+.is-crash .ocd-flash { animation: ocd-flash var(--rev) cubic-bezier(0.3, 0, 0.4, 1) both; }
+@keyframes ocd-flash { 0% { opacity: 0; } 7% { opacity: 1; } 26% { opacity: 1; } 100% { opacity: 0; } }
+
+.ocd-shock { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.ocd-shock i {
+  position: absolute; left: 50%; top: 50%; width: 20vmax; height: 20vmax; margin: -10vmax 0 0 -10vmax; border-radius: 50%;
+  border: 2px solid var(--oc-azure); box-shadow: 0 0 24px rgba(61, 139, 217, 0.45), inset 0 0 24px rgba(61, 139, 217, 0.3); opacity: 0;
+}
+.ocd-shock .r2 { border-color: var(--oc-echo); box-shadow: 0 0 24px rgba(155, 79, 150, 0.45); }
+.ocd-shock .r3 { border-width: 1px; border-color: var(--oc-sky); box-shadow: none; }
+.is-crash .ocd-shock i { animation: ocd-shock calc(var(--rev) * 0.8) cubic-bezier(0.1, 0.7, 0.3, 1) both; }
+.is-crash .ocd-shock .r2 { animation-delay: 0.09s; }
+.is-crash .ocd-shock .r3 { animation-delay: 0.18s; }
+@keyframes ocd-shock { 0% { transform: scale(0.08); opacity: 1; } 70% { opacity: 0.6; } 100% { transform: scale(7.5); opacity: 0; } }
+.ocd-shock::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--oc-azure) 30%, #fff 50%, var(--oc-azure) 70%, transparent);
+  box-shadow: 0 0 20px 4px rgba(61, 139, 217, 0.4);
+}
+.is-crash .ocd-shock::after { animation: ocd-flare calc(var(--rev) * 0.6) cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes ocd-flare { 0% { transform: scaleX(0); opacity: 1; } 60% { opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+
+.ocd-banner {
+  position: absolute; left: 0; right: 0; top: 50%; z-index: 8; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 0 22px; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.86) 28%, rgba(255, 255, 255, 0.86) 72%, transparent);
+}
+.ocd-banner::before, .ocd-banner::after { content: ""; position: absolute; left: 18%; right: 18%; height: 1px; background: linear-gradient(90deg, transparent, var(--oc-azure), transparent); }
+.ocd-banner::before { top: 0; }
+.ocd-banner::after { bottom: 0; }
+.is-crash .ocd-banner { animation: ocd-banner var(--rev) ease both; }
+@keyframes ocd-banner {
+  0% { opacity: 0; transform: translateY(-50%) scale(1.06); }
+  16% { opacity: 1; transform: translateY(-50%) scale(1); }
+  66% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-50%) scale(1); }
+}
+.ocd-banner-k { font: 600 15px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
+.ocd-banner-k b { font: 400 14px/1 var(--oc-f-logo); color: var(--oc-echo); margin-left: 6px; }
+.ocd-banner-name { font: 600 clamp(34px, 3.6vw, 56px)/1.25 var(--oc-f-ui); color: var(--oc-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ocd *, .ocd *::before, .ocd *::after { transition-duration: 0.01ms !important; }
+  .ocd-streaks, .ocd-shock { display: none; }
+}

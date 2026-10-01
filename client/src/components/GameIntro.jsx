@@ -1,39 +1,152 @@
+// ============================================================
+//  ฉากเปิดตัวผู้เล่นตอนแมตช์เริ่ม — ธีม ORDEAL CALL (5.1)
+//  ล็อกเป้าผู้เล่นทีละคน (วงสำรวจ + วงเล็บเล็งเป้า + พิกัด) แล้วรวมแถวทุกคนก่อนปิดฉาก
+//  สัญญาเวลา (ต้องตรงกับ server/lobby.js gameIntroHoldSeconds()):
+//    perMs = clamp(round(4200/n), 620..1000) · คนที่ i ขึ้นที่ i*perMs · แถวรวมที่ n*perMs
+//    onOutro ที่ n*perMs + 2900 (ฉากถัดไปขึ้นรอข้างใต้) · onDone ที่ n*perMs + 2900 + 1000
+// ============================================================
 import { useEffect, useMemo, useState } from "react";
-import { AvScene } from "./avalon";
+import { getEarth } from "../globe/globeCore";
+import "../oc/intro/intro.css";
 
-function IntroPortrait({ p, className, style, bare = false }) {
+const FINALE_MS = 2900;
+const OUTRO_MS = 1000;
+
+const pad2 = (n) => String(Math.max(0, Math.floor(Number(n) || 0))).padStart(2, "0");
+
+function Portrait({ p, className = "" }) {
   const [broken, setBroken] = useState(false);
-  const introImg = p.character?.img || p.img;
+  const src = p.character?.img || p.img;
   return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={bare ? style : { background: `linear-gradient(150deg, ${p.color}, var(--av-void))`, ...style }}
-    >
-      {introImg && !broken ? (
-        <img src={introImg} alt="" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
+    <span className={`oci-portrait ${className}`}>
+      {src && !broken ? (
+        <img src={src} alt="" decoding="async" draggable={false} onError={() => setBroken(true)} />
       ) : (
-        <span className="absolute inset-0 grid place-items-center text-7xl" style={{ fontFamily: "var(--font-av-display)", fontWeight: 900, color: "rgba(255,255,255,.72)" }}>
-          {(p.name || "?").slice(0, 1).toUpperCase()}
-        </span>
+        <span className="oci-portrait-fallback">{(p.name || "?").slice(0, 1).toUpperCase()}</span>
       )}
+    </span>
+  );
+}
+
+function Brackets({ className = "" }) {
+  return (
+    <span className={`oci-brackets ${className}`} aria-hidden="true">
+      <i className="tl" /><i className="tr" /><i className="bl" /><i className="br" />
+    </span>
+  );
+}
+
+// วงสำรวจรอบเป้า: วงนอกขีดสเกล หมุนช้า · วงในเส้นประ หมุนสวน · กากบาทเล็ง
+function ScopeRings({ color }) {
+  const ticks = [];
+  for (let a = 0; a < 360; a += 6) {
+    const long = a % 30 === 0;
+    ticks.push(<line key={a} x1="200" y1={long ? 8 : 14} x2="200" y2="22" transform={`rotate(${a} 200 200)`} className={long ? "oci-tick-l" : ""} />);
+  }
+  return (
+    <svg className="oci-scope" viewBox="0 0 400 400" aria-hidden="true" style={{ "--pc": color }}>
+      <g className="oci-scope-spin">
+        <circle cx="200" cy="200" r="190" className="oci-ring-hair" />
+        <g className="oci-ticks">{ticks}</g>
+      </g>
+      <g className="oci-scope-rev">
+        <circle cx="200" cy="200" r="150" className="oci-ring-dash" />
+        <path d="M200 40 l4 7 h-8z M360 200 l-7 4 v-8z M200 360 l-4 -7 h8z M40 200 l7 -4 v8z" className="oci-ring-mark" />
+      </g>
+      <circle cx="200" cy="200" r="104" className="oci-ring-pc" />
+      <path d="M200 120 V170 M200 230 V280 M120 200 H170 M230 200 H280" className="oci-cross" />
+      <circle cx="200" cy="200" r="3" className="oci-dot" />
+    </svg>
+  );
+}
+
+function LockOn({ p, index, total }) {
+  const left = index % 2 === 0;
+  return (
+    <div className={`oci-lock ${left ? "is-left" : "is-right"}`} style={{ "--pc": p.color || "#3d8bd9" }}>
+      <span className="oci-numeral oc-latin" aria-hidden="true">{pad2(p.position)}</span>
+
+      <div className="oci-target">
+        <ScopeRings color={p.color} />
+        <div className="oci-frame">
+          <Portrait p={p} />
+          <span className="oci-frame-scan" aria-hidden="true" />
+          <span className="oci-frame-bar" aria-hidden="true" />
+        </div>
+        <Brackets className="oci-brackets-lock" />
+        <div className="oci-readout oci-readout-b oc-latin" aria-hidden="true">
+          <span><b>{pad2(index + 1)}/{pad2(total)}</b></span>
+        </div>
+      </div>
+
+      <div className="oci-id">
+        <div className="oci-id-row">
+          <span className="oci-chip">ผู้เล่นคนที่ {p.position}</span>
+        </div>
+        <div className="oci-name">{p.name}</div>
+        {p.character?.name && (
+          <div className="oci-char">
+            <i className="oc-diamond" style={{ background: p.color }} />
+            {p.character.name}
+          </div>
+        )}
+        <span className="oci-rule" aria-hidden="true"><i /></span>
+      </div>
     </div>
   );
 }
 
-const EMBERS = Array.from({ length: 14 }, () => ({
-  x: Math.random() * 100,
-  s: 2 + Math.random() * 4,
-  d: Math.random() * 2.4,
-  t: 2.6 + Math.random() * 2.4,
-}));
+function Lineup({ players }) {
+  const n = players.length;
+  return (
+    <div className="oci-lineup" style={{ "--n": n }}>
+      <svg className="oci-halo" viewBox="0 0 600 600" aria-hidden="true">
+        <g className="oci-halo-spin">
+          <circle cx="300" cy="300" r="286" className="oci-draw oci-draw-1" pathLength="1" />
+          <circle cx="300" cy="300" r="270" className="oci-ring-dash" />
+        </g>
+        <g className="oci-halo-rev">
+          <circle cx="300" cy="300" r="214" className="oci-draw oci-draw-2" pathLength="1" />
+          <circle cx="300" cy="300" r="150" className="oci-draw oci-draw-3" pathLength="1" />
+        </g>
+        <path d="M300 0 V60 M300 540 V600 M0 300 H60 M540 300 H600" className="oci-halo-cross" />
+      </svg>
+
+      <div className="oci-title-wrap">
+        <span className="oci-kicker oc-latin">ORDEAL CALL</span>
+        <div className="oci-title-row">
+          <span className="oci-wing" aria-hidden="true" />
+          <h1 className="oci-title">เริ่มการประลอง</h1>
+          <span className="oci-wing is-r" aria-hidden="true" />
+        </div>
+        <span className="oci-chip oci-count">ผู้เล่น {n} คน</span>
+      </div>
+
+      <div className="oci-cards">
+        {players.map((p, i) => (
+          <div key={p.id} className="oci-card" style={{ "--pc": p.color || "#3d8bd9", animationDelay: `${(0.25 + i * 0.09).toFixed(2)}s` }}>
+            <span className="oci-card-no oc-latin">{pad2(p.position)}</span>
+            <div className="oci-card-img"><Portrait p={p} /></div>
+            <div className="oci-card-name">{p.name}</div>
+            {p.character?.name && <div className="oci-card-char">{p.character.name}</div>}
+            <Brackets />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function GameIntro({ players, onDone, onOutro }) {
   const ordered = useMemo(() => [...players].sort((a, b) => a.position - b.position), [players]);
   const [index, setIndex] = useState(-1);
   const [outro, setOutro] = useState(false);
 
-  const perMs = Math.max(620, Math.min(1000, Math.round(4200 / Math.max(1, ordered.length))));
-  const finaleMs = 2900;
+  const n = ordered.length;
+  const perMs = Math.max(620, Math.min(1000, Math.round(4200 / Math.max(1, n))));
+
+  // สร้างพื้นผิวลูกโลกรอไว้ก่อน (ฉากเริ่มการเดินทางต่อจากนี้ใช้) — มีอยู่แล้วก็ไม่ทำซ้ำ
+  useEffect(() => { try { getEarth(); } catch { /* ไม่มี canvas ก็ข้าม */ } }, []);
 
   useEffect(() => {
     const timers = [];
@@ -41,167 +154,41 @@ export default function GameIntro({ players, onDone, onOutro }) {
       timers.push(setTimeout(() => setIndex(i), i * perMs));
     });
     timers.push(setTimeout(() => setIndex(ordered.length), ordered.length * perMs));
-    timers.push(setTimeout(() => { setOutro(true); if (onOutro) onOutro(); }, ordered.length * perMs + finaleMs)); // onOutro: ให้ฉากถัดไป (แผนที่การเดินทาง) ขึ้นรอใต้ฉากนี้ก่อนเผย
-    timers.push(setTimeout(() => onDone && onDone(), ordered.length * perMs + finaleMs + 1000));
+    timers.push(setTimeout(() => { setOutro(true); if (onOutro) onOutro(); }, ordered.length * perMs + FINALE_MS)); // onOutro: ฉากถัดไปขึ้นรอใต้ฉากนี้ก่อนเผย
+    timers.push(setTimeout(() => onDone && onDone(), ordered.length * perMs + FINALE_MS + OUTRO_MS));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordered.length]);
 
-  const current = index >= 0 && index < ordered.length ? ordered[index] : null;
-  const isLineup = index === ordered.length;
-  const fromLeft = index % 2 === 0;
+  const current = index >= 0 && index < n ? ordered[index] : null;
+  const isLineup = index === n;
 
   return (
-    <AvScene level={3} seed={89} className={`av-intro${outro ? " av-intro-out" : ""}`} fae={false}>
-      {current && (
-        <div key={current.id} className="absolute inset-0">
-          <span className="av-intro-halo" style={{ background: `radial-gradient(circle, ${current.color}44 0%, rgba(232,191,90,.16) 32%, transparent 62%)` }} />
+    <div className={`oci${outro ? " oci-out" : ""}`} style={{ "--per": `${perMs}ms` }}>
+      <div className="oci-bg" aria-hidden="true" />
 
-          <span
-            className="av-numeral av-intro-numeral absolute select-none"
-            style={{
-              [fromLeft ? "right" : "left"]: "6vw",
-              top: "2vh",
-              fontSize: "62vh",
-              WebkitTextStroke: `4px ${current.color}55`,
-            }}
-          >
-            {current.position}
-          </span>
+      <div className="oci-chrome" aria-hidden="true">
+        <i className="oc-tick tl" /><i className="oc-tick tr" /><i className="oc-tick bl" /><i className="oc-tick br" />
+        <span className="oci-mark oc-latin">ECHO · <b>ORDEAL CALL</b></span>
+        <span className="oci-mark is-r oc-latin">
+          {isLineup || outro ? `${pad2(n)}/${pad2(n)}` : `${pad2(Math.max(0, index + 1))}/${pad2(n)}`}
+        </span>
+      </div>
 
-          <div
-            className="av-intro-portrait absolute inset-y-0"
-            style={{
-              [fromLeft ? "left" : "right"]: "-5vw",
-              width: "44vw",
-              "--dx": fromLeft ? "-12vw" : "12vw",
-              WebkitMaskImage: `linear-gradient(${fromLeft ? "100deg" : "260deg"}, #000 46%, rgba(0,0,0,.5) 72%, transparent 95%)`,
-              maskImage: `linear-gradient(${fromLeft ? "100deg" : "260deg"}, #000 46%, rgba(0,0,0,.5) 72%, transparent 95%)`,
-            }}
-          >
-            <IntroPortrait p={current} className="w-full h-full" />
-          </div>
+      {current && <LockOn key={current.id} p={current} index={index} total={n} />}
 
-          <div
-            className="absolute"
-            style={{
-              [fromLeft ? "left" : "right"]: "40vw",
-              bottom: "26vh",
-              textAlign: fromLeft ? "left" : "right",
-              transform: `rotate(${fromLeft ? -3 : 3}deg)`,
-            }}
-          >
-            <span className="av-chip av-chip-gold av-stamp">ผู้เล่นคนที่ {current.position}</span>
-            <div className="av-title av-title-thai av-intro-name text-[5rem] av-ink whitespace-nowrap">
-              {current.name}
-            </div>
-            {current.character?.name && (
-              <div className="av-heading av-intro-name text-2xl" style={{ color: "rgba(232,196,239,.82)", animationDelay: "0.26s" }}>
-                {current.character.name}
-              </div>
-            )}
-            <span
-              className="av-crack av-intro-rule block mt-3"
-              style={{ position: "relative", width: "20vw", height: 2, marginLeft: fromLeft ? 0 : "auto", transformOrigin: fromLeft ? "left center" : "right center" }}
-            />
-          </div>
-        </div>
-      )}
-
-      {outro && <span className="av-reveal-bloom" />}
-
-      {isLineup && (
-        <div className={`gi-finale absolute inset-0 overflow-hidden${outro ? " gi-finale-out" : ""}`}>
-          {/* ลำแสงแผ่จากศูนย์กลาง — พื้นของฉากทั้งหมด */}
-          <span className="gi-rays" aria-hidden="true" />
-
-          {/* ตราพิธีวาดตัวเอง: วงนอกหมุนตามเข็ม วงในหมุนสวน เส้นถูกวาดด้วย stroke-dashoffset */}
-          <svg className="gi-sigil" viewBox="0 0 400 400" aria-hidden="true">
-            <g className="gi-sigil-spin">
-              <circle className="gi-draw gi-draw-1" cx="200" cy="200" r="186" />
-              <circle className="gi-ring-dash" cx="200" cy="200" r="172" />
-            </g>
-            <g className="gi-sigil-spin-rev">
-              <circle className="gi-draw gi-draw-2" cx="200" cy="200" r="132" />
-              <path className="gi-draw gi-draw-3" d="M200 74 309 263 91 263Z" />
-              <path className="gi-draw gi-draw-4" d="M200 326 91 137 309 137Z" />
-              {[0, 60, 120, 180, 240, 300].map((deg) => (
-                <path
-                  key={deg}
-                  className="gi-rune"
-                  d="M200 44 L208 56 200 68 192 56Z"
-                  transform={`rotate(${deg} 200 200)`}
-                />
-              ))}
-            </g>
-          </svg>
-
-          {/* แถวผู้ท้าชิง: ครึ่งตัวเรียงเป็นส่วนโค้ง ขอบละลายด้วย mask จึงไม่เป็นกล่องสักใบ */}
-          <div className="gi-stage">
-            {ordered.map((p, i) => {
-              const n = ordered.length;
-              const off = n === 1 ? 0 : i / (n - 1) - 0.5;
-              const depth = 1 - Math.abs(off) * 0.82;
-              return (
-                <div
-                  key={p.id}
-                  className="gi-bust"
-                  style={{
-                    left: `calc(50% + ${off * 74}%)`,
-                    zIndex: 10 + Math.round(depth * 40),
-                    "--d": depth.toFixed(3),
-                    "--tilt": `${off * 7}deg`,
-                    "--lift": `${(0.5 - Math.abs(off)) * 7}vh`,
-                    // ไล่ทีละคนตามลำดับที่นั่ง ไม่ใช่ตามระยะห่างจากกลาง — แบบเดิมคนริมสองข้างได้ delay
-                    // ใกล้เคียงกันมาก ทุกคนเลยโผล่พร้อมกันเป็นกลุ่ม = เบราว์เซอร์ต้องวาดรูปใหญ่ทุกใบในเฟรมเดียว
-                    animationDelay: `${(0.35 + i * 0.13).toFixed(2)}s`,
-                  }}
-                >
-                  <span className="gi-beam" style={{ background: `linear-gradient(180deg, transparent, ${p.color}66 46%, transparent)` }} />
-                  <span className="gi-bust-img">
-                    <IntroPortrait bare p={p} className="w-full h-full" />
-                  </span>
-                  {/* เลขประจำตัวต้องอยู่ "หลัง" รูปใน DOM ไม่งั้นรูปวาดทับจนมองไม่เห็น */}
-                  <span className="gi-ghost-no">{p.position}</span>
-                  <span className="gi-bust-name" style={{ "--pc": p.color }}>{p.name}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* คมดาบฟาดผ่านจอ แล้วคลื่นกระแทกแผ่ออกพร้อมชื่อฉาก */}
-          <span className="gi-slash" aria-hidden="true" />
-          <span className="gi-shock" aria-hidden="true" />
-
-          <div className="gi-title-wrap">
-            <svg className="gi-wing gi-wing-l" viewBox="0 0 120 26" aria-hidden="true">
-              <path d="M118 13 H46" />
-              <path d="M46 13 32 5" />
-              <path d="M46 13 32 21" />
-              <path d="M28 13 6 13" />
-              <path d="M20 13 14 7 8 13 14 19Z" className="gi-wing-gem" />
-            </svg>
-            <div className="gi-title">เริ่มการประลอง</div>
-            <svg className="gi-wing gi-wing-r" viewBox="0 0 120 26" aria-hidden="true">
-              <path d="M2 13 H74" />
-              <path d="M74 13 88 5" />
-              <path d="M74 13 88 21" />
-              <path d="M92 13 114 13" />
-              <path d="M100 13 106 7 112 13 106 19Z" className="gi-wing-gem" />
-            </svg>
-          </div>
-          <div className="gi-sub">ผู้ท้าชิง {ordered.length} คน ณ สนามประลองอาวาลอน</div>
-
-          {/* ประกายทองลอยขึ้น */}
-          {EMBERS.map((e, i) => (
-            <span
-              key={i}
-              className="gi-ember"
-              style={{ left: `${e.x}%`, width: e.s, height: e.s, animationDelay: `${e.d}s`, animationDuration: `${e.t}s` }}
-            />
+      {!isLineup && !outro && (
+        <div className="oci-roster" aria-hidden="true">
+          {ordered.map((p, i) => (
+            <span key={p.id} className={`oci-slot${i < index ? " is-done" : i === index ? " is-now" : ""}`} style={{ "--pc": p.color || "#3d8bd9" }}>
+              <i />
+              <b className="oc-latin">{pad2(p.position)}</b>
+            </span>
           ))}
         </div>
       )}
-    </AvScene>
+
+      {(isLineup || outro) && <Lineup players={ordered} />}
+    </div>
   );
 }

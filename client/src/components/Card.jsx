@@ -13,7 +13,7 @@ export default function Card({ value, color, special, back, size = "md" }) {
   const cornerText = size === "lg" ? "text-xs" : "text-[10px]";
   if (back) {
     return (
-      <div className={`card-deal inline-grid place-items-center ${dim} m-1 rounded-lg text-2xl text-echo-purplelight bg-gradient-to-br from-echo-purple to-echo-navy shadow-lg border border-white/20`}>
+      <div className={`card-deal inline-grid place-items-center ${dim} m-1 rounded-lg text-2xl text-[#dcebfa] bg-gradient-to-br from-[#3d8bd9] via-echo-navy to-[#0b1d3a] shadow-lg border border-[#bee3f8]/60`}>
         ✦
       </div>
     );
@@ -21,14 +21,14 @@ export default function Card({ value, color, special, back, size = "md" }) {
   if (special) {
     const label = SPECIAL_LABEL[special] || "?";
     return (
-      <div className={`card-deal relative inline-grid place-items-center ${dim} m-1 rounded-lg bg-gradient-to-br from-gray-800 to-black text-echo-purplelight shadow-lg border-2 border-echo-gold`}>
+      <div className={`card-deal relative inline-grid place-items-center ${dim} m-1 rounded-lg bg-gradient-to-br from-echo-navy to-[#061226] text-echo-purplelight shadow-lg border-2 border-echo-ice`}>
         <span className={`${valueText} font-black`}>{label}</span>
-        <span className={`absolute top-0.5 left-1 ${cornerText} font-bold text-echo-gold`}>{label}</span>
-        <span className={`absolute bottom-0.5 right-1 ${cornerText} font-bold text-echo-gold rotate-180`}>{label}</span>
+        <span className={`absolute top-0.5 left-1 ${cornerText} font-bold text-echo-ice`}>{label}</span>
+        <span className={`absolute bottom-0.5 right-1 ${cornerText} font-bold text-echo-ice rotate-180`}>{label}</span>
       </div>
     );
   }
-  const cls = COLOR_STYLES[color] || "from-white to-gray-200 text-gray-900 border-echo-purple/50";
+  const cls = COLOR_STYLES[color] || "from-white to-[#eef3f9] text-[#1c3f6e] border-[#7fb8e6]/60";
   return (
     <div className={`card-deal relative inline-grid place-items-center ${dim} m-1 rounded-lg bg-gradient-to-br ${cls} shadow-lg border-2`}>
       <span className={`${valueText} font-black`}>{value}</span>

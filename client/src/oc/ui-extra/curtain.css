@@ -1,0 +1,76 @@
+/* ============================================================
+   ม่านเปลี่ยนฉาก ORDEAL CALL (TransitionCurtain)
+   แผ่นขาวเฉียงแผ่นเดียวมีกริดสำรวจ · ขอบนำ/ขอบท้าย = แถบฟ้าน้ำแข็ง + เส้นม่วง ECHO บาง + เส้นฟ้า
+   sweep: เข้า 0–420ms · ทึบ 420–1000ms (App สลับเนื้อหาที่ 660ms) · ออก 1000–1440ms · ซ่อนที่ 1800ms
+   hold : เข้าแล้วค้าง (in/held) · out = กวาดออกภายใน 400ms (ซ่อนที่ 520ms)
+   ============================================================ */
+.occ { position: fixed; inset: 0; z-index: 120; pointer-events: none; overflow: hidden; }
+.occ-sheets { position: absolute; inset: 0; }
+.occ[data-dir="back"] .occ-sheets { transform: scaleX(-1); }
+
+.occ-sheet {
+  --skew: -14deg;
+  position: absolute; top: -2vh; bottom: -2vh; left: -18vw; width: 136vw; display: block;
+  transform: translateX(-150vw) skewX(var(--skew)); will-change: transform;
+  background: radial-gradient(90% 80% at 55% 50%, #fff 0%, var(--oc-snow) 50%, #e4eef8 100%);
+}
+/* แถบขอบ: ขวา = ขอบนำตอนเข้า · ซ้าย = ขอบท้ายตอนออก (เรียงจากนอกสุด: เส้นม่วง → ฟ้าน้ำแข็ง → เส้นฟ้า → แผ่นขาว) */
+.occ-sheet::before, .occ-sheet::after { content: ""; position: absolute; top: 0; bottom: 0; width: 44px; }
+.occ-sheet::after {
+  left: 100%;
+  background: linear-gradient(90deg, var(--oc-azure) 0 1px, var(--oc-ice) 1px 36px, transparent 36px 38px, var(--oc-echo) 38px 42px, transparent 42px);
+}
+.occ-sheet::before {
+  right: 100%;
+  background: linear-gradient(270deg, var(--oc-azure) 0 1px, var(--oc-ice) 1px 36px, transparent 36px 38px, var(--oc-echo) 38px 42px, transparent 42px);
+}
+/* กริดตั้งตรง (หักล้างความเฉียงของแผ่น) ตัดขอบตามแผ่นด้วย .occ-clip */
+.occ-clip { position: absolute; inset: 0; overflow: hidden; display: block; }
+.occ-grid {
+  position: absolute; top: 0; bottom: 0; left: -14vw; right: -14vw; display: block; transform: skewX(14deg);
+  background:
+    linear-gradient(rgba(61, 139, 217, 0.07) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(61, 139, 217, 0.07) 1px, transparent 1px) 0 0 / 48px 48px;
+}
+
+@keyframes occ-in { from { transform: translateX(-150vw) skewX(var(--skew)); } to { transform: translateX(0) skewX(var(--skew)); } }
+@keyframes occ-out { from { transform: translateX(0) skewX(var(--skew)); } to { transform: translateX(150vw) skewX(var(--skew)); } }
+
+/* sweep: เข้าแล้วออกในตัว — out ใช้ fill forwards เท่านั้น ระหว่างรอ delay จึงยังค้างที่ปลาย occ-in */
+.occ[data-mode="sweep"] .occ-sheet {
+  animation:
+    occ-in 420ms cubic-bezier(0.7, 0, 0.25, 1) both,
+    occ-out 440ms cubic-bezier(0.7, 0, 0.3, 1) 1000ms forwards;
+}
+.occ[data-mode="hold"] .occ-sheet { animation: occ-in 420ms cubic-bezier(0.7, 0, 0.25, 1) both; }
+.occ[data-mode="hold"][data-phase="out"] .occ-sheet { animation: occ-out 400ms cubic-bezier(0.7, 0, 0.3, 1) both; }
+
+/* ตรากลางจอระหว่างปิดทึบ */
+.occ-core { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; }
+.occ-core-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 34px; }
+.occ-core-box::before, .occ-core-box::after { content: ""; position: absolute; width: 14px; height: 14px; border: 1.5px solid var(--oc-azure); }
+.occ-core-box::before { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.occ-core-box::after { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.occ-logo { font: 400 22px/1 var(--oc-f-logo); letter-spacing: 0.55em; margin-right: -0.55em; color: var(--oc-ink); }
+.occ-sub { font: 400 10px/1 var(--oc-f-logo); letter-spacing: 0.5em; margin-right: -0.5em; color: var(--oc-ink-2); }
+.occ-sub em { font-style: normal; color: var(--oc-azure); }
+.occ-bar { position: relative; display: block; width: 150px; height: 2px; margin-top: 4px; background: var(--oc-frost); overflow: hidden; }
+.occ-bar i { position: absolute; inset: 0; display: block; background: linear-gradient(90deg, var(--oc-azure), var(--oc-echo)); animation: occ-bar 0.9s cubic-bezier(0.6, 0, 0.4, 1) infinite; }
+@keyframes occ-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+@keyframes occ-core-sweep { 0%, 30% { opacity: 0; transform: translateY(6px); } 38%, 60% { opacity: 1; transform: none; } 65%, 100% { opacity: 0; } }
+.occ[data-mode="sweep"] .occ-core { animation: occ-core-sweep 1.6s linear both; }
+.occ[data-mode="hold"] .occ-core { opacity: 1; transition: opacity 0.25s ease 0.32s; }
+@starting-style { .occ[data-mode="hold"] .occ-core { opacity: 0; } }
+.occ[data-mode="hold"][data-phase="out"] .occ-core { opacity: 0; transition: opacity 0.12s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes occ-in-r { from { opacity: 0; } }
+  @keyframes occ-out-r { to { opacity: 0; } }
+  .occ-sheet { --skew: 0deg; transform: none !important; left: 0; width: 100vw; }
+  .occ-sheet::before, .occ-sheet::after { display: none; }
+  .occ-grid { transform: none; left: 0; right: 0; }
+  .occ[data-mode="sweep"] .occ-sheet { animation: occ-in-r 420ms ease both, occ-out-r 440ms ease 1000ms forwards; }
+  .occ[data-mode="hold"] .occ-sheet { animation: occ-in-r 420ms ease both; }
+  .occ[data-mode="hold"][data-phase="out"] .occ-sheet { animation: occ-out-r 400ms ease both; }
+}

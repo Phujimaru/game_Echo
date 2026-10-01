@@ -33,8 +33,8 @@ export function RoundBanner({ round }) {
       <span className="rb-numeral">{round}</span>
 
       <div className="rb-title flex flex-col items-center gap-1">
-        <span className="av-label" style={{ letterSpacing: "0.55em", fontSize: "1rem" }}>รอบที่</span>
-        <span className="av-title av-title-thai text-8xl leading-none">{round}</span>
+        <span className="av-label" style={{ fontSize: "1.1rem", color: "var(--oc-ice)" }}>รอบที่</span>
+        <span className="av-title text-8xl leading-none" style={{ fontFamily: "var(--font-av-numeral)", fontWeight: 400 }}>{round}</span>
       </div>
 
       {sparks.map((s, i) => (
@@ -59,7 +59,7 @@ export function RoundBanner({ round }) {
 function Bird({ scale = 1 }) {
   return (
     <svg width={22 * scale} height={12 * scale} viewBox="0 0 22 12" aria-hidden="true">
-      <path d="M1 8 Q 5.5 1 11 7 Q 16.5 1 21 8" fill="none" stroke="#1a0f24" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M1 8 Q 5.5 1 11 7 Q 16.5 1 21 8" fill="none" stroke="#1c3f6e" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -67,16 +67,16 @@ function Bird({ scale = 1 }) {
 function Moth({ scale = 1 }) {
   return (
     <svg width={18 * scale} height={14 * scale} viewBox="0 0 18 14" aria-hidden="true">
-      <ellipse cx="5.4" cy="6" rx="4.6" ry="5.6" fill="#ffe9a8" opacity="0.9" transform="rotate(-18 5.4 6)" />
-      <ellipse cx="12.6" cy="6" rx="4.6" ry="5.6" fill="#e8bf5a" opacity="0.9" transform="rotate(18 12.6 6)" />
-      <rect x="8.4" y="3.4" width="1.3" height="7.4" rx="0.6" fill="#fff8e2" />
+      <ellipse cx="5.4" cy="6" rx="4.6" ry="5.6" fill="#eaf3fc" opacity="0.9" transform="rotate(-18 5.4 6)" />
+      <ellipse cx="12.6" cy="6" rx="4.6" ry="5.6" fill="#c99ad6" opacity="0.9" transform="rotate(18 12.6 6)" />
+      <rect x="8.4" y="3.4" width="1.3" height="7.4" rx="0.6" fill="#f7fafd" />
     </svg>
   );
 }
 
 export function CycleScene({ c }) {
   const night = c.cycle === "night";
-  const accent = night ? "#aab4ff" : "#f6ad3c";
+  const accent = night ? "#c99ad6" : "#7fb8e6";
   const title = night ? "ราตรีมาเยือน" : "รุ่งอรุณมาถึง";
   // การเดินทาง (ffa/duo/trio): ผลกลางวัน/กลางคืนมาจากภูมิภาคที่อยู่ (server ส่งข้อความมา) — ข้อความตายตัวด้านล่าง
   //  เป็นกติกาวัน/คืนเดิมที่เหลือใช้แค่ Type Mercury (เดิมโชว์ข้อความนี้ทุกภูมิภาค = ไม่ตรงกับผลจริง)
@@ -103,8 +103,8 @@ export function CycleScene({ c }) {
         className="cy-wash"
         style={{
           background: night
-            ? "radial-gradient(ellipse 90% 70% at 50% 68%, rgba(70,40,150,.5), transparent 70%), linear-gradient(180deg, rgba(6,4,20,.7), transparent 55%)"
-            : "radial-gradient(ellipse 90% 70% at 50% 68%, rgba(246,173,60,.42), transparent 70%), linear-gradient(0deg, rgba(246,173,60,.3), transparent 55%)",
+            ? "radial-gradient(ellipse 90% 70% at 50% 68%, rgba(61,139,217,.42), transparent 70%), radial-gradient(ellipse 60% 40% at 50% 74%, rgba(155,79,150,.28), transparent 70%), linear-gradient(180deg, rgba(4,12,30,.78), transparent 55%)"
+            : "radial-gradient(ellipse 90% 70% at 50% 68%, rgba(247,250,253,.62), transparent 70%), linear-gradient(0deg, rgba(127,184,230,.42), transparent 55%)",
         }}
       />
 
@@ -113,9 +113,9 @@ export function CycleScene({ c }) {
         style={{
           top: "46%",
           background: night
-            ? "radial-gradient(circle at 42% 38%, #ffffff, #dfe4ff 40%, rgba(143,157,255,0) 72%)"
-            : "radial-gradient(circle at 42% 38%, #fffbe8, #ffd98a 42%, rgba(255,178,77,0) 74%)",
-          boxShadow: `0 0 90px 30px ${night ? "rgba(170,180,255,.45)" : "rgba(246,173,60,.5)"}`,
+            ? "radial-gradient(circle at 42% 38%, #ffffff, #dcebfa 40%, rgba(127,184,230,0) 72%)"
+            : "radial-gradient(circle at 42% 38%, #ffffff, #eaf3fc 42%, rgba(127,184,230,0) 74%)",
+          boxShadow: `0 0 90px 30px ${night ? "rgba(190,227,248,.4)" : "rgba(255,255,255,.6)"}`,
           animationName: night ? "cyOrbRise" : "cyOrbRise",
         }}
       />
@@ -139,18 +139,18 @@ export function CycleScene({ c }) {
       ))}
 
       <div className="cy-text">
-        <div className="av-label" style={{ letterSpacing: "0.5em", color: accent }}>
+        <div className="av-label" style={{ fontSize: "1rem", color: accent }}>
           {night ? "ค่ำคืน" : "รุ่งเช้า"}
         </div>
         <div
           className="av-title av-title-thai text-7xl leading-none"
-          style={{ filter: `drop-shadow(0 0 30px ${accent})` }}
+          style={{ filter: `drop-shadow(0 2px 10px rgba(12,30,60,.6)) drop-shadow(0 0 30px ${accent})` }}
         >
           {title}
         </div>
         <div
-          className="av-heading text-base px-5 py-1.5 rounded-2xl max-w-[44rem] text-center leading-snug"
-          style={{ background: "rgba(6,4,12,.62)", border: `1px solid ${accent}66`, color: "rgba(239,230,245,.9)" }}
+          className="av-heading text-base px-5 py-1.5 max-w-[44rem] text-center leading-snug"
+          style={{ background: "var(--oc-navy)", border: `1px solid ${accent}66`, color: "var(--oc-navy-text)", clipPath: "var(--oc-cut)", borderRadius: 0 }}
         >
           {sub}
         </div>

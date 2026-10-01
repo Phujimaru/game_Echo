@@ -72,13 +72,13 @@ function Flower({ f, glow }) {
     <g transform={`translate(${f.x.toFixed(1)} ${f.y.toFixed(1)})`}>
       <g className="ab-bloom" style={{ animationDelay: `${f.delay}s` }}>
         <g>
-          <path d={`M 0 0 Q ${(f.r * 0.5).toFixed(1)} ${(-f.h * 0.55).toFixed(1)} 0 ${-f.h}`} stroke="#c9992f" strokeWidth="1.1" fill="none" opacity="0.85" />
+          <path d={`M 0 0 Q ${(f.r * 0.5).toFixed(1)} ${(-f.h * 0.55).toFixed(1)} 0 ${-f.h}`} stroke="#7fb8e6" strokeWidth="1.1" fill="none" opacity="0.85" />
           <g transform={`translate(0 ${-f.h})`}>
-            {glow && <circle r={f.r * 2.4} fill="#ffe9a8" opacity="0.16" />}
+            {glow && <circle r={f.r * 2.4} fill="#bee3f8" opacity="0.2" />}
             {PETALS.map((a) => (
-              <ellipse key={a} cx="0" cy={-f.r * 0.82} rx={f.r * 0.44} ry={f.r * 0.86} fill="#ffe9a8" transform={`rotate(${a})`} />
+              <ellipse key={a} cx="0" cy={-f.r * 0.82} rx={f.r * 0.44} ry={f.r * 0.86} fill="#ffffff" transform={`rotate(${a})`} />
             ))}
-            <circle r={f.r * 0.34} fill="#fff8e2" />
+            <circle r={f.r * 0.34} fill="#3d8bd9" />
           </g>
         </g>
       </g>
@@ -94,7 +94,7 @@ function Spire({ s, glow }) {
         <g>
           <path
             d={`M 0 0 Q ${(s.lean * 1.6).toFixed(1)} ${(-s.h * 0.55).toFixed(1)} ${s.lean.toFixed(1)} ${-s.h}`}
-            stroke="#c9992f"
+            stroke="#7fb8e6"
             strokeWidth="1.6"
             fill="none"
             opacity="0.9"
@@ -105,17 +105,17 @@ function Spire({ s, glow }) {
             const r = 2.6 + (1 - t) * 1.6;
             return (
               <g key={i} transform={`translate(${bx.toFixed(1)} ${by.toFixed(1)})`}>
-                {glow && <circle r={r * 2.2} fill="#ffe9a8" opacity="0.14" />}
-                <ellipse rx={r} ry={r * 1.5} fill="#e8bf5a" />
+                {glow && <circle r={r * 2.2} fill="#bee3f8" opacity="0.18" />}
+                <ellipse rx={r} ry={r * 1.5} fill="#bee3f8" />
               </g>
             );
           })}
           <g transform={`translate(${s.lean.toFixed(1)} ${(-s.h).toFixed(1)})`}>
-            {glow && <circle r="9" fill="#ffe9a8" opacity="0.2" />}
+            {glow && <circle r="9" fill="#bee3f8" opacity="0.24" />}
             {PETALS.map((a) => (
-              <ellipse key={a} cx="0" cy="-3.4" rx="1.9" ry="3.6" fill="#ffe9a8" transform={`rotate(${a})`} />
+              <ellipse key={a} cx="0" cy="-3.4" rx="1.9" ry="3.6" fill="#ffffff" transform={`rotate(${a})`} />
             ))}
-            <circle r="1.5" fill="#fff8e2" />
+            <circle r="1.5" fill="#3d8bd9" />
           </g>
         </g>
       </g>
@@ -158,56 +158,56 @@ const DayScene = memo(function DayScene({ bloom }) {
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="abDaySky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2a1240" />
-          <stop offset="34%" stopColor="#6b3a72" />
-          <stop offset="62%" stopColor="#c07a63" />
-          <stop offset="82%" stopColor="#e8b15c" />
-          <stop offset="100%" stopColor="#f6d79a" />
+          <stop offset="0%" stopColor="#5f9fd8" />
+          <stop offset="34%" stopColor="#9fcbef" />
+          <stop offset="62%" stopColor="#d4e8f8" />
+          <stop offset="82%" stopColor="#eef5fc" />
+          <stop offset="100%" stopColor="#f7fafd" />
         </linearGradient>
         <radialGradient id="abSun">
-          <stop offset="0%" stopColor="#fffbe8" />
-          <stop offset="44%" stopColor="#ffd98a" />
-          <stop offset="100%" stopColor="#ffb24d" stopOpacity="0" />
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="44%" stopColor="#eaf3fc" />
+          <stop offset="100%" stopColor="#bee3f8" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="abDayFar" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5a2f66" />
-          <stop offset="100%" stopColor="#3a1a4c" />
+          <stop offset="0%" stopColor="#a9c6e4" />
+          <stop offset="100%" stopColor="#c3d7ec" />
         </linearGradient>
         <linearGradient id="abDayMid" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3d1c50" />
-          <stop offset="100%" stopColor="#25102f" />
+          <stop offset="0%" stopColor="#d6e3f1" />
+          <stop offset="100%" stopColor="#e4edf6" />
         </linearGradient>
         <linearGradient id="abDayNear" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1d0c28" />
-          <stop offset="100%" stopColor="#0e0617" />
+          <stop offset="0%" stopColor="#f2f6fb" />
+          <stop offset="100%" stopColor="#e1eaf4" />
         </linearGradient>
       </defs>
 
       <rect width={W} height={H} fill="url(#abDaySky)" />
       <circle className="ab-orb" cx="742" cy="312" r="128" fill="url(#abSun)" />
-      <circle className="ab-orb" cx="742" cy="312" r="34" fill="#fff6dc" opacity="0.95" />
+      <circle className="ab-orb" cx="742" cy="312" r="34" fill="#ffffff" opacity="0.95" />
 
       <g className="ab-ray" opacity="0.32">
         {[-46, -26, -8, 10, 30, 50].map((a, i) => (
           <path
             key={a}
             d={`M 742 312 L ${742 + Math.cos(((a - 90) * Math.PI) / 180) * 700 - 26} ${312 + Math.sin(((a - 90) * Math.PI) / 180) * 700} L ${742 + Math.cos(((a - 90) * Math.PI) / 180) * 700 + 26} ${312 + Math.sin(((a - 90) * Math.PI) / 180) * 700} Z`}
-            fill="#ffe9a8"
+            fill="#ffffff"
             opacity={i % 2 ? 0.3 : 0.5}
           />
         ))}
       </g>
 
       <g className="ab-mist" style={{ animationDuration: "48s" }} opacity="0.3">
-        <ellipse cx="300" cy="352" rx="330" ry="17" fill="#f6d79a" />
-        <ellipse cx="760" cy="368" rx="280" ry="13" fill="#f6d79a" />
+        <ellipse cx="300" cy="352" rx="330" ry="17" fill="#ffffff" />
+        <ellipse cx="760" cy="368" rx="280" ry="13" fill="#ffffff" />
       </g>
 
       <path d={FAR_RIDGE} fill="url(#abDayFar)" />
-      <Castle fill="#2e1145" />
+      <Castle fill="#8ba3c2" />
       <path d={MID_PATH_D} fill="url(#abDayMid)" />
       <g className="ab-mist" style={{ animationDuration: "64s" }} opacity="0.22">
-        <ellipse cx="520" cy="424" rx="420" ry="14" fill="#e8b15c" />
+        <ellipse cx="520" cy="424" rx="420" ry="14" fill="#ffffff" />
       </g>
       <path d={NEAR_PATH_D} fill="url(#abDayNear)" />
       <Blight bloom={bloom} glow={false} />
@@ -220,32 +220,32 @@ const NightScene = memo(function NightScene({ bloom }) {
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="abNightSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#04030c" />
-          <stop offset="38%" stopColor="#14082a" />
-          <stop offset="70%" stopColor="#2b1150" />
-          <stop offset="100%" stopColor="#452063" />
+          <stop offset="0%" stopColor="#030a18" />
+          <stop offset="38%" stopColor="#0b1d3a" />
+          <stop offset="70%" stopColor="#1c3f6e" />
+          <stop offset="100%" stopColor="#2f5f94" />
         </linearGradient>
         <radialGradient id="abMoon">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="38%" stopColor="#dfe4ff" />
-          <stop offset="100%" stopColor="#8f9dff" stopOpacity="0" />
+          <stop offset="38%" stopColor="#dcebfa" />
+          <stop offset="100%" stopColor="#7fb8e6" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="abAur" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7cf5d8" stopOpacity="0" />
-          <stop offset="46%" stopColor="#6fd8ff" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#b95fc4" stopOpacity="0" />
+          <stop offset="0%" stopColor="#bee3f8" stopOpacity="0" />
+          <stop offset="46%" stopColor="#7fb8e6" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#9b4f96" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="abNightFar" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2a1348" />
-          <stop offset="100%" stopColor="#170a2a" />
+          <stop offset="0%" stopColor="#16305a" />
+          <stop offset="100%" stopColor="#0f2344" />
         </linearGradient>
         <linearGradient id="abNightMid" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#190b2c" />
-          <stop offset="100%" stopColor="#0d0619" />
+          <stop offset="0%" stopColor="#0d1f3b" />
+          <stop offset="100%" stopColor="#081529" />
         </linearGradient>
         <linearGradient id="abNightNear" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0c0518" />
-          <stop offset="100%" stopColor="#05030c" />
+          <stop offset="0%" stopColor="#07142a" />
+          <stop offset="100%" stopColor="#040b18" />
         </linearGradient>
       </defs>
 
@@ -268,26 +268,26 @@ const NightScene = memo(function NightScene({ bloom }) {
       </g>
 
       <circle className="ab-orb" cx="256" cy="168" r="118" fill="url(#abMoon)" />
-      <circle className="ab-orb" cx="256" cy="168" r="40" fill="#f2f4ff" />
-      <circle cx="240" cy="156" r="8" fill="#cdd4f5" opacity="0.6" />
-      <circle cx="268" cy="182" r="5.5" fill="#cdd4f5" opacity="0.5" />
-      <circle cx="262" cy="150" r="3.5" fill="#cdd4f5" opacity="0.45" />
+      <circle className="ab-orb" cx="256" cy="168" r="40" fill="#f7fafd" />
+      <circle cx="240" cy="156" r="8" fill="#c3d7ec" opacity="0.6" />
+      <circle cx="268" cy="182" r="5.5" fill="#c3d7ec" opacity="0.5" />
+      <circle cx="262" cy="150" r="3.5" fill="#c3d7ec" opacity="0.45" />
 
       <g className="ab-mist" style={{ animationDuration: "56s" }} opacity="0.2">
-        <ellipse cx="420" cy="358" rx="360" ry="16" fill="#8f9dff" />
-        <ellipse cx="820" cy="374" rx="250" ry="12" fill="#8f9dff" />
+        <ellipse cx="420" cy="358" rx="360" ry="16" fill="#7fb8e6" />
+        <ellipse cx="820" cy="374" rx="250" ry="12" fill="#7fb8e6" />
       </g>
 
       <path d={FAR_RIDGE} fill="url(#abNightFar)" />
-      <Castle fill="#0f0722" />
+      <Castle fill="#0a1a33" />
       <g opacity="0.8">
         {TOWERS.map((t, i) => (
-          <circle key={t.x} className="ab-star" cx={t.x + t.w / 2} cy={296 - t.h - t.spire * 0.4} r="1.8" fill="#ffe9a8" style={{ animationDuration: `${2.5 + i}s` }} />
+          <circle key={t.x} className="ab-star" cx={t.x + t.w / 2} cy={296 - t.h - t.spire * 0.4} r="1.8" fill="#eaf3fc" style={{ animationDuration: `${2.5 + i}s` }} />
         ))}
       </g>
       <path d={MID_PATH_D} fill="url(#abNightMid)" />
       <g className="ab-mist" style={{ animationDuration: "72s" }} opacity="0.18">
-        <ellipse cx="540" cy="426" rx="430" ry="15" fill="#b95fc4" />
+        <ellipse cx="540" cy="426" rx="430" ry="15" fill="#9b4f96" />
       </g>
       <path d={NEAR_PATH_D} fill="url(#abNightNear)" />
       <Blight bloom={bloom} glow />
@@ -342,8 +342,8 @@ function ArenaBackdrop({ cycle, round = 0 }) {
             left: `${p.left}%`,
             width: p.size,
             height: p.size,
-            background: night ? "#ffe9a8" : "#fff3d0",
-            boxShadow: `0 0 ${6 + p.size * 2}px ${1 + p.size * 0.4}px rgba(232,191,90,${night ? 0.8 : 0.5})`,
+            background: night ? "#eaf3fc" : "#ffffff",
+            boxShadow: `0 0 ${6 + p.size * 2}px ${1 + p.size * 0.4}px rgba(127,184,230,${night ? 0.8 : 0.55})`,
             opacity: 0.25 + bloom * 0.6,
             "--px": `${p.px}px`,
             animationDuration: `${p.dur}s`,

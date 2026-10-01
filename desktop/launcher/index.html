@@ -5,69 +5,85 @@
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'" />
   <title>ECHO</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Kanit:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Chakra+Petch:wght@400;500;600;700&family=Kanit:wght@300;400;500&display=swap" />
   <link rel="stylesheet" href="launcher.css" />
 </head>
-<body>
-  <main class="shell">
-    <header class="brand">
-      <h1>ECHO</h1>
-      <p class="tagline">Blackjack Skill Battle</p>
-    </header>
+<!-- ธีม ORDEAL CALL (ECHO 5.1) · ลูกโลก = vendor/globe.js (build จาก client/src/globe ด้วย client/vite.globe.config.js) -->
+<body data-screen="none">
+  <canvas id="globe" class="globe" aria-hidden="true"></canvas>
 
-    <p id="message" class="notice" hidden></p>
+  <div class="chrome" aria-hidden="true">
+    <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+    <span class="mark latin">ECHO <b id="mark-version"></b> · ORDEAL CALL</span>
+    <span class="foot" id="version"></span>
+  </div>
 
-    <!-- ด่านตอนเปิดโปรแกรม: (1) ตรวจเวอร์ชัน/อัปเดต (2) เตรียมไฟล์เกม — ผ่านทั้งคู่ถึงไปหน้าแรก -->
-    <section id="prepare" class="panel">
-      <h2 id="prepare-title">กำลังตรวจเวอร์ชัน</h2>
-      <p id="prepare-status" class="muted">กำลังเชื่อมต่อ…</p>
-      <div class="bar"><div id="prepare-bar" class="bar-fill"></div></div>
-      <p id="prepare-detail" class="hint" hidden>ครั้งแรกต้องโหลดประมาณ 1.1 GB · ปิดโปรแกรมกลางทางได้ เปิดใหม่จะโหลดต่อจากเดิม</p>
-      <p id="prepare-error" class="warn" hidden></p>
-      <button id="prepare-retry" class="btn primary" hidden>ลองใหม่</button>
-    </section>
+  <!-- เปิดโปรแกรม: ด่าน (1) ตรวจเวอร์ชัน/อัปเดต (2) เตรียมไฟล์เกม → แตะเพื่อเริ่ม -->
+  <section class="screen" id="boot" hidden>
+    <div class="boot">
+      <div class="echo-logo" role="img" aria-label="ECHO"></div>
+      <p class="patch latin">ORDEAL <span>CALL</span></p>
+      <div class="boot-bar"><i id="boot-bar"></i></div>
+      <p class="boot-status" id="boot-status" aria-live="polite"></p>
+      <p class="boot-error" id="boot-error" hidden></p>
+      <button class="btn primary" id="boot-retry" type="button" hidden>ลองใหม่</button>
+      <p class="tap" id="tap" hidden>แตะเพื่อเริ่ม</p>
+    </div>
+  </section>
 
-    <!-- หน้าแรก -->
-    <section id="home" class="panel" hidden>
-      <button id="go-host" class="btn primary">สร้างห้อง</button>
-      <button id="go-join" class="btn">เข้าร่วม</button>
-      <button id="quit" class="btn ghost">ออกจากเกม</button>
-    </section>
-
-    <!-- สร้างห้อง -->
-    <section id="host" class="panel" hidden>
-      <h2>สร้างห้อง</h2>
-      <p id="host-status" class="muted">กำลังเปิดห้อง…</p>
-      <div id="host-ready" hidden>
-        <p class="label">ส่ง IP นี้ให้เพื่อน</p>
-        <div id="ip-list" class="ip-list"></div>
-        <p id="no-radmin" class="warn" hidden>
-          ไม่พบ IP ของ Radmin VPN (ขึ้นต้น 26.) — เปิด Radmin VPN และเข้าเครือข่ายเดียวกับเพื่อนก่อน
-          ถ้าเล่นบ้านเดียวกันใช้ IP วงแลนด้านบนแทนได้
-        </p>
-        <p class="hint">ถ้า Windows ถามเรื่อง Firewall ให้ติ๊ก <b>Public</b> และ <b>Private</b> แล้วกดอนุญาต ไม่งั้นเพื่อนจะเข้าห้องไม่ได้</p>
-        <button id="enter-room" class="btn primary">เข้าห้อง</button>
+  <!-- หน้าแรก -->
+  <section class="screen" id="home" hidden>
+    <div class="left home-col">
+      <div class="brand enter">
+        <div class="echo-logo sm" role="img" aria-label="ECHO"></div>
+        <p class="patch sm latin">ORDEAL <span>CALL</span></p>
       </div>
-      <button id="host-back" class="btn ghost">ปิดห้องและย้อนกลับ</button>
-    </section>
+      <p class="notice enter" id="message" hidden></p>
+      <nav class="menu enter d1">
+        <button class="main" id="go-host" type="button"><span class="t">สร้างห้อง</span><span class="arr">→</span></button>
+        <button id="go-join" type="button"><span class="t">เข้าร่วม</span><span class="arr">→</span></button>
+        <button id="quit" type="button"><span class="t">ออกจากเกม</span><span class="arr">→</span></button>
+      </nav>
+    </div>
+  </section>
 
-    <!-- เข้าร่วม -->
-    <section id="join" class="panel" hidden>
-      <h2>เข้าร่วม</h2>
-      <form id="join-form">
-        <label class="label" for="join-ip">IP ของคนที่เปิดห้อง</label>
-        <input id="join-ip" class="input" placeholder="26.123.45.67" autocomplete="off" spellcheck="false" />
-        <button id="join-go" class="btn primary" type="submit">เข้าร่วม</button>
+  <!-- สร้างห้อง -->
+  <section class="screen" id="host" hidden>
+    <div class="left">
+      <div class="panel enter">
+        <h2>สร้างห้อง</h2>
+        <p class="conn" id="host-status">กำลังเปิดห้อง</p>
+        <div class="ip-list" id="ip-list"></div>
+        <p class="badge" id="no-radmin" hidden>ไม่พบ Radmin VPN</p>
+        <div class="row">
+          <button class="btn primary" id="enter-room" type="button" disabled>เข้าห้อง</button>
+          <button class="btn ghost" id="host-close" type="button">ปิดห้อง</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- เข้าร่วม -->
+  <section class="screen" id="join" hidden>
+    <div class="left">
+      <form class="panel enter" id="join-form">
+        <h2>เข้าร่วม</h2>
+        <div class="field">
+          <label for="join-ip">IP</label>
+          <input class="input" id="join-ip" placeholder="26.123.45.67" autocomplete="off" spellcheck="false" />
+        </div>
+        <p class="conn" id="join-status" aria-live="polite"></p>
+        <div class="row">
+          <button class="btn primary" id="join-go" type="submit">เข้าร่วม</button>
+          <button class="btn ghost" id="join-back" type="button">ย้อนกลับ</button>
+        </div>
       </form>
-      <p id="join-error" class="warn" hidden></p>
-      <button id="join-back" class="btn ghost" type="button">ย้อนกลับ</button>
-    </section>
+    </div>
+  </section>
 
-    <footer class="foot">
-      <span id="version"></span>
-      <span>F11 เต็มจอ · F10 ออกจากห้อง</span>
-    </footer>
-  </main>
+  <div class="whiteout" id="whiteout" aria-hidden="true"></div>
+
+  <script src="vendor/globe.js"></script>
   <script src="launcher.js"></script>
 </body>
 </html>

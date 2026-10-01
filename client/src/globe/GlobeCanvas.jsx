@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { createGlobe } from "./globeCore";
 
 // ลูกโลกเต็มกรอบของตัวเอง (position:absolute inset:0) — หน้าจอเอาของ 3D ของตัวเองไปแปะใน onReady(core)
@@ -8,7 +8,7 @@ export default function GlobeCanvas({ layout, drag = true, sand = true, autoSpin
   const ref = useRef(null);
   const coreRef = useRef(null);
   const readyRef = useRef(onReady);
-  readyRef.current = onReady;
+  useLayoutEffect(() => { readyRef.current = onReady; });
 
   useEffect(() => {
     const core = createGlobe(ref.current, { layout, drag, sand, autoSpin });

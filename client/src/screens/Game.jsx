@@ -202,8 +202,8 @@ function YunaCutscene({ cs }) {
             <motion.div
               className="glitch-p absolute bottom-[14%] text-4xl sm:text-6xl font-black text-white z-10 text-hard"
               data-text={cs.name}
-              initial={{ opacity: 0, letterSpacing: "0.6em" }}
-              animate={{ opacity: 1, letterSpacing: "0.08em" }}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               {cs.name}
@@ -308,7 +308,7 @@ function DrawCall() {
         <div
           className="dc-text av-title av-title-thai text-8xl"
           style={{
-            background: "linear-gradient(180deg,#fff 0%,#e8c4ef 40%,#b95fc4 70%,#3b1454 100%)",
+            background: "linear-gradient(180deg,#fff 0%,#dcebfa 40%,#b95fc4 70%,#3b1454 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -359,7 +359,7 @@ function AttackCall() {
         <div
           className="ac-text av-title av-title-thai text-8xl"
           style={{
-            background: "linear-gradient(180deg,#fff 0%,#ffe9a8 38%,#ff9d6b 66%,#8d1622 100%)",
+            background: "linear-gradient(180deg,#fff 0%,#eaf3fc 38%,#ff9d6b 66%,#8d1622 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -391,7 +391,7 @@ function AttackFx({ a }) {
     []
   );
 
-  const accent = a.dodge ? "#6fd8ff" : a.kill ? "#ff5f6d" : "#ffe9a8";
+  const accent = a.dodge ? "#6fd8ff" : a.kill ? "#ff5f6d" : "#eaf3fc";
   const atkSkills = (a.skills || []).filter((sk) => (sk.side ? sk.side === "atk" : sk.by === a.byName));
   const defSkills = (a.skills || []).filter((sk) => (sk.side ? sk.side === "def" : sk.by !== a.byName));
 
@@ -457,7 +457,7 @@ function AttackFx({ a }) {
                     สังหาร
                   </div>
                 ) : (
-                  <span className="av-title text-[10rem] leading-none" style={{ WebkitTextStroke: "2px rgba(94,63,8,.55)" }}>
+                  <span className="av-title text-[10rem] leading-none" style={{ WebkitTextStroke: "2px rgba(28,63,110,.55)" }}>
                     -{a.dmg}
                   </span>
                 )}
@@ -550,7 +550,7 @@ function SkillFlash({ f }) {
           <span className="text-2xl">✦</span>
         )}
         <div className="text-left leading-tight">
-          <div className="text-lg font-black text-echo-gold">{f.name}</div>
+          <div className="text-lg font-black text-echo-ice">{f.name}</div>
           <div className="text-sm font-bold" style={{ color: f.color }}>{f.by} ใช้สกิล</div>
         </div>
       </div>
@@ -572,7 +572,7 @@ function CutsceneSkipNotice({ cs }) {
         )}
         <div className="text-left leading-tight">
           <div className="text-lg font-black" style={{ color: cs.color }}>{cs.name} {cs.label || "ปล่อยท่าไม้ตาย"}!</div>
-          <div className="text-sm font-bold text-echo-gold">{cs.title}</div>
+          <div className="text-sm font-bold text-echo-ice">{cs.title}</div>
           <div className="text-xs opacity-80 mt-0.5">🎬 โหมดประหยัด — รอผู้เล่นอื่นดูวีดีโอให้จบ ({timeLeft} วิ)</div>
         </div>
       </div>
@@ -592,7 +592,7 @@ function TransformNotice({ n }) {
         )}
         <div className="text-left leading-tight">
           <div className="text-lg font-black" style={{ color: n.color }}>{n.name}</div>
-          <div className="text-sm font-bold text-echo-gold">{n.title} {n.label}!</div>
+          <div className="text-sm font-bold text-echo-ice">{n.title} {n.label}!</div>
         </div>
       </div>
     </div>
@@ -634,7 +634,7 @@ function JourneyInfoModal({ journey, onClose }) {
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <div key={r.k} className="rounded-xl px-3 py-2 border" style={{ borderColor: r.on ? `${a.color}aa` : "rgba(255,255,255,.1)", background: r.on ? `${a.color}1f` : "rgba(255,255,255,.03)", opacity: r.on ? 1 : 0.55 }}>
-            <div className="av-heading text-xs" style={{ color: r.on ? a.glow : "rgba(239,230,245,.6)" }}>{r.k}{r.on && r.k !== "ตลอดภูมิภาค" ? " (ตอนนี้)" : ""}</div>
+            <div className="av-heading text-xs" style={{ color: r.on ? a.glow : "rgba(234,243,252,.6)" }}>{r.k}{r.on && r.k !== "ตลอดภูมิภาค" ? " (ตอนนี้)" : ""}</div>
             <div className="text-sm leading-relaxed">{r.v}</div>
           </div>
         ))}
@@ -717,7 +717,7 @@ function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadFor
         />
       )}
       {/* ฉากหลังการเดินทางมีชั้นเกรดสีของตัวเองแล้ว (jb-grade) — ไม่ซ้อนดำเพิ่มอีกชั้น */}
-      {!journey && <div className="absolute inset-0 bg-black/15" />}
+      {!journey && <div className="absolute inset-0 bg-[#0b1d3a]/10" />}
     </div>
   );
 }
@@ -743,7 +743,7 @@ function Laurel({ size = 250 }) {
             cy={cy}
             rx="11"
             ry="4.6"
-            fill="#ffe9a8"
+            fill="#eaf3fc"
             transform={`rotate(${side * (26 + t * 44)} ${cx} ${cy})`}
           />
         );
@@ -761,7 +761,7 @@ function SummaryTiers({ winners, losers, compact }) {
       <div className="sum-veil" />
 
       <div className="sum-head relative z-10 flex flex-col items-center gap-1">
-        <span className="av-label" style={{ letterSpacing: "0.5em" }}>ผลการจั่วไพ่</span>
+        <span className="av-label">ผลการจั่วไพ่</span>
         <span className="av-crack" style={{ position: "relative", width: compact ? "16rem" : "26rem", height: 2 }} />
       </div>
 
@@ -794,7 +794,7 @@ function SummaryTiers({ winners, losers, compact }) {
               <div key={p.id} className="sum-row" style={{ animationDelay: `${0.2 + i * 0.08}s` }}>
                 <span
                   className="av-numeral shrink-0 w-7 text-center"
-                  style={{ fontSize: compact ? "1.5rem" : "2rem", WebkitTextStroke: "1.5px rgba(185,95,196,.55)" }}
+                  style={{ fontSize: compact ? "1.5rem" : "2rem", WebkitTextStroke: "1.5px rgba(127,184,230,.55)" }}
                 >
                   {i + 2}
                 </span>
@@ -813,7 +813,7 @@ function SummaryTiers({ winners, losers, compact }) {
                 <span className="sum-lead" />
                 <span
                   className={`av-heading shrink-0 ${compact ? "text-sm" : "text-lg"}`}
-                  style={{ color: p.busted ? "#e06a78" : "rgba(239,230,245,.8)" }}
+                  style={{ color: p.busted ? "#e06a78" : "rgba(234,243,252,.8)" }}
                 >
                   {p.busted ? "ไพ่แตก" : p.score}
                 </span>
@@ -1029,7 +1029,7 @@ function Portrait({ p, className, rounded = "rounded-2xl" }) {
       {isYuna && <span className="aura-rays" aria-hidden="true" />}
       {isYuna && <span className="aura-ring aura-ring-outer" aria-hidden="true" />}
       {isYuna && <span className="aura-ring aura-ring-inner" aria-hidden="true" />}
-      <div className={`absolute inset-0 overflow-hidden ${rounded}`} style={{ background: "linear-gradient(135deg,#9b4f96,#7d3a78)" }}>
+      <div className={`absolute inset-0 overflow-hidden ${rounded}`} style={{ background: "linear-gradient(135deg,#3d8bd9,#12264a)" }}>
         {p.img && !broken ? (
           <img src={p.img} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
         ) : (
@@ -1096,7 +1096,7 @@ function TwinPortraitCards({ p, size = "md", className = "" }) {
 const ARMOR_ORANGE = "#f97316";
 const armorToneOf = (p) => (p?.character?.id === "recruit" ? "orange" : null);
 function Shield({ on, size = 16, tone }) {
-  const c = tone === "orange" ? ARMOR_ORANGE : "#3b82c4";
+  const c = tone === "orange" ? ARMOR_ORANGE : "#3d8bd9";
   return (
     <svg width={size} height={Math.round(size * 1.125)} viewBox="0 0 24 24" className="shrink-0">
       <path d="M12 2 L21 6 V12 C21 17 12 22 12 22 C12 22 3 17 3 12 V6 Z"
@@ -1135,7 +1135,7 @@ function LifeBar({ p, sm, className = "" }) {
       <span className={`${sm ? "text-sm" : "text-lg"} leading-none whitespace-nowrap`}>
         {Array.from({ length: p.maxHp }, (_, i) => (i < p.hp ? "❤️" : "🖤")).join("")}
       </span>
-      {p.tempHp > 0 && <span className={`${sm ? "text-xs" : "text-sm"} text-echo-gold font-bold`}>💛{p.tempHp}</span>}
+      {p.tempHp > 0 && <span className={`${sm ? "text-xs" : "text-sm"} text-echo-ice font-bold`}>💛{p.tempHp}</span>}
       <span className="inline-flex gap-0.5 shrink-0">
         {Array.from({ length: p.maxArmor }, (_, i) => <Shield key={i} on={i < p.armor} size={sm ? 12 : 16} tone={armorToneOf(p)} />)}
       </span>
@@ -1211,7 +1211,7 @@ function Stats({ p, center, hideLife = false }) {
       {!hideLife && !p.hisakawa && <LifeBar p={p} />}
       {p.skillPoints < 0 ? (
         // ซาโตรุ (patch 2.0.8.2): แต้มสกิลถูกซ่อนจากผู้เล่นอื่น / ทาคุมิ: บังตาแต้มสกิลของทุกคนยกเว้นตัวเอง
-        <div className="mt-1 text-xs font-black text-echo-gold opacity-90" title="แต้มสกิลถูกซ่อน">🌩️ ???</div>
+        <div className="mt-1 text-xs font-black text-echo-ice opacity-90" title="แต้มสกิลถูกซ่อน">🌩️ ???</div>
       ) : (
         <div className="flex gap-1 mt-1">
           {Array.from({ length: p.maxSkill }, (_, i) => (
@@ -1220,7 +1220,7 @@ function Stats({ p, center, hideLife = false }) {
               className="w-2.5 h-2.5 rotate-45"
               style={
                 i < p.skillPoints
-                  ? { background: "linear-gradient(180deg,#f6d371,var(--color-echo-gold))", boxShadow: "0 0 5px rgba(229,179,59,.85)" }
+                  ? { background: "linear-gradient(180deg,#ead2f0,var(--oc-echo-glow) 45%,var(--oc-echo))", boxShadow: "0 0 5px rgba(201,154,214,.85)" }
                   : { background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)" }
               }
             />
@@ -1241,29 +1241,29 @@ const SUP_SKILL_LABEL = { basic: "Prayer", secondary: "Armor of Faith", ultimate
 const STATUS_INFO = {
   upg:       { icon: "🎴", label: "UPG", cls: "bg-echo-cyan text-gray-900", desc: "เทิร์นนี้ไพ่ไม่มีทางแตก แต่แต้มไม่เกินเพดานของสกิล" },
   monster:   { icon: "🛡️", label: "MonsterLive", cls: "bg-echo-armor", desc: "MonsterLive: เพดานเกราะ +2 · เกราะที่เสียไปฟื้นเป็นพลังชีวิตเท่ากัน · ดาเมจโจมตีที่ได้รับ -1 · ใช้ Ultlive Ultraman Ginga ไม่ได้" },
-  ginga:     { icon: "✨", label: "Ginga", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Ultraman Ginga: โจมตี +1 และตีหมู่ทุกคน (เหลือคู่ต่อสู้คนเดียว +1 เพิ่ม) — ระหว่างนี้สกิลพื้นฐานเปลี่ยนเป็น UPG!" },
+  ginga:     { icon: "✨", label: "Ginga", cls: "bg-echo-ice text-gray-900", desc: "ร่าง Ultraman Ginga: โจมตี +1 และตีหมู่ทุกคน (เหลือคู่ต่อสู้คนเดียว +1 เพิ่ม) — ระหว่างนี้สกิลพื้นฐานเปลี่ยนเป็น UPG!" },
   gingastrium: { icon: "🔥", label: "Ginga Strium", cls: "bg-echo-hp", desc: "ร่าง Ginga Strium: โจมตี +1 (เหลือคู่ต่อสู้คนเดียว +1 เพิ่ม) ติดลุกไหม้ให้เป้าหมายที่โดนโจมตี — ระหว่างนี้สกิลรองเปลี่ยนเป็นลำแสงสโตเรียม" },
   accused:   { icon: "⛓️", label: "ผู้ต้องหา", cls: "bg-echo-hp", desc: "ผู้ต้องหา: คอนเนอร์ตีปกติใส่คนที่ติดสถานะนี้ +2 · ต้านสถานะผิดปกติล้างได้" },
   hbleed:    { icon: "🩸", label: "เลือดไหล", cls: "bg-echo-hp", desc: "เลือดไหล: เสียพลังชีวิต 1/เทิร์น (โดนเกราะก่อน แล้วลดลง 1 · สะสมสูงสุด 6) · ระหว่างติด การฟื้นพลังชีวิตเหลือครึ่ง (ฟื้นทีละ 1 ไม่ลด) · ต้านได้" },
   hburn:     { icon: "🔥", label: "ลุกไหม้", cls: "bg-echo-hp", desc: "ลุกไหม้: เสียพลังชีวิต 1 หน่วยทุกเทิร์น (ลดเกราะก่อน ลดลงทีละหน่วยหลังสร้างความเสียหาย) สะสมได้ไม่เกิน 6 หน่วย" },
   storium:   { icon: "🌟", label: "สโตเรียม", cls: "bg-echo-magenta", desc: "ลำแสงสโตเรียม: ตีครั้งถัดไปเป็นตีหมู่ · เป้าที่เลือกรับดาเมจปกติ (สูงสุด 4) + ลุกไหม้บนตัว · คนอื่นรับดาเมจเท่าลุกไหม้บนตัวเอง" },
   song:      { icon: "🎵", label: "Song", cls: "bg-echo-magenta", desc: "Song for you: พลังขิงตามชามที่ใช้ (1 ชาม = +1) — มีผลเฉพาะสกิลติดตัวโดนขิง (ขิงแบบไม่สนเกราะ)" },
-  anata:     { icon: "🎤", label: "ANATA", cls: "bg-echo-gold text-gray-900", desc: "ANATA WAAAAAAAA: เป้าหมายลับจะถูกบังคับจั่ว 2 ใบหลังเปิดไพ่" },
+  anata:     { icon: "🎤", label: "ANATA", cls: "bg-echo-ice text-gray-900", desc: "ANATA WAAAAAAAA: เป้าหมายลับจะถูกบังคับจั่ว 2 ใบหลังเปิดไพ่" },
   seal:      { icon: "📜", label: "อมตะ", cls: "bg-echo-hp", desc: "เรจูอาคมบัญชา: เทิร์นนี้ไม่ถูกเลือกโจมตี และไม่รับความเสียหายใดๆ" },
   nodraw:    { icon: "🚫", label: "ห้ามจั่ว", cls: "bg-echo-hp", desc: "จั่วการ์ดเพิ่มไม่ได้ในเทิร์นนี้" },
   noskill:   { icon: "🚫", label: "ห้ามสกิล", cls: "bg-echo-hp", desc: "ห้ามใช้สกิล: ใช้สกิลไม่ได้ในเทิร์นนี้" },
   awaken:    { icon: "⏰", label: "ตื่นขึ้น", cls: "bg-echo-cyan text-gray-900", desc: "การตื่นขึ้น: ฟื้นพลังชีวิตเทิร์นละ 1" },
   sleep:     { icon: "💤", label: "หลับไหล", cls: "bg-echo-hp", desc: "หลับไหล: ออกการกระทำใดๆ ไม่ได้ และเสียเลือด 1/เทิร์นไม่สนเกราะ (ไม่ถึงตาย — ค้างที่ 1) — หายไปทันทีเมื่อเข้าเช้า" },
   poison:    { icon: "🧪", label: "พิษร้าย", cls: "bg-echo-magenta", desc: "พิษร้าย: ต้นเทิร์นเสียพลังชีวิต 1 หน่วย (ลดเกราะก่อน) และตลอดเวลาที่ติดอยู่ พลังโจมตีที่ทำได้ -1 · ต้าน/ล้างออกได้ด้วยต้านสถานะผิดปกติ" },
-  shock:     { icon: "⚡", label: "ช็อต", cls: "bg-echo-gold text-gray-900", desc: "ช็อต: ต้นเทิร์น 15% สตั้น 1 เทิร์น (ต้านสถานะผิดปกติกันได้) · ถูกล้างลดทีละ 1 เทิร์น" },
+  shock:     { icon: "⚡", label: "ช็อต", cls: "bg-echo-ice text-gray-900", desc: "ช็อต: ต้นเทิร์น 15% สตั้น 1 เทิร์น (ต้านสถานะผิดปกติกันได้) · ถูกล้างลดทีละ 1 เทิร์น" },
   curse:     { icon: "🕸️", label: "คำสาป", cls: "bg-echo-magenta", desc: "คำสาป: ใช้สกิลสำเร็จเสียพลังชีวิต 1 (โดนเกราะก่อน ตายได้) 1 ครั้ง/เทิร์น · ถูกล้างลดทีละ 1 เทิร์น" },
   // ---------- Apple guy (patch 1.8) ----------
   energy:    { icon: "🥤", label: "ชูกำลัง", cls: "bg-echo-cyan text-gray-900", desc: "เครื่องดื่มชูกำลัง: ได้แต้มสกิล +1 แต่เสียพลัง 1 หน่วยต่อเทิร์นแบบความเสียหายธรรมดา (โดนเกราะก่อน ไม่ถึงตาย — ค้างที่ 1)" },
-  promo:     { icon: "📢", label: "เปิดแต้ม", cls: "bg-echo-gold text-gray-900", desc: "แต้มการ์ดถูกเปิดเผยให้ทุกคนเห็นตลอดเทิร์นนี้ (ใบโปรโมทสินค้า / แสงจันทร์ส่องวิญญาณ)" },
+  promo:     { icon: "📢", label: "เปิดแต้ม", cls: "bg-echo-ice text-gray-900", desc: "แต้มการ์ดถูกเปิดเผยให้ทุกคนเห็นตลอดเทิร์นนี้ (ใบโปรโมทสินค้า / แสงจันทร์ส่องวิญญาณ)" },
   chill:     { icon: "🏖️", label: "ชิวๆ", cls: "bg-echo-cyan text-gray-900", desc: "ชิวๆครับน้องๆ: จบเทิร์นได้แต้มสกิล +1 และมีโอกาสหลบการถูกเลือกโจมตี — คงอยู่จนกว่าจะถูกโจมตี" },
   // ---------- เจ้าแห่งเน็ตบ้าน (patch 1.9) ----------
   fiber:     { icon: "📡", label: "เน็ตแรง", cls: "bg-echo-cyan text-gray-900", desc: "เสือนอนกิน: เทิร์นนี้จั่วการ์ดไม่มีทางแตก แต่แต้มจะไม่เกิน 19" },
-  tiger:     { icon: "🐯", label: "เสือนอนกิน", cls: "bg-echo-gold text-gray-900", desc: "เสือนอนกิน: พลังโจมตี +1 (และฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป)" },
+  tiger:     { icon: "🐯", label: "เสือนอนกิน", cls: "bg-echo-ice text-gray-900", desc: "เสือนอนกิน: พลังโจมตี +1 (และฟื้นพลังชีวิต 1 หน่วยในเทิร์นถัดไป)" },
   unplug:    { icon: "🔌", label: "สายหลุด", cls: "bg-echo-hp", desc: "กระชากสายแลน: บัฟหายไปชั่วคราวตลอดเทิร์นนี้ (กลับคืนในเทิร์นถัดไป)" },
   nohealing: { icon: "☠️", label: "ไร้ทางเยียวยา", cls: "bg-echo-hp", desc: "ไร้ทางเยียวยา: ฟื้นพลังชีวิตไม่ได้ ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- ฟุจิตะ โคโตเนะ (rework 2.3) ----------
@@ -1275,20 +1275,20 @@ const STATUS_INFO = {
   kcampus:     { icon: "🏫", label: "Campus Mode", cls: "bg-echo-magenta", desc: "Campus Mode!: ทำงานหลังเปิดไพ่ — ได้บัฟ รัก รักที่สุดเลย ฮีล 3 หน่วย ทุกคนติดไร้ทางเยียวยา 2 เทิร์น และบังคับทุกคนไพ่แตก" },
   kshuki:      { icon: "💞", label: "Love Love", cls: "bg-echo-magenta", desc: "Self-affirmation Explosion! Love Love: ทำงานหลังเปิดไพ่ — ได้บัฟ รัก รักที่สุดเลย บังคับทุกคนไพ่แตก และโจมตีเพิ่มได้อีก 1 ครั้ง" },
   // ---------- สถานะพื้นฐาน universal (patch 2.0.8) ----------
-  freecast:  { icon: "👸", label: "การ์ดราชินี", cls: "bg-echo-gold text-gray-900", desc: "การ์ดราชินี: ใช้สกิลครั้งถัดไปไม่เสียแต้มสกิล (หายเมื่อจบเทิร์นถ้าไม่ได้ใช้)" },
+  freecast:  { icon: "👸", label: "การ์ดราชินี", cls: "bg-echo-ice text-gray-900", desc: "การ์ดราชินี: ใช้สกิลครั้งถัดไปไม่เสียแต้มสกิล (หายเมื่อจบเทิร์นถ้าไม่ได้ใช้)" },
   stun:      { icon: "😵", label: "สตั้น", cls: "bg-echo-hp", desc: "สตั้น: ไม่สามารถทำอะไรได้จนจบเทิร์นหรือจนกว่าดีบัฟจะหมดเวลา" },
   chaa:     { icon: "🌀", label: "สภาพชา", cls: "bg-echo-hp", desc: "สภาพชา: กดจั่วการ์ด 1 ครั้งจะได้ไพ่ 2 ใบ (ใบที่ 2 สุ่มปกติ โชคลาภไม่ช่วย)" },
-  accurate: { icon: "🎯", label: "แม่นยำ", cls: "bg-echo-gold text-gray-900", desc: "แม่นยำ: การโจมตีเจาะการหลบหลีกทุกแบบของเป้าหมาย (โล่กันครั้งยังกันได้)" },
+  accurate: { icon: "🎯", label: "แม่นยำ", cls: "bg-echo-ice text-gray-900", desc: "แม่นยำ: การโจมตีเจาะการหลบหลีกทุกแบบของเป้าหมาย (โล่กันครั้งยังกันได้)" },
   numb:     { icon: "🫨", label: "เหน็บชา", cls: "bg-echo-hp", desc: "เหน็บชา: กดสกิลแล้วมีโอกาส 30% ที่สกิลจะไม่ทำงาน แต่แต้มสกิลยังถูกหักตามเดิม" },
   kimCounter: { icon: "⚔️", label: "Counter Stance", cls: "bg-echo-magenta", desc: "Counter Stance: สวนได้ 1 ครั้ง/เทิร์น · โดนดาเมจโจมตีหรือสกิลแล้วสวนตามพลังโจมตีพื้นฐาน (คริได้) และผู้โดนติดเลือดไหล + เหน็บชา" },
   weak:      { icon: "🥀", label: "อ่อนแอ", cls: "bg-echo-hp", desc: "อ่อนแอ: ดาเมจที่ทำได้ลดลงตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
   fragile:   { icon: "💔", label: "เปราะบาง", cls: "bg-echo-hp", desc: "เปราะบาง: ดาเมจที่ได้รับเพิ่มขึ้นตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
-  might:     { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "เสริมพลัง: ดาเมจที่ทำได้เพิ่มขึ้นตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
+  might:     { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-ice text-gray-900", desc: "เสริมพลัง: ดาเมจที่ทำได้เพิ่มขึ้นตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
   spellflow: { icon: "🌀", label: "กระแสเวท", cls: "bg-echo-cyan text-gray-900", desc: "กระแสเวท: การใช้สกิลทุกชนิดใช้พลังงานลดลงตามจำนวนที่ระบุ ตามจำนวนเทิร์นที่เหลือ" },
   spellburden: { icon: "⛓️", label: "ภาระเวท", cls: "bg-echo-hp", desc: "ภาระเวท: สกิลทุกชนิดแพงขึ้นตามจำนวน (สูงสุด 2) · ราคาไม่เกิน 8 แต้ม" },
   manaSeal:  { icon: "⛔", label: "ผนึกพลังงาน", cls: "bg-echo-hp", desc: "ผนึกพลังงาน: ฟื้นฟูแต้มสกิลจากช่องทางใดๆ ไม่ได้เลย (เช้า/พรจั่วการ์ด/ไอเทม) ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- ไค ชิซากิ ----------
-  kaiCreation: { icon: "🎨", label: "รังสรรค์", cls: "bg-echo-gold text-gray-900", desc: "รังสรรค์: มาร์กถาวรจากไค ชิซากิ — ครบ 2 มาร์กบนกระดานจะปลดล็อก Overhaul" },
+  kaiCreation: { icon: "🎨", label: "รังสรรค์", cls: "bg-echo-ice text-gray-900", desc: "รังสรรค์: มาร์กถาวรจากไค ชิซากิ — ครบ 2 มาร์กบนกระดานจะปลดล็อก Overhaul" },
   kaiPunishment: { icon: "⚔️", label: "ลงทัณฑ์", cls: "bg-echo-hp", desc: "ลงทัณฑ์: มาร์กถาวรจากไค ชิซากิ — ครบ 2 มาร์กบนกระดานจะปลดล็อก Overhaul" },
   kaiLink: { icon: "🕊️", label: "เชื่อมต่อ", cls: "bg-echo-magenta", desc: "เชื่อมต่อ (สวรรค์ประทานพร): HP/เกราะที่เสียหรือฟื้นฟูจริงถูกแชร์ให้คู่เชื่อมเท่ากัน 1:1 ตามจำนวนเทิร์นที่เหลือ" },
   kaiRival1: { icon: "😡", label: "คู่ปรับ", cls: "bg-echo-hp", desc: "โทสะระงับด้วยโทสะ: ถูกบังคับโจมตีเฉพาะคู่ปรับที่ถูกกำหนดไว้เท่านั้น ตามจำนวนเทิร์นที่เหลือ" },
@@ -1296,29 +1296,29 @@ const STATUS_INFO = {
   // ---------- ผู้สังหารเมจ ----------
   mageslayerMark: { icon: "🎯", label: "ตราล่าเวท", cls: "bg-echo-magenta", desc: "ตราล่าเวท: ดาเมจทุกแบบจากผู้สังหารเมจขโมยพลังงานเท่าดาเมจ (1-5) · ขโมยเกินที่เหลือ ติดอ่อนแอ -1 นาน 2 เทิร์น · ทุก 2 เทิร์นถูกขโมยอีก 1 · โอกาสโดนดูดซับเวทเป็น 60% · อยู่จนถูกย้ายหรือล้าง" },
   manaLeech: { icon: "🩸", label: "ดูดซับเวท", cls: "bg-echo-magenta", desc: "ดูดซับเวท: กดสกิล หรือได้พลังงานจากไอเทม/สกิลติดตัว/การ์ดรังสรร 35% ถูกผู้สังหารเมจขโมยพลังงาน 1 (60% ถ้าติดตราล่าเวท)" },
-  mageslayerFury: { icon: "😤", label: "Fury", cls: "bg-echo-gold text-gray-900", desc: "Fury (สูงสุด 3): ใช้หมดในการตีปกติครั้งถัดไป · ขั้น 1 สูบพลังชีวิต +2 + ดูดซับเวท 2 เทิร์น · ขั้น 2 สูบ +3 + ดูดซับเวท 4 เทิร์น · ขั้น 3 สูบ +3 + เสริมพลัง +1 + ดูดซับเวท 5 เทิร์น" },
+  mageslayerFury: { icon: "😤", label: "Fury", cls: "bg-echo-ice text-gray-900", desc: "Fury (สูงสุด 3): ใช้หมดในการตีปกติครั้งถัดไป · ขั้น 1 สูบพลังชีวิต +2 + ดูดซับเวท 2 เทิร์น · ขั้น 2 สูบ +3 + ดูดซับเวท 4 เทิร์น · ขั้น 3 สูบ +3 + เสริมพลัง +1 + ดูดซับเวท 5 เทิร์น" },
   manaRupture: { icon: "💥", label: "ระเบิดมานา", cls: "bg-echo-hp", desc: "ระเบิดมานา: 2 เทิร์นแล้วระเบิดตามพลังงาน · 7-8 ดาเมจ 1 · 2-6 ดาเมจ 3 + ผนึกพลังเวทย์ 2 เทิร์น · 0-1 ดาเมจ 5 + ผนึกพลังเวทย์ 3 เทิร์น" },
   // ---------- Ultraman Trigger ----------
   triggerDarkForm: { icon: "🌑", label: "Trigger Dark", cls: "bg-echo-magenta", desc: "ร่าง Trigger Dark คงอยู่ 5 เทิร์น หากตายในร่างนี้จะตายจริง และเมื่อคืนร่างต้องซื้อ Trigger Dark Key ใหม่" },
-  triggerDarkWail: { icon: "🌘", label: "อวดครวญ", cls: "bg-echo-gold text-gray-900", desc: "สะสมได้สูงสุด 5 หน่วยและยังคงอยู่แม้ Trigger Dark คืนร่าง — Impact สร้างความเสียหายตามจำนวนนี้ แล้วล้างทั้งสนาม" },
+  triggerDarkWail: { icon: "🌘", label: "อวดครวญ", cls: "bg-echo-ice text-gray-900", desc: "สะสมได้สูงสุด 5 หน่วยและยังคงอยู่แม้ Trigger Dark คืนร่าง — Impact สร้างความเสียหายตามจำนวนนี้ แล้วล้างทั้งสนาม" },
   triggerForm: { icon: "🔴", label: "Ultraman Trigger", cls: "bg-echo-magenta", desc: "ร่าง Ultraman Trigger คงอยู่ 10 เทิร์น หากตายในร่างนี้จะตายจริง เมื่อครบเวลาจะคืนร่างเดิมด้วย HP 1 เกราะเต็ม และคีย์ติดคูลดาวน์ 5 เทิร์น" },
-  escanorMorning: { icon: "☀️", label: "Morning", cls: "bg-echo-gold text-gray-900", desc: "เอสคานอร์ร่างเช้า: ชาร์จประกายแสงสุริยัน +1/เทิร์น โจมตี +1 เกราะ +1 และการโจมตีมอบลุกไหม้ให้ผู้ถูกโจมตี +1 หน่วย (มีผลเทิร์นถัดไป)" },
+  escanorMorning: { icon: "☀️", label: "Morning", cls: "bg-echo-ice text-gray-900", desc: "เอสคานอร์ร่างเช้า: ชาร์จประกายแสงสุริยัน +1/เทิร์น โจมตี +1 เกราะ +1 และการโจมตีมอบลุกไหม้ให้ผู้ถูกโจมตี +1 หน่วย (มีผลเทิร์นถัดไป)" },
   escanorNight: { icon: "🌙", label: "Night", cls: "bg-echo-cyan text-gray-900", desc: "เอสคานอร์ร่างกลางคืน: หลบหลีก 50%, ได้แต้มสกิล +1 ทุกเทิร์น และพลังโจมตีพื้นฐานเป็น 0" },
   escanorNoon: { icon: "☀️", label: "Noon", cls: "bg-echo-hp", desc: "ร่าง Noon: ชาร์จ -1 ทุกเทิร์นและเมื่อโดนดาเมจสกิล · โจมตี +1 เกราะ +1 · ตีแล้วเป้าติดลุกไหม้ +1 ถูกตีแล้วผู้โจมตีติด +1 (เทิร์นหน้า) · ตายแล้วเข้า Last Stand" },
   escanorLastStand: { icon: "🔥", label: "Last Stand", cls: "bg-echo-hp", desc: "Last Stand: พลังชีวิตสูงสุด 7 เกราะ 0 · พลังชีวิต -1/เทิร์น · ศัตรูทุกคนติดลุกไหม้ +2/เทิร์น · ไม่โดนดาเมจลุกไหม้และไพ่แตก · ดาเมจโจมตี/สกิลที่ได้รับเหลือ 1 · ตีแล้วเป้าติดลุกไหม้ +2 ถูกตีแล้วผู้โจมตีติด +1 · ตีโดนล้างลุกไหม้ตัวเองและฮีล 1" },
-  escanorSolar: { icon: "☀️", label: "Solar", cls: "bg-echo-gold text-gray-900", desc: "Solar (สูงสุด 4): ได้เมื่อแพ้การเปิดไพ่หรือไม่ได้โจมตี · ไม่ได้เพิ่ม 3 เทิร์นลด 1 · สุริยาไม่สิ้นแสงใช้ 1/เทิร์นเพื่อคงร่าง Morning" },
+  escanorSolar: { icon: "☀️", label: "Solar", cls: "bg-echo-ice text-gray-900", desc: "Solar (สูงสุด 4): ได้เมื่อแพ้การเปิดไพ่หรือไม่ได้โจมตี · ไม่ได้เพิ่ม 3 เทิร์นลด 1 · สุริยาไม่สิ้นแสงใช้ 1/เทิร์นเพื่อคงร่าง Morning" },
   escanorCool: { icon: "💪", label: "เย็นชื่นใจ", cls: "bg-echo-cyan text-gray-900", desc: "เย็นชื่นใจ: ลดความเสียหายจากสกิลตามจำนวนสแตค และหมดเมื่อครบ 2 เทิร์น" },
   drunk: { icon: "🍷", label: "มึนเมา", cls: "bg-echo-magenta", desc: "มึนเมา: ลดลงทีละ 1 ทุกเทิร์น และเมื่อกดสกิลหรือจั่วไพ่มีโอกาสสุ่มติดห้ามจั่ว ห้ามสกิล หรือสตัน" },
   escanorFlare: { icon: "🔥", label: "เพลิงปะทุ", cls: "bg-echo-hp", desc: "การโจมตีครั้งถัดไปจะมอบลุกไหม้ให้ผู้ถูกโจมตีเพิ่ม +1 (มีผลเทิร์นถัดไป)" },
   escanorFlareNoon: { icon: "🔥", label: "เพลิงปะทุ Noon", cls: "bg-echo-hp", desc: "การโจมตีครั้งถัดไปจะมอบลุกไหม้เพิ่ม +2 และมอบไร้ทางเยียวยา 2 เทิร์น" },
   escanorPunch: { icon: "👊", label: "หมัดสุริยัน", cls: "bg-echo-hp", desc: "การโจมตีครั้งถัดไปพลังโจมตี +1 และมอบลุกไหม้ให้ผู้ถูกโจมตีเพิ่ม +2 (มีผลเทิร์นถัดไป)" },
-  escanorRhitta: { icon: "🪓", label: "Rhitta", cls: "bg-echo-gold text-gray-900", desc: "การโจมตีครั้งถัดไปจะบังคับลุกไหม้ 2 หน่วยที่ติดอยู่บนเป้าหมายให้ทำงานทันทีในเทิร์นนั้น" },
-  escanorRhittaNoon: { icon: "🪓", label: "Rhitta Noon", cls: "bg-echo-gold text-gray-900", desc: "เมื่อโจมตีโดน จะสร้างความเสียหายใส่ผู้เล่นคนอื่นคนละ 1 หน่วย" },
+  escanorRhitta: { icon: "🪓", label: "Rhitta", cls: "bg-echo-ice text-gray-900", desc: "การโจมตีครั้งถัดไปจะบังคับลุกไหม้ 2 หน่วยที่ติดอยู่บนเป้าหมายให้ทำงานทันทีในเทิร์นนั้น" },
+  escanorRhittaNoon: { icon: "🪓", label: "Rhitta Noon", cls: "bg-echo-ice text-gray-900", desc: "เมื่อโจมตีโดน จะสร้างความเสียหายใส่ผู้เล่นคนอื่นคนละ 1 หน่วย" },
   escanorSun: { icon: "☀️", label: "ดวงอาทิตย์จำลอง", cls: "bg-echo-hp", desc: "การโจมตีครั้งถัดไปเป็นโจมตีหมู่ และพลังโจมตีพื้นฐานถูกตั้งเป็น 0" },
   triggerCircle: { icon: "⚔️", label: "ดาบวงจักร", cls: "bg-echo-cyan text-gray-900", desc: "Circle Arms: การโจมตีมอบแสงสว่าง 2 และฟื้นพลังชีวิต 2 หน่วย" },
-  triggerMulti: { icon: "⭕", label: "จักรแห่งแสง", cls: "bg-echo-gold text-gray-900", desc: "Multi Sword Finish: ตีใครก็ได้ · เป้าพลังชีวิตสูงสุด ดาเมจ +1 · เป้าพลังชีวิตต่ำกว่า 5 ดาเมจเหลือ 2 · ให้แสงสว่าง +2 · ใช้แล้วหาย" },
+  triggerMulti: { icon: "⭕", label: "จักรแห่งแสง", cls: "bg-echo-ice text-gray-900", desc: "Multi Sword Finish: ตีใครก็ได้ · เป้าพลังชีวิตสูงสุด ดาเมจ +1 · เป้าพลังชีวิตต่ำกว่า 5 ดาเมจเหลือ 2 · ให้แสงสว่าง +2 · ใช้แล้วหาย" },
   triggerZeperion: { icon: "🌟", label: "ลำแสง Zeperion", cls: "bg-echo-magenta", desc: "การโจมตีครั้งถัดไปได้ดาเมจเพิ่ม +1 ต่อแสงสว่างทุก 2 หน่วยบนเป้าหมาย คงอยู่จนกว่าจะโจมตีสำเร็จ และล้างแสงสว่างของเป้าหมายทั้งหมด" },
-  triggerLight: { icon: "✨", label: "แสงสว่าง", cls: "bg-echo-gold text-gray-900", desc: "แสงสว่าง: สะสมได้สูงสุด 6 หน่วย เป็นพลังเสริมให้ลำแสง Zeperion" },
+  triggerLight: { icon: "✨", label: "แสงสว่าง", cls: "bg-echo-ice text-gray-900", desc: "แสงสว่าง: สะสมได้สูงสุด 6 หน่วย เป็นพลังเสริมให้ลำแสง Zeperion" },
   // ---------- ดูมกาย ----------
   doomDrain: { icon: "🌀", label: "โดนดูด", cls: "bg-echo-magenta", desc: "[โดนดูด] (Plasma Rifle): ดาเมจ 1 หน่วยทุกต้นเทิร์น (เจาะเกราะก่อน) ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- ทาคุมิ ฟุจิวาระ ----------
@@ -1326,12 +1326,12 @@ const STATUS_INFO = {
   // ---------- ยูนะ ไอดอลประจำสนาม (patch 2.2.6) — ต้าน/ลบไม่ได้ ไม่อยู่ในสถานะพื้นฐานทั่วไป ----------
   yunaDelete: { icon: "💜", label: "Delete", cls: "bg-echo-magenta", desc: "Delete (ยูนะ): ดาเมจที่ได้รับเพิ่มขึ้น +1 ตามจำนวนเทิร์นที่เหลือ — ต้าน/ลบไม่ได้ ซ้อนกับเปราะบางได้" },
   yunaSmile: { icon: "💚", label: "Smile for You", cls: "bg-echo-cyan text-gray-900", desc: "Smile for You (ยูนะ): ดาเมจที่ได้รับลดลง -1 ตามจำนวนเทิร์นที่เหลือ — ต้าน/ลบไม่ได้" },
-  yunaLonging: { icon: "✨", label: "Longing", cls: "bg-echo-gold text-gray-900", desc: "Longing (ยูนะ): พลังโจมตี +1 ตามจำนวนเทิร์นที่เหลือ (ได้รับตอนฟื้นคืนชีพ)" },
+  yunaLonging: { icon: "✨", label: "Longing", cls: "bg-echo-ice text-gray-900", desc: "Longing (ยูนะ): พลังโจมตี +1 ตามจำนวนเทิร์นที่เหลือ (ได้รับตอนฟื้นคืนชีพ)" },
   // ---------- Bard : คีตกวี (patch 2.2) ----------
-  resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-gold text-gray-900", desc: "ต้านสถานะผิดปกติ: ล้างและกันดีบัฟพื้นฐาน (ขัดแย้ง/หลับ/สตั้น/ห้ามจั่ว/ห้ามสกิล/พิษ/อ่อนแอ/เปราะบาง/ภาระเวท) · ยามฟ้าสาง/เส้นชีวิตถูกล้างลดทีละ 1" },
+  resist:    { icon: "🛡️", label: "ต้านผิดปกติ", cls: "bg-echo-ice text-gray-900", desc: "ต้านสถานะผิดปกติ: ล้างและกันดีบัฟพื้นฐาน (ขัดแย้ง/หลับ/สตั้น/ห้ามจั่ว/ห้ามสกิล/พิษ/อ่อนแอ/เปราะบาง/ภาระเวท) · ยามฟ้าสาง/เส้นชีวิตถูกล้างลดทีละ 1" },
   guard:     { icon: "💗", label: "คุ้มครอง", cls: "bg-echo-armor", desc: "คุ้มครอง: ความเสียหายจากการถูกโจมตีลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1) ตามจำนวนเทิร์นที่เหลือ" },
-  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-gold text-gray-900", desc: "โชคลาภ: จั่วครั้งถัดไปได้ไพ่ที่ทำให้แต้มรวมอยู่ที่ 19-21 (ถ้ามีไพ่ที่ทำได้) แล้วหายไป 1 หน่วย · ซ้อนได้ 3 · ไม่ได้ใช้ 3 เทิร์นติดหมดฤทธิ์" },
-  empower:   { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-gold text-gray-900", desc: "เสริมพลัง: การโจมตีครั้งถัดไป +1 ดาเมจ (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี) — จาก Rejuvenation ของคีตกวี หรือ Fury ขั้น 3 ของผู้สังหารเมจ" },
+  fortune:   { icon: "🍀", label: "โชคลาภ", cls: "bg-echo-ice text-gray-900", desc: "โชคลาภ: จั่วครั้งถัดไปได้ไพ่ที่ทำให้แต้มรวมอยู่ที่ 19-21 (ถ้ามีไพ่ที่ทำได้) แล้วหายไป 1 หน่วย · ซ้อนได้ 3 · ไม่ได้ใช้ 3 เทิร์นติดหมดฤทธิ์" },
+  empower:   { icon: "💪", label: "เสริมพลัง", cls: "bg-echo-ice text-gray-900", desc: "เสริมพลัง: การโจมตีครั้งถัดไป +1 ดาเมจ (ไม่ซ้อนทับ — หมดเมื่อได้โจมตี) — จาก Rejuvenation ของคีตกวี หรือ Fury ขั้น 3 ของผู้สังหารเมจ" },
   linked:    { icon: "🔗", label: "เชื่อมผล", cls: "bg-echo-magenta", desc: "เชื่อมผล: ดาเมจและการฟื้นฟูทั้งพลังชีวิตและเกราะแชร์ให้คู่เชื่อม 1:1" },
   discord:   { icon: "⚡", label: "ขัดแย้ง", cls: "bg-echo-hp", desc: "Discord: ความเสียหายที่ได้รับจากการถูกโจมตี +1 หน่วย ตามจำนวนเทิร์นที่เหลือ" },
   evade:     { icon: "💨", label: "หลบหลีก", cls: "bg-echo-cyan text-gray-900", desc: "หลบหลีก: หลบการโจมตีตาม % ที่ระบุ (ไม่ระบุ = 100%) · ซ้อนได้ 3 ใช้ไป 1 ทุกครั้งที่ถูกเลือกโจมตี · ไม่ได้ใช้ 3 เทิร์นติดหมดฤทธิ์" },
@@ -1342,70 +1342,70 @@ const STATUS_INFO = {
   deathline: { icon: "🩸", label: "เส้นชีวิต", cls: "bg-echo-hp", desc: "เส้นชีวิต: ได้จากชิกิ (แต้มเท่ากัน / สกิลรอง / ท่าไม้ตาย 2) และเทเปา · ชิกิท่า 1: ครบ 6 แล้วถูกตีปกติระหว่างท่าไม้ตาย = สังหารทันที (ถูกตีก่อนครบ = รีเซ็ต) · ชิกิท่า 2: สูงสุด 5 ระหว่างความตายที่โรยรา เป็นดาเมจเสริม +1/เส้น (โจมตีรวมไม่เกิน 5) และ 1% สังหารทันที · เทเปา: ท่าไม้ตายสังหาร 10% ต่อเส้น" },
   deatheye:  { icon: "👁️", label: "เนตรมาร", cls: "bg-echo-hp", desc: "ฉันมองเห็นมันแล้ว: โจมตีปกติใส่ผู้เล่นที่มีเส้นชีวิตครบ 6 = สังหารทันที (บังคับตาย) — จัดการได้ 1 คน ท่าไม้ตายปิดลงทันที" },
   wither:    { icon: "🥀", label: "โรยรา", cls: "bg-echo-hp", desc: "ความตายที่โรยรา: ทุกเทิร์นให้เส้นชีวิต +1 แก่ทุกคนยกเว้นชิกิ (ท่านี้แจกได้ 3/คน รวมทุกแหล่ง 5) · ตีปกติ: ดาเมจ +1/เส้น (โจมตีรวมไม่เกิน 5) และ 1% สังหารทันที · ท่าจบแล้วเส้นชีวิตที่ท่าแจกหายจากทุกคน" },
-  godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-gold text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ? (2 เทิร์น): ท่าไม้ตายแรกที่คนอื่นกดถูกยกเลิก (เสียแต้มฟรี) · เจ้าของท่าที่มีผลอยู่ก่อนมาตีชิกิ ท่านั้นถูกยกเลิกย้อนหลัง" },
+  godslay:   { icon: "👁️", label: "ยกเลิกอัลติ", cls: "bg-echo-ice text-gray-900", desc: "นายมีฝีมือแค่ไหนหรอ? (2 เทิร์น): ท่าไม้ตายแรกที่คนอื่นกดถูกยกเลิก (เสียแต้มฟรี) · เจ้าของท่าที่มีผลอยู่ก่อนมาตีชิกิ ท่านั้นถูกยกเลิกย้อนหลัง" },
   // ---------- แบทแมน (เบน แอฟเฟล็ก) (patch 2.2.7) ----------
   // ---------- แบทแมน ร่างรถแบทโมบิล (patch 3.1) ----------
   batShot: { icon: "🛡️", label: "ลูกปรายล่อ", cls: "bg-echo-armor", desc: "ลูกปรายล่อ: ความเสียหายที่เข้าไม่ว่าจะแรงแค่ไหน จะถูกตัดให้เหลือแค่ 2 หน่วยตลอดเทิร์นนี้" },
-  batGun: { icon: "🔫", label: "ปืนติดรถ", cls: "bg-echo-gold text-gray-900", desc: "ปืนติดรถ: การโจมตีปกติครั้งถัดไปสร้างความเสียหายเพิ่มอีก 3 หน่วย (เล่นวีดีโอก่อนแล้วจึงเกิดความเสียหาย) — ทำงาน 1 ครั้งแล้วหมดกระสุน" },
+  batGun: { icon: "🔫", label: "ปืนติดรถ", cls: "bg-echo-ice text-gray-900", desc: "ปืนติดรถ: การโจมตีปกติครั้งถัดไปสร้างความเสียหายเพิ่มอีก 3 หน่วย (เล่นวีดีโอก่อนแล้วจึงเกิดความเสียหาย) — ทำงาน 1 ครั้งแล้วหมดกระสุน" },
   batDoom: { icon: "🚗", label: "แกไม่รอดแน่", cls: "bg-echo-hp", desc: "แกไม่รอดแน่: เมื่อมีผู้เล่นคนไหนการ์ดแตก แบทโมบิลจะพุ่งชนเป้าหมายคนนั้นด้วยความเสียหาย 4 หน่วย — ทำงาน 1 ครั้งแล้วหายไป" },
-  batKarma:   { icon: "🎁", label: "กรรมถึงตัว", cls: "bg-echo-gold text-gray-900", desc: "นายลืมของน่ะ: ถูกตีครั้งถัดไปไม่รับดาเมจ แต่ส่งดาเมจก้อนนั้นให้ 1 คนแทน (เลือกผู้โจมตีได้ · หลบไม่ได้) · ระหว่างท่าไม้ตาย ส่งต่อ +1" },
+  batKarma:   { icon: "🎁", label: "กรรมถึงตัว", cls: "bg-echo-ice text-gray-900", desc: "นายลืมของน่ะ: ถูกตีครั้งถัดไปไม่รับดาเมจ แต่ส่งดาเมจก้อนนั้นให้ 1 คนแทน (เลือกผู้โจมตีได้ · หลบไม่ได้) · ระหว่างท่าไม้ตาย ส่งต่อ +1" },
   batTaunt:   { icon: "🦇", label: "เข้ามาเลย", cls: "bg-echo-magenta", desc: "เข้ามาเลย: ทุกคนต้องโจมตีแบทแมน · ผู้โจมตีโดนดาเมจเท่าที่ทำ · แบทแมนฟื้นพลังชีวิต +1/เทิร์น" },
   // ---------- เจ้าหญิงราก (เรียวกิ ชิกิ) (patch 2.2.7) ----------
-  pshikiBlade: { icon: "🗡️", label: "ชักดาบ", cls: "bg-echo-gold text-gray-900", desc: "อืม ฉันเข้าใจแล้ว: เจ้าหญิงรากชักดาบออกมาแล้ว — เทิร์นนี้โจมตีปกติได้ (ปกติสกิลติดตัวห้ามไว้) และหากได้โจมตีจริงจะฟื้นพลังชีวิต 2 หน่วย" },
+  pshikiBlade: { icon: "🗡️", label: "ชักดาบ", cls: "bg-echo-ice text-gray-900", desc: "อืม ฉันเข้าใจแล้ว: เจ้าหญิงรากชักดาบออกมาแล้ว — เทิร์นนี้โจมตีปกติได้ (ปกติสกิลติดตัวห้ามไว้) และหากได้โจมตีจริงจะฟื้นพลังชีวิต 2 หน่วย" },
   pshikiUlt:   { icon: "👁️", label: "ราบรื่น", cls: "bg-echo-magenta", desc: "ทุกอย่างจะต้องราบรื่น: ท่าไม้ตายของเจ้าหญิงรากกำลังทำงาน — ผู้เล่นทุกคนบนสนามได้รับบัฟ [เนตรมณะ] 5 เทิร์น" },
-  netramana:   { icon: "✨", label: "เนตรมณะ", cls: "bg-echo-gold text-gray-900", desc: "เนตรมณะ: ตีปกติ 20% สังหารทันที · เป็นบัฟ (ยาต้านสถานะล้างไม่ได้) · ซ้อนกับโอกาสสังหารของตัวละครได้" },
+  netramana:   { icon: "✨", label: "เนตรมณะ", cls: "bg-echo-ice text-gray-900", desc: "เนตรมณะ: ตีปกติ 20% สังหารทันที · เป็นบัฟ (ยาต้านสถานะล้างไม่ได้) · ซ้อนกับโอกาสสังหารของตัวละครได้" },
   // ---------- เทเปา (ชิกิ) (patch 2.2 new) ----------
-  tepeuCook:   { icon: "🍳", label: "กำลังทำอาหาร", cls: "bg-echo-gold text-gray-900", desc: "วันนี้อากาศดีจัง: กำลังทำอาหารอยู่ — ครบ 2 เทิร์นจะได้ 'มื้อที่สุข' เข้าคลัง (ฟื้นเลือด 3 เมื่อใช้) ระหว่างนี้กดสกิลนี้ซ้ำไม่ได้" },
+  tepeuCook:   { icon: "🍳", label: "กำลังทำอาหาร", cls: "bg-echo-ice text-gray-900", desc: "วันนี้อากาศดีจัง: กำลังทำอาหารอยู่ — ครบ 2 เทิร์นจะได้ 'มื้อที่สุข' เข้าคลัง (ฟื้นเลือด 3 เมื่อใช้) ระหว่างนี้กดสกิลนี้ซ้ำไม่ได้" },
   tepeuPonder: { icon: "🤔", label: "ครุ่นคิด", cls: "bg-echo-cyan text-gray-900", desc: "ครุ่นคิด: จั่วไพ่ไม่ได้ (ชนะยังโจมตีได้) · จบเทิร์นแต้มสกิล +1 (เทิร์นสุดท้าย +2) · คนอื่นที่ชนะการจั่วระหว่างนี้ได้เส้นชีวิต +1" },
   // ---------- โอกูริ แคป (Rework) ----------
-  graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-gold text-gray-900", desc: "ร่าง Zone: ได้รับ Energy +1 ทุกเทิร์น และแต้มสกิล +1 ทุก 2 เทิร์น — หายไปเมื่อไม่มียุคทองเหลืออยู่" },
+  graybeast: { icon: "🐴", label: "GrayBeast", cls: "bg-echo-ice text-gray-900", desc: "ร่าง Zone: ได้รับ Energy +1 ทุกเทิร์น และแต้มสกิล +1 ทุก 2 เทิร์น — หายไปเมื่อไม่มียุคทองเหลืออยู่" },
   burnout: { icon: "💦", label: "หมดแรง", cls: "bg-echo-hp", desc: "Burnout: Energy หมดและไม่มียุคทอง — Breakfast ได้ Energy ลดลง -2 และติดผุพัง (เกราะไม่ฟื้น) — หายไปเมื่อครบ 2 เทิร์น" },
-  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-gold text-gray-900", desc: "ยุคทอง: แต้มละโจมตีพื้นฐาน +1 (สูงสุด +2) · ครบ 2 เพดานเกราะ +1 · สะสม 3 อยู่ 6 เทิร์น · ครบ 3 ตอนต้นเทิร์นเข้าร่าง Zone (ยุคทองหมด = ออกจากร่าง)" },
+  goldenera: { icon: "🏇", label: "ยุคทอง", cls: "bg-echo-ice text-gray-900", desc: "ยุคทอง: แต้มละโจมตีพื้นฐาน +1 (สูงสุด +2) · ครบ 2 เพดานเกราะ +1 · สะสม 3 อยู่ 6 เทิร์น · ครบ 3 ตอนต้นเทิร์นเข้าร่าง Zone (ยุคทองหมด = ออกจากร่าง)" },
   flow: { icon: "💨", label: "Flow", cls: "bg-echo-cyan text-gray-900", desc: "Flow: โอกาสหลบการโจมตี 50% — ใช้แล้วหมดไปไม่ว่าจะหลบสำเร็จหรือไม่ (หรือหมดเองเมื่อครบ 3 เทิร์น)" },
-  trainBonus: { icon: "🍀", label: "Bonus", cls: "bg-echo-gold text-gray-900", desc: "Bonus: โอกาสฝึกฝนสำเร็จ (Training) เพิ่มเป็น 80% ตามจำนวนเทิร์นที่เหลือ" },
-  sunny: { icon: "☀️", label: "Sunny Day", cls: "bg-echo-gold text-gray-900", desc: "Sunny Day: ได้รับโชคลาภ +1 ทุกเทิร์นที่มีบัฟนี้ ตามจำนวนเทิร์นที่เหลือ" },
+  trainBonus: { icon: "🍀", label: "Bonus", cls: "bg-echo-ice text-gray-900", desc: "Bonus: โอกาสฝึกฝนสำเร็จ (Training) เพิ่มเป็น 80% ตามจำนวนเทิร์นที่เหลือ" },
+  sunny: { icon: "☀️", label: "Sunny Day", cls: "bg-echo-ice text-gray-900", desc: "Sunny Day: ได้รับโชคลาภ +1 ทุกเทิร์นที่มีบัฟนี้ ตามจำนวนเทิร์นที่เหลือ" },
   fullbelly: { icon: "🥖", label: "เต็มอิ่ม", cls: "bg-echo-armor", desc: "เต็มอิ่ม (Breakfast): ดาเมจที่ได้รับ -1 หน่วย — หายไปหลังจบเทิร์นที่กดใช้ (สะสมได้ 1 แต้ม)" },
-  victorybeat: { icon: "🏆", label: "Beat of Victory", cls: "bg-echo-gold text-gray-900", desc: "The Beat of Victory: หากชนะเทิร์นนี้ พลังโจมตี +2 (ซ้อนทับยุคทองได้) และเป้าหมายติดเกินเยียวยา+ชะงัก 2 เทิร์น" },
+  victorybeat: { icon: "🏆", label: "Beat of Victory", cls: "bg-echo-ice text-gray-900", desc: "The Beat of Victory: หากชนะเทิร์นนี้ พลังโจมตี +2 (ซ้อนทับยุคทองได้) และเป้าหมายติดเกินเยียวยา+ชะงัก 2 เทิร์น" },
   ashen: { icon: "🐴", label: "Ashen Trail", cls: "bg-echo-hp", desc: "Ashen Trail: Cinderella Gray — หลังเปิดไพ่จะโจมตีใส่ทุกคนที่ไพ่แตก คนละ 2 หน่วย" },
   stagger: { icon: "🫨", label: "ชะงัก", cls: "bg-echo-hp", desc: "ชะงัก (The Beat of Victory): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- สึงาชิ ทาคุโตะ (patch 2.2 new / 2.2.3) ----------
-  star:       { icon: "⭐", label: "ดวงดาว", cls: "bg-echo-gold text-gray-900", desc: "ดวงดาว: สะสมจากสกิลพื้นฐานฉันได้ยินเสียงของโลก — ครบ 5 หน่วย แปลงร่างเป็นทาวเบิร์นทันที (ฉันคว้ามันได้แล้ว)" },
+  star:       { icon: "⭐", label: "ดวงดาว", cls: "bg-echo-ice text-gray-900", desc: "ดวงดาว: สะสมจากสกิลพื้นฐานฉันได้ยินเสียงของโลก — ครบ 5 หน่วย แปลงร่างเป็นทาวเบิร์นทันที (ฉันคว้ามันได้แล้ว)" },
   apprivoise: { icon: "🔥", label: "ฉันคว้ามันได้แล้ว", cls: "bg-echo-hp", desc: "ร่างทาวเบิร์น (10 เทิร์น): ปลดล็อกสกิลดาบและท่าไม้ตาย · โจมตีพื้นฐาน +1 · หมดแล้วต้องเก็บดวงดาว 5 ใหม่ · กันตายทำงานแล้วนับเวลาใหม่ 10 เทิร์น" },
   emeraude:   { icon: "💚", label: "ดาบแห่งแสงเอเมอโรด", cls: "bg-echo-armor", desc: "Star Sword Emeraude: ตีปกติครั้งถัดไปฟื้นพลังชีวิตเท่าดาเมจ · มีแซฟไฟร์ด้วย ได้ตีเพิ่ม 1 ครั้งแน่นอน" },
   saphir:     { icon: "💙", label: "ดาบแห่งแสงแซฟไฟร์", cls: "bg-echo-cyan text-gray-900", desc: "Star Sword Saphir: ลำพังไม่มีผล · มีเอเมอโรดด้วย ตีปกติครั้งถัดไปได้ตีเพิ่ม 1 ครั้งแน่นอน" },
-  lance:      { icon: "🔱", label: "หอกผู้พิชิต", cls: "bg-echo-gold text-gray-900", desc: "หอกผู้พิชิต: ตีปกติครั้งถัดไปดาเมจคงที่ 5 และฟื้นพลังชีวิต +3 แล้วหอกหายไป" },
+  lance:      { icon: "🔱", label: "หอกผู้พิชิต", cls: "bg-echo-ice text-gray-900", desc: "หอกผู้พิชิต: ตีปกติครั้งถัดไปดาเมจคงที่ 5 และฟื้นพลังชีวิต +3 แล้วหอกหายไป" },
   takutoThirdAtk: { icon: "✨", label: "พิชิตแสงดาว", cls: "bg-echo-hp", desc: "อย่างนายน่ะ จะไปเข้าใจอะไร: การโจมตีคอมโบครั้งนี้มีโอกาส 50% ได้โจมตีเพิ่มเป็นครั้งที่ 3" },
   // ---------- เอจิ (patch 2.4 new) ----------
   eijiSwift: { icon: "💨", label: "ความเร็วสูง", cls: "bg-echo-cyan text-gray-900", desc: "ว่องไว: หลบ +20% (สำเร็จ 1 ครั้ง/เทิร์น · ซ้อนกับท่าไม้ตายและ Ordinal Scale ได้) · ฟื้นพลังชีวิต +1/เทิร์น · หมดแล้วได้แต้มสกิลคืน 2" },
   eijiSword: { icon: "⚔️", label: "ดาบแห่งความทรงจำ", cls: "bg-echo-hp", desc: "ความแค้น: โอกาสดาเมจ 2 เท่าเป็น 10% ต่อเกราะ+พลังชีวิต 1 หน่วย (ไม่ต่ำกว่า 20%) · ติดแล้วฟื้นพลังชีวิต +1" },
-  eijiUlt: { icon: "🔥", label: "ไม่ว่ายังก็ตาม", cls: "bg-echo-gold text-gray-900", desc: "ไม่ว่ายังก็ตาม: Break Beat Bark! · ทุกคนโจมตีปกติ +1 · เฟสจั่วเหลือ 40 วินาที · เอจิหลบ +20% และแต้มสกิล +1/เทิร์น · หมดแล้วคูลดาวน์ 3 เทิร์น" },
+  eijiUlt: { icon: "🔥", label: "ไม่ว่ายังก็ตาม", cls: "bg-echo-ice text-gray-900", desc: "ไม่ว่ายังก็ตาม: Break Beat Bark! · ทุกคนโจมตีปกติ +1 · เฟสจั่วเหลือ 40 วินาที · เอจิหลบ +20% และแต้มสกิล +1/เทิร์น · หมดแล้วคูลดาวน์ 3 เทิร์น" },
   // ---------- มิซึซาว่า ฮารุกะ (patch 2.5 new) ----------
-  harukaOmega:  { icon: "🦾", label: "โอเมก้า", cls: "bg-echo-gold text-gray-900", desc: "โอเมก้า: ตีปกติให้เป้าเลือดไหล 3 ทุกครั้ง · ถูกตีปกติ 15% สวนกลับ 1 ให้ผู้โจมตีเลือดไหล 2 และสตั้น 1 เทิร์น (เทิร์นหน้า) · กดท่าซ้ำได้ (นับ 10 เทิร์นใหม่)" },
+  harukaOmega:  { icon: "🦾", label: "โอเมก้า", cls: "bg-echo-ice text-gray-900", desc: "โอเมก้า: ตีปกติให้เป้าเลือดไหล 3 ทุกครั้ง · ถูกตีปกติ 15% สวนกลับ 1 ให้ผู้โจมตีเลือดไหล 2 และสตั้น 1 เทิร์น (เทิร์นหน้า) · กดท่าซ้ำได้ (นับ 10 เทิร์นใหม่)" },
   muimiRusty: { icon: "🗡️", label: "ดาบเก่าๆ", cls: "bg-echo-armor", desc: "ดาบเก่าๆ: เมื่อโจมตีปกติจะฟื้นพลังชีวิต 1 หน่วย และแต้มสกิล 1 หน่วย — ระหว่างสถานะนี้ใช้ดาบสะบั้นหอคอยสวรรค์ไม่ได้" },
-  muimiTower: { icon: "⚔️", label: "ดาบสะบั้น", cls: "bg-echo-gold text-gray-900", desc: "ดาบสะบั้น: โจมตีพื้นฐาน +3 · ตีปกติฟื้นพลังชีวิต 2 และยืดสถานะ +1 เทิร์น · ไม่เกิด Overload Force" },
+  muimiTower: { icon: "⚔️", label: "ดาบสะบั้น", cls: "bg-echo-ice text-gray-900", desc: "ดาบสะบั้น: โจมตีพื้นฐาน +3 · ตีปกติฟื้นพลังชีวิต 2 และยืดสถานะ +1 เทิร์น · ไม่เกิด Overload Force" },
   harukaPunish: { icon: "⚖️", label: "จงไปสู่สุขติ", cls: "bg-echo-magenta", desc: "จงไปสู่สุขติ (3 เทิร์น): ตีปกติใส่เป้าที่มีเลือดไหล 3+ ระเบิดเป็นดาเมจเพิ่มเท่าจำนวนที่ติด แล้วล้างเลือดไหล · ทำได้หลายครั้ง" },
   // ---------- โปรดิวเซอร์ (luminous) (patch 3.6 new) ----------
   lumiTrain:     { icon: "🎤", label: "เตรียมซ้อม", cls: "bg-echo-cyan text-gray-900", desc: "เตรียมซ้อม: โจมตีปกติไม่ได้ (ทำอย่างอื่นได้ตามปกติ) แต่แต้มสกิลและพลังชีวิตฟื้น +1 ทุกเทิร์น" },
   lumiUlt:       { icon: "🎬", label: "ท่าไม้ตายไอดอล", cls: "bg-echo-magenta", desc: "ท่าไม้ตายของไอดอลที่ยืนแนวหน้ากำลังทำงาน — ระหว่างนี้สลับไอดอลไม่ได้ และไม่รับความเสียหายจากไพ่แตก/แพ้จั่ว" },
-  lumiLuminous:  { icon: "🌈", label: "luminous", cls: "bg-echo-gold text-gray-900", desc: "luminous: รวมความสามารถท่าไม้ตายทั้ง 5 แบบและผลติดตัวของไอดอลทั้ง 5 (โจมตี +1 ไม่ซ้อน) · ถูกตีครบจำนวนคู่ต่อสู้ที่เหลือ (นับครั้ง) ฟื้นพลังชีวิต 2 เกราะ 1" },
+  lumiLuminous:  { icon: "🌈", label: "luminous", cls: "bg-echo-ice text-gray-900", desc: "luminous: รวมความสามารถท่าไม้ตายทั้ง 5 แบบและผลติดตัวของไอดอลทั้ง 5 (โจมตี +1 ไม่ซ้อน) · ถูกตีครบจำนวนคู่ต่อสู้ที่เหลือ (นับครั้ง) ฟื้นพลังชีวิต 2 เกราะ 1" },
   // ---------- ไบรอัน (GT-R34) (patch 3.5 new) ----------
   brianCar:    { icon: "🚗", label: "รถคู่ใจ", cls: "bg-echo-cyan text-gray-900", desc: "รถคู่ใจ: กินน้ำมัน 1/เทิร์น · ทุก 2 หน่วยที่กินฟื้นพลังชีวิต +1 · อยู่จนน้ำมันหมดหรือดับเครื่อง · ต้องอยู่ในร่างนี้ถึงใช้สกิลรอง/ท่าไม้ตายได้" },
   brianBoost:  { icon: "🔥", label: "รถคู่ใจที่ขาดไม่ได้", cls: "bg-echo-hp", desc: "รถคู่ใจที่ขาดไม่ได้: กินน้ำมันเทิร์นละ 2 หน่วยแทน 1 แลกกับพลังโจมตีพื้นฐาน +1 หน่วย และแรงชนของ \"หลีกทางไป\" เพิ่มเป็น 2 หน่วย" },
-  brianPush:   { icon: "🏎️", label: "หลีกทางไป", cls: "bg-echo-gold text-gray-900", desc: "หลีกทางไป: ทุกเทิร์นหลังเปิดไพ่ ชนคนแต้มสูงสุดในบรรดาคนที่แต้มมากกว่าเรา ดาเมจ 1 (2 ถ้าเพิ่มพลัง) · ระหว่างนี้ใช้ท่าไม้ตายไม่ได้" },
+  brianPush:   { icon: "🏎️", label: "หลีกทางไป", cls: "bg-echo-ice text-gray-900", desc: "หลีกทางไป: ทุกเทิร์นหลังเปิดไพ่ ชนคนแต้มสูงสุดในบรรดาคนที่แต้มมากกว่าเรา ดาเมจ 1 (2 ถ้าเพิ่มพลัง) · ระหว่างนี้ใช้ท่าไม้ตายไม่ได้" },
   brianNoFuel: { icon: "⛽", label: "ถังรั่ว", cls: "bg-echo-hp", desc: "ถังรั่ว: แพ้หรือเสมอในการแข่งที่มีเดิมพัน — ฟื้นน้ำมันจากการจบเทิร์นไม่ได้ (แต่ยังได้น้ำมันจากการชนะการจั่วตามปกติ)" },
   // ---------- สถานะ Universal ใหม่ (patch 3.4) ----------
-  daichiUnite: { icon: "✨", label: "unite", cls: "bg-echo-gold text-gray-900", desc: "unite: โจมตี +1 · สวมเกราะด้วย ไพ่ตายของฉัน ได้ · การ์ดที่ทำให้แต้มเกินถูกตัดไปบวกเทิร์นหน้า (1 ครั้ง/เทิร์น)" },
+  daichiUnite: { icon: "✨", label: "unite", cls: "bg-echo-ice text-gray-900", desc: "unite: โจมตี +1 · สวมเกราะด้วย ไพ่ตายของฉัน ได้ · การ์ดที่ทำให้แต้มเกินถูกตัดไปบวกเทิร์นหน้า (1 ครั้ง/เทิร์น)" },
   cayPistol: { icon: "🔫", label: "ปืนพก", cls: "bg-echo-cyan text-gray-900", desc: "ปืนพกหน่วยรบ (คาเยนน์): การโจมตีปกติที่เข้าเป้าฟื้นพลังชีวิต 3 หน่วย — ทำงานครั้งเดียวแล้วหมด (คงอยู่ 1 เทิร์น)" },
-  cayGepard: { icon: "🛡️", label: "เกพาร์ด", cls: "bg-echo-gold text-gray-900", desc: "เกพาร์ด: ดาเมจที่ได้รับไม่ถูกเลื่อน · ตีปกติโดนแต่ละครั้ง 50% ให้เปราะบาง · ปลดล็อก แน่จริงก็หลบสิ และ มิสไซล์แห่งคำอำลา" },
+  cayGepard: { icon: "🛡️", label: "เกพาร์ด", cls: "bg-echo-ice text-gray-900", desc: "เกพาร์ด: ดาเมจที่ได้รับไม่ถูกเลื่อน · ตีปกติโดนแต่ละครั้ง 50% ให้เปราะบาง · ปลดล็อก แน่จริงก็หลบสิ และ มิสไซล์แห่งคำอำลา" },
   mend:      { icon: "💚", label: "เยียวยา", cls: "bg-echo-armor", desc: "เยียวยา: ต้นเทิร์นฟื้นพลังชีวิตเท่ากับจำนวนหน่วยที่ระบุ (1 หน่วย = 1 พลังชีวิต) — ซ้อนทับจำนวนเทิร์นได้สูงสุด 5 เทิร์น" },
   blind:     { icon: "🕶️", label: "ตาบอด", cls: "bg-echo-hp", desc: "ตาบอด: มองไม่เห็นอะไรเลยทั้งเทิร์น — ไพ่ แต้ม พลังงาน พลังชีวิต และเกราะของทุกคนรวมทั้งของตัวเอง ถูกปิดหมด" },
   // ---------- ผู้วิงวอน The Supplicant (patch 3.4 new) ----------
-  supFaith:  { icon: "✝️", label: "เกราะศรัทธา", cls: "bg-echo-gold text-gray-900", desc: "เกราะศรัทธา (สูงสุด 3): รับดาเมจทุกช่องทางก่อนเกราะหลัก ยกเว้นการโจมตีทะลุเกราะ · ปืนสลายเกราะทำลายได้ · การโจมตีที่ดาเมจเหลือ 0 ทำลายไม่ได้ · ระหว่างยังเหลือ ได้คุ้มครอง 1 และเสริมพลัง 1 · ล้าง/ต้านไม่ได้" },
+  supFaith:  { icon: "✝️", label: "เกราะศรัทธา", cls: "bg-echo-ice text-gray-900", desc: "เกราะศรัทธา (สูงสุด 3): รับดาเมจทุกช่องทางก่อนเกราะหลัก ยกเว้นการโจมตีทะลุเกราะ · ปืนสลายเกราะทำลายได้ · การโจมตีที่ดาเมจเหลือ 0 ทำลายไม่ได้ · ระหว่างยังเหลือ ได้คุ้มครอง 1 และเสริมพลัง 1 · ล้าง/ต้านไม่ได้" },
   supJudge:  { icon: "⚖️", label: "ตราพิพากษา", cls: "bg-echo-magenta", desc: "ตราพิพากษา: ทุกครั้งที่ถูกตีหรือเป็นฝ่ายตี นับ 1 · ศัตรู: ดาเมจที่ได้รับ +1 ครบ 3 ติดลงทัณฑ์ · พันธมิตร: เกราะ +1 ครบ 3 ได้ฟื้นฟู + ล้างดีบัฟ" },
   supPunish: { icon: "⛓️", label: "ลงทัณฑ์", cls: "bg-echo-hp", desc: "ลงทัณฑ์: ระหว่างที่ยังติดอยู่ เจ้าของได้รับดีบัฟ \"ชา\" (กดจั่ว 1 ครั้งได้ไพ่ 2 ใบ) และ \"ตาบอด\" (มองไม่เห็นอะไรเลย) — ล้าง/ต้านไม่ได้" },
   supLamb:   { icon: "🐑", label: "ลูกแกะน้อยรู้แจ้ง", cls: "bg-echo-hp", desc: "ลูกแกะน้อยรู้แจ้ง: อ่อนแอ 1 และเปราะบาง 1 · เล็งผู้วิงวอนไม่ได้ (สกิล/ไอเทม/โจมตี) · ล้าง/ต้านไม่ได้" },
   // ---------- มาคุโนะอุจิ อิปโป (patch 3.3 new) ----------
-  ippoDempsey: { icon: "🌀", label: "Dempsey roll", cls: "bg-echo-gold text-gray-900", desc: "Dempsey roll: หลบสำเร็จได้ Dempsey Charge +1 (สูงสุด 3) · แต่ละหน่วย = ตีเพิ่ม 1 ครั้ง · บัฟหายเมื่อตีโดน" },
+  ippoDempsey: { icon: "🌀", label: "Dempsey roll", cls: "bg-echo-ice text-gray-900", desc: "Dempsey roll: หลบสำเร็จได้ Dempsey Charge +1 (สูงสุด 3) · แต่ละหน่วย = ตีเพิ่ม 1 ครั้ง · บัฟหายเมื่อตีโดน" },
   // ---------- ยุย โยชิโอกะ (patch 3.0 new) ----------
   yuiTaunt:   { icon: "\u{1F4E3}", label: "ปากแจ๋ว", cls: "bg-echo-magenta", desc: "ปากแจ๋ว: การโจมตีปกติของทุกคนถูกล่อมาที่ยุยตลอดเทิร์นนี้" },
   yuiWrestle: { icon: "\u{1F93C}", label: "นักมวยปล้ำ", cls: "bg-echo-armor", desc: "นักมวยปล้ำ: ดาเมจที่ได้รับ -1 · ถูกตีปกติแล้วทุ่มสวน 2 · สวนครบตามจำนวนบนป้ายแล้วผลจบ" },
@@ -1414,23 +1414,23 @@ const STATUS_INFO = {
   obsDream:    { icon: "💤", label: "จุดจบของความฝัน", cls: "bg-echo-hp", desc: "จุดจบของความฝัน (โอเบรอน ฤดูร้อน): พลังโจมตี +4 เฉพาะเทิร์นนี้ — จบเทิร์นแล้วจะติดสตั้น 3 เทิร์น (ต้านสถานะผิดปกติกันได้)" },
   obsLark:     { icon: "🐦", label: "นกจาบยามเช้า", cls: "bg-echo-magenta", desc: "นกจาบยามเช้า (โอเบรอน ฤดูร้อน): เมื่อเริ่มเทิร์นถัดไปจะเสียพลังชีวิต 2 หน่วยแบบไม่สนเกราะ (ต้านสถานะกันไม่ได้)" },
   artCaliburn: { icon: "⚔️", label: "Around Caliburn", cls: "bg-echo-hp", desc: "Around Caliburn (อาร์โทเรีย): พลังโจมตี +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
-  andView:     { icon: "👁️", label: "มุมมองใหม่", cls: "bg-echo-gold text-gray-900", desc: "มุมมองใหม่ (แอนเดอร์เซน): เทิร์นนี้ท่าไม้ตาย Märchen Meines Lebens มีโอกาสเกิดผลแต่ละอย่าง +25% (25% -> 50%)" },
+  andView:     { icon: "👁️", label: "มุมมองใหม่", cls: "bg-echo-ice text-gray-900", desc: "มุมมองใหม่ (แอนเดอร์เซน): เทิร์นนี้ท่าไม้ตาย Märchen Meines Lebens มีโอกาสเกิดผลแต่ละอย่าง +25% (25% -> 50%)" },
   andInk:      { icon: "✒️", label: "หมึกแห่งเรื่องเล่า", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): จบเทิร์นได้แต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   andCrit:     { icon: "📖", label: "บทที่งดงาม", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): อัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด: โจมตี +1 และคริติคอล +20% (×2) · ออกหมัดโจมตีปกติแล้วไรเนสได้แต้มสกิล +2 · ตัวเลข = เทิร์นที่เหลือ" },
   reinesCrit:  { icon: "📘", label: "คำแนะนำชั้นครู", cls: "bg-echo-hp", desc: "คำแนะนำชั้นครู (ไรเนส): อัตราคริติคอล +30% (รวมกับคำสั่งขั้นเด็ดขาดได้ · คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
-  artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-gold text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-ice text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   usagiMath:  { icon: "🧮", label: "โจทย์คณิต (เทิร์นที่เหลือ)", cls: "bg-echo-magenta", desc: "โจทย์คณิตของอุซากิ: ตอนกดและต้นเทิร์นอีก 2 เทิร์น ศัตรูทุกคนทำโจทย์ 3 ข้อ ข้อละ 5 วินาที · ผิดหรือไม่ทันโดน 1 ต่อข้อ · ตัวเลข = เทิร์นที่เหลือ" },
-  yuiRock:    { icon: "\u{1F3B8}", label: "girl don't cry", cls: "bg-echo-gold text-gray-900", desc: "girl don't cry (ยุย): พลังโจมตี +1 · และคนที่แต้มสกิลน้อยที่สุดในวงจะได้รับแต้มสกิล +1 ทุกเทิร์น (ประเมินใหม่ทุกเทิร์น)" },
+  yuiRock:    { icon: "\u{1F3B8}", label: "girl don't cry", cls: "bg-echo-ice text-gray-900", desc: "girl don't cry (ยุย): พลังโจมตี +1 · และคนที่แต้มสกิลน้อยที่สุดในวงจะได้รับแต้มสกิล +1 ทุกเทิร์น (ประเมินใหม่ทุกเทิร์น)" },
   yuiBeats:   { icon: "\u{1F941}", label: "my soul your beats", cls: "bg-echo-hp", desc: "my soul your beats: ใครในวงจั่ว คนอื่นในวงต้องจั่วตาม (คนเปิดไพ่แล้วไม่โดน) · ไพ่แตกโดนดาเมจ 1 ตอนสรุปรอบ" },
   yuiWait:    { icon: "\u{1F3B6}", label: "กำลังบรรเลง", cls: "bg-echo-cyan text-gray-900", desc: "สมบัติล้ำค่าที่สุด.....: ยุยทำอะไรไม่ได้ (จั่ว/สกิล/ไอเทม) จนกว่าเป้าจะฟื้น · ยุยตกรอบก่อน ผลหาย" },
-  yuiMelody:  { icon: "\u{1F3B5}", label: "ทำนอง", cls: "bg-echo-gold text-gray-900", desc: "ทำนอง: พลังโจมตี +2 ตามจำนวนเทิร์นที่เหลือ (ได้จากการถูกชุบชีวิตด้วยเพลงสมบัติล้ำค่าที่สุด.....)" },
+  yuiMelody:  { icon: "\u{1F3B5}", label: "ทำนอง", cls: "bg-echo-ice text-gray-900", desc: "ทำนอง: พลังโจมตี +2 ตามจำนวนเทิร์นที่เหลือ (ได้จากการถูกชุบชีวิตด้วยเพลงสมบัติล้ำค่าที่สุด.....)" },
   // ---------- อิสึกะ ชิโด (patch 2.9 new) ----------
   shidoSpirit: { icon: "🕊️", label: "ภูติ", cls: "bg-echo-armor", desc: "ภูติ: ฟื้นพลังชีวิต 1 หน่วยตอนเริ่มเทิร์น ตามจำนวนเทิร์นที่เหลือ" },
-  shidoSword: { icon: "⚔️", label: "Sandalphon", cls: "bg-echo-gold text-gray-900", desc: "Sandalphon: แต้มสกิล +1/เทิร์น · โจมตีปกติเท่าค่าดาบที่ล็อกตอนกด (ค่าที่บันทึกล่าสุด) · โดนตีระหว่างนี้ค่าดาบไม่เปลี่ยน ต้องกดใหม่" },
+  shidoSword: { icon: "⚔️", label: "Sandalphon", cls: "bg-echo-ice text-gray-900", desc: "Sandalphon: แต้มสกิล +1/เทิร์น · โจมตีปกติเท่าค่าดาบที่ล็อกตอนกด (ค่าที่บันทึกล่าสุด) · โดนตีระหว่างนี้ค่าดาบไม่เปลี่ยน ต้องกดใหม่" },
   // ---------- โมโรโบชิ ดัน (patch 2.8 new) ----------
   danCrutch:   { icon: "🦯", label: "ไม้ค้ำ", cls: "bg-echo-armor", desc: "ไม้ค้ำ: ฟื้นพลังชีวิต 1 หน่วยตอนเริ่มเทิร์น ตามจำนวนเทิร์นที่เหลือ — ระหว่างที่ยังมีผลอยู่ ดันกดสกิลพื้นฐานซ้ำไม่ได้" },
-  danDisciple: { icon: "🎓", label: "ศิษย์", cls: "bg-echo-gold text-gray-900", desc: "ศิษย์: โจมตี +1 · ดาเมจที่ทำใส่ดัน -2 · ถ้าตีดัน โดนสวน 3 แล้วหมดสถานะ" },
+  danDisciple: { icon: "🎓", label: "ศิษย์", cls: "bg-echo-ice text-gray-900", desc: "ศิษย์: โจมตี +1 · ดาเมจที่ทำใส่ดัน -2 · ถ้าตีดัน โดนสวน 3 แล้วหมดสถานะ" },
   danChase:    { icon: "🚗", label: "จงหลบแต่อย่าหนี", cls: "bg-echo-hp", desc: "จงหลบแต่อย่าหนี: แพ้แต้มโดน 1 · ไพ่แตกโดน 2 · หลุดได้เมื่อตีดันครบ 2 ครั้ง · ดันได้แต้มสกิล +1/เทิร์น · แพ้แต้มติด 2 ครั้ง (ไม่นับไพ่แตก) ดันได้ท่า อย่าให้ฉันต้องเฆี่ยนตี เทิร์นหน้า" },
   // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2) ----------
   oblada:   { icon: "🎵", label: "สิ่งแปลกปลอม", cls: "bg-echo-hp", desc: "ObLa Di, ObLa Da: รับความเสียหาย 1 หน่วยทุกๆ 2 เทิร์น เป็นเวลา 4 เทิร์น" },
@@ -1439,19 +1439,19 @@ const STATUS_INFO = {
   // ---------- นานายะ ชิกิ (patch 2.1.9) ----------
   nanayaSeal: { icon: "👁️", label: "สกิลติดตัวถูกปิด", cls: "bg-echo-hp", desc: "อันนี้ของนายรึเปล่า: ใช้สกิล/จั่วไพ่ไม่ได้ และสกิลติดตัวไม่ทำงาน ตามจำนวนเทิร์นที่เหลือ" },
   // ---------- อาริมะ มิยาโกะ (patch 2.2.0) ----------
-  miyakoHeal:  { icon: "💗", label: "พี่จ๋าอยู่ไหน", cls: "bg-echo-gold text-gray-900", desc: "พี่จ๋าอยู่ไหน: การโจมตีปกติครั้งถัดไปฟื้นเลือด +1 — คงอยู่จนกว่าจะได้โจมตี" },
+  miyakoHeal:  { icon: "💗", label: "พี่จ๋าอยู่ไหน", cls: "bg-echo-ice text-gray-900", desc: "พี่จ๋าอยู่ไหน: การโจมตีปกติครั้งถัดไปฟื้นเลือด +1 — คงอยู่จนกว่าจะได้โจมตี" },
   miyakoCombo: { icon: "🥊", label: "เพลงหมัด อาริมะ", cls: "bg-echo-cyan text-gray-900", desc: "เพลงหมัด อาริมะ: การโจมตีปกติครั้งถัดไปต่อคอมโบได้สูงสุด 4 ครั้ง (ครั้งที่ 1 ตีแน่นอน / 2:100% / 3:50% / 4:25%) — คงอยู่จนกว่าจะได้โจมตี" },
-  miyakoUlt:   { icon: "🎯", label: "หนูจะเอาจริงแล้วนะ", cls: "bg-echo-gold text-gray-900", desc: "หนูจะทำให้พี่ตาสว่างเอง: แต้มการจั่วกลายเป็น 20 — เมื่อได้โจมตีจะปิดความสามารถสังหารทันทีของเป้าหมาย หรือเสริมพลังโจมตีถาวร +1 พร้อมมอบผุพัง" },
+  miyakoUlt:   { icon: "🎯", label: "หนูจะเอาจริงแล้วนะ", cls: "bg-echo-ice text-gray-900", desc: "หนูจะทำให้พี่ตาสว่างเอง: แต้มการจั่วกลายเป็น 20 — เมื่อได้โจมตีจะปิดความสามารถสังหารทันทีของเป้าหมาย หรือเสริมพลังโจมตีถาวร +1 พร้อมมอบผุพัง" },
   miyakoSeal:  { icon: "🥊", label: "ไม่ยอมให้ฆ่าใครอีกแล้ว", cls: "bg-echo-hp", desc: "ไม่ยอมให้ฆ่าใครอีกแล้ว: ความสามารถสังหารทันทีถูกปิดใช้งาน ตามจำนวนเทิร์นที่เหลือ" },
-  yaak:        { icon: "🥊", label: "ย๊ากก!", cls: "bg-echo-gold text-gray-900", desc: "ย๊ากก!: การโจมตีปกติ +1 หน่วย คงอยู่จนกว่าจะได้โจมตี — ถ้ามีเพลงหมัด อาริมะด้วย จะติดอยู่ทุกหมัดในคอมโบ (นับทั้งคอมโบเป็นการโจมตีครั้งเดียว)" },
+  yaak:        { icon: "🥊", label: "ย๊ากก!", cls: "bg-echo-ice text-gray-900", desc: "ย๊ากก!: การโจมตีปกติ +1 หน่วย คงอยู่จนกว่าจะได้โจมตี — ถ้ามีเพลงหมัด อาริมะด้วย จะติดอยู่ทุกหมัดในคอมโบ (นับทั้งคอมโบเป็นการโจมตีครั้งเดียว)" },
   // ---------- สถานะ Universal (patch 2.2.1) ----------
   invert:     { icon: "🔄", label: "ผกผัน", cls: "bg-echo-hp", desc: "ผกผัน: ฟื้นเลือด/เกราะ กลายเป็นเสียแทน — เพิ่มพลังโจมตี กลายเป็นลดแทน ตามจำนวนเทิร์นที่เหลือ" },
   decay:      { icon: "🥀", label: "ผุพัง", cls: "bg-echo-hp", desc: "ผุพัง: เกราะฟื้นไม่ได้ ตามจำนวนเทิร์นที่เหลือ" },
   hisakawaLimit: { icon: "🛡️", label: "เท่าที่ไหว", cls: "bg-echo-armor", desc: "ดาเมจที่ได้รับลดลง 1 และเมื่อนากิโจมตีโดนจะมอบผกผัน 3 เทิร์น" },
   hisakawaTempo: { icon: "💨", label: "จังหวะนี้แหละ", cls: "bg-echo-cyan text-gray-900", desc: "แฝดที่กำลังคุมอยู่จะได้โจมตีหลังผู้ชนะ หากแต้มตัวเองต่ำที่สุดแบบไม่เสมอและไม่ไพ่แตก (มีผลกับทั้งสองคน คงอยู่จนกว่าจะใช้)" },
   hisakawaStage: { icon: "🎤", label: "เวทีของพวกเรา", cls: "bg-echo-magenta", desc: "แต้มสกิลฟื้นเพิ่ม +1 ทุกเทิร์น" },
-  hisakawaTalent: { icon: "✨", label: "พรสวรรค์ของพวกเรา", cls: "bg-echo-gold text-gray-900", desc: "พลังโจมตี +2" },
-  hisakawaDream: { icon: "🎁", label: "ฝันของเหล่าฝาแฝด", cls: "bg-echo-gold text-gray-900", desc: "แต้มสกิล +1, โจมตี +2, โชคลาภ +1 ทุกเทิร์น และทุกครั้งที่ได้โจมตีแฝดอีกคนจะออกมาโจมตีเป็นครั้งที่ 2 (100%) ดาเมจ 2 (ต้องมีแฝดครบทั้งคู่)" },
+  hisakawaTalent: { icon: "✨", label: "พรสวรรค์ของพวกเรา", cls: "bg-echo-ice text-gray-900", desc: "พลังโจมตี +2" },
+  hisakawaDream: { icon: "🎁", label: "ฝันของเหล่าฝาแฝด", cls: "bg-echo-ice text-gray-900", desc: "แต้มสกิล +1, โจมตี +2, โชคลาภ +1 ทุกเทิร์น และทุกครั้งที่ได้โจมตีแฝดอีกคนจะออกมาโจมตีเป็นครั้งที่ 2 (100%) ดาเมจ 2 (ต้องมีแฝดครบทั้งคู่)" },
 };
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
@@ -1469,16 +1469,16 @@ function statusEntries(p, full) {
     out.push({ key: k, v, amt, ...info });
   }
   if ((p.tonkatsu || 0) > 0) out.push({ key: "tonkatsu", v: p.tonkatsu, icon: "🍜", label: "ทงคัสสึ", cls: "bg-echo-cyan text-gray-900", desc: "ชามทงคัสสึสะสม (สูงสุด 4) — ใช้กับ Song for you: 1 ชาม = +1 พลังขิง และล้างสถานะผิดปกติทั้งหมด" });
-  if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-gold text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ +1 ต่อครั้ง ซ้อนทับได้สูงสุด 2 หน่วย — แต่ละหน่วยคงอยู่ 3 เทิร์นแยกกัน" });
-  if (p.character?.id === "kotone") out.push({ key: "piggy", v: p.piggy || 0, icon: "🐷", label: `กระปุกออมสิน ${p.piggy || 0}/${p.piggyMax || 15}`, cls: "bg-echo-gold text-gray-900", desc: "กระปุกออมสิน: ได้เหรียญเมื่อไหร่ 60% แบ่งหยอด (หักจากที่ได้ ครั้งละไม่เกิน 3 เต็มที่ 15) · แปลงเป็นดาเมจผ่าน รัก รักที่สุดเลย: 5/10/15 เหรียญ = +1/+2/+3" });
+  if ((p.appleAtk || 0) > 0) out.push({ key: "appleAtk", v: p.appleAtk, icon: "🍎", label: "มอบของ", cls: "bg-echo-ice text-gray-900", desc: "เอาไปสิ: พลังโจมตีเพิ่มจากการมอบของ +1 ต่อครั้ง ซ้อนทับได้สูงสุด 2 หน่วย — แต่ละหน่วยคงอยู่ 3 เทิร์นแยกกัน" });
+  if (p.character?.id === "kotone") out.push({ key: "piggy", v: p.piggy || 0, icon: "🐷", label: `กระปุกออมสิน ${p.piggy || 0}/${p.piggyMax || 15}`, cls: "bg-echo-ice text-gray-900", desc: "กระปุกออมสิน: ได้เหรียญเมื่อไหร่ 60% แบ่งหยอด (หักจากที่ได้ ครั้งละไม่เกิน 3 เต็มที่ 15) · แปลงเป็นดาเมจผ่าน รัก รักที่สุดเลย: 5/10/15 เหรียญ = +1/+2/+3" });
   // เหรียญ (gold) ไม่โชว์ในรายการสถานะอีกต่อไป — ปุ่มร้านค้าที่แผงตัวเองมีบอกอยู่แล้ว และไม่ควรให้ผู้เล่นอื่นเห็นเหรียญของเรา
   // โอกูริ แคป: Energy + Stamina ชาร์จ (โชว์เสมอ — ทรัพยากรหลักของตัวละคร แยกกัน 2 อย่าง)
   if (p.character?.id === "escanor") {
-    out.push({ key: "escanorChargeInfo", v: 1, icon: "\u{1F305}", label: `Sun Charge ${p.escanorCharge || 0}/${p.escanorChargeMax || 12}`, cls: "bg-echo-gold text-gray-900", desc: "เมื่อ Sun Charge เต็มจะเข้าสู่ร่าง Noon และจะลดลงระหว่างอยู่ในร่าง Noon" });
-    out.push({ key: "escanorSolarInfo", v: 1, icon: "\u2600\uFE0F", label: `Solar ${(p.statuses?.escanorSolar || 0)}/4`, cls: "bg-echo-gold text-gray-900", desc: "Solar: ได้เมื่อแพ้การเปิดไพ่หรือไม่ได้โจมตี · ไม่ได้เพิ่ม 3 เทิร์นลด 1 · สุริยาไม่สิ้นแสงใช้ 1/เทิร์นคงร่าง Morning หมดแล้วกลับ Night ถ้ายังกลางคืน" });
+    out.push({ key: "escanorChargeInfo", v: 1, icon: "\u{1F305}", label: `Sun Charge ${p.escanorCharge || 0}/${p.escanorChargeMax || 12}`, cls: "bg-echo-ice text-gray-900", desc: "เมื่อ Sun Charge เต็มจะเข้าสู่ร่าง Noon และจะลดลงระหว่างอยู่ในร่าง Noon" });
+    out.push({ key: "escanorSolarInfo", v: 1, icon: "\u2600\uFE0F", label: `Solar ${(p.statuses?.escanorSolar || 0)}/4`, cls: "bg-echo-ice text-gray-900", desc: "Solar: ได้เมื่อแพ้การเปิดไพ่หรือไม่ได้โจมตี · ไม่ได้เพิ่ม 3 เทิร์นลด 1 · สุริยาไม่สิ้นแสงใช้ 1/เทิร์นคงร่าง Morning หมดแล้วกลับ Night ถ้ายังกลางคืน" });
   }
   if (p.character?.id === "oguri") {
-    out.push({ key: "oguriEnergy", v: 1, icon: "⚡", label: `Energy ${p.oguriEnergy || 0}/16`, cls: "bg-echo-gold text-gray-900", desc: "Energy (สูงสุด 16): Breakfast +4 (หมดแรง +2) · Training ใช้ 4 · Energy หมด = เข้าร่างหมดแรง" });
+    out.push({ key: "oguriEnergy", v: 1, icon: "⚡", label: `Energy ${p.oguriEnergy || 0}/16`, cls: "bg-echo-ice text-gray-900", desc: "Energy (สูงสุด 16): Breakfast +4 (หมดแรง +2) · Training ใช้ 4 · Energy หมด = เข้าร่างหมดแรง" });
     out.push({ key: "stamina", v: 1, icon: "🏇", label: `Stamina ชาร์จ ${p.stamina || 0}/${p.oguriChargeCap || 52}`, cls: "bg-echo-cyan text-gray-900", desc: "Stamina ชาร์จ: ได้อัตโนมัติ 6-12/เทิร์น · ความจุ 52 (Training เพิ่มได้ถึง 100) · The Beat of Victory ใช้ 35 · Ashen Trail ใช้ 80" });
   }
   // อิสึกะ ชิโด (patch 2.9): ทั้งสองค่านี้ server ส่งให้เจ้าของคนเดียว (undefined สำหรับคนอื่น)
@@ -1502,9 +1502,9 @@ function statusEntries(p, full) {
       ? { key: "daisukeMode", v: 1, icon: "⚡", label: "CAST OFF", cls: "bg-echo-hp", desc: "ปลดเกราะทิ้ง: พลังโจมตีพื้นฐาน +1 แต่เกราะจะไม่ฟื้นอีกเลย — เป็นเงื่อนไขปลดล็อก Clock Up และ Rider Shooting" }
       : { key: "daisukeMode", v: 1, icon: "🛡️", label: `PUT ON ${d.putOnTurns}/${d.putOnEvery}`, cls: "bg-echo-armor", desc: "สวมเกราะอยู่: เกราะฟื้นได้ตามปกติ และครบ 3 เทิร์นเมื่อไรจะฟื้นพลังชีวิต +2 — กดสกิลรอง/ท่าไม้ตายไม่ได้ในโหมดนี้" });
     if (d.clockUp) out.push({ key: "daisukeClock", v: 1, icon: "⏱️", label: `CLOCK UP · หลบ ${d.dodge}%`, cls: "bg-echo-magenta", desc: "เวลาหยุดนิ่ง: คนอื่นขยับไม่ได้จนกว่าไดสุเกะจะเปิดไพ่ · สกิลติดตัว Zect ให้หลบหลีก 25% · เสียแต้มสกิล 2 หน่วยต่อเทิร์น หมดเมื่อไรก็ปิดเอง" });
-    if (d.rider) out.push({ key: "daisukeRider", v: 1, icon: "🎯", label: "ไรเดอร์ชูต", cls: "bg-echo-gold text-gray-900", desc: "Rider Shooting เล็งไว้แล้ว: การโจมตีปกติครั้งถัดไปจะล้างเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงลงความเสียหาย (แรงขึ้น +1)" });
-    if (d.charge > 0 && !d.kick) out.push({ key: "kagamiCharge", v: d.charge, icon: "⚡", label: `ชาร์จ Rider Kick ${d.charge}/${d.chargeMax}`, cls: "bg-echo-gold text-gray-900", desc: `Rider Kick ชาร์จไว้ ${d.charge} จาก ${d.chargeMax} ขั้น — การชาร์จค้างข้ามเทิร์นได้ ขั้นถัดไปใช้ ${d.nextCost} แต้ม` });
-    if (d.kick) out.push({ key: "kagamiKick", v: 1, icon: "🦵", label: "ไรเดอร์คิ๊ก", cls: "bg-echo-gold text-gray-900", desc: "Rider Kick พร้อม: ตีปกติครั้งถัดไป +1 แล้วเป้าติดช็อต 5 เทิร์น + ชา 3 เทิร์น · ถ้าเป้ามีต้านสถานะผิดปกติ เป็นหมัดทะลุเกราะแทน (รวมไม่เกิน 3)" });
+    if (d.rider) out.push({ key: "daisukeRider", v: 1, icon: "🎯", label: "ไรเดอร์ชูต", cls: "bg-echo-ice text-gray-900", desc: "Rider Shooting เล็งไว้แล้ว: การโจมตีปกติครั้งถัดไปจะล้างเกราะเป้าหมาย 1 หน่วยก่อน แล้วจึงลงความเสียหาย (แรงขึ้น +1)" });
+    if (d.charge > 0 && !d.kick) out.push({ key: "kagamiCharge", v: d.charge, icon: "⚡", label: `ชาร์จ Rider Kick ${d.charge}/${d.chargeMax}`, cls: "bg-echo-ice text-gray-900", desc: `Rider Kick ชาร์จไว้ ${d.charge} จาก ${d.chargeMax} ขั้น — การชาร์จค้างข้ามเทิร์นได้ ขั้นถัดไปใช้ ${d.nextCost} แต้ม` });
+    if (d.kick) out.push({ key: "kagamiKick", v: 1, icon: "🦵", label: "ไรเดอร์คิ๊ก", cls: "bg-echo-ice text-gray-900", desc: "Rider Kick พร้อม: ตีปกติครั้งถัดไป +1 แล้วเป้าติดช็อต 5 เทิร์น + ชา 3 เทิร์น · ถ้าเป้ามีต้านสถานะผิดปกติ เป็นหมัดทะลุเกราะแทน (รวมไม่เกิน 3)" });
     if (d.slash) out.push({ key: "tsurugiSlash", v: 1, icon: "🗡️", label: d.slashStep >= 1 ? `ไรเดอร์สแลช จังหวะ ${d.slashStep + 1}/${d.slashHits}` : "ไรเดอร์สแลช", cls: "bg-echo-magenta", desc: "Rider Slash พร้อม: ตีปกติครั้งถัดไปฟัน 2 จังหวะ · จังหวะแรกลบบัฟล่าสุดของเป้าแล้วโจมตีปกติ · จังหวะสองเลือกเป้าใหม่ได้ ดาเมจ 1 + พิษร้าย 3 เทิร์น · จังหวะแรกถูกหลบ จังหวะสองยังตี" });
     if (d.sting) out.push({ key: "yagurumaSting", v: 1, icon: "🦂", label: "ไรเดอร์สติง", cls: "bg-echo-magenta", desc: "Rider Sting พร้อม: ตีปกติครั้งถัดไปล้างต้านสถานะผิดปกติของเป้าก่อน แล้วโจมตี +1 · เป้าติดพิษร้าย 3 เทิร์น และผุพัง 2 เทิร์น" });
   }
@@ -1512,7 +1512,7 @@ function statusEntries(p, full) {
   if (p.character?.id === "ippo") {
     out.push({ key: "ippoDodgeInfo", v: 1, icon: "💨", label: `หลบหลีก ${p.ippoDodge || 0}%`, cls: "bg-echo-cyan text-gray-900", desc: "อัตราหลบของอิปโป = ฐาน 30% + ผู้ยืนหยัด (สูงสุด +20% หายเมื่อโดนตี) รวมไม่เกิน 50% · หลบได้ไม่จำกัดครั้ง" });
     if ((p.ippoCharge || 0) > 0) {
-      out.push({ key: "ippoChargeInfo", v: p.ippoCharge, icon: "🥊", label: `Dempsey Charge ${p.ippoCharge}/${p.ippoChargeMax || 3}`, cls: "bg-echo-gold text-gray-900", desc: "สะสมจากการหลบหลีกสำเร็จ — ทุก 1 หน่วยให้โจมตีเพิ่มอีก 1 ครั้ง · เทหมดหน้าตักทันทีที่โจมตีสำเร็จ" });
+      out.push({ key: "ippoChargeInfo", v: p.ippoCharge, icon: "🥊", label: `Dempsey Charge ${p.ippoCharge}/${p.ippoChargeMax || 3}`, cls: "bg-echo-ice text-gray-900", desc: "สะสมจากการหลบหลีกสำเร็จ — ทุก 1 หน่วยให้โจมตีเพิ่มอีก 1 ครั้ง · เทหมดหน้าตักทันทีที่โจมตีสำเร็จ" });
     }
   }
   // ผู้วิงวอน: คลังคำวิงวอน + โควตาสกิล 2 ครั้ง/เทิร์น (ทุกคนเห็นได้ — ขั้นของคำวิงวอนเปลี่ยนพฤติกรรมทั้งสนาม)
@@ -1523,7 +1523,7 @@ function statusEntries(p, full) {
       : { key: "lumiIdol", v: 1, icon: "🎙️", label: p.lumiIdolName || "ไอดอล", cls: "bg-echo-cyan text-gray-900", desc: p.lumiIdolPassive || "" });
     out.push({
       key: "lumiPoints", v: 1, icon: "⭐", label: `ไอดอล ${p.lumiPoints || 0}/${p.lumiPointsMax || 6}`,
-      cls: (p.lumiPoints || 0) >= (p.lumiPointsMax || 6) ? "bg-echo-gold text-gray-900" : "bg-white/20",
+      cls: (p.lumiPoints || 0) >= (p.lumiPointsMax || 6) ? "bg-echo-ice text-gray-900" : "bg-white/20",
       desc: "แต้มสถานะ \"ไอดอล\" — ได้ +1 ทุกครั้งที่กดท่าไม้ตายหรือฝึกซ้อม · ครบแล้วช่องท่าไม้ตายจะกลายเป็น luminous (ใช้แล้วรีเซ็ตเป็น 0)",
     });
   }
@@ -1540,7 +1540,7 @@ function statusEntries(p, full) {
   if (p.daichi) {
     const d = p.daichi;
     out.push({ key: "daichiCard", v: 1, icon: "🃏", label: `การ์ด${d.cardName} ${d.basicUses}/${d.basicMax}`, cls: "bg-echo-cyan text-gray-900", desc: `การ์ดไซเบอร์ที่ถืออยู่ — ${d.cardEffect} · กด "ไพ่ตายของฉัน" ระหว่าง unite เพื่อสวมเกราะนี้ · ตัวเลข = กดการ์ดไซเบอร์ไปแล้วกี่ครั้งในเทิร์นนี้` });
-    if (d.armor) out.push({ key: "daichiArmor", v: 1, icon: "🛡️", label: d.armorName, cls: "bg-echo-gold text-gray-900", desc: `${d.armorName}: ${d.armorEffect} — หลุดเมื่อ unite สิ้นสุด` });
+    if (d.armor) out.push({ key: "daichiArmor", v: 1, icon: "🛡️", label: d.armorName, cls: "bg-echo-ice text-gray-900", desc: `${d.armorName}: ${d.armorEffect} — หลุดเมื่อ unite สิ้นสุด` });
     if (d.bemstarOwed > 0) out.push({ key: "daichiBemstar", v: d.bemstarOwed, icon: "🦇", label: `ฟื้นคืนเทิร์นหน้า +${d.bemstarOwed}`, cls: "bg-echo-armor", desc: "เกราะเบมสตาร์: ความเสียหายที่ได้รับจะฟื้นกลับเป็นพลังชีวิตตอนต้นเทิร์นถัดไป (สูงสุด 3 หน่วย)" });
     if (d.storedCount > 0) out.push({ key: "daichiStored", v: d.stored, icon: "✨", label: `การ์ดเก็บไว้ +${d.stored}`, cls: "bg-echo-magenta", desc: "มาUNITEกัน: การ์ดที่ทำให้แต้มเกินถูกตัดเก็บไว้ จะบวกเพิ่มเข้ามือตอนต้นเทิร์นถัดไป" });
   }
@@ -1556,7 +1556,7 @@ function statusEntries(p, full) {
   // อุซากิ: ปรุๆ เป็นข้อมูลสาธารณะ (อัตราคริติคอล/พลังโจมตีของเธอ)
   if (p.usagi) {
     const u = p.usagi;
-    out.push({ key: "usagiPuru", v: 1, icon: "🐰", label: `ปรุๆ ${u.puru}/${u.puruMax}`, cls: u.puru >= 5 ? "bg-echo-hp" : "bg-echo-gold text-gray-900",
+    out.push({ key: "usagiPuru", v: 1, icon: "🐰", label: `ปรุๆ ${u.puru}/${u.puruMax}`, cls: u.puru >= 5 ? "bg-echo-hp" : "bg-echo-ice text-gray-900",
       desc: `ปรุๆ: คริติคอล ${u.puru * 7}% (ดาเมจ ×2)${u.puru >= 5 ? " · พลังโจมตี +1" : " · ครบ 5 หน่วยพลังโจมตี +1"} · ออกหมัดได้ +2 · ไม่ได้เพิ่มครบ 3 เทิร์นลด 1 (ตอนนี้นับไป ${u.idle}/3)` });
   }
   // เกราะ Mark 42: ใส่ชุดอยู่ (ของใคร / เกราะชุดเหลือเท่าไหร่)
@@ -1566,7 +1566,7 @@ function statusEntries(p, full) {
   if (p.striker) {
     const s = p.striker;
     if (s.knife) out.push({ key: "strikerKnife", v: 1, icon: "🔪", label: "มือมีด", cls: "bg-echo-hp", desc: "มือมีด: พลังโจมตีเหลือ 1 แต่โจมตีโดนมอบเลือดไหล 2" });
-    if (s.fist) out.push({ key: "strikerFist", v: 1, icon: "👊", label: "หมัดเหล็ก", cls: "bg-echo-gold text-gray-900", desc: "หมัดเหล็ก: โจมตีปกติครั้งถัดไป +1 และปาดบัฟล่าสุดของเป้าหมาย · ต่อยคนเดิมซ้ำ = สตั้นเทิร์นถัดไป" });
+    if (s.fist) out.push({ key: "strikerFist", v: 1, icon: "👊", label: "หมัดเหล็ก", cls: "bg-echo-ice text-gray-900", desc: "หมัดเหล็ก: โจมตีปกติครั้งถัดไป +1 และปาดบัฟล่าสุดของเป้าหมาย · ต่อยคนเดิมซ้ำ = สตั้นเทิร์นถัดไป" });
     if (s.reactor) out.push({ key: "strikerReactor", v: 1, icon: "☢️", label: "เตาปฏิกรณ์", cls: "bg-echo-hp", desc: "เตาปฏิกรณ์นิวเคลียร์: ท่าไม้ตายเป็น \"เป็นเกียรติมากครับ\" · ถูกโจมตีปกติ 15% แทงสวน" });
     if (s.honor) out.push({ key: "strikerHonor", v: 1, icon: "💣", label: `ระเบิดใน ${s.honor.left} เทิร์น · แรง ${s.honor.power}`, cls: "bg-echo-hp", desc: "เป็นเกียรติมากครับ: ครบเวลาระเบิดตัวเอง ทุกคนรับความเสียหายตามความแรง (สูงสุด 8) · กดซ้ำเพื่อระเบิดทันที (คู่หูต้องอนุมัติ)" });
     if (s.approval) out.push({ key: "strikerAsk", v: 1, icon: "⏳", label: "รอนักบินอนุมัติ", cls: "bg-white/20", desc: "พลปืนขอใช้ \"เป็นเกียรติมากครับ\" — รอนักบินอนุมัติ" });
@@ -1576,7 +1576,7 @@ function statusEntries(p, full) {
   // Recruit: กระสุน / ตัวนับ [Armor] / โควตาเตรียมตัว — ข้อมูลสาธารณะ
   if (p.recruit) {
     const r = p.recruit;
-    out.push({ key: "recruitAmmo", v: 1, icon: "🔫", label: `กระสุน ${r.bullets}/${r.bulletMax}`, cls: r.bullets > 0 ? "bg-echo-gold text-gray-900" : "bg-echo-hp",
+    out.push({ key: "recruitAmmo", v: 1, icon: "🔫", label: `กระสุน ${r.bullets}/${r.bulletMax}`, cls: r.bullets > 0 ? "bg-echo-ice text-gray-900" : "bg-echo-hp",
       desc: "กระสุน: โจมตีปกติ QTE สำเร็จ -1 / ไม่สำเร็จ -2 · Desert Eagle 3 · FAMAS 6 · Barrett 6 · หมด = ยิงไม่ได้ (Reload เติมเต็ม)" });
     out.push({ key: "recruitArmor", v: 1, icon: "🛡️", label: `[Armor] ${r.armorHits}/2`, cls: "bg-orange-500 text-gray-900",
       desc: "[Armor]: ระหว่างมีเกราะ ดาเมจทุกชนิดถูกกันทั้งก้อน (ยกเว้นเจาะเกราะ) · โดนครบ 2 ครั้งเกราะ -1 · ฟื้นได้จาก Armor ของตัวเองเท่านั้น" });
@@ -1598,7 +1598,7 @@ function statusEntries(p, full) {
   // Bamboo-Hatted Kim: ฝักดาบ / Poise / เหรียญ / บัพเฉพาะตัว — ข้อมูลสาธารณะ
   if (p.kim) {
     const k = p.kim;
-    out.push({ key: "kimScabbard", v: 1, icon: "🗡️", label: `Resentful Scabbard ${k.scabbard}/${k.scabbardMax}`, cls: k.awake ? "bg-echo-hp" : "bg-echo-gold text-gray-900",
+    out.push({ key: "kimScabbard", v: 1, icon: "🗡️", label: `Resentful Scabbard ${k.scabbard}/${k.scabbardMax}`, cls: k.awake ? "bg-echo-hp" : "bg-echo-ice text-gray-900",
       desc: "Resentful Scabbard: 30+ ทำดาเมจฟื้นพลังชีวิต +1 · 55+ เลือดไหล/เหน็บชาที่มอบ +1 เทิร์น · 80+ โจมตี +1 ถูกตีได้แต้มสกิล +1 และเข้าร่าง Awake · 100 ฟื้นเพิ่ม +1" });
     out.push({ key: "kimPoise", v: 1, icon: "🍃", label: `Poise ${k.poise}/${k.poiseMax} · คริติคอล ${k.crit}%`, cls: "bg-echo-cyan text-gray-900",
       desc: "Poise: 1 หน่วย = โอกาสคริติคอล 1.2% (สูงสุด 60%) ความเสียหาย ×2 · ติดคริติคอลแล้ว -15 · โจมตีปกติ +1-4 · ทุก 3 เทิร์นลดลง 2-5" });
@@ -1607,7 +1607,7 @@ function statusEntries(p, full) {
     if (!k.resentUsed) out.push({ key: "kimResent", v: 1, icon: "😤", label: "Resentment", cls: "bg-echo-armor", desc: "Resentment: ครั้งแรกที่ได้รับความเสียหายจนพลังชีวิตหมด พลังชีวิตจะค้างที่ 1 (ครั้งเดียวต่อเกม)" });
     if (k.drawArmed) out.push({ key: "kimDraw", v: 1, icon: "🗡️", label: "ชักดาบ พร้อม", cls: "bg-echo-hp", desc: "ชักดาบ: การโจมตีปกติครั้งถัดไปที่โดน — Poise +2-5 และมอบเลือดไหล + เหน็บชา" });
     if (k.ymf) out.push({ key: "kimYmf", v: 1, icon: "🩸", label: "Yield My Flesh", cls: "bg-echo-hp", desc: "Yield My Flesh: พลังโจมตี +1 · หมัดที่โดนมอบเลือดไหล + เหน็บชา (ไม่มีผลกับ Counter Stance)" });
-    if (k.tctb) out.push({ key: "kimTctb", v: 1, icon: "🦴", label: "To Claim Their Bones", cls: "bg-echo-gold text-gray-900", desc: "To Claim Their Bones: ฟื้นแต้มสกิล +1 ทุกต้นเทิร์น" });
+    if (k.tctb) out.push({ key: "kimTctb", v: 1, icon: "🦴", label: "To Claim Their Bones", cls: "bg-echo-ice text-gray-900", desc: "To Claim Their Bones: ฟื้นแต้มสกิล +1 ทุกต้นเทิร์น" });
     if (k.bones) out.push({ key: "kimBones", v: 1, icon: "⚔️", label: "Yield My Flesh To Claim Their Bones", cls: "bg-echo-magenta",
       desc: "อยู่จนโดนดาเมจโจมตีหรือสกิล · ทุกคนต้องโจมตี Kim · โดนแล้วสวนตามพลังโจมตี +1 (คริได้) และฟันคนอื่นคนละ 1 · ทุกคนที่โดนติดเลือดไหล + เหน็บชา · Poise +2-8" });
   }
@@ -1625,7 +1625,7 @@ function statusEntries(p, full) {
   if ((p.bardNotes || []).length > 0) out.push({ key: "bardNotes", v: 1, icon: "🎼", label: p.bardNotes.map((n) => (n === "R" ? "❤️" : "💚")).join(""), cls: "bg-echo-cyan text-gray-900", desc: "ช่องประพันธ์เพลง: โน้ตที่เติมไว้ — ครบ 3 โน้ตจะบรรเลงทำนองตามลำดับโน้ตทันที" });
   if ((p.statuses?.chill || 0) > 0) out.push({ key: "chillDodge", v: 1, icon: "💨", label: `หลบ ${p.chillDodge != null ? p.chillDodge : 100}%`, cls: "bg-echo-cyan text-gray-900", desc: "โอกาสหลบการถูกเลือกโจมตีขณะชิวๆครับน้องๆ — เริ่ม 100% หลบได้เหลือ 50% หลบได้อีกเหลือ 25% และคงที่จนกว่าผลจะหมด" });
   if (full && (p.shield || 0) > 0) out.push({ key: "shield", v: p.shield, icon: "🛡️", label: "โล่", cls: "bg-echo-armor", desc: "กันความเสียหายครั้งถัดไปตามจำนวนโล่" });
-  if (full && (p.tempHp || 0) > 0) out.push({ key: "tempHp", v: p.tempHp, icon: "💛", label: "เลือดชั่วคราว", cls: "bg-echo-gold text-gray-900", desc: "หายเองใน 2 เทิร์น หรือหมดไปเมื่อรับความเสียหาย" });
+  if (full && (p.tempHp || 0) > 0) out.push({ key: "tempHp", v: p.tempHp, icon: "💛", label: "เลือดชั่วคราว", cls: "bg-echo-ice text-gray-900", desc: "หายเองใน 2 เทิร์น หรือหมดไปเมื่อรับความเสียหาย" });
   return out;
 }
 // compact = ไอคอนล้วน ไม่มีข้อความชื่อ + จำกัดจำนวนแถวด้วย max แล้วยุบที่เหลือเป็นป้าย "+N"
@@ -1776,13 +1776,13 @@ function StatusModal({ p, onClose, statusOnly }) {
     >
       <>
         {!statusOnly && (
-          <div className="av-heading text-sm mb-4" style={{ color: "rgba(239,230,245,.6)" }}>
+          <div className="av-heading text-sm mb-4" style={{ color: "rgba(234,243,252,.6)" }}>
             {p.character?.name}
             {!p.connected && <span className="ml-2 text-xs" style={{ color: "var(--av-blood)" }}>• reconnecting</span>}
           </div>
         )}
         {items.length === 0 ? (
-          <div className="av-label py-4 text-center" style={{ color: "rgba(239,230,245,.4)" }}>ไม่มีสถานะผิดปกติ</div>
+          <div className="av-label py-4 text-center" style={{ color: "rgba(234,243,252,.4)" }}>ไม่มีสถานะผิดปกติ</div>
         ) : (
           <div className="flex flex-col gap-2">
             {items.map((it) => (
@@ -1798,7 +1798,7 @@ function StatusModal({ p, onClose, statusOnly }) {
                         ? <span className="text-xs font-bold text-echo-cyan">📌 คงอยู่ถาวร</span>
                         : isPermanentStatus(it)
                           ? <span className="text-xs font-bold text-echo-cyan">📌 สแตคสะสม {it.v}</span>
-                          : <span className="text-xs font-bold text-echo-gold">⏳ เหลือ {it.v} เทิร์น</span>
+                          : <span className="text-xs font-bold text-echo-ice">⏳ เหลือ {it.v} เทิร์น</span>
                     )}
                   </div>
                 </div>
@@ -1816,18 +1816,18 @@ function StatusModal({ p, onClose, statusOnly }) {
                     {s.img ? (
                       <img src={s.img} alt="" className="w-16 h-11 object-cover shrink-0 mt-0.5" />
                     ) : (
-                      <span className="w-16 h-11 grid place-items-center text-xl shrink-0 mt-0.5" style={{ background: "rgba(185,95,196,.12)" }}>✦</span>
+                      <span className="w-16 h-11 grid place-items-center text-xl shrink-0 mt-0.5" style={{ background: "rgba(127,184,230,.12)" }}>✦</span>
                     )}
                     <div className="min-w-0">
                       <div className="flex justify-between gap-2">
                         <span className="av-heading text-sm">
                           {label} · <span style={{ color: "var(--av-gold-lit)" }}>{s.name}</span>
                         </span>
-                        <span className="text-xs shrink-0" style={{ color: "rgba(239,230,245,.5)" }}>
+                        <span className="text-xs shrink-0" style={{ color: "rgba(234,243,252,.5)" }}>
                           {s.cost != null ? `ใช้ ${s.cost}` : "ฟรี"}
                         </span>
                       </div>
-                      <div className="text-xs leading-snug" style={{ color: "rgba(239,230,245,.72)" }}>{s.desc}</div>
+                      <div className="text-xs leading-snug" style={{ color: "rgba(234,243,252,.72)" }}>{s.desc}</div>
                     </div>
                   </div>
                 ) : null
@@ -1854,7 +1854,7 @@ function SkillConfirmModal({ confirm, onConfirm, onCancel }) {
             <span className="w-20 h-14 grid place-items-center text-2xl shrink-0 bg-white/5 rounded-lg border border-white/10">✦</span>
           )}
           <div className="min-w-0">
-            <div className="text-xs font-bold text-echo-gold uppercase tracking-wide">{label}</div>
+            <div className="text-xs font-bold text-echo-ice">{label}</div>
             <div className="text-lg font-black truncate">{skillData?.name || "สกิล"}</div>
             <div className="text-xs font-bold opacity-80 mt-0.5">{useCost != null ? `ใช้แต้มสกิล ${useCost}` : "ฟรี"}</div>
           </div>
@@ -1945,19 +1945,19 @@ function ShopHerald() {
         <svg className="sh-coin relative shrink-0" width="62" height="62" viewBox="0 0 62 62" aria-hidden="true">
           <defs>
             <linearGradient id="shCoinG" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#fff6df" />
-              <stop offset="45%" stopColor="#ffe9a8" />
-              <stop offset="100%" stopColor="#c9992f" />
+              <stop offset="0%" stopColor="#f7fafd" />
+              <stop offset="45%" stopColor="#eaf3fc" />
+              <stop offset="100%" stopColor="#7fb8e6" />
             </linearGradient>
           </defs>
           <circle cx="31" cy="31" r="26" fill="url(#shCoinG)" />
-          <circle cx="31" cy="31" r="21" fill="none" stroke="#5e3f08" strokeWidth="1.4" opacity="0.6" />
-          <path d="M31 16 L35.6 26.4 L47 27.6 L38.5 35.2 L41 46.4 L31 40.6 L21 46.4 L23.5 35.2 L15 27.6 L26.4 26.4 Z" fill="#5e3f08" opacity="0.55" />
+          <circle cx="31" cy="31" r="21" fill="none" stroke="#1c3f6e" strokeWidth="1.4" opacity="0.6" />
+          <path d="M31 16 L35.6 26.4 L47 27.6 L38.5 35.2 L41 46.4 L31 40.6 L21 46.4 L23.5 35.2 L15 27.6 L26.4 26.4 Z" fill="#1c3f6e" opacity="0.55" />
         </svg>
         <div className="relative min-w-0">
-          <div className="av-label" style={{ letterSpacing: "0.42em" }}>ร้านค้ามายา</div>
+          <div className="av-label">ร้านค้ามายา</div>
           <div className="av-title av-title-thai text-4xl leading-tight whitespace-nowrap">มาเยือนแล้ว</div>
-          <div className="av-heading text-sm" style={{ color: "rgba(239,230,245,.62)" }}>
+          <div className="av-heading text-sm" style={{ color: "rgba(234,243,252,.62)" }}>
             กดไอคอนร้านค้าเพื่อเลือกซื้อของ
           </div>
         </div>
@@ -1980,7 +1980,7 @@ function ShopModal({ shop, me, frozen, onClose }) {
     >
       <>
         {(!list || list.length === 0) ? (
-          <div className="av-label py-10 text-center" style={{ color: "rgba(239,230,245,.4)" }}>ร้านจะเติมของทุกๆ 5 เทิร์น</div>
+          <div className="av-label py-10 text-center" style={{ color: "rgba(234,243,252,.4)" }}>ร้านจะเติมของทุกๆ 5 เทิร์น</div>
         ) : (
           <div className="grid grid-cols-5 gap-3">
             {list.map((it) => {
@@ -1997,7 +1997,7 @@ function ShopModal({ shop, me, frozen, onClose }) {
                 >
                   <ItemIcon info={info} className="text-3xl h-12 w-12" />
                   <div className="av-heading text-xs leading-tight">{info.label(it)}</div>
-                  <div className="text-[11px] leading-snug line-clamp-3" style={{ color: "rgba(239,230,245,.6)" }}>{info.desc}</div>
+                  <div className="text-[11px] leading-snug line-clamp-3" style={{ color: "rgba(234,243,252,.6)" }}>{info.desc}</div>
                   <div className="mt-auto w-full flex flex-col items-center gap-2 pt-2">
                     <div className="av-label" style={{ fontSize: "0.7rem" }}>
                       🪙 {it.price}
@@ -2086,7 +2086,7 @@ function InventoryModal({ me, players, gameState, roundNumber, frozen, onPickGun
               <img src="/characters/Mark42/mark42.webp" alt="" className="h-10 w-10 rounded object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="av-heading text-sm">เกราะ Mark 42 — {suitOut.self ? "สวมอยู่ที่ตัวเอง" : `สวมอยู่ที่ ${suitOut.wearerName}`}</div>
-                <div className="text-xs" style={{ color: "rgba(239,230,245,.62)" }}>เกราะชุดเหลือ {suitOut.armor}/7 · คนใส่ถอดเองไม่ได้ เจ้าของเท่านั้นที่ถอด/เรียกคืน/ระเบิดได้</div>
+                <div className="text-xs" style={{ color: "rgba(234,243,252,.62)" }}>เกราะชุดเหลือ {suitOut.armor}/7 · คนใส่ถอดเองไม่ได้ เจ้าของเท่านั้นที่ถอด/เรียกคืน/ระเบิดได้</div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -2097,7 +2097,7 @@ function InventoryModal({ me, players, gameState, roundNumber, frozen, onPickGun
           </div>
         )}
         {items.length === 0 ? (
-          <div className="av-label py-8 text-center" style={{ color: "rgba(239,230,245,.4)" }}>ยังไม่มีของในคลัง</div>
+          <div className="av-label py-8 text-center" style={{ color: "rgba(234,243,252,.4)" }}>ยังไม่มีของในคลัง</div>
         ) : (
           <div className="flex flex-col gap-2">
             {items.map((it) => {
@@ -2113,7 +2113,7 @@ function InventoryModal({ me, players, gameState, roundNumber, frozen, onPickGun
                     <ItemIcon info={info} className="text-2xl h-10 w-10" />
                     <div className="min-w-0 flex-1">
                       <div className="av-heading text-sm">{info.label(it)}</div>
-                      <div className="text-xs leading-snug" style={{ color: "rgba(239,230,245,.62)" }}>{info.desc}</div>
+                      <div className="text-xs leading-snug" style={{ color: "rgba(234,243,252,.62)" }}>{info.desc}</div>
                     </div>
                     {isGun ? (
                       <AvButton className="px-4 py-1.5 text-xs shrink-0" disabled={!gunOpen && !!fireBlock} title={fireBlock || ""} onClick={toggleGun}>
@@ -2169,7 +2169,7 @@ function InventoryModal({ me, players, gameState, roundNumber, frozen, onPickGun
                                 : null
                               : null;
                           return (
-                            <button key={a.uid} disabled={!!ammoBlock} title={ammoBlock || ""} className={"flex flex-col items-center gap-1 w-20 rounded-lg border border-white/15 bg-black/30 p-1.5 hover:border-echo-gold transition-colors " + (ammoBlock ? "opacity-45 cursor-not-allowed" : "")} onClick={() => pickAmmo(a)}>
+                            <button key={a.uid} disabled={!!ammoBlock} title={ammoBlock || ""} className={"flex flex-col items-center gap-1 w-20 rounded-lg border border-white/15 bg-black/30 p-1.5 hover:border-echo-ice transition-colors " + (ammoBlock ? "opacity-45 cursor-not-allowed" : "")} onClick={() => pickAmmo(a)}>
                               <ItemIcon info={ai} className="h-9 w-9" />
                               <span className="text-[10px] leading-tight text-center">{ai.label(a)}</span>
                               {ammoBlock && <span className="text-[9px] leading-tight text-echo-hp text-center">{ammoBlock}</span>}
@@ -2346,17 +2346,17 @@ function VitalExtras({ p, className = "" }) {
 function PlaqueCrest() {
   return (
     <svg className="pc-crest" viewBox="0 0 40 20" aria-hidden="true">
-      <path d="M20 1.5 26.5 8 20 14.5 13.5 8Z" fill="#ffe9a8" stroke="#6b4d11" strokeWidth="0.8" />
-      <path d="M20 5.2 23 8 20 10.8 17 8Z" fill="#8a5f10" opacity="0.75" />
-      <path d="M1.5 16.5 H15" stroke="#c9992f" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M25 16.5 H38.5" stroke="#c9992f" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M20 1.5 26.5 8 20 14.5 13.5 8Z" fill="#eaf3fc" stroke="#1c3f6e" strokeWidth="0.8" />
+      <path d="M20 5.2 23 8 20 10.8 17 8Z" fill="#3d8bd9" opacity="0.75" />
+      <path d="M1.5 16.5 H15" stroke="#7fb8e6" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M25 16.5 H38.5" stroke="#7fb8e6" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
 function PlaqueRule() {
   return (
     <span className="pc-rule" aria-hidden="true">
-      <svg viewBox="0 0 8 8" className="pc-rule-gem"><path d="M4 0 8 4 4 8 0 4Z" fill="#e8bf5a" /></svg>
+      <svg viewBox="0 0 8 8" className="pc-rule-gem"><path d="M4 0 8 4 4 8 0 4Z" fill="#bee3f8" /></svg>
     </span>
   );
 }
@@ -2448,7 +2448,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       {/* ใบโปรโมทสินค้า (Apple guy): แต้มการ์ดถูกเปิดเผยให้ทุกคนเห็นแม้ยังไม่เปิดไพ่ */}
       {/* connorScanned: คอนเนอร์กด "วิเคราะห์สถานการณ์" -> เห็นแต้มของคนนี้ตั้งแต่ยังไม่เปิดไพ่ (เห็นคนเดียว) */}
       {(summary || alwaysScore || (p.statuses?.promo || 0) > 0 || p.connorScanned) && p.score !== null && p.score !== undefined && (
-        <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
+        <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-ice" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
           {p.busted ? "แตก!" : `${p.score} แต้ม`}{p.connorScanned && !summary ? " 🧠" : ""}
         </div>
       )}
@@ -2494,7 +2494,7 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked, onInspect, hos
       )}
       {/* ใบโปรโมทสินค้า (Apple guy): แต้มการ์ดถูกเปิดเผยให้ทุกคนเห็นแม้ยังไม่เปิดไพ่ */}
       {(summary || alwaysScore || (p.statuses?.promo || 0) > 0 || p.connorScanned) && p.score !== null && p.score !== undefined && (
-        <div className={`score-pop shrink-0 text-xl font-black ${p.isWinner ? "text-echo-gold" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
+        <div className={`score-pop shrink-0 text-xl font-black ${p.isWinner ? "text-echo-ice" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
           {p.busted ? "แตก!" : p.score}{p.connorScanned && !summary ? " 🧠" : ""}
         </div>
       )}
@@ -2518,11 +2518,11 @@ function CharModal({ ch, me, onClose }) {
                   <span className="av-heading text-sm">
                     {label} · <span style={{ color: "var(--av-gold-lit)" }}>{s.name}</span>
                   </span>
-                  <span className="text-xs shrink-0" style={{ color: "rgba(239,230,245,.5)" }}>
+                  <span className="text-xs shrink-0" style={{ color: "rgba(234,243,252,.5)" }}>
                     {s.cost != null ? `ใช้ ${s.cost}` : "ฟรี"}
                   </span>
                 </div>
-                <div className="text-sm mt-1 leading-snug" style={{ color: "rgba(239,230,245,.78)" }}>{s.desc}</div>
+                <div className="text-sm mt-1 leading-snug" style={{ color: "rgba(234,243,252,.78)" }}>{s.desc}</div>
               </div>
             ) : null
           )}
@@ -2537,7 +2537,7 @@ function CharModal({ ch, me, onClose }) {
                     <span>{it.icon}</span>
                     <span>{it.label}{it.amt > 0 ? ` +${it.amt}` : ""}{showStatusValue(it) ? ` ${it.v}` : ""}</span>
                   </span>
-                  <span className="text-sm leading-snug" style={{ color: "rgba(239,230,245,.85)" }}>{it.desc}</span>
+                  <span className="text-sm leading-snug" style={{ color: "rgba(234,243,252,.85)" }}>{it.desc}</span>
                 </div>
               ))}
             </div>
@@ -2555,7 +2555,7 @@ function DoomChargeBadge({ me, ch }) {
   const full = charge >= 5;
   return (
     <span
-      className={`text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap ${full ? "bg-echo-gold text-gray-900 animate-pulse" : "bg-black/55"}`}
+      className={`text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap ${full ? "bg-echo-ice text-gray-900 animate-pulse" : "bg-black/55"}`}
       title="Crucible (ท่าไม้ตาย) — โจมตีสำเร็จมีโอกาส 35% ได้ชาร์จ +1 สะสมครบ 5 ปลดล็อก (ใช้ได้ 1 ครั้งในการโจมตีแล้วหายไป)"
     >
       🔥 Crucible {charge}/5{full ? " พร้อมใช้!" : ""}
@@ -2569,7 +2569,7 @@ function TakumiGearBadge({ me, ch }) {
   const bonus = gear >= 6 ? 2 : gear >= 3 ? 1 : 0;
   return (
     <span
-      className={`text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap ${gear >= 6 ? "bg-echo-gold text-gray-900" : bonus > 0 ? "bg-black/55 text-echo-gold" : "bg-black/55"}`}
+      className={`text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap ${gear >= 6 ? "bg-echo-ice text-gray-900" : bonus > 0 ? "bg-black/55 text-echo-ice" : "bg-black/55"}`}
       title="เกียร์ธรรมดา — เกียร์ 3 ขึ้นไป พลังโจมตี +1 / เกียร์ 6 รวม +2 — ลงเกียร์กลับมาที่ 1 พอดี ฟื้นพลังชีวิตตามระยะที่ลดมา (สูงสุด 4)"
     >
       ⚙️ เกียร์ {gear}/6{bonus > 0 ? ` (+${bonus})` : ""}
@@ -2644,7 +2644,7 @@ function AppleItemModal({ me, onPick, onClose }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="text-lg font-black text-echo-gold">🍎 เอาแบบนี้ได้ไหม — เลือกของส่งมอบ</div>
+        <div className="text-lg font-black text-echo-ice">🍎 เอาแบบนี้ได้ไหม — เลือกของส่งมอบ</div>
         <div className="text-sm opacity-80 mb-3">ของที่เลือกจะถูกมอบให้เป้าหมายผ่านสกิลรอง "เอาไปสิ" (ใช้ 2 แต้ม — ใช้แล้วยังใช้สกิลอื่นได้อีก 1 ครั้ง)</div>
         <div className="flex flex-col gap-2">
           {APPLE_ITEMS.map((it) => (
@@ -2652,12 +2652,12 @@ function AppleItemModal({ me, onPick, onClose }) {
               key={it.key}
               onClick={() => { clickSound(); onPick(it.key); }}
               className={`text-left flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
-                me.appleItem === it.key ? "bg-echo-gold/20 border-echo-gold" : "bg-white/5 hover:bg-white/15 border-white/15"
+                me.appleItem === it.key ? "bg-echo-ice/20 border-echo-ice" : "bg-white/5 hover:bg-white/15 border-white/15"
               }`}
             >
               <img src={it.img} alt="" className="w-16 h-12 object-cover rounded-lg shrink-0" />
               <div>
-                <div className="font-bold text-echo-gold">{it.name}{me.appleItem === it.key ? " · เลือกอยู่" : ""}</div>
+                <div className="font-bold text-echo-ice">{it.name}{me.appleItem === it.key ? " · เลือกอยู่" : ""}</div>
                 <div className="text-sm opacity-80">{it.desc}</div>
               </div>
             </button>
@@ -2679,7 +2679,7 @@ function TohnoModeModal({ me, onPick, onClose }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="text-lg font-black text-echo-gold">🔪 ขอบคุณอาจารย์มากๆ — เลือกโหมด</div>
+        <div className="text-lg font-black text-echo-ice">🔪 ขอบคุณอาจารย์มากๆ — เลือกโหมด</div>
         <div className="text-sm opacity-80 mb-3">สลับได้ไม่จำกัดครั้งก่อนเปิดการ์ด · ไม่นับเป็นการใช้สกิลของเทิร์น</div>
         <div className="flex flex-col gap-2">
           {TOHNO_MODES.map((it) => (
@@ -2687,11 +2687,11 @@ function TohnoModeModal({ me, onPick, onClose }) {
               key={it.mode}
               onClick={() => { clickSound(); onPick(it.mode); }}
               className={`text-left flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
-                cur === it.mode ? "bg-echo-gold/20 border-echo-gold" : "bg-white/5 hover:bg-white/15 border-white/15"
+                cur === it.mode ? "bg-echo-ice/20 border-echo-ice" : "bg-white/5 hover:bg-white/15 border-white/15"
               }`}
             >
               <div>
-                <div className="font-bold text-echo-gold">{it.name}{cur === it.mode ? " · เลือกอยู่" : ""}</div>
+                <div className="font-bold text-echo-ice">{it.name}{cur === it.mode ? " · เลือกอยู่" : ""}</div>
                 <div className="text-sm opacity-80">{it.desc}</div>
               </div>
             </button>
@@ -2707,10 +2707,10 @@ function ConnorChaseHud({ chase }) {
   return (
     <div className="fixed top-2 left-1/2 -translate-x-1/2 z-40 pointer-events-none text-hard">
       <div className="bg-black/70 border-2 border-echo-hp rounded-2xl px-4 py-1.5 text-center shadow-2xl">
-        <div className="text-[11px] font-bold opacity-80 tracking-wider">🚨 จับกุมขั้นเด็ดขาด — ไล่ล่า {chase.round}/{chase.rounds}</div>
+        <div className="text-[11px] font-bold opacity-80">🚨 จับกุมขั้นเด็ดขาด — ไล่ล่า {chase.round}/{chase.rounds}</div>
         <div className="text-lg font-black">
           <span className="text-echo-cyan">{chase.by}</span>
-          <span className="mx-2 text-echo-gold">{chase.mine} : {chase.theirs}</span>
+          <span className="mx-2 text-echo-ice">{chase.mine} : {chase.theirs}</span>
           <span className="text-echo-hp">{chase.target}</span>
         </div>
       </div>
@@ -2754,7 +2754,7 @@ function LocaOfferModal({ offer, onAnswer }) {
         <div className="flex items-center gap-3 mb-3">
           <img src={offer.img} alt="" className="w-20 h-14 object-cover rounded-xl shrink-0" />
           <div>
-            <div className="text-lg font-black text-echo-gold">🍑 Locacaca fruit</div>
+            <div className="text-lg font-black text-echo-ice">🍑 Locacaca fruit</div>
             <div className="text-sm opacity-80"><span className="font-bold" style={{ color: offer.color }}>{offer.from}</span> ยื่นผลโลกากากาให้คุณ</div>
           </div>
         </div>
@@ -2798,8 +2798,8 @@ function PhenexReleaseModal({ ask, onPick }) {
 function BatKarmaModal({ ask, onPick }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/70 grid place-items-center p-4">
-      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2 border-echo-gold/60">
-        <div className="text-lg font-black text-echo-gold">🎁 นายลืมของน่ะ</div>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl border-2 border-echo-ice/60">
+        <div className="text-lg font-black text-echo-ice">🎁 นายลืมของน่ะ</div>
         <div className="text-sm opacity-80 mb-3">เลือกคนที่จะส่งความเสียหาย {ask.dmg} หน่วยที่รับไว้ให้แทน (ไม่สนการหลบหลีก · ไม่เลือกก่อนรอบถัดไป ระบบจะสุ่มให้)</div>
         <div className="flex flex-col gap-2">
           {ask.options.map((c) => (
@@ -2819,7 +2819,7 @@ function BatKarmaModal({ ask, onPick }) {
 }
 // ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่) — cost = แต้มที่ใช้จริง (เวลาทองแกมเบลอร์ลดครึ่ง)
 //  เฟรมตัดมุมเฉียง + แถบสีบอกระดับสกิล (พื้นฐาน/รอง/ท่าไม้ตาย) แทนกรอบมนธรรมดา
-const SKILL_TIER_ACCENT = { basic: "var(--color-echo-cyan)", secondary: "var(--color-p-accent-bright)", ultimate: "var(--color-echo-gold)" };
+const SKILL_TIER_ACCENT = { basic: "var(--oc-sky)", secondary: "var(--oc-ice)", ultimate: "var(--oc-echo-glow)" };
 // ORT สกิลติดตัว 1 (โหมด Type Mercury): ช่องสกิลของเราที่ "ข้อมูลสูญหาย" เทิร์นนี้ — ส่งผ่าน context
 //  แทนการไล่เติม prop ให้ทุกจุดที่วาง SkillSlot (server กันการกดอยู่แล้ว ฝั่งนี้แค่ปิดปุ่ม + ขึ้นป้าย)
 const OrtLostTierContext = createContext(null);
@@ -2834,7 +2834,7 @@ function SkillSlot({ label, tier, skill, points, disabled: disabledProp, onUse, 
   const useCost = skill ? (cost ?? skill.cost) : 0;
   const afford = skill && points >= useCost;
   const usable = skill && !disabled && afford && !outOfAmmo;
-  const accent = SKILL_TIER_ACCENT[tier] || "var(--color-echo-gold)";
+  const accent = SKILL_TIER_ACCENT[tier] || "var(--color-echo-ice)";
   const heightCls = size === "lg" ? "h-24 sm:h-28" : "h-20 sm:h-24";
   return (
     <div className="flex flex-col items-center gap-1">
@@ -2843,6 +2843,7 @@ function SkillSlot({ label, tier, skill, points, disabled: disabledProp, onUse, 
         onClick={() => usable && onUse(tier, skill, label, useCost)}
         title={skill ? `${skill.name} — ${skill.desc}` : ""}
         data-usable={usable ? "true" : "false"}
+        data-tier={tier}
         className={`bd-skill ${heightCls} ${usable ? "" : "opacity-65 cursor-not-allowed grayscale"}`}
         style={{
           boxShadow: usable
@@ -2857,7 +2858,7 @@ function SkillSlot({ label, tier, skill, points, disabled: disabledProp, onUse, 
           <div className="absolute inset-0 grid place-items-center text-gray-500 text-3xl">✦</div>
         )}
         {skill && (
-          <span className={`bd-skill-cost ${useCost < skill.cost ? "bg-echo-gold text-gray-900" : "bg-black/70 text-white"}`}>
+          <span className={`bd-skill-cost ${useCost < skill.cost ? "bg-echo-ice text-gray-900" : "bg-[#0b1d3a]/85 text-white"}`}>
             {useCost}
           </span>
         )}
@@ -3169,7 +3170,7 @@ function UsagiQuizPanel({ quiz }) {
             onChange={(e) => setValue(e.target.value.replace(/[^0-9-]/g, "").slice(0, 6))}
             className="w-32 text-center text-2xl font-black rounded-lg bg-white/10 border border-white/30 px-2 py-1 outline-none focus:border-echo-cyan"
           />
-          <button type="submit" className="px-4 rounded-lg font-black bg-echo-gold text-gray-900">ตอบ</button>
+          <button type="submit" className="px-4 rounded-lg font-black bg-echo-ice text-gray-900">ตอบ</button>
         </div>
         <div className="w-56 h-2 bg-black/60 rounded-full overflow-hidden border border-white/20">
           <div className="h-full transition-none" style={{ width: `${pct}%`, background: pct < 35 ? "var(--color-echo-hp)" : "var(--color-p-accent-bright)" }} />
@@ -3187,14 +3188,14 @@ function UsagiSwapModal({ offer }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4">
       <div className="bg-echo-navy rounded-2xl p-5 max-w-sm w-full shadow-2xl text-center flex flex-col gap-3">
-        <div className="text-lg font-black text-echo-gold">🐰 ปรุ้ต.....</div>
+        <div className="text-lg font-black text-echo-ice">🐰 ปรุ้ต.....</div>
         <div className="text-sm opacity-80">ไพ่ในมือของ <b>{offer.targetName}</b> ตอนนี้ ({offer.cardCount} ใบ)</div>
         <div className={`text-5xl font-black ${offer.busted ? "text-echo-hp" : "text-white"}`} style={{ fontFamily: P_DISPLAY }}>
           {offer.busted ? "แตก!" : `${offer.score} แต้ม`}
         </div>
         <div className="text-xs opacity-70">เอา = สลับไพ่ทั้งมือกัน (ไพ่แตกก็ติดมาด้วย) · แต้มสกิลที่จ่ายไปไม่คืนแม้ไม่เอา</div>
         <div className="flex gap-2">
-          <button onClick={() => answer(true)} className="flex-1 py-2 rounded-lg font-black bg-echo-gold text-gray-900">เอา!</button>
+          <button onClick={() => answer(true)} className="flex-1 py-2 rounded-lg font-black bg-echo-ice text-gray-900">เอา!</button>
           <button onClick={() => answer(false)} className="flex-1 py-2 rounded-lg font-black bg-white/10 border border-white/30">ไม่เอา</button>
         </div>
       </div>
@@ -3211,7 +3212,7 @@ function UsagiItemModal({ me, onPick, onClose }) {
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-lg w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-lg font-black text-echo-gold">🐰 อี!!!!ย๊าาาา!ฮ๊า~~~</span>
+          <span className="text-lg font-black text-echo-ice">🐰 อี!!!!ย๊าาาา!ฮ๊า~~~</span>
           <span className="text-xs opacity-60">เลือกไอเทมที่จะกิน · กดได้อีก {left} ครั้งเทิร์นนี้</span>
         </div>
         <div className="text-xs opacity-70 mb-3">ราคา 5 เหรียญขึ้นไป: ฟื้นพลังชีวิต 3 + ต้านสถานะผิดปกติ 2 เทิร์น · ต่ำกว่านั้น: ฟื้นพลังชีวิต 1 + ต้านสถานะผิดปกติ 1 เทิร์น</div>
@@ -3227,7 +3228,7 @@ function UsagiItemModal({ me, onPick, onClose }) {
                   <ItemIcon info={info} className="w-10 h-10" />
                   <span className="min-w-0">
                     <span className="block text-sm font-bold truncate">{info.label(it)}</span>
-                    <span className={`block text-xs ${rich ? "text-echo-gold" : "opacity-70"}`}>🪙 {it.price || 0} · ฟื้น {rich ? 3 : 1}</span>
+                    <span className={`block text-xs ${rich ? "text-echo-ice" : "opacity-70"}`}>🪙 {it.price || 0} · ฟื้น {rich ? 3 : 1}</span>
                   </span>
                 </button>
               );
@@ -3390,7 +3391,7 @@ function ConnorPredictModal({ me, players, onSubmit, onClose }) {
           <button
             onClick={() => { clickSound(); setNone((v) => !v); setOrder([]); }}
             className={`text-xs font-bold rounded-full px-3 py-1.5 border-2 transition ${
-              none ? "border-echo-gold bg-echo-gold text-gray-900" : "border-white/20 hover:border-white/50"
+              none ? "border-echo-ice bg-echo-ice text-gray-900" : "border-white/20 hover:border-white/50"
             }`}
           >
             🚫 ไม่ได้ทำอะไร
@@ -3456,7 +3457,7 @@ function YuiSongModal({ me, onPick, onClose }) {
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-lg w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-      <div className="text-lg font-black text-echo-gold mb-1">🎸 ทำนองเพลงร็อก — เลือกเพลง</div>
+      <div className="text-lg font-black text-echo-ice mb-1">🎸 ทำนองเพลงร็อก — เลือกเพลง</div>
       <div className="text-xs opacity-70 mb-3">
         เลือกแล้วจะขึ้น QTE ให้กด W/A/S/D ตามจังหวะ ตัวละ 2 วินาที — กดผิดหรือกดไม่ทันแม้ตัวเดียว แต้มสกิลเสียฟรี
         · เล่นครบ 3 เพลงแบบไม่ซ้ำกันเมื่อไหร่ ยุยจะจากไปทันที (สกิลติดตัว)
@@ -3493,7 +3494,7 @@ function YuiSongModal({ me, onPick, onClose }) {
                   key={d.id}
                   onClick={() => { clickSound(); setTarget(d.id); }}
                   className={`rounded-lg border-2 px-3 py-1.5 text-sm font-bold transition ${
-                    target === d.id ? "border-echo-gold bg-echo-gold/20" : "border-white/20 hover:border-white/60"
+                    target === d.id ? "border-echo-ice bg-echo-ice/20" : "border-white/20 hover:border-white/60"
                   }`}
                 >
                   {d.name}
@@ -3507,7 +3508,7 @@ function YuiSongModal({ me, onPick, onClose }) {
         disabled={!ready}
         onClick={() => { clickSound(); onPick(pick, needTarget ? target : null); }}
         className={`mt-3 w-full rounded-lg py-2 font-black transition ${
-          ready ? "text-gray-900 bg-echo-gold" : "opacity-40 cursor-not-allowed bg-white/15"
+          ready ? "text-gray-900 bg-echo-ice" : "opacity-40 cursor-not-allowed bg-white/15"
         }`}
       >
         {!pick ? "เลือกเพลงก่อน" : needTarget && !target ? "เลือกเป้าหมายก่อน" : "เริ่มบรรเลง"}
@@ -3525,12 +3526,12 @@ function BardComposeSlot({ me }) {
   const dimOn = (me.statuses?.soulDim || 0) > 0 || (me.statuses?.bloodDim || 0) > 0;
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-gold/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
+      <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-ice/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
         {[0, 1, 2].map((i) => (
           <div
             key={i}
             className={`rounded-xl grid place-items-center text-2xl sm:text-3xl border ${
-              notes[i] ? "bg-white/15 border-echo-gold/70 pop-in" : "bg-white/5 border-white/15"
+              notes[i] ? "bg-white/15 border-echo-ice/70 pop-in" : "bg-white/5 border-white/15"
             }`}
           >
             {notes[i] === "R" ? "❤️" : notes[i] === "J" ? "💚" : <span className="opacity-25">♪</span>}
@@ -3564,7 +3565,7 @@ function KaiOverhaulSlot({ me, frozen }) {
         onClick={() => { if (ready) { clickSound(); socket.emit("kaiOverhaul"); } }}
         disabled={!ready}
         className={`relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 shadow-lg transition ${
-          ready ? "border-echo-gold/70 active:scale-95 cursor-pointer" : "border-white/15 cursor-not-allowed grid grid-cols-2 gap-1.5 p-2"
+          ready ? "border-echo-ice/70 active:scale-95 cursor-pointer" : "border-white/15 cursor-not-allowed grid grid-cols-2 gap-1.5 p-2"
         }`}
       >
         {ready ? (
@@ -3576,7 +3577,7 @@ function KaiOverhaulSlot({ me, frozen }) {
               <div
                 key={i}
                 className={`relative rounded-xl overflow-hidden flex items-center justify-center border ${
-                  slot ? "border-echo-gold/70 pop-in" : "bg-white/5 border-white/15"
+                  slot ? "border-echo-ice/70 pop-in" : "bg-white/5 border-white/15"
                 }`}
               >
                 {slot ? (
@@ -3627,7 +3628,7 @@ function BoardTimer({ phaseKey }) {
       </svg>
       <span
         className="relative leading-none"
-        style={{ fontFamily: "var(--font-av-display)", fontWeight: 900, fontSize: "1.25rem", color: low ? "#ff8a94" : "#ffe9a8" }}
+        style={{ fontFamily: "var(--font-av-display)", fontWeight: 700, fontSize: "1.2rem", color: low ? "#ff8a94" : "#ffffff" }}
       >
         {seconds}
       </span>
@@ -4707,19 +4708,19 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           ))}
         </div>
         {iAmAttacker && (
-          <div className="shrink-0 text-center mt-1.5 text-lg font-black text-echo-gold animate-pulse text-hard">
+          <div className="shrink-0 text-center mt-1.5 text-lg font-black text-echo-ice animate-pulse text-hard">
             ⚔️ แตะการ์ดคู่ต่อสู้เพื่อโจมตี!
           </div>
         )}
         {anataSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">🎤 แตะเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
+            <span className="text-lg font-black text-echo-ice animate-pulse">🎤 แตะเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
             <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
         {appleSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">🎁 แตะเลือกเป้าหมายเอาไปสิ — มอบ{APPLE_ITEM_NAME[me?.appleItem] || "ของ"}</span>
+            <span className="text-lg font-black text-echo-ice animate-pulse">🎁 แตะเลือกเป้าหมายเอาไปสิ — มอบ{APPLE_ITEM_NAME[me?.appleItem] || "ของ"}</span>
             <button onClick={() => { clickSound(); setAppleSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
@@ -4761,9 +4762,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         )}
         {bardPending && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">🎼 แตะเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
+            <span className="text-lg font-black text-echo-ice animate-pulse">🎼 แตะเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
             {bardPending.allowSelf && (
-              <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+              <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
             )}
           </div>
         )}
@@ -4781,28 +4782,28 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         )}
         {supSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">🙏 แตะเลือกเป้าหมายของ {SUP_SKILL_LABEL[supSel]}</span>
-            <button onClick={() => { clickSound(); pickSup(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            <span className="text-lg font-black text-echo-ice animate-pulse">🙏 แตะเลือกเป้าหมายของ {SUP_SKILL_LABEL[supSel]}</span>
+            <button onClick={() => { clickSound(); pickSup(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
             <button onClick={() => { clickSound(); setSupSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
         {kaiCreateSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">🎨 แตะเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์</span>
-            <button onClick={() => { clickSound(); pickKaiCreate(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            <span className="text-lg font-black text-echo-ice animate-pulse">🎨 แตะเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์</span>
+            <button onClick={() => { clickSound(); pickKaiCreate(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
             <button onClick={() => { clickSound(); setKaiCreateSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
         {kaiPunishSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
             <span className="text-lg font-black text-echo-hp animate-pulse">⚔️ แตะเลือกเป้าหมายมือขวาแห่งการลงทัณฑ์</span>
-            <button onClick={() => { clickSound(); pickKaiPunish(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            <button onClick={() => { clickSound(); pickKaiPunish(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
             <button onClick={() => { clickSound(); setKaiPunishSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
       {danSel && (
           <div className="shrink-0 text-center mt-1.5 text-hard">
-            <span className="text-lg font-black text-echo-gold animate-pulse">{danSel === "ultimate" ? "🚗 เลือกเป้าหมาย \u201cฉันบอกว่าอย่าหนี\u201d" : "🎓 เลือกผู้เล่นที่จะรับเป็น \u201cศิษย์\u201d"}</span>
+            <span className="text-lg font-black text-echo-ice animate-pulse">{danSel === "ultimate" ? "🚗 เลือกเป้าหมาย \u201cฉันบอกว่าอย่าหนี\u201d" : "🎓 เลือกผู้เล่นที่จะรับเป็น \u201cศิษย์\u201d"}</span>
             <button onClick={() => { clickSound(); setDanSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
           </div>
         )}
@@ -4860,7 +4861,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               <TeamBadge teamId={me.teamId} className="absolute -top-5 left-1/2 -translate-x-1/2 z-20" />
               <div
                 className="absolute -top-6 right-3 z-20 px-4 py-1 text-center font-black text-gray-900"
-                style={{ background: "linear-gradient(120deg,#f6d371,var(--color-echo-gold))", clipPath: "polygon(12% 0,100% 0,88% 100%,0 100%)" }}
+                style={{ background: "linear-gradient(120deg,#dcefff,var(--color-echo-ice))", clipPath: "polygon(12% 0,100% 0,88% 100%,0 100%)" }}
               >
                 <div className="text-[10px] leading-none" style={{ fontFamily: P_DISPLAY }}>แต้มรวม</div>
                 <div className="text-2xl leading-tight" style={{ fontFamily: P_DISPLAY }}>{me.score != null ? me.score : "???"}</div>
@@ -4873,7 +4874,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   <div className="text-3xl font-black opacity-80">🌑 ???</div>
                 ) : revealed ? (
                   <div className="text-3xl font-black">
-                    {me.busted ? <span className="text-echo-hp">แตก!</span> : <>แต้ม <span className="text-echo-gold">{me.score}</span></>}
+                    {me.busted ? <span className="text-echo-hp">แตก!</span> : <>แต้ม <span className="text-echo-ice">{me.score}</span></>}
                   </div>
                 ) : (
                   me.cards && me.cards.map((c, i) => <Card key={i} value={c.value} color={c.color} special={c.special} size="sm" />)
@@ -4903,7 +4904,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                         className="w-4 h-4 rotate-45"
                         style={
                           i < me.skillPoints
-                            ? { background: "linear-gradient(180deg,#f6d371,var(--color-echo-gold))", boxShadow: "0 0 6px rgba(229,179,59,.8)" }
+                            ? { background: "linear-gradient(180deg,#ead2f0,var(--oc-echo-glow) 45%,var(--oc-echo))", boxShadow: "0 0 6px rgba(201,154,214,.8)" }
                             : { background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.2)" }
                         }
                       />
@@ -4929,7 +4930,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🚫 ถูกห้ามใช้สกิล — เทิร์นนี้ใช้สกิลไม่ได้</div>
               )}
               {(miyakoHealPending || miyakoComboPending) && phase === "PLAYING" && !done && (
-                <div className="text-center text-sm font-bold text-echo-gold mt-1">✋ กดซ้ำไม่ได้จนกว่าจะได้โจมตี</div>
+                <div className="text-center text-sm font-bold text-echo-ice mt-1">✋ กดซ้ำไม่ได้จนกว่าจะได้โจมตี</div>
               )}
               {phenexTaunting && phase === "PLAYING" && !done && (
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🥺 ไม่อยากให้ใครต้องเจ็บปวด — จั่ว/ใช้สกิลไม่ได้ระหว่างล่อเป้า (ชนะจั่วยังโจมตีได้)</div>
@@ -4938,10 +4939,10 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <div className="text-center text-sm font-bold text-echo-hp mt-1">🤔 เป็นแบบนี้นี่เอง — ครุ่นคิดอยู่ จั่วไพ่/ใช้สกิลอื่นไม่ได้ (ชนะจั่วยังโจมตีได้)</div>
               )}
               {tepeuCookLocked && phase === "PLAYING" && !done && (
-                <div className="text-center text-sm font-bold text-echo-gold mt-1">🍳 วันนี้อากาศดีจัง — กำลังทำอาหารอยู่ (เหลือ {me.tepeuCookTurns} เทิร์น)</div>
+                <div className="text-center text-sm font-bold text-echo-ice mt-1">🍳 วันนี้อากาศดีจัง — กำลังทำอาหารอยู่ (เหลือ {me.tepeuCookTurns} เทิร์น)</div>
               )}
               {me.skillUsed && phase === "PLAYING" && !done && (
-                <div className="text-center text-sm font-bold text-echo-gold mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
+                <div className="text-center text-sm font-bold text-echo-ice mt-1">ใช้สกิลได้ 1 อันต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>
               )}
 
               {/* นานายะ ชิกิ: ปุ่มเปิด/ปิด Mystic eye of death perception (แยกจากช่องสกิล — เปิด/ปิดได้แค่ 1 ครั้งต่อเทิร์น) */}
@@ -4955,7 +4956,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   >
                     👁️ Mystic eye of death perception — {me.nanayaEyeOn ? "เปิดอยู่ (กดเพื่อปิด)" : "ปิดอยู่ (กดเพื่อเปิด)"}
                   </Button>
-                  {me.nanayaToggleUsed && <div className="text-center text-xs font-bold text-echo-gold mt-1">เปิด/ปิดได้ 1 ครั้งต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>}
+                  {me.nanayaToggleUsed && <div className="text-center text-xs font-bold text-echo-ice mt-1">เปิด/ปิดได้ 1 ครั้งต่อเทิร์น — เทิร์นนี้ใช้ไปแล้ว</div>}
                 </div>
               )}
 
@@ -4965,7 +4966,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <button
                   onClick={() => { clickSound(); setBagOpen(true); }}
                   className="relative shrink-0 w-12 rounded-2xl grid place-items-center text-2xl shadow-lg border-2 border-black/40"
-                  style={{ background: "linear-gradient(160deg,#f6d371,var(--color-echo-gold))" }}
+                  style={{ background: "linear-gradient(160deg,#dcefff,var(--color-echo-ice))" }}
                   title="กระเป๋า"
                 >
                   🎒
@@ -4990,13 +4991,13 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                           disabled={frozenByClockUp}
                           onClick={() => { clickSound(); socket.emit("lock"); }}
                           className="flex-1 font-black text-lg text-gray-900 transition active:scale-95 -ml-3"
-                          style={{ background: "var(--color-echo-gold)", clipPath: "polygon(6% 0,100% 0,100% 100%,0% 100%)" }}
+                          style={{ background: "var(--color-echo-ice)", clipPath: "polygon(6% 0,100% 0,100% 100%,0% 100%)" }}
                         >
                           ✅ เปิดไพ่
                         </button>
                       </div>
                       {noDraw && <div className="text-center text-sm font-bold text-echo-hp mt-1">🚫 เทิร์นนี้จั่วไม่ได้</div>}
-                      {me.atCap && <div className="text-center text-sm font-bold text-echo-gold mt-1">{me.busted ? "ไพ่แตก! 😢 ยังกดสกิล/ใช้ไอเทมได้ จนกว่าจะเปิดไพ่" : "แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย"}</div>}
+                      {me.atCap && <div className="text-center text-sm font-bold text-echo-ice mt-1">{me.busted ? "ไพ่แตก! 😢 ยังกดสกิล/ใช้ไอเทมได้ จนกว่าจะเปิดไพ่" : "แต้มเต็มแล้ว! ใช้สกิล หรือเปิดไพ่ได้เลย"}</div>}
                       {state.deckEmpty && <div className="text-center text-sm font-bold text-echo-hp mt-1">🂠 การ์ดหมดกอง — ทุกคนจั่วเพิ่มไม่ได้</div>}
                     </>
                   ) : phase === "PLAYING" && me.alive && done ? (
@@ -5019,7 +5020,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <button
                   onClick={() => { clickSound(); setShopOpen(true); }}
                   className="relative shrink-0 w-12 rounded-2xl grid place-items-center text-2xl shadow-lg border-2 border-black/40"
-                  style={{ background: "linear-gradient(160deg,#f6d371,var(--color-echo-gold))" }}
+                  style={{ background: "linear-gradient(160deg,#dcefff,var(--color-echo-ice))" }}
                   title="ร้านค้า"
                 >
                   🏪
@@ -5136,8 +5137,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         <div className="bd-top">
           <span className="relative text-3xl leading-none">{nightNow ? "🌙" : "☀️"}</span>
           <div className="relative text-center">
-            <div className="av-label" style={{ fontSize: "0.64rem", letterSpacing: "0.34em" }}>รอบที่</div>
-            <div className="av-title leading-none" style={{ fontSize: "2rem" }}>{state.roundNumber}</div>
+            <div className="av-label" style={{ fontSize: "0.68rem" }}>รอบที่</div>
+            <div className="av-title leading-none" style={{ fontSize: "1.7rem", fontFamily: "var(--font-av-numeral)", fontWeight: 400 }}>{state.roundNumber}</div>
           </div>
           <BoardTimer phaseKey={`${phase}-${state.roundNumber}`} />
         </div>
@@ -5194,7 +5195,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (เทมาริ) */}
       {anataSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎤 คลิกเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎤 คลิกเลือกเป้าหมาย ANATA ({anataSel.length}/{anataNeed})</span>
           <button onClick={() => { clickSound(); setAnataSel(null); }} className="ml-3 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5206,7 +5207,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* โหมดเลือกเป้าหมายเอาไปสิ (Apple guy) — มอบของที่เลือกไว้ให้คนอื่น */}
       {appleSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎁 คลิกเลือกเป้าหมายเอาไปสิ — มอบ{APPLE_ITEM_NAME[me?.appleItem] || "ของ"}</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎁 คลิกเลือกเป้าหมายเอาไปสิ — มอบ{APPLE_ITEM_NAME[me?.appleItem] || "ของ"}</span>
           <button onClick={() => { clickSound(); setAppleSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5258,9 +5259,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* โหมดเลือกเป้าหมายบทเพลง (Bard) — บทเพลงประพันธ์เสร็จแล้ว รอเป้าหมาย (ไม่เลือก = สุ่มตอนเปิดไพ่) */}
       {bardPending && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎼 คลิกเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎼 คลิกเลือกเป้าหมาย {bardPending.name} ({bardSel.length}/{bardNeed})</span>
           {bardPending.allowSelf && (
-            <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+            <button onClick={() => { clickSound(); pickBard(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           )}
         </div>
       )}
@@ -5282,22 +5283,22 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       )}
       {supSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🙏 คลิกเลือกเป้าหมายของ {SUP_SKILL_LABEL[supSel]}</span>
-          <button onClick={() => { clickSound(); pickSup(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🙏 คลิกเลือกเป้าหมายของ {SUP_SKILL_LABEL[supSel]}</span>
+          <button onClick={() => { clickSound(); pickSup(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           <button onClick={() => { clickSound(); setSupSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
       {kaiCreateSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎨 คลิกเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์</span>
-          <button onClick={() => { clickSound(); pickKaiCreate(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎨 คลิกเลือกเป้าหมายมือซ้ายแห่งการรังสรรค์</span>
+          <button onClick={() => { clickSound(); pickKaiCreate(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           <button onClick={() => { clickSound(); setKaiCreateSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
       {kaiPunishSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
           <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">⚔️ คลิกเลือกเป้าหมายมือขวาแห่งการลงทัณฑ์</span>
-          <button onClick={() => { clickSound(); pickKaiPunish(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          <button onClick={() => { clickSound(); pickKaiPunish(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           <button onClick={() => { clickSound(); setKaiPunishSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5316,14 +5317,14 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       )}
       {giftSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">✨ คลิกเลือกเป้าหมายของ “{giftSel.name}”</span>
-          <button onClick={() => { clickSound(); pickGift(me.id); }} className="ml-3 text-sm font-bold bg-echo-gold text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">✨ คลิกเลือกเป้าหมายของ “{giftSel.name}”</span>
+          <button onClick={() => { clickSound(); pickGift(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           <button onClick={() => { clickSound(); setGiftSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
       {usagiSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">🐰 เลือกเป้าหมาย “ปรุ้ต.....” (ดูแต้มก่อนตัดสินใจ)</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">🐰 เลือกเป้าหมาย “ปรุ้ต.....” (ดูแต้มก่อนตัดสินใจ)</span>
           <button onClick={() => { clickSound(); setUsagiSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5341,7 +5342,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       )}
       {danSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard">
-          <span className="text-xl font-black text-echo-gold animate-pulse bg-black/60 rounded-full px-5 py-1.5">{danSel === "ultimate" ? "🚗 เลือกเป้าหมาย \u201cฉันบอกว่าอย่าหนี\u201d" : "🎓 เลือกผู้เล่นที่จะรับเป็น \u201cศิษย์\u201d"}</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">{danSel === "ultimate" ? "🚗 เลือกเป้าหมาย \u201cฉันบอกว่าอย่าหนี\u201d" : "🎓 เลือกผู้เล่นที่จะรับเป็น \u201cศิษย์\u201d"}</span>
           <button onClick={() => { clickSound(); setDanSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5505,7 +5506,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   title="จั่วการ์ด"
                 >
                   <span className="text-xl">🂠</span>
-                  <span className="text-xs font-black text-echo-cyan" style={{ fontFamily: P_DISPLAY }}>จั่ว</span>
+                  <span className="text-sm font-bold text-echo-ice" style={{ fontFamily: P_DISPLAY }}>จั่ว</span>
                 </button>
                 <button
                   disabled={!(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || (!pairPilot && !pilotAway)}
@@ -5514,7 +5515,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   title="เปิดไพ่"
                 >
                   <span className="text-xl">🃏</span>
-                  <span className="text-xs font-black text-echo-gold" style={{ fontFamily: P_DISPLAY }}>เปิดไพ่</span>
+                  <span className="text-sm font-bold text-white" style={{ fontFamily: P_DISPLAY }}>เปิดไพ่</span>
                 </button>
               </div>
             </div>
@@ -5535,7 +5536,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-echo-gold text-hard tracking-wider" style={{ fontFamily: P_DISPLAY }}>SP</span>
+                  <span className="text-xs font-black text-hard" style={{ fontFamily: P_DISPLAY, color: "var(--oc-echo-glow)" }}>SP</span>
                   <div className="flex gap-1">
                     {Array.from({ length: me.maxSkill }, (_, i) => (
                       <span
@@ -5543,7 +5544,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                         className="p-sp-cell w-6 sm:w-7 h-4 sm:h-5"
                         style={
                           i < me.skillPoints
-                            ? { background: "linear-gradient(180deg,#f6d371,var(--color-echo-gold))", boxShadow: "0 0 7px rgba(229,179,59,.85)" }
+                            ? { background: "linear-gradient(180deg,#ead2f0,var(--oc-echo-glow) 45%,var(--oc-echo))", boxShadow: "0 0 7px rgba(201,154,214,.85)" }
                             : { background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)" }
                         }
                       />
@@ -5595,7 +5596,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   title="กระเป๋า"
                 >
                   <span className="text-xl sm:text-2xl">🎒</span>
-                  <span className="text-xs sm:text-sm font-black text-echo-cyan" style={{ fontFamily: P_DISPLAY }}>กระเป๋า</span>
+                  <span className="text-xs sm:text-sm font-bold text-echo-ice" style={{ fontFamily: P_DISPLAY }}>กระเป๋า</span>
                   {me.inventory?.length > 0 && (
                     <span className="ml-auto text-[10px] font-black bg-black text-white rounded-full w-5 h-5 grid place-items-center shrink-0">{me.inventory.length}</span>
                   )}
@@ -5610,8 +5611,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                     title="ร้านค้า"
                   >
                     <span className="text-xl sm:text-2xl">🏪</span>
-                    <span className="text-xs sm:text-sm font-black text-echo-hp" style={{ fontFamily: P_DISPLAY }}>ร้านค้า</span>
-                    <span className="ml-auto text-xs sm:text-sm font-black text-echo-gold whitespace-nowrap shrink-0">🪙{me.gold ?? 0}</span>
+                    <span className="text-xs sm:text-sm font-bold text-white" style={{ fontFamily: P_DISPLAY }}>ร้านค้า</span>
+                    <span className="ml-auto text-xs sm:text-sm font-black text-echo-ice whitespace-nowrap shrink-0">🪙{me.gold ?? 0}</span>
                   </button>
                 )}
               </div>

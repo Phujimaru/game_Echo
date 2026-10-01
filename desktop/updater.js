@@ -23,7 +23,7 @@ function checkForUpdate({ feedUrl, onStatus }) {
     try {
       result = await autoUpdater.checkForUpdates();
     } catch (err) {
-      return { ok: false, error: `ตรวจเวอร์ชันไม่สำเร็จ — เช็คอินเทอร์เน็ตแล้วลองใหม่ (${shortError(err)})` };
+      return { ok: false, error: `ตรวจเวอร์ชันไม่สำเร็จ (${shortError(err)})` };
     }
     if (!result || !result.isUpdateAvailable) return { ok: true };
 
@@ -34,7 +34,7 @@ function checkForUpdate({ feedUrl, onStatus }) {
     try {
       await autoUpdater.downloadUpdate();
     } catch (err) {
-      return { ok: false, error: `โหลดเวอร์ชัน ${version} ไม่สำเร็จ — ลองใหม่อีกครั้ง (${shortError(err)})` };
+      return { ok: false, error: `โหลดเวอร์ชัน ${version} ไม่สำเร็จ (${shortError(err)})` };
     } finally {
       autoUpdater.off("download-progress", onProgress);
     }

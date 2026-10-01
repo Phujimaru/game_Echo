@@ -6,7 +6,7 @@ const reactRefresh = require("eslint-plugin-react-refresh").default;
 
 module.exports = [
   {
-    ignores: ["node_modules/**", "client/node_modules/**", "client/dist/**", "desktop/node_modules/**", "desktop/dist/**"],
+    ignores: ["node_modules/**", "client/node_modules/**", "client/dist/**", "desktop/node_modules/**", "desktop/dist/**", "desktop/launcher/vendor/**"],
   },
   // server.js + server/**/*.js + characters/*.js + tests/*.js — Node CommonJS
   {

@@ -73,14 +73,14 @@ export default function VictoryScreen({ state, onBackToLobby }) {
       ))}
 
       <div className="relative z-10 text-center flex flex-col items-center gap-6 px-10">
-        <span className="av-label av-stamp" style={{ fontSize: "1.1rem", letterSpacing: "0.5em" }}>ผู้ชนะ</span>
+        <span className="av-label av-stamp" style={{ fontSize: "1.2rem" }}>ผู้ชนะ</span>
 
         <h1 className="av-title av-title-thai av-unfurl text-[5.5rem] leading-none max-w-6xl" style={{ animationDelay: "0.2s" }}>
           {heading}
         </h1>
 
         {winners.length > 1 && (
-          <div className="av-heading text-xl" style={{ color: "rgba(232,196,239,.75)" }}>{names}</div>
+          <div className="av-heading text-xl" style={{ color: "rgba(220,235,250,.75)" }}>{names}</div>
         )}
 
         {winners.length > 0 && (

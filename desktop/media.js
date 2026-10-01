@@ -102,7 +102,7 @@ class MediaCache {
       if (!manifest || typeof manifest.files !== "object") throw new Error("รูปแบบ manifest ไม่ถูกต้อง");
       return manifest;
     } catch (err) {
-      throw new Error(`ตรวจรายการไฟล์เกมไม่สำเร็จ — เช็คอินเทอร์เน็ตแล้วลองใหม่ (${err.message})`);
+      throw new Error(`ตรวจรายการไฟล์เกมไม่สำเร็จ (${err.message})`);
     }
   }
 

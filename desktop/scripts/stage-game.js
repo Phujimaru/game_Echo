@@ -5,6 +5,7 @@
 const { execFileSync, execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { buildLauncherVendor } = require("./build-launcher-vendor");
 
 const repo = path.resolve(__dirname, "../..");
 const out = path.resolve(__dirname, "../build/game");
@@ -39,6 +40,11 @@ step("build หน้าเกม (ไม่รวมไฟล์สื่อ)",
   const outDir = path.join(out, "client", "dist").split(path.sep).join("/");
   const script = `import { build } from 'vite'; await build({ logLevel: 'error', build: { outDir: ${JSON.stringify(outDir)}, emptyOutDir: true, copyPublicDir: false } });`;
   execFileSync(process.execPath, ["--input-type=module", "-e", script], { cwd: path.join(repo, "client"), stdio: "inherit" });
+});
+
+// หน้าแรกของโปรแกรม: ลูกโลก (iife) + เพลง main5 + โลโก้ → desktop/launcher/vendor (electron-builder พกไปกับ "launcher/**")
+step("build ลูกโลก + เพลงของหน้าแรก", () => {
+  buildLauncherVendor({ force: true });
 });
 
 // ตรวจว่าโค้ดเกมพร้อมรันจริง: โหลดไฟล์หลักได้ + หน้าเกมมี index.html

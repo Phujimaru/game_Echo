@@ -1,7 +1,12 @@
-import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import "../oc/ui-extra/curtain.css";
 
 export const SCREEN_ORDER = { splash: 0, setup: 1, character: 2, connecting: 2.5, lobby: 3, gameintro: 3.5, ortarrival: 3.5, game: 4 };
 
+// ม่านเปลี่ยนฉาก ORDEAL CALL: แผ่นขาวเฉียงมีกริดกวาดผ่านจอ (ขอบนำ/ขอบท้าย = แถบฟ้าน้ำแข็ง + เส้นม่วง ECHO บาง)
+//  โหมด sweep (preTrigger / เปลี่ยน screenKey): ปิดจอทึบช่วง ~420–1000ms แล้วกวาดออก จบใน 1.8 วิ
+//    App.navigate สลับเนื้อหาที่ 660ms และปลดล็อกที่ 1860ms — ห้ามขยับช่วงปิดจอทึบออกนอกจังหวะนี้
+//  โหมด hold (holdCover → release): ปิดค้างจนกว่าจะสั่งปล่อย (อย่างน้อย MIN_HOLD_MS) แล้วกวาดออกใน 520ms
 const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, ref) {
   const [state, setState] = useState({ visible: false, mode: "sweep", phase: null, direction: "forward", playId: 0 });
   const liveRef = useRef({ visible: false, mode: "sweep", phase: null });
@@ -12,60 +17,6 @@ const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, r
   const timers = useRef([]);
   const holdStart = useRef(0);
   const MIN_HOLD_MS = 1150;
-
-  const dust = useMemo(() => {
-    let seed = 20240401;
-    const rnd = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-
-    const grains = Array.from({ length: 210 }, () => {
-      const roll = rnd();
-      const big = roll < 0.1;
-      const mid = !big && roll < 0.34;
-      const pale = rnd() < 0.34;
-      return {
-        top: rnd() * 104 - 2,
-        size: big ? 6 + rnd() * 7 : mid ? 3 + rnd() * 3 : 1.4 + rnd() * 2,
-        blur: big ? 26 + rnd() * 20 : mid ? 12 + rnd() * 10 : 6 + rnd() * 6,
-        spread: big ? 5 : mid ? 2.5 : 1.2,
-        color: pale ? "#f0dcff" : "#ffe9a8",
-        dy: (rnd() - 0.5) * 26,
-        dy2: (rnd() - 0.3) * 34,
-        delay: rnd() * 0.5,
-        dur: 1 + rnd() * 0.2,
-      };
-    });
-
-    const streaks = Array.from({ length: 14 }, () => ({
-      top: rnd() * 100,
-      len: 70 + rnd() * 160,
-      thick: 1 + rnd() * 2.5,
-      color: rnd() < 0.4 ? "#f0dcff" : "#ffe9a8",
-      dy: (rnd() - 0.5) * 16,
-      dy2: (rnd() - 0.3) * 22,
-      delay: rnd() * 0.45,
-      dur: 0.82 + rnd() * 0.22,
-    }));
-
-    const glints = Array.from({ length: 16 }, () => ({
-      top: 2 + rnd() * 94,
-      size: 18 + rnd() * 30,
-      dy: (rnd() - 0.5) * 20,
-      dy2: (rnd() - 0.35) * 28,
-      delay: rnd() * 0.42,
-      dur: 1.02 + rnd() * 0.2,
-    }));
-
-    const winds = [
-      { top: -12, w: 62, delay: 0, dur: 1.5, op: 1 },
-      { top: -12, w: 44, delay: 0.16, dur: 1.28, op: 0.7 },
-      { top: -12, w: 78, delay: 0.3, dur: 1.62, op: 0.5 },
-    ];
-
-    return { grains, streaks, glints, winds };
-  }, []);
 
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
@@ -101,7 +52,7 @@ const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, r
   const releaseHold = () => {
     const cur = liveRef.current;
     if (cur.mode !== "hold" || cur.phase === "out" || !cur.visible) return;
-    // ค้างจออย่างน้อย MIN_HOLD_MS เสมอ — ถ้า server ตอบเร็วมาก ม่านจะถูกเปิดตั้งแต่ละอองยังพัดไม่ทันเต็มจอ
+    // ค้างจออย่างน้อย MIN_HOLD_MS เสมอ — ถ้า server ตอบเร็วมาก ม่านจะถูกเปิดตั้งแต่ยังปิดไม่ทันเต็มจอ
     const waited = Date.now() - holdStart.current;
     if (waited < MIN_HOLD_MS) {
       clearTimers();
@@ -169,75 +120,21 @@ const TransitionCurtain = forwardRef(function TransitionCurtain({ screenKey }, r
   return (
     <div
       key={state.playId}
-      className="av-curtain"
+      className="occ"
       data-mode={state.mode}
       data-phase={state.phase || ""}
       data-dir={state.direction}
       aria-hidden="true"
     >
-      <span className="av-dust-veil" />
-      <div className="av-dust">
-        {dust.winds.map((w, i) => (
-          <span
-            key={`w${i}`}
-            className="av-wind"
-            style={{
-              width: `${w.w}vw`,
-              "--wo": w.op,
-              animationDelay: `${w.delay}s`,
-              animationDuration: `${w.dur}s`,
-            }}
-          />
-        ))}
-        {dust.grains.map((g, i) => (
-          <span
-            key={`g${i}`}
-            className="av-grain"
-            style={{
-              top: `${g.top}%`,
-              width: g.size,
-              height: g.size,
-              "--gc": g.color,
-              "--gb": `${g.blur}px`,
-              "--gs": `${g.spread}px`,
-              "--dy": `${g.dy}vh`,
-              "--dy2": `${g.dy2}vh`,
-              animationDelay: `${g.delay}s`,
-              animationDuration: `${g.dur}s`,
-            }}
-          />
-        ))}
-        {dust.streaks.map((g, i) => (
-          <span
-            key={`t${i}`}
-            className="av-streak"
-            style={{
-              top: `${g.top}%`,
-              width: g.len,
-              height: g.thick,
-              "--gc": g.color,
-              "--dy": `${g.dy}vh`,
-              "--dy2": `${g.dy2}vh`,
-              animationDelay: `${g.delay}s`,
-              animationDuration: `${g.dur}s`,
-            }}
-          />
-        ))}
-        {dust.glints.map((g, i) => (
-          <span
-            key={`s${i}`}
-            className="av-glint"
-            style={{
-              top: `${g.top}%`,
-              width: g.size,
-              height: g.size,
-              "--dy": `${g.dy}vh`,
-              "--dy2": `${g.dy2}vh`,
-              animationDelay: `${g.delay}s`,
-              animationDuration: `${g.dur}s`,
-            }}
-          />
-        ))}
+      <div className="occ-sheets">
+        <i className="occ-sheet"><span className="occ-clip"><span className="occ-grid" /></span></i>
+      </div>
+      <div className="occ-core">
+        <span className="occ-core-box">
+          <b className="occ-logo">ECHO</b>
+          <span className="occ-sub">ORDEAL <em>CALL</em></span>
+          <span className="occ-bar"><i /></span>
+        </span>
       </div>
     </div>
   );

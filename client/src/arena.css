@@ -3,7 +3,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  background: #07040d;
+  background: #061226;
 }
 .ab-layer {
   position: absolute;
@@ -116,9 +116,9 @@
   pointer-events: none;
   transition: opacity 1.2s ease;
   background:
-    radial-gradient(ellipse 120% 44% at 50% 104%, rgba(232, 191, 90, 0.5), transparent 72%),
-    radial-gradient(ellipse 50% 70% at 2% 100%, rgba(201, 153, 47, 0.32), transparent 70%),
-    radial-gradient(ellipse 50% 70% at 98% 100%, rgba(201, 153, 47, 0.3), transparent 70%);
+    radial-gradient(ellipse 120% 44% at 50% 104%, rgba(190, 227, 248, 0.5), transparent 72%),
+    radial-gradient(ellipse 50% 70% at 2% 100%, rgba(127, 184, 230, 0.32), transparent 70%),
+    radial-gradient(ellipse 50% 70% at 98% 100%, rgba(127, 184, 230, 0.3), transparent 70%);
 }
 
 .ab-grade {
@@ -126,8 +126,8 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 78% 62% at 50% 46%, transparent 32%, rgba(6, 3, 12, 0.58) 100%),
-    linear-gradient(180deg, rgba(6, 3, 12, 0.34) 0%, transparent 26%, transparent 62%, rgba(6, 3, 12, 0.5) 100%);
+    radial-gradient(ellipse 78% 62% at 50% 46%, transparent 32%, rgba(12, 30, 60, 0.42) 100%),
+    linear-gradient(180deg, rgba(12, 30, 60, 0.22) 0%, transparent 26%, transparent 62%, rgba(12, 30, 60, 0.3) 100%);
 }
 
 .rb {
@@ -143,7 +143,7 @@
 .rb-wash {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(46, 17, 69, 0.82), rgba(5, 3, 8, 0.9) 78%);
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(24, 52, 94, 0.82), rgba(4, 11, 24, 0.9) 78%);
   animation: rbWash 3s ease both;
 }
 @keyframes rbWash {
@@ -157,7 +157,7 @@
   width: 140%;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--av-gold-lit) 22%, #fff 50%, var(--av-gold-lit) 78%, transparent);
-  box-shadow: 0 0 26px 4px rgba(232, 191, 90, 0.8);
+  box-shadow: 0 0 26px 4px rgba(190, 227, 248, 0.8);
   transform-origin: center;
 }
 .rb-slash-a { top: 40%; animation: rbSlashA 3s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -175,13 +175,12 @@
 
 .rb-numeral {
   position: absolute;
-  font-family: var(--font-av-display);
-  font-weight: 900;
-  font-style: italic;
+  font-family: var(--font-av-numeral);
+  font-weight: 400;
   line-height: 0.8;
   font-size: 46vh;
   color: transparent;
-  -webkit-text-stroke: 3px rgba(232, 191, 90, 0.45);
+  -webkit-text-stroke: 3px rgba(190, 227, 248, 0.45);
   animation: rbNumeral 3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes rbNumeral {
@@ -196,9 +195,9 @@
   animation: rbTitle 3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes rbTitle {
-  0% { opacity: 0; letter-spacing: 0.8em; transform: translateY(18px); }
-  20%, 64% { opacity: 1; letter-spacing: 0.04em; transform: translateY(0); }
-  100% { opacity: 0; letter-spacing: 0.2em; transform: translateY(-14px); }
+  0% { opacity: 0; transform: translateY(18px) scale(1.08); }
+  20%, 64% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-14px) scale(1); }
 }
 
 .rb-spark {
@@ -207,7 +206,7 @@
   left: 50%;
   border-radius: 50%;
   background: var(--av-gold-lit);
-  box-shadow: 0 0 12px 3px rgba(255, 233, 168, 0.9);
+  box-shadow: 0 0 12px 3px rgba(234, 243, 252, 0.9);
   animation: rbSpark 1.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 @keyframes rbSpark {
@@ -302,7 +301,7 @@
 .fx-veil {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 62% at 50% 50%, rgba(22, 9, 38, 0.72), rgba(4, 2, 8, 0.93) 76%);
+  background: radial-gradient(ellipse 70% 62% at 50% 50%, rgba(14, 31, 60, 0.72), rgba(3, 10, 22, 0.93) 76%);
   animation: fxVeil 0.28s ease both;
 }
 @keyframes fxVeil { from { opacity: 0; } to { opacity: 1; } }
@@ -338,7 +337,7 @@
   margin: -11vmin 0 0 -11vmin;
   border-radius: 50%;
   border: 4px solid var(--av-gold-lit);
-  box-shadow: 0 0 60px 14px rgba(232, 191, 90, 0.65), inset 0 0 40px 8px rgba(232, 191, 90, 0.35);
+  box-shadow: 0 0 60px 14px rgba(190, 227, 248, 0.65), inset 0 0 40px 8px rgba(190, 227, 248, 0.35);
   animation: fxShock 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 @keyframes fxShock {
@@ -354,7 +353,7 @@
   height: 3px;
   transform-origin: left center;
   background: linear-gradient(90deg, #fff, var(--av-gold-lit) 28%, transparent);
-  box-shadow: 0 0 14px 2px rgba(232, 191, 90, 0.75);
+  box-shadow: 0 0 14px 2px rgba(190, 227, 248, 0.75);
   animation: fxCrack 0.75s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 @keyframes fxCrack {
@@ -385,7 +384,8 @@
 .fx-portrait {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 0;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
   border: 2px solid;
   box-shadow: 0 26px 50px -22px rgba(0, 0, 0, 0.95);
 }
@@ -398,16 +398,17 @@
   gap: 0.85rem;
   overflow: hidden;
   padding: 0.6rem 1rem;
-  border-radius: 16px 16px 16px 6px;
+  border-radius: 0;
+  clip-path: var(--oc-cut);
 }
 .sm-win {
-  background: linear-gradient(100deg, rgba(232, 191, 90, 0.38), rgba(232, 191, 90, 0.05) 72%);
-  border: 1px solid rgba(255, 233, 168, 0.75);
-  box-shadow: 0 0 26px -8px rgba(232, 191, 90, 0.75);
+  background: linear-gradient(100deg, rgba(190, 227, 248, 0.38), rgba(190, 227, 248, 0.05) 72%);
+  border: 1px solid rgba(234, 243, 252, 0.75);
+  box-shadow: 0 0 26px -8px rgba(190, 227, 248, 0.75);
 }
 .sm-lose {
-  background: linear-gradient(100deg, rgba(46, 17, 69, 0.6), rgba(10, 6, 17, 0.55));
-  border: 1px solid rgba(185, 95, 196, 0.24);
+  background: linear-gradient(100deg, rgba(24, 52, 94, 0.6), rgba(8, 20, 40, 0.55));
+  border: 1px solid rgba(127, 184, 230, 0.24);
 }
 .sm-win::after {
   content: "";
@@ -448,13 +449,13 @@
 .sum-veil {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 62% 58% at 50% 46%, rgba(20, 9, 36, 0.7), rgba(4, 2, 8, 0.87) 76%);
+  background: radial-gradient(ellipse 62% 58% at 50% 46%, rgba(13, 30, 58, 0.7), rgba(3, 10, 22, 0.87) 76%);
   animation: fxVeil 0.35s ease both;
 }
 .sum-head { position: relative; animation: sumHead 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes sumHead {
-  0% { opacity: 0; transform: translateY(-24px); letter-spacing: 0.5em; }
-  100% { opacity: 1; transform: translateY(0); letter-spacing: 0.06em; }
+  0% { opacity: 0; transform: translateY(-24px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .sum-win {
@@ -465,9 +466,9 @@
   padding: 0.8rem 2.4rem 0.8rem 1rem;
   overflow: hidden;
   clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 100%, 0 100%);
-  background: linear-gradient(100deg, rgba(232, 191, 90, 0.42) 0%, rgba(201, 153, 47, 0.16) 54%, rgba(94, 63, 8, 0.04) 100%);
-  border-top: 1px solid rgba(255, 233, 168, 0.85);
-  border-bottom: 1px solid rgba(255, 233, 168, 0.45);
+  background: linear-gradient(100deg, rgba(190, 227, 248, 0.42) 0%, rgba(127, 184, 230, 0.16) 54%, rgba(28, 63, 110, 0.04) 100%);
+  border-top: 1px solid rgba(234, 243, 252, 0.85);
+  border-bottom: 1px solid rgba(234, 243, 252, 0.45);
   animation: sumWin 0.64s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 @keyframes sumWin {
@@ -515,14 +516,14 @@
   right: 0;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(185, 95, 196, 0.45), rgba(185, 95, 196, 0.08) 70%, transparent);
+  background: linear-gradient(90deg, rgba(127, 184, 230, 0.45), rgba(127, 184, 230, 0.08) 70%, transparent);
 }
 .sum-lead {
   flex: 1;
   min-width: 1.5rem;
   height: 0;
   margin: 0 0.6rem;
-  border-bottom: 1px dotted rgba(232, 196, 239, 0.26);
+  border-bottom: 1px dotted rgba(220, 235, 250, 0.26);
   transform: translateY(-2px);
 }
 
@@ -536,8 +537,8 @@
   padding: 0.45rem 0.9rem 0.45rem 0.9rem;
   overflow: hidden;
   clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  background: linear-gradient(100deg, rgba(30, 16, 46, 0.94), rgba(9, 5, 15, 0.9));
-  border-top: 1px solid rgba(255, 233, 168, 0.35);
+  background: linear-gradient(100deg, rgba(17, 37, 70, 0.94), rgba(7, 18, 38, 0.9));
+  border-top: 1px solid rgba(234, 243, 252, 0.35);
 }
 .fx-skill-edge {
   position: absolute;
@@ -585,10 +586,10 @@
   padding: 0.9rem 2.8rem 0.9rem 1.4rem;
   overflow: hidden;
   clip-path: polygon(22px 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
-  background: linear-gradient(100deg, rgba(48, 26, 70, 0.97) 0%, rgba(14, 8, 22, 0.97) 62%, rgba(94, 63, 8, 0.4) 100%);
+  background: linear-gradient(100deg, rgba(24, 52, 94, 0.97) 0%, rgba(10, 24, 48, 0.97) 62%, rgba(28, 63, 110, 0.4) 100%);
   border-top: 2px solid var(--av-gold-lit);
-  border-bottom: 2px solid rgba(232, 191, 90, 0.6);
-  box-shadow: 0 0 60px -10px rgba(232, 191, 90, 0.85), 0 30px 60px -28px rgba(0, 0, 0, 0.95);
+  border-bottom: 2px solid rgba(190, 227, 248, 0.6);
+  box-shadow: 0 0 60px -10px rgba(190, 227, 248, 0.85), 0 30px 60px -28px rgba(0, 0, 0, 0.95);
   animation: shRibbon 3.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes shRibbon {
@@ -619,7 +620,7 @@
   left: 50%;
   border-radius: 50%;
   background: var(--av-gold-lit);
-  box-shadow: 0 0 12px 3px rgba(255, 233, 168, 0.9);
+  box-shadow: 0 0 12px 3px rgba(234, 243, 252, 0.9);
   animation: rbSpark 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) 0.2s both;
 }
 
@@ -636,8 +637,8 @@
   inset: 0;
   background:
     radial-gradient(ellipse 84% 62% at 50% 50%, rgba(126, 22, 34, 0.5), transparent 70%),
-    radial-gradient(ellipse 120% 40% at 50% 50%, rgba(232, 191, 90, 0.18), transparent 70%),
-    rgba(6, 3, 10, 0.5);
+    radial-gradient(ellipse 120% 40% at 50% 50%, rgba(190, 227, 248, 0.18), transparent 70%),
+    rgba(5, 13, 28, 0.5);
   animation: acWash 2.2s ease both;
 }
 @keyframes acWash {
@@ -679,7 +680,7 @@
   margin: -13vmin 0 0 -13vmin;
   border-radius: 50%;
   border: 3px solid var(--av-gold-lit);
-  box-shadow: 0 0 70px 16px rgba(232, 191, 90, 0.6), inset 0 0 50px 10px rgba(255, 120, 90, 0.35);
+  box-shadow: 0 0 70px 16px rgba(190, 227, 248, 0.6), inset 0 0 50px 10px rgba(255, 120, 90, 0.35);
   animation: acRing 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 @keyframes acRing {
@@ -721,8 +722,8 @@
 
 .ac-text { animation: acText 2.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes acText {
-  0% { opacity: 0; letter-spacing: 0.9em; transform: scale(1.5); filter: blur(16px); }
-  22% { opacity: 1; letter-spacing: 0.02em; transform: scale(1); filter: blur(0); }
+  0% { opacity: 0; transform: scale(1.5); filter: blur(16px); }
+  22% { opacity: 1; transform: scale(1); filter: blur(0); }
   32% { transform: scale(1.05); }
   60% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.1); }
@@ -745,7 +746,7 @@
 }
 .clockup-freeze span {
   font-weight: 900;
-  letter-spacing: 0.22em;
+  letter-spacing: 0;
   color: #9fd8ff;
   text-shadow: 0 0 18px rgba(80, 180, 255, 0.85), 0 2px 0 #06101f;
   background: rgba(3, 8, 20, 0.62);

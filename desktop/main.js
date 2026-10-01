@@ -31,6 +31,7 @@ let media = null; // MediaCache — สร้างหลัง app ready (ต�
 let mediaPrep = null; // Promise ของการเตรียมไฟล์สื่อรอบปัจจุบัน
 let mediaReady = false;
 let updateChecked = false; // ด่านที่ 1 ผ่านแล้ว (ตรวจครั้งเดียวต่อการเปิดโปรแกรม)
+let pendingJoin = null; // ห้องที่เข้าร่วมผ่านการตรวจแล้ว รอหน้าแรกเล่นฉากเปลี่ยนหน้าเสร็จ (echo:enterJoinedRoom)
 
 // ---------- ค่าที่จำไว้ (IP ล่าสุด) ----------
 const settingsFile = () => path.join(app.getPath("userData"), "settings.json");
@@ -79,14 +80,21 @@ async function fetchJson(url, timeoutMs) {
 }
 
 // ---------- หน้าต่าง ----------
-function showLauncher(message) {
+// back = กลับมาจากห้อง (F10/ห้องปิด/โหลดหน้าเกมไม่ได้) → หน้าแรกข้ามหน้า "แตะเพื่อเริ่ม" ไปเมนูเลย
+function showLauncher(message, back = true) {
   inGame = false;
-  win.loadFile(LAUNCHER, { query: message ? { message } : {} });
+  pendingJoin = null;
+  const query = {};
+  if (message) query.message = message;
+  if (back) query.back = "1";
+  win.loadFile(LAUNCHER, { query });
 }
 
-function enterGame(url) {
+// musicTime = ตำแหน่งเพลง main5 ของหน้าแรก (วินาที) → หน้าเกมเล่นต่อจากจุดเดิม (client/src/audio.js อ่าน #music=…&mt=…)
+function enterGame(base, musicTime) {
   inGame = true;
-  win.loadURL(url);
+  const t = Number(musicTime);
+  win.loadURL(Number.isFinite(t) && t >= 0 ? `${base}/#music=main5&mt=${t.toFixed(2)}` : base);
 }
 
 async function leaveRoom() {
@@ -112,12 +120,14 @@ function createWindow() {
     fullscreen: !process.env.ECHO_WINDOWED, // ECHO_WINDOWED=1 ไว้ทดสอบตอน dev ไม่ให้ทับทั้งจอ
     width: 1280,
     height: 800,
-    backgroundColor: "#07070d",
+    backgroundColor: "#f7fafd", // ขาวอมฟ้าของธีม ORDEAL CALL — ช่วงเปลี่ยนหน้าแรก → หน้าเกมไม่วาบดำ
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       sandbox: true,
+      // เพลง main5 เริ่มทันทีที่เปิดโปรแกรม และหน้าเกมเล่นต่อได้โดยไม่ต้องรอผู้เล่นแตะจอ
+      autoplayPolicy: "no-user-gesture-required",
     },
   });
 
@@ -142,10 +152,10 @@ function createWindow() {
   win.webContents.on("did-fail-load", (_e, code, desc, url, isMainFrame) => {
     if (!isMainFrame || !inGame || code === -3) return; // -3 = ABORTED (เปลี่ยนหน้าเอง)
     room.stop();
-    showLauncher(`โหลดหน้าเกมไม่สำเร็จ (${desc}) — ห้องอาจปิดไปแล้ว`);
+    showLauncher(`โหลดหน้าเกมไม่สำเร็จ (${desc})`);
   });
 
-  showLauncher();
+  showLauncher(null, false);
 }
 
 // ---------- IPC จากหน้าแรก ----------
@@ -210,15 +220,15 @@ ipcMain.handle("echo:host", async () => {
     version: VERSION,
     assetBaseUrl: ASSET_BASE_URL,
     onExit: (code) => {
-      if (win && !win.isDestroyed()) showLauncher(`เซิร์ฟเวอร์ของห้องหยุดทำงาน (รหัส ${code}) — ทุกคนหลุดจากห้อง`);
+      if (win && !win.isDestroyed()) showLauncher(`ห้องหยุดทำงาน (รหัส ${code})`);
     },
   });
   return { ...result, addresses: localAddresses() };
 });
 
-ipcMain.handle("echo:enterHostedRoom", () => {
+ipcMain.handle("echo:enterHostedRoom", (_e, musicTime) => {
   if (!room.isRunning()) return { ok: false, error: "ห้องยังไม่ได้เปิด" };
-  enterGame(`http://127.0.0.1:${room.PORT}`);
+  enterGame(`http://127.0.0.1:${room.PORT}`, musicTime);
   return { ok: true };
 });
 
@@ -227,28 +237,34 @@ ipcMain.handle("echo:closeHostedRoom", () => {
   return { ok: true };
 });
 
+// เข้าร่วม ขั้นที่ 1: ตรวจ IP + ด่านที่ 3 (เวอร์ชันต้องตรงกับห้อง) — ผ่านแล้วจำห้องไว้ ยังไม่เปลี่ยนหน้า
+//  (หน้าแรกเล่นฉากซูมลูกโลกก่อน แล้วค่อยเรียก echo:enterJoinedRoom)
 ipcMain.handle("echo:join", async (_e, input) => {
+  pendingJoin = null;
   if (!mediaReady) return NOT_READY;
   const target = parseHost(input);
-  if (!target) return { ok: false, error: "รูปแบบ IP ไม่ถูกต้อง — ตัวอย่าง 26.123.45.67" };
+  if (!target) return { ok: false, error: "IP ไม่ถูกต้อง" };
   const base = `http://${target.host}:${target.port}`;
   let hostVersion;
   try {
     hostVersion = (await fetchJson(`${base}/version`, 5000)).version;
   } catch {
-    return {
-      ok: false,
-      error: "ติดต่อห้องไม่ได้ — เช็คว่าเพื่อนเปิดห้องอยู่, ทั้งสองเครื่องต่อ Radmin VPN วงเดียวกัน และเครื่องที่เปิดห้องอนุญาต ECHO ใน Windows Firewall แล้ว",
-    };
+    return { ok: false, error: "ติดต่อห้องไม่ได้" };
   }
   if (hostVersion !== VERSION) {
-    return {
-      ok: false,
-      error: `เวอร์ชันไม่ตรงกัน — ของคุณ ${VERSION} · ของห้อง ${hostVersion} · ให้เครื่องที่เวอร์ชันเก่ากว่าปิดแล้วเปิด ECHO ใหม่เพื่ออัปเดต`,
-    };
+    return { ok: false, error: `เวอร์ชันไม่ตรงกับห้อง (ของคุณ ${VERSION} · ของห้อง ${hostVersion})` };
   }
   writeSettings({ lastHost: String(input).trim() });
-  enterGame(base);
+  pendingJoin = base;
+  return { ok: true };
+});
+
+// เข้าร่วม ขั้นที่ 2: เปลี่ยนไปหน้าเกมของห้องที่ตรวจผ่านแล้ว
+ipcMain.handle("echo:enterJoinedRoom", (_e, musicTime) => {
+  if (!pendingJoin) return { ok: false, error: "ยังไม่ได้เลือกห้อง" };
+  const base = pendingJoin;
+  pendingJoin = null;
+  enterGame(base, musicTime);
   return { ok: true };
 });
 

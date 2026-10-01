@@ -1,0 +1,2 @@
+# ไฟล์ที่ build ได้ของหน้าแรก (ลูกโลก iife + เพลง main5 + โลโก้) — สร้างใหม่ตอน npm start / npm run dist
+launcher/vendor/

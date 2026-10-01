@@ -1,0 +1,93 @@
+/* ============================================================
+   ปุ่มเสียง ORDEAL CALL (VolumeControl) — มุมขวาบนทุกหน้า
+   ต้องอ่านง่ายทั้งบนหน้าขาวและกระดานเกมสีน้ำเงินเข้ม/สีสด → กระจกขาวทึบพอ + ขอบฟ้า + เงา
+   ============================================================ */
+.ocv { position: fixed; top: 16px; right: 16px; z-index: 70; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+
+.ocv-btn {
+  appearance: none; position: relative; display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 12px 0 10px;
+  cursor: pointer; color: var(--oc-ink);
+  background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(61, 139, 217, 0.4);
+  box-shadow: 0 8px 22px -12px rgba(10, 24, 48, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.ocv-btn:hover { background: #fff; border-color: var(--oc-azure); }
+.ocv-btn:active { transform: translateY(1px); }
+.ocv-btn:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.ocv-btn.is-open { border-color: var(--oc-echo); }
+/* ขีดมุม (แทนมุมที่ถูกตัด) */
+.ocv-btn::after {
+  content: ""; position: absolute; right: 0; bottom: 0; width: 8px; height: 8px;
+  background: linear-gradient(135deg, transparent 40%, var(--oc-azure) 40% 50%, transparent 50%);
+}
+.ocv-btn.is-open::after { background: linear-gradient(135deg, transparent 40%, var(--oc-echo) 40% 50%, transparent 50%); }
+
+.ocv-ico { width: 20px; height: 20px; flex: none; overflow: visible; }
+.ocv-ico-body { fill: var(--oc-ink); }
+.ocv-ico-wave, .ocv-ico-x { fill: none; stroke: var(--oc-azure); stroke-width: 1.7; stroke-linecap: round; }
+.ocv-ico-x { stroke: var(--oc-hp); }
+.ocv-btn.is-muted .ocv-ico-body { fill: var(--oc-ink-3); }
+
+.ocv-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.ocv-bars i { display: block; width: 3px; background: var(--oc-frost); transition: background 0.2s; }
+.ocv-bars i:nth-child(1) { height: 5px; }
+.ocv-bars i:nth-child(2) { height: 7px; }
+.ocv-bars i:nth-child(3) { height: 9px; }
+.ocv-bars i:nth-child(4) { height: 11px; }
+.ocv-bars i:nth-child(5) { height: 14px; }
+.ocv-bars i.on { background: var(--oc-azure); }
+.ocv-bars i.on:nth-child(5) { background: var(--oc-echo); }
+
+/* แผงปรับเสียง */
+.ocv-panel {
+  position: relative; width: 248px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 14px;
+  color: var(--oc-ink); background: rgba(255, 255, 255, 0.93); border: 1px solid rgba(61, 139, 217, 0.4);
+  box-shadow: 0 24px 50px -24px rgba(10, 24, 48, 0.6);
+  backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  animation: ocv-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.ocv-panel::before, .ocv-panel::after { content: ""; position: absolute; width: 12px; height: 12px; border: 2px solid var(--oc-azure); pointer-events: none; }
+.ocv-panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.ocv-panel::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+@keyframes ocv-in { from { opacity: 0; transform: translateY(-6px); } }
+
+.ocv-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ocv-label { font: 600 14px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
+.ocv-pct { font: 400 22px/1 var(--oc-f-logo); color: var(--oc-ink); font-variant-numeric: tabular-nums; }
+.ocv-pct small { font-size: 11px; margin-left: 2px; color: var(--oc-azure); }
+.ocv-pct.is-muted { color: var(--oc-ink-3); }
+
+/* หลอดเลื่อน: input range โปร่งใสวางทับรางที่วาดเอง (คีย์บอร์ด/โปรแกรมอ่านจอยังใช้ได้) */
+.ocv-slider { position: relative; height: 26px; }
+.ocv-slider:has(input:focus-visible) { outline: 2px solid var(--oc-azure); outline-offset: 4px; }
+.ocv-track { position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: var(--oc-frost); }
+.ocv-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--fill); background: linear-gradient(90deg, var(--oc-azure), var(--oc-echo)); }
+.ocv-track b { position: absolute; top: 8px; width: 1px; height: 5px; margin-left: -0.5px; background: var(--oc-ink-3); opacity: 0.6; }
+.ocv-track b.on { background: var(--oc-azure); opacity: 1; }
+.ocv-thumb {
+  position: absolute; top: 50%; left: var(--fill); width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none;
+  background: #fff; border: 2px solid var(--oc-echo); transform: rotate(45deg);
+  box-shadow: 0 2px 8px -2px rgba(110, 44, 122, 0.6);
+  transition: transform 0.15s;
+}
+.ocv-slider:hover .ocv-thumb, .ocv-slider:active .ocv-thumb { transform: rotate(45deg) scale(1.2); }
+.ocv-slider input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer;
+}
+
+.ocv-mute {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 12px; cursor: pointer;
+  font: 600 13px/1 var(--oc-f-ui); color: var(--oc-ink); background: #fff; border: 1px solid var(--oc-line);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.ocv-mute .ocv-ico { width: 16px; height: 16px; }
+.ocv-mute:hover { background: var(--oc-paper); border-color: var(--oc-azure); }
+.ocv-mute:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.ocv-mute.is-on { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; }
+.ocv-mute.is-on .ocv-ico-body { fill: #fff; }
+.ocv-mute.is-on .ocv-ico-x { stroke: #fff; }
+
+@media (prefers-reduced-motion: reduce) { .ocv-panel { animation: none; } }

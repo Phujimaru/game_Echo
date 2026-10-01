@@ -38,7 +38,7 @@ async function waitUntilReady(version, timeoutMs) {
 async function start({ gameRoot, version, assetBaseUrl, onExit }) {
   if (child) return { ok: true, port: PORT };
   if (!(await portFree(PORT))) {
-    return { ok: false, error: `พอร์ต ${PORT} ถูกโปรแกรมอื่นใช้อยู่ (อาจเปิด ECHO ซ้อนกันอยู่) — ปิดโปรแกรมนั้นแล้วลองใหม่` };
+    return { ok: false, error: `พอร์ต ${PORT} ถูกโปรแกรมอื่นใช้อยู่` };
   }
   const env = { ...process.env, PORT: String(PORT), ECHO_VERSION: version };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -61,7 +61,7 @@ async function start({ gameRoot, version, assetBaseUrl, onExit }) {
 
   if (await waitUntilReady(version, 15000)) return { ok: true, port: PORT };
   stop();
-  return { ok: false, error: "เปิดห้องไม่สำเร็จ — เซิร์ฟเวอร์ของเกมไม่ตอบสนอง ลองใหม่อีกครั้ง" };
+  return { ok: false, error: "เปิดห้องไม่สำเร็จ" };
 }
 
 // ปิดห้องโดยตั้งใจ — ไม่เรียก onExit (ไม่ใช่การพัง)

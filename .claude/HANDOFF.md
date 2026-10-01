@@ -103,6 +103,20 @@
 - เพื่อนที่ใช้ 5.0.0 ไม่ต้องติดตั้งใหม่ — อัปเดตอัตโนมัติเป็น 5.0.1 แล้วได้ตัวถอนใหม่ (ถ้าถอนก่อนได้อัปเดต `%APPDATA%\ECHO` จะค้าง ต้องลบเอง)
 - **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยน · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) ปิดด้วย `taskkill //F //IM ECHO.exe //T` · ทดสอบในเครื่องผู้ใช้ให้ย้าย `%APPDATA%\ECHO` (1.2GB ของจริง) ไปสำรองก่อน
 
+### C. ECHO 5.1 — ธีม ORDEAL CALL (แทน Avalon) · branch `feat/ordeal-call` (2026-10-01)
+ต้นแบบที่ผู้ใช้อนุมัติ: artifact `https://claude.ai/artifact/Tj8U5YdrUD6XGPeUJxqwcV` · ขาวเด่น ฟ้าแซม ม่วง ECHO เป็นสีเน้น · ในเกมแผงน้ำเงินเข้ม
+- **ของกลาง:** `client/src/globe/globeCore.js` (ลูกโลก three.js ใช้ทุกหน้า + launcher ผ่าน iife) · `GlobeCanvas.jsx` · `client/src/oc/theme.css` (โทเคน `--oc-*`) · `oc/ui.jsx`
+  - three r186 = แสงแบบ physical + sRGB — ค่าแสงจูนแล้ว · ShaderMaterial ต้อง `#include <colorspace_fragment>` ไม่งั้นสีเข้มเพี้ยน
+- **flow ใหม่:** launcher (เปิดโปรแกรม → แตะเพื่อเริ่ม → หน้าแรก → สร้างห้อง/เข้าร่วม) → เกมเริ่มที่ "เลือกลำดับผู้เล่น" (ลบ Splash ในเกมแล้ว) → เลือกตัวละคร (การ์ดโคจรรอบโลก หมวดละวง) → ห้องรอ (โลกกลาง + อีโมต) → เลือกโหมดบนโลก → จัดทีม → Intro ใหม่ → `oc/intro/GlobeDive.jsx` ซูมเข้าภูมิภาคเริ่ม (แทน JourneyMap mode start) → กระดาน
+- **เพลง:** `main5` ตั้งแต่ launcher (ไฟล์พกใน `desktop/launcher/vendor/`, autoplayPolicy) → ส่งต่อตำแหน่งด้วย `#music=main5&mt=` (`applyHandoff` ใน audio.js) · `lobby5` = LOBBY/TEAM_* + intro (`musicForState(..., {intro})`)
+- **launcher vendor:** `desktop/scripts/build-launcher-vendor.js` (vite `client/vite.globe.config.js` → `globe.js` + main5.0.mp3 + โลโก้) รันอัตโนมัติใน start.js / stage-game.js · gitignore แล้ว
+- **อีโมตห้องรอ:** socket `lobbyEmote {emoji, dir}` → broadcast `{emoji, dir, color, playerId}` (`server/lobby.js relayLobbyEmote`, จำกัด 1 ครั้ง/600ms) · เทสต์ `tests/lobby-emote.test.js`
+- **กฎข้อความ (ผู้ใช้สั่ง):** หน้าจอมีแค่หัวข้อ/ป้าย ห้ามประโยคอธิบาย ห้ามคำแปลก/ศัพท์ธีม · ห้าม letter-spacing กับภาษาไทย · ห้ามคำ "Blackjack Skill Battle"
+- **ยังค้าง/ข้อสังเกต:**
+  - server `view.js` ยังส่งข้อมูลตัวละครของทุกคนช่วงก่อนเริ่มเกม (มีมาก่อน) — UI ไม่แสดง แต่ถ้าจะซ่อนจริงต้องตัดที่ server
+  - ห้องรอ: ผู้ใช้ยังไม่อนุมัติโครงหน้า (ขอดูคร่าวๆ ก่อน) · ส่วน persona `p-*` ใน index.css ยังม่วงเดิม · ArenaBackdrop เปลี่ยนสีแล้วแต่ยังเป็นภาพปราสาทเดิม
+  - ระหว่างทดสอบ agent เขียนทับ `%APPDATA%\ECHO\settings.json` lastHost เป็น 127.0.0.1 (แจ้งผู้ใช้แล้ว)
+
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)
 - eslint 2 errors: `tests/characters/escanor.test.js` บรรทัด ~722 (`no-control-regex` จาก `\x08`)
 - vite เตือน chunk ใหญ่กว่า 500 kB

@@ -125,9 +125,9 @@ function safeOn(socket, event, handler) {
   });
 }
 
-function onPlayerEvent(socket, event, handler, limit = 20) {
+function onPlayerEvent(socket, event, handler, limit = 20, windowMs = 1000) {
   safeOn(socket, event, (payload) => {
-    if (!consumeEventQuota(socket, event, limit)) return;
+    if (!consumeEventQuota(socket, event, limit, windowMs)) return;
     const playerId = playerIdFor(socket);
     if (!playerId) return;
     // สไตรเกอร์ ยูเรก้า: คำสั่งของคู่หูลงระเบียนเดียวกัน แต่แต่ละคนทำได้เฉพาะส่วนของตัวเอง
@@ -319,6 +319,8 @@ io.on('connection', (socket) => {
     view.broadcastState();
     lobby.checkLobbyReady();
   });
+  // ห้องรอ / เลือกโหมด / จัดทีม: ปักอีโมตบนลูกโลก — ส่งต่อให้ทุกคนในห้อง (1 ครั้งต่อ 600 ms)
+  onPlayerEvent(socket, 'lobbyEmote', (id, payload) => lobby.relayLobbyEmote(id, payload), 1, 600);
 
   onPlayerEvent(socket, 'hit', (id) => draw.hit(id), 8);
   onPlayerEvent(socket, 'lock', (id) => draw.lock(id), 4);

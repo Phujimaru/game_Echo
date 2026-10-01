@@ -5,6 +5,7 @@ Object.assign(module.exports, {
   resetModeVotes, resetPregameFlowToLobby, validGameMode, modeOptionsFor, currentTeamOptions,
   modeVoteSummary, voteGameMode, chooseTeam, confirmTeam, remainingTeamWinInfo, releaseReservation,
   reservePosition, positionsFor, positionUsedByOther, checkLobbyReady, startMatch, backToLobby,
+  relayLobbyEmote,
 });
 
 const { CHAR_BY_ID, POSITION_COLORS } = require("../characters");
@@ -15,6 +16,7 @@ const {
   JOURNEY_START_SECONDS, MAX_PLAYERS, MERCURY_ARRIVAL_SECONDS, ORT_ID, RESERVATION_TTL_MS,
   TEAM_IDS,
 } = require("./constants");
+const { io } = require("./app");
 const match = require("./match");
 const { engine } = require("./engine");
 const combat = require("./combat");
@@ -313,6 +315,23 @@ function startMatch() {
   else draw.dealRound();
 }
 
+// ห้องรอ: อีโมตปักบนลูกโลก — ไม่เก็บสถานะ แค่ส่งต่อให้ทุกคนในห้อง (สี = สีประจำตัวคนส่ง)
+//  ต้องตรงกับรายการใน client/src/oc/lobby/emotes.js
+const LOBBY_EMOTES = ["👋", "😂", "😮", "😡", "❤️", "🔥", "👍", "😭"];
+function relayLobbyEmote(playerId, payload) {
+  if (!pregameStateActive()) return false;
+  const p = match.players[playerId];
+  if (!p || !payload || typeof payload !== "object") return false;
+  const { emoji, dir } = payload;
+  if (typeof emoji !== "string" || !LOBBY_EMOTES.includes(emoji)) return false;
+  if (!Array.isArray(dir) || dir.length !== 3 || !dir.every((n) => typeof n === "number" && Number.isFinite(n))) return false;
+  const len = Math.hypot(dir[0], dir[1], dir[2]);
+  if (!Number.isFinite(len) || len < 1e-6) return false;
+  const unit = dir.map((n) => Math.round((n / len) * 1e4) / 1e4);
+  io.to(Object.keys(match.players)).emit("lobbyEmote", { emoji, dir: unit, color: colorOf(p), playerId: p.id });
+  return true;
+}
+
 function backToLobby() {
   delete match.players[ORT_ID];
   mercury.resetMercury();
@@ -349,3 +368,4 @@ function backToLobby() {
   }
   view.broadcastState();
 }
+Object.assign(module.exports, { LOBBY_EMOTES });

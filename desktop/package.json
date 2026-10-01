@@ -1,9 +1,9 @@
 {
   "name": "echo-desktop",
   "productName": "ECHO",
-  "version": "5.0.1",
+  "version": "5.1.0",
   "private": true,
-  "description": "ECHO — Blackjack Skill Battle (โปรแกรมสำหรับเปิดห้อง/เข้าร่วมผ่าน Radmin VPN)",
+  "description": "ECHO — โปรแกรมสำหรับเปิดห้อง/เข้าร่วมผ่าน Radmin VPN",
   "main": "main.js",
   "scripts": {
     "start": "node start.js",

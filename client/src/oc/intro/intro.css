@@ -1,0 +1,246 @@
+/* ============================================================
+   ฉากเปิดตัวผู้เล่น (GameIntro) — ORDEAL CALL
+   ค่าเริ่มต้นของทุกชิ้น = สภาพสุดท้าย · อนิเมชันใช้ fill both จากสภาพเริ่ม
+   (โหมดลดการเคลื่อนไหวจึงตัดอนิเมชันทิ้งได้โดยไม่มีอะไรค้างกลางทาง)
+   ห้าม letter-spacing / uppercase กับข้อความไทย — .oc-latin เฉพาะตัวอังกฤษ/ตัวเลข
+   ============================================================ */
+.oci {
+  position: fixed; inset: 0; z-index: 95; overflow: hidden; pointer-events: auto; user-select: none;
+  color: var(--oc-ink); font: 300 15px/1.5 var(--oc-f-body);
+  --fw: min(26vw, 48vh);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.oci-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 90% at 50% 42%, #fff 0%, var(--oc-snow) 46%, #e2ecf7 100%);
+}
+.oci-bg::before {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(61, 139, 217, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 139, 217, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.oci-bg::after { /* แถบสแกนจางๆ ไหลลงตลอดฉาก */
+  content: ""; position: absolute; left: 0; right: 0; height: 14vh; top: -14vh;
+  background: linear-gradient(180deg, transparent, rgba(127, 184, 230, 0.05) 75%, rgba(61, 139, 217, 0.12) 99.5%, transparent);
+  animation: oci-bgscan 3.2s linear infinite;
+}
+@keyframes oci-bgscan { to { transform: translateY(114vh); } }
+
+.oci-chrome { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.oci-mark {
+  position: absolute; top: 22px; left: 52px; font: 500 11px/1 var(--oc-f-ui); color: var(--oc-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.oci-mark.is-r { left: auto; right: 52px; }
+.oci-mark b { color: var(--oc-azure); font-weight: 600; }
+
+/* ---------- ล็อกเป้าทีละคน ---------- */
+.oci-lock { position: absolute; inset: 0; --pc: var(--oc-azure); }
+
+.oci-numeral {
+  position: absolute; top: 4vh; right: 3vw; z-index: 0;
+  font: 400 34vh/1 var(--oc-f-logo); color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--pc) 45%, transparent);
+  opacity: 0.55;
+  animation: oci-numeral 0.6s var(--ease-out) both;
+}
+.oci-lock.is-right .oci-numeral { right: auto; left: 3vw; }
+@keyframes oci-numeral { from { opacity: 0; transform: translateX(6vw); } }
+.oci-lock.is-right .oci-numeral { animation-name: oci-numeral-r; }
+@keyframes oci-numeral-r { from { opacity: 0; transform: translateX(-6vw); } }
+
+.oci-target {
+  position: absolute; top: 50%; left: 13vw; z-index: 2;
+  width: var(--fw); height: calc(var(--fw) * 1.3); margin-top: calc(var(--fw) * -0.65);
+}
+.oci-lock.is-right .oci-target { left: auto; right: 13vw; }
+
+.oci-scope {
+  position: absolute; left: 50%; top: 50%; width: calc(var(--fw) * 1.85); height: calc(var(--fw) * 1.85);
+  margin: calc(var(--fw) * -0.925) 0 0 calc(var(--fw) * -0.925); overflow: visible; pointer-events: none;
+  animation: oci-scope-in 0.5s var(--ease-out) both;
+}
+@keyframes oci-scope-in { from { opacity: 0; transform: scale(1.35) rotate(-20deg); } }
+.oci-scope circle, .oci-scope path, .oci-scope line { fill: none; vector-effect: non-scaling-stroke; }
+.oci-ring-hair { stroke: rgba(61, 139, 217, 0.4); stroke-width: 1; }
+.oci-ticks line { stroke: rgba(61, 139, 217, 0.45); stroke-width: 1; }
+.oci-ticks line.oci-tick-l { stroke: var(--oc-azure); stroke-width: 1.5; }
+.oci-ring-dash { stroke: rgba(61, 139, 217, 0.5); stroke-width: 1; stroke-dasharray: 2 7; }
+.oci-ring-mark { fill: var(--oc-azure) !important; stroke: none; }
+.oci-ring-pc { stroke: color-mix(in srgb, var(--pc) 70%, transparent); stroke-width: 1.5; stroke-dasharray: 60 14 6 14; }
+.oci-cross { stroke: var(--oc-azure); stroke-width: 1; opacity: 0.6; }
+.oci-dot { fill: var(--oc-echo) !important; }
+.oci-scope-spin { transform-origin: 200px 200px; animation: oci-spin 24s linear infinite; }
+.oci-scope-rev { transform-origin: 200px 200px; animation: oci-spin 16s linear infinite reverse; }
+@keyframes oci-spin { to { transform: rotate(360deg); } }
+
+.oci-frame {
+  position: absolute; inset: 0; overflow: hidden;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pc) 22%, #fff), #e6eef8 70%);
+  box-shadow: inset 0 0 0 1px var(--oc-line);
+  animation: oci-frame-in 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes oci-frame-in { from { clip-path: polygon(18px 0, 100% 0, 100% 0, 100% 0, 0 0, 0 0); } }
+.oci-frame .oci-portrait { position: absolute; inset: 0; }
+.oci-frame-bar { position: absolute; left: 0; top: 18px; bottom: 0; width: 5px; background: var(--pc); }
+.oci-frame-scan {
+  position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: 0;
+  background: var(--oc-azure); box-shadow: 0 0 14px 3px rgba(61, 139, 217, 0.55);
+  animation: oci-frame-scan 0.46s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes oci-frame-scan {
+  0% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(calc(var(--fw) * 1.3)); }
+}
+
+.oci-portrait { display: block; overflow: hidden; background: var(--oc-paper); }
+.oci-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; display: block; }
+.oci-portrait-fallback {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  font: 400 clamp(32px, 8vh, 96px)/1 var(--oc-f-logo); color: rgba(28, 63, 110, 0.35);
+}
+
+/* วงเล็บเล็งเป้า 4 มุม — หุบเข้าหากรอบแล้วกะพริบตอนล็อก */
+.oci-brackets { position: absolute; inset: -12px; pointer-events: none; }
+.oci-brackets i { position: absolute; width: 26px; height: 26px; border: 2px solid var(--oc-azure); }
+.oci-brackets .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.oci-brackets .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.oci-brackets .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.oci-brackets .br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.oci-brackets-lock { inset: -18px; animation: oci-bracket-in 0.36s cubic-bezier(0.5, 0, 0.2, 1) both; }
+.oci-brackets-lock i { width: 34px; height: 34px; animation: oci-bracket-lock 0.5s steps(1, end) 0.34s both; }
+@keyframes oci-bracket-in { from { opacity: 0; transform: scale(1.32); } 60% { opacity: 1; } }
+@keyframes oci-bracket-lock {
+  0% { border-color: var(--oc-echo); }
+  20% { border-color: var(--oc-azure); }
+  40% { border-color: var(--oc-echo); }
+  100% { border-color: var(--oc-echo); }
+}
+.oci-brackets-lock i { border-color: var(--oc-echo); }
+
+.oci-readout {
+  position: absolute; display: flex; gap: 18px; white-space: nowrap;
+  font: 500 11px/1 var(--oc-f-ui); color: var(--oc-ink-2); font-variant-numeric: tabular-nums;
+  animation: oci-fade-up 0.4s var(--ease-out) 0.18s both;
+}
+.oci-readout b { color: var(--oc-azure); font-weight: 600; }
+.oci-readout-a { top: -44px; left: 0; }
+.oci-readout-b { bottom: -44px; right: 0; }
+
+/* ป้ายชื่อ */
+.oci-id {
+  position: absolute; top: 50%; left: calc(13vw + var(--fw) + 7vw); z-index: 3; transform: translateY(-46%);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-width: calc(100vw - (13vw + var(--fw) + 7vw) - 6vw);
+}
+.oci-lock.is-right .oci-id { left: auto; right: calc(13vw + var(--fw) + 7vw); align-items: flex-end; text-align: right; }
+.oci-id-row { display: flex; gap: 8px; animation: oci-fade-up 0.4s var(--ease-out) 0.08s both; }
+.oci-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px;
+  font: 600 14px/1 var(--oc-f-ui); color: var(--oc-ink-2); background: #fff; border: 1px solid var(--oc-line);
+}
+.oci-chip-lock { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; animation: oci-pop 0.32s var(--ease-out) 0.34s both; }
+@keyframes oci-pop { from { opacity: 0; transform: scale(0.6); } }
+.oci-name {
+  font: 600 clamp(44px, 5.4vw, 92px)/1.12 var(--oc-f-ui); color: var(--oc-ink); white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding-bottom: 0.06em;
+  animation: oci-name 0.5s var(--ease-out) 0.1s both;
+}
+@keyframes oci-name { from { opacity: 0; transform: translateY(18px); clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.oci-lock.is-right .oci-name { animation-name: oci-name-r; }
+@keyframes oci-name-r { from { opacity: 0; transform: translateY(18px); clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+.oci-char {
+  display: inline-flex; align-items: center; gap: 10px; font: 400 clamp(18px, 1.7vw, 28px)/1.3 var(--oc-f-body); color: var(--oc-ink-2);
+  animation: oci-fade-up 0.45s var(--ease-out) 0.2s both;
+}
+.oci-lock.is-right .oci-char { flex-direction: row-reverse; }
+.oci-rule { position: relative; display: block; width: min(26vw, 420px); height: 1px; background: var(--oc-line); margin-top: 6px; }
+.oci-rule::before, .oci-rule::after { content: ""; position: absolute; top: -4px; width: 1px; height: 9px; background: var(--oc-azure); }
+.oci-rule::before { left: 0; } .oci-rule::after { right: 0; }
+.oci-rule i { position: absolute; left: 0; top: -1px; height: 3px; width: 38%; background: linear-gradient(90deg, var(--oc-echo), var(--pc)); animation: oci-grow 0.55s var(--ease-out) 0.22s both; transform-origin: left; }
+.oci-lock.is-right .oci-rule i { left: auto; right: 0; transform-origin: right; background: linear-gradient(270deg, var(--oc-echo), var(--pc)); }
+@keyframes oci-grow { from { transform: scaleX(0); } }
+@keyframes oci-fade-up { from { opacity: 0; transform: translateY(12px); } }
+
+/* แถบความคืบหน้าล่างจอ */
+.oci-roster { position: absolute; left: 50%; bottom: 42px; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4; }
+.oci-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.oci-slot i { display: block; width: 38px; height: 3px; background: var(--oc-frost); transition: background 0.2s; }
+.oci-slot b { font: 500 10px/1 var(--oc-f-ui); color: var(--oc-ink-3); }
+.oci-slot.is-done i { background: var(--pc); }
+.oci-slot.is-now i { background: var(--pc); box-shadow: 0 0 10px 1px color-mix(in srgb, var(--pc) 70%, transparent); animation: oci-blink 0.5s steps(2, jump-none) infinite; }
+.oci-slot.is-now b { color: var(--oc-azure); }
+@keyframes oci-blink { 50% { opacity: 0.35; } }
+
+/* ---------- รวมแถวทุกคน ---------- */
+.oci-lineup { position: absolute; inset: 0; z-index: 2; }
+.oci-halo {
+  position: absolute; left: 50%; top: 40%; width: 92vh; height: 92vh; margin: -46vh 0 0 -46vh; overflow: visible; pointer-events: none;
+  animation: oci-fade 0.5s ease both;
+}
+.oci-halo circle, .oci-halo path { fill: none; vector-effect: non-scaling-stroke; }
+.oci-halo-spin { transform-origin: 300px 300px; animation: oci-spin 30s linear infinite; }
+.oci-halo-rev { transform-origin: 300px 300px; animation: oci-spin 20s linear infinite reverse; }
+.oci-draw { stroke-dasharray: 1; stroke-dashoffset: 0; animation: oci-draw 1.1s cubic-bezier(0.6, 0, 0.2, 1) both; }
+.oci-draw-1 { stroke: rgba(61, 139, 217, 0.5); stroke-width: 1; }
+.oci-draw-2 { stroke: rgba(155, 79, 150, 0.45); stroke-width: 1.5; animation-delay: 0.15s; }
+.oci-draw-3 { stroke: rgba(61, 139, 217, 0.3); stroke-width: 1; animation-delay: 0.3s; }
+.oci-halo-cross { stroke: rgba(61, 139, 217, 0.45); stroke-width: 1; }
+@keyframes oci-draw { from { stroke-dashoffset: 1; } }
+@keyframes oci-fade { from { opacity: 0; } }
+
+.oci-title-wrap {
+  position: absolute; left: 0; right: 0; top: 13vh; display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.oci-kicker { font: 400 13px/1 var(--oc-f-logo); letter-spacing: 0.5em; margin-right: -0.5em; color: var(--oc-azure); animation: oci-fade 0.5s ease 0.1s both; }
+.oci-title-row { display: flex; align-items: center; gap: 26px; }
+.oci-title { margin: 0; font: 600 clamp(48px, 5vw, 80px)/1.15 var(--oc-f-ui); color: var(--oc-ink); animation: oci-title 0.6s var(--ease-out) 0.15s both; }
+@keyframes oci-title { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
+.oci-wing { position: relative; display: block; width: 14vw; height: 1px; background: linear-gradient(90deg, transparent, var(--oc-azure)); transform-origin: right; animation: oci-grow 0.6s var(--ease-out) 0.25s both; }
+.oci-wing::after { content: ""; position: absolute; right: -3px; top: -4px; width: 7px; height: 7px; background: var(--oc-echo); transform: rotate(45deg); }
+.oci-wing.is-r { background: linear-gradient(270deg, transparent, var(--oc-azure)); transform-origin: left; }
+.oci-wing.is-r::after { right: auto; left: -3px; }
+.oci-count { animation: oci-fade-up 0.45s var(--ease-out) 0.35s both; }
+
+.oci-cards {
+  position: absolute; left: 50%; bottom: 10vh; transform: translateX(-50%);
+  display: flex; gap: 18px; justify-content: center;
+  --cw: min(188px, calc((88vw - (var(--n) - 1) * 18px) / var(--n)));
+}
+.oci-card {
+  position: relative; width: var(--cw); padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 6px;
+  background: rgba(255, 255, 255, 0.82); border: 1px solid var(--oc-line);
+  box-shadow: inset 0 3px 0 var(--pc), 0 22px 40px -26px rgba(28, 63, 110, 0.5);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: oci-card 0.55s var(--ease-out) both;
+}
+@keyframes oci-card { from { opacity: 0; transform: translateY(36px); } }
+.oci-card .oci-brackets { inset: -6px; }
+.oci-card .oci-brackets i { width: 12px; height: 12px; border-width: 1.5px; }
+.oci-card-no { position: absolute; top: 18px; left: 18px; z-index: 2; font: 400 12px/1 var(--oc-f-logo); color: #fff; background: var(--pc); padding: 5px 6px; }
+.oci-card-img { position: relative; overflow: hidden; flex: none; aspect-ratio: 3 / 4; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); background: color-mix(in srgb, var(--pc) 18%, #eef3f9); }
+.oci-card-img .oci-portrait { position: absolute; inset: 0; background: transparent; }
+.oci-card-name { font: 600 17px/1.25 var(--oc-f-ui); color: var(--oc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oci-card-char { font: 400 12.5px/1.3 var(--oc-f-body); color: var(--oc-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -4px; }
+
+/* ---------- ปิดฉาก: ของในฉากลอยขึ้นจาง แล้วพื้นขาวจางเผยฉากถัดไป ---------- */
+.oci-out .oci-lineup { animation: oci-out-up 0.6s cubic-bezier(0.5, 0, 0.75, 0) both; }
+.oci-out .oci-chrome { animation: oci-out 0.5s ease both; }
+.oci-out .oci-bg { animation: oci-out 0.75s ease 0.2s both; }
+.oci-out::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 6;
+  background: var(--oc-azure); box-shadow: 0 0 18px 3px rgba(61, 139, 217, 0.5);
+  animation: oci-out-scan 0.9s cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+@keyframes oci-out-up { to { opacity: 0; transform: translateY(-3vh) scale(1.02); } }
+@keyframes oci-out { to { opacity: 0; } }
+@keyframes oci-out-scan { 0% { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .oci *, .oci *::before, .oci *::after { animation-name: oci-fade !important; animation-iteration-count: 1 !important; animation-duration: 0.3s !important; }
+  .oci-bg::after, .oci-out::after { display: none; }
+  .oci-out .oci-lineup, .oci-out .oci-chrome, .oci-out .oci-bg { animation-name: oci-out !important; }
+}

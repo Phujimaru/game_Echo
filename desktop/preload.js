@@ -10,9 +10,11 @@ if (location.protocol === "file:") {
     onMediaProgress: (callback) => ipcRenderer.on("echo:mediaProgress", (_e, progress) => callback(progress)),
     copy: (text) => ipcRenderer.invoke("echo:copy", text),
     host: () => ipcRenderer.invoke("echo:host"),
-    enterHostedRoom: () => ipcRenderer.invoke("echo:enterHostedRoom"),
+    // musicTime = ตำแหน่งเพลง main5 (วินาที) ให้หน้าเกมเล่นต่อ
+    enterHostedRoom: (musicTime) => ipcRenderer.invoke("echo:enterHostedRoom", musicTime),
     closeHostedRoom: () => ipcRenderer.invoke("echo:closeHostedRoom"),
     join: (address) => ipcRenderer.invoke("echo:join", address),
+    enterJoinedRoom: (musicTime) => ipcRenderer.invoke("echo:enterJoinedRoom", musicTime),
     quit: () => ipcRenderer.invoke("echo:quit"),
   });
 }

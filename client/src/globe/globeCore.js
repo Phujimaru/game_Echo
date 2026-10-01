@@ -273,7 +273,8 @@ export function createGlobe(canvas, opts = {}) {
   const tmp = new THREE.Vector3();
   const frame = (now) => {
     if (!alive) return;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
+    // เฟรมแรก timestamp ของ rAF อาจเก่ากว่า performance.now() ตอนสร้าง → dt ติดลบ (clock ห้ามติดลบ)
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; clock += dt;
     const k = REDUCED ? 1 : 1 - Math.pow(0.02, dt);
     cur.x += (target.x - cur.x) * k; cur.y += (target.y - cur.y) * k; cur.s += (target.s - cur.s) * k;
     world.position.set(cur.x, cur.y, 0); world.scale.setScalar(cur.s);

@@ -1,0 +1,46 @@
+/* หน้าเลือกลำดับผู้เล่น (ORDEAL CALL) — ลูกโลก + วงแหวนที่นั่งด้านซ้าย แผงชื่อ/สีด้านขวา */
+.seat-screen .oc-globe { cursor: grab; }
+.seat-screen .oc-globe[data-pointing] { cursor: pointer; }
+.seat-screen .oc-globe[data-dragging] { cursor: grabbing; }
+
+.seat-title { position: absolute; top: 64px; left: max(16px, 6vw); z-index: 5; pointer-events: none; }
+
+.seat-tags { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.seat-tag { flex-direction: column; align-items: flex-start; gap: 3px; padding: 6px 10px; min-width: 52px; }
+.seat-tag:not([data-placed]), .seat-tag[data-back] { opacity: 0; pointer-events: none; }
+.seat-tag .num { font: 400 10px/1 var(--oc-f-logo); color: var(--oc-azure); }
+.seat-tag small { font: 400 11px/1 var(--oc-f-body); color: var(--oc-ink-2); max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+.seat-tag .sw { width: 100%; height: 2px; }
+.seat-tag.on .num { color: var(--oc-echo-glow); }
+.seat-tag.on small { color: #f3e4f5; }
+.seat-tag.taken { cursor: not-allowed; color: var(--oc-ink-3); background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0 6px, rgba(220, 231, 243, 0.92) 6px 12px); }
+.seat-tag.taken .num { color: var(--oc-ink-3); }
+
+.seat-ctl { position: absolute; z-index: 6; bottom: 96px; left: 30%; display: flex; gap: min(300px, 40vw); transform: translateX(-50%); }
+.seat-ctl button {
+  width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--oc-line); background: rgba(255, 255, 255, 0.88); color: var(--oc-azure);
+  font: 400 26px/1 var(--oc-f-ui); cursor: pointer; display: grid; place-items: center; padding: 0 0 3px; transition: border-color 0.2s, color 0.2s;
+}
+.seat-ctl button:hover { border-color: var(--oc-echo); color: var(--oc-echo); }
+.seat-ctl button:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+
+.seat-side { position: absolute; z-index: 5; top: 50%; right: max(16px, 5vw); transform: translateY(-50%); width: min(400px, calc(100vw - 32px)); }
+.seat-side .oc-panel { padding: 28px; gap: 18px; }
+.seat-pick { display: flex; align-items: baseline; gap: 12px; }
+.seat-pick .big { font: 400 44px/1 var(--oc-f-logo); color: var(--oc-echo); }
+.seat-pick .big.none { color: var(--oc-frost); }
+.seat-field { display: flex; flex-direction: column; gap: 7px; }
+.seat-field-head { display: flex; justify-content: space-between; align-items: baseline; }
+.seat-count { font: 500 12px/1 var(--oc-f-ui); color: var(--oc-ink-3); font-variant-numeric: tabular-nums; }
+.seat-count.full { color: var(--oc-echo); }
+
+.seat-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.seat-swatches button, .seat-custom {
+  width: 30px; height: 30px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--oc-line); cursor: pointer; padding: 0; box-sizing: border-box;
+}
+.seat-swatches button[aria-pressed="true"], .seat-custom.on { box-shadow: 0 0 0 2px var(--oc-ink); }
+.seat-swatches button:focus-visible, .seat-custom:focus-within { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.seat-custom { position: relative; display: grid; place-items: center; overflow: hidden; }
+.seat-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+.seat-custom span { font: 600 16px/1 var(--oc-f-ui); color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.5); pointer-events: none; }
+.seat-custom.rainbow { background: conic-gradient(#d2455b, #e5b33b, #2e9e4b, #3d8bd9, #9b4f96, #d2455b); }
