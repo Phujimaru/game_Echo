@@ -8,6 +8,9 @@
 
 const FILES = {
   main_home: "/theme_song/main_home_4.0.mp3",
+  // ECHO 5.1 ORDEAL CALL: main5 = ตั้งแต่เปิดโปรแกรมจนเข้าห้องรอ · lobby5 = ห้องรอ → โหวตโหมด → ฉากเปิดตัว (จนเข้าด่าน)
+  main5: "/theme_song/main5.0.mp3",
+  lobby5: "/theme_song/lobby5.0.mp3",
   new_morning: "/theme_song/day_4.0.mp3",    // เพลงช่วงกลางวัน
   new_night: "/theme_song/night_4.0.mp3",    // เพลงช่วงกลางคืน
   battle_phase: "/theme_song/battle_phase.mp3", // เพลงเฉพาะช่วงโจมตี — เริ่มใหม่ทุกครั้งที่เข้าช่วง
@@ -417,6 +420,8 @@ const LOUDNESS_GAIN = {
   "/theme_song/battle_phase.mp3": 0.65,
   "/theme_song/day_4.0.mp3": 0.78,
   "/theme_song/main_home_4.0.mp3": 0.69,
+  "/theme_song/main5.0.mp3": 0.85, // -11.7 LUFS
+  "/theme_song/lobby5.0.mp3": 1, // -15.7 LUFS (เบากว่าเป้าเล็กน้อย ดันได้สุด 1)
 };
 function pathGain(path) { return LOUDNESS_GAIN[path] ?? 1; }
 export function soundGain(name) { return pathGain(FILES[name]); }
@@ -502,9 +507,39 @@ function getMusic(name) {
 
 function playCurrentMusic(name, a) {
   if (musicSuspensions.size || currentMusic !== name) return;
+  applyHandoff(name, a);
   a.play().then(() => {
     if (musicSuspensions.size || currentMusic !== name) a.pause();
-  }).catch(() => {});
+  }).catch(() => armUnlock());
+}
+// เบราว์เซอร์ที่ยังไม่ให้เล่นเสียงเอง (ไม่ใช่โปรแกรม ECHO) -> ลองเล่นเพลงปัจจุบันอีกครั้งเมื่อผู้เล่นแตะจอครั้งแรก
+let unlockArmed = false;
+function armUnlock() {
+  if (unlockArmed || typeof document === "undefined") return;
+  unlockArmed = true;
+  const retry = () => {
+    unlockArmed = false;
+    document.removeEventListener("pointerdown", retry, true);
+    document.removeEventListener("keydown", retry, true);
+    if (currentMusic) playCurrentMusic(currentMusic, getMusic(currentMusic));
+  };
+  document.addEventListener("pointerdown", retry, true);
+  document.addEventListener("keydown", retry, true);
+}
+// เพลงต่อจากหน้าแรกของโปรแกรม: launcher ส่ง #music=main5&mt=<วินาที> มากับ URL ของห้อง
+//  -> เพลงเดียวกันเล่นต่อจากจุดเดิมแทนที่จะเริ่มใหม่ (ใช้ครั้งเดียว แล้วล้าง hash ทิ้ง)
+let handoff = null;
+try {
+  const h = new URLSearchParams((typeof location !== "undefined" && location.hash || "").slice(1));
+  const t = parseFloat(h.get("mt"));
+  if (h.get("music") && Number.isFinite(t)) handoff = { name: h.get("music"), t };
+  if (h.has("mt")) history.replaceState(null, "", location.pathname + location.search);
+} catch { /* ไม่มี location (เทสต์) */ }
+function applyHandoff(name, a) {
+  if (!handoff || handoff.name !== name) return;
+  const t = handoff.t; handoff = null;
+  const seek = () => { try { a.currentTime = a.duration && isFinite(a.duration) ? t % a.duration : t; } catch { /* ยังไม่มี metadata */ } };
+  if (a.readyState >= 1) seek(); else a.addEventListener("loadedmetadata", seek, { once: true });
 }
 
 // Foreground video/voice owns the audio until its component releases this lease.

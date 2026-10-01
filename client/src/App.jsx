@@ -3,7 +3,6 @@ import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker } from "./audioPolicy";
-import Splash from "./screens/Splash";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
@@ -14,6 +13,8 @@ import TransitionCurtain from "./components/TransitionCurtain";
 import GameIntro from "./components/GameIntro";
 import OrtArrival from "./raid/OrtArrival";
 import JourneyMap from "./journey/JourneyMap";
+import GlobeDive from "./oc/intro/GlobeDive";
+import { OcScreen } from "./oc/ui";
 
 const SESSION_KEY = 'echo_session';
 
@@ -35,7 +36,7 @@ function journeyDurationMs(secondsLeft, designMs) {
 }
 
 export default function App() {
-  const [stage, setStage] = useState("splash"); // splash | setup | character | connected
+  const [stage, setStage] = useState("setup"); // setup | character | connected (หน้าแรก/สร้างห้อง/เข้าร่วม อยู่ใน launcher ของโปรแกรม)
   const [state, setState] = useState(null);
 
   // เสียงที่ดังบ่อยที่สุดในเกม: โหลดไว้ตั้งแต่เปิดหน้า ไม่ให้ไปสะดุดกลางแมตช์
@@ -292,10 +293,10 @@ export default function App() {
     //  แต่ "เสียงเอฟเฟกต์" ด้านล่างต้องทำงานทุกโหมด (เดิม early-return ตรงนี้ทำให้เสียงหายไปทั้งโหมด)
     if (!seraphMode) {
       // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
-      // หน้าไตเติล: ยังไม่เล่นเพลง — เพลงหน้าหลักเริ่มหลังกดเข้าเกมเท่านั้น
-      const track = stage === "splash"
-        ? { name: null }
-        : musicForState(stage === "connected" ? state : null, { lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current });
+      // 5.1: เพลง main5 เล่นทันทีตั้งแต่หน้าแรก (ต่อจาก launcher) · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็นเพลงห้องรอ (intro)
+      const track = musicForState(stage === "connected" ? state : null, {
+        lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: showIntro || journeyMap?.mode === "start",
+      });
       if (track.name) playMusic(track.name, track.seq);
       else stopMusic();
     }
@@ -314,7 +315,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, showIntro, journeyMap?.mode]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);
@@ -377,10 +378,7 @@ export default function App() {
 
   let screen;
   let screenKey;
-  if (stage === "splash") {
-    screen = <Splash onEnter={() => navigate("setup", () => setStage("setup"))} />;
-    screenKey = "splash";
-  } else if (stage === "setup") {
+  if (stage === "setup") {
     screen = (
       <Setup
         taken={taken}
@@ -407,11 +405,9 @@ export default function App() {
     screenKey = "character";
   } else if (!state) {
     screen = (
-      <div className="av min-h-screen grid place-items-center" data-corrupt="3">
-        <div className="av-content av-breathe av-heading text-2xl" style={{ color: "rgba(232,196,239,.6)" }}>
-          กำลังเชื่อมต่อ…
-        </div>
-      </div>
+      <OcScreen style={{ display: "grid", placeItems: "center" }}>
+        <p className="oc-h2" style={{ color: "var(--oc-ink-2)" }}>กำลังเชื่อมต่อ…</p>
+      </OcScreen>
     );
     screenKey = "connecting";
   } else if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(state.gameState)) {
@@ -460,7 +456,16 @@ export default function App() {
       {screen}
       {/* การเดินทาง: แผนที่ลอยทับกระดาน (server พักเกมในเฟส CUTSCENE ที่ไม่มีคลิป) — วางนอก screen
           เพื่อไม่ให้ <Game> ถูก mount ใหม่ตอนเปิด/ปิดฉาก (กระดานทั้งจอ mount ใหม่ = กระตุก) */}
-      {journeyMap && !showArrival && stage === "connected" && (
+      {journeyMap && !showArrival && stage === "connected" && journeyMap.mode === "start" && (
+        <GlobeDive
+          key={journeyMap.seq}
+          area={journeyMap.area}
+          durationMs={journeyMap.durationMs}
+          lowQ={lowQ}
+          onDone={finishJourneyMap}
+        />
+      )}
+      {journeyMap && !showArrival && stage === "connected" && journeyMap.mode !== "start" && (
         <JourneyMap
           key={journeyMap.seq}
           mode={journeyMap.mode}

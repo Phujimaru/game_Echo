@@ -1,7 +1,10 @@
 // Shared music priorities for the regular board and Moon Cell.
-export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0, attackSeq = 0 } = {}) {
+// ECHO 5.1: ยังไม่เข้าห้อง (เลือกลำดับ/ตัวละคร) = main5 · ห้องรอ/โหวตโหมด/จัดทีม + ฉากเปิดตัวแมตช์ (intro) = lobby5
+export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0, attackSeq = 0, intro = false } = {}) {
   const phase = state?.gameState;
-  if (!phase || ["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(phase)) return { name: "main_home" };
+  if (!phase) return { name: "main5" };
+  if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(phase)) return { name: "lobby5" };
+  if (intro && !state?.seraph) return { name: "lobby5" };
   const cs = phase === "CUTSCENE" ? state.cutscene : null;
   const mandatory = cs?.kind === "overloadForce";
   if (cs && (!lowQ || mandatory || cs.announce)) return { name: null };

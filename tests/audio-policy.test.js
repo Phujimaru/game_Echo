@@ -29,8 +29,11 @@ test('investigation and rest music ignore combat skills; regular game retains no
   assert.equal(policy.musicForState(day).name, 'sc_day');
   assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }).name, 'sc_rest');
   assert.equal(policy.musicForState({ gameState: 'PLAYING', cycle: 'day' }).name, 'new_morning');
-  assert.equal(policy.musicForState(null).name, 'main_home');
-  assert.equal(policy.musicForState({ ...moon, gameState: 'LOBBY', skillMusic: 'shiki' }).name, 'main_home');
+  assert.equal(policy.musicForState(null).name, 'main5');
+  assert.equal(policy.musicForState({ ...moon, gameState: 'LOBBY', skillMusic: 'shiki' }).name, 'lobby5');
+  assert.equal(policy.musicForState({ gameState: 'TEAM_MODE' }).name, 'lobby5');
+  // ฉากเปิดตัวแมตช์ยังเป็นเพลงห้องรอ จนเข้าด่าน
+  assert.equal(policy.musicForState({ gameState: 'CUTSCENE', journey: { area: 1, scene: { active: true, seq: 1 } } }, { intro: true }).name, 'lobby5');
 });
 
 test('round sound survives intermediate cutscenes and broadcasts; attack sound follows every attack ID', () => {
