@@ -29,12 +29,8 @@ const staticDir = useReact ? clientDist : path.join(__dirname, "..", "public");
 // ไปที่นั่นแทนการเสิร์ฟจากเครื่องเอง (R2 ไม่คิดค่า egress ต่างจาก bandwidth ของ server หลักที่มีโควตา)
 // ไม่ตั้งค่านี้ = fallback เสิร์ฟจากไฟล์ในเครื่องตามเดิม (เช่นตอน dev ในเครื่อง)
 const ASSET_BASE_URL = process.env.ASSET_BASE_URL; // เช่น https://pub-xxxx.r2.dev
-// โฟลเดอร์สื่อทั้งหมดที่ย้ายไป R2 — /characters (รูป/วิดีโอ/เพลงตัวละคร), /item (ปืนหน่วย GUTS
-//  Select + คีย์/วีดีโอกระสุน), /overload_force (สนาม), /theme_song + /effect_sound (เพลง/เสียง),
-//  /image (พื้นหลัง + สแปลช), /mooncell (สื่อโหมด SE.RA.PH: ฉากหลัง GIF + ภาพสถานที่ + เพลง/SFX)
-//  /journey (เพลงการเดินทาง 7 ภูมิภาค กลางวัน/กลางคืน + map.mp3 ของฉากแผนที่)
-//  — ต้องอัปขึ้น R2 ให้ครบทุกโฟลเดอร์ก่อนถึงจะ redirect ติด ไม่งั้น 404
-const R2_DIRS = ["characters", "item", "overload_force", "theme_song", "effect_sound", "image", "mooncell", "journey"];
+// ต้องอัปขึ้น R2 ให้ครบทุกโฟลเดอร์ใน server/mediaDirs.js ก่อนถึงจะ redirect ติด ไม่งั้น 404
+const R2_DIRS = require("./mediaDirs");
 if (ASSET_BASE_URL) {
   for (const dir of R2_DIRS) {
     app.get(`/${dir}/*`, (req, res) => res.redirect(302, ASSET_BASE_URL + req.path));

@@ -1,6 +1,6 @@
 // หน้าแรกของโปรแกรม ECHO — สร้างห้อง / เข้าร่วม (คำสั่งจริงอยู่ใน main.js ผ่าน window.echo จาก preload.js)
 const $ = (id) => document.getElementById(id);
-const panels = ["home", "host", "join"];
+const panels = ["prepare", "home", "host", "join"];
 
 function show(panel) {
   for (const p of panels) $(p).hidden = p !== panel;
@@ -74,12 +74,43 @@ async function join(event) {
   }
 }
 
+const mb = (bytes) => (bytes / 1024 ** 2).toFixed(0);
+
+function renderProgress({ doneBytes, totalBytes, doneFiles, totalFiles }) {
+  if (!totalFiles) {
+    $("prepare-status").textContent = "ไฟล์เกมครบแล้ว";
+    $("prepare-bar").style.width = "100%";
+    return;
+  }
+  const pct = totalBytes ? Math.min(100, (doneBytes / totalBytes) * 100) : 100;
+  $("prepare-bar").style.width = `${pct}%`;
+  $("prepare-status").textContent = `กำลังโหลด ${mb(doneBytes)} / ${mb(totalBytes)} MB (${pct.toFixed(0)}%) · ${doneFiles}/${totalFiles} ไฟล์`;
+}
+
+// ด่านที่ 2 — ไฟล์สื่อต้องครบก่อนถึงจะเข้าหน้าแรก (สร้างห้อง/เข้าร่วม) ได้
+async function prepareMedia() {
+  show("prepare");
+  $("prepare-error").hidden = true;
+  $("prepare-retry").hidden = true;
+  $("prepare-status").textContent = "กำลังตรวจรายการไฟล์…";
+  const result = await window.echo.prepareMedia();
+  if (result.ok) {
+    show("home");
+    return;
+  }
+  $("prepare-error").textContent = result.error;
+  $("prepare-error").hidden = false;
+  $("prepare-retry").hidden = false;
+}
+
 async function init() {
   const info = await window.echo.info();
   $("version").textContent = `เวอร์ชัน ${info.version}`;
   $("join-ip").value = info.lastHost;
   setMessage(new URLSearchParams(location.search).get("message"));
 
+  window.echo.onMediaProgress(renderProgress);
+  $("prepare-retry").addEventListener("click", prepareMedia);
   $("go-host").addEventListener("click", startHosting);
   $("go-join").addEventListener("click", () => {
     setMessage("");
@@ -95,6 +126,7 @@ async function init() {
   });
   $("join-form").addEventListener("submit", join);
   $("join-back").addEventListener("click", () => show("home"));
+  await prepareMedia();
 }
 
 init();

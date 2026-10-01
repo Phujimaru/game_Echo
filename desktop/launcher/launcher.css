@@ -129,6 +129,8 @@ body {
 .ip-row .btn { font-size: 14px; padding: 6px 12px; }
 
 .muted { margin: 0; color: var(--muted); }
+.bar { height: 10px; border-radius: 999px; background: rgba(5, 3, 8, 0.7); border: 1px solid rgba(201, 153, 47, 0.25); overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-lit)); transition: width 0.2s; }
 .hint { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
 .hint b { color: var(--text); font-weight: 600; }
 .warn { margin: 0; font-size: 15px; color: var(--danger); line-height: 1.5; }

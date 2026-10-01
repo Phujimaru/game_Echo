@@ -6,7 +6,8 @@
   "description": "ECHO — Blackjack Skill Battle (โปรแกรมสำหรับเปิดห้อง/เข้าร่วมผ่าน Radmin VPN)",
   "main": "main.js",
   "scripts": {
-    "start": "node start.js"
+    "start": "node start.js",
+    "media-manifest": "node scripts/build-media-manifest.js"
   },
   "devDependencies": {
     "electron": "^44.5.1"

@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 if (location.protocol === "file:") {
   contextBridge.exposeInMainWorld("echo", {
     info: () => ipcRenderer.invoke("echo:info"),
+    prepareMedia: () => ipcRenderer.invoke("echo:prepareMedia"),
+    onMediaProgress: (callback) => ipcRenderer.on("echo:mediaProgress", (_e, progress) => callback(progress)),
     copy: (text) => ipcRenderer.invoke("echo:copy", text),
     host: () => ipcRenderer.invoke("echo:host"),
     enterHostedRoom: () => ipcRenderer.invoke("echo:enterHostedRoom"),

@@ -75,7 +75,12 @@
    - รัน dev: `cd desktop && npm install && npm start` (`start.js` ล้าง `ELECTRON_RUN_AS_NODE` ที่เทอร์มินัลของ VS Code/Claude ตั้งค้างไว้) · `ECHO_WINDOWED=1` = ไม่เต็มจอ · `ECHO_ASSET_BASE_URL` = ส่งต่อเป็น `ASSET_BASE_URL` ให้ server ของห้อง (ตอน dev ไม่ตั้งก็ได้ ใช้สื่อใน `client/dist`)
    - ทดสอบแล้วด้วยการขับแอปผ่าน `--remote-debugging-port` (CDP): สร้างห้อง, เข้าห้องตัวเอง, เบราว์เซอร์ธรรมดาได้ 403, หน้าเกมไม่มี `window.echo`, ปิดแอปแล้ว server ปิดตาม, เข้าร่วมด้วย IP ผิดรูปแบบ/ไม่มีห้อง ขึ้นข้อความถูก · **ยังไม่ได้ทดสอบ:** dialog ของ F10 (กดจริง), เล่นข้าม 2 เครื่องผ่าน Radmin
    - หน้า splash ของเกมยังเขียน "เวอร์ชัน 4.0" — ต้องถามผู้ใช้ก่อนออก 5.0.0 ว่าจะเปลี่ยนไหม
-3. แคชไฟล์สื่อ + manifest + ทดสอบกรอวิดีโอ (Range)
+3. ✅ แคชไฟล์สื่อ — `desktop/media.js` + `desktop/config.js` (R2 public URL) + `server/mediaDirs.js` (รายชื่อ 8 โฟลเดอร์ ใช้ร่วม server/desktop)
+   - manifest: `cd desktop && npm run media-manifest` → `desktop/dist/updates/media-manifest.json` (682 ไฟล์ 1.12GB ณ 2026-10-01 · ข้าม .txt/.md) · เช็คแล้วขนาดไฟล์บน R2 ตรงกับ `client/public` ครบทุกไฟล์ · **ยังไม่ได้อัปขึ้น R2** (ขั้นที่ 4)
+   - แคชอยู่ `%APPDATA%/ECHO/media/` + `index.json` · โหลดขนาน 6 ไฟล์ ตรวจ sha256 ลองซ้ำ 3 ครั้ง เช็คพื้นที่ดิสก์ ลบไฟล์ที่ถูกถอด · โหลดค้างแล้วเปิดใหม่ = ต่อจากไฟล์ที่ยังไม่เสร็จ
+   - ตอบไฟล์สื่อด้วย `protocol.handle("http")` ที่ **origin เดิมของหน้าเกม** (ไม่ redirect) เพราะโหมด ORT ใช้ `getImageData` กับรูป `/characters/ort/*` — ข้าม origin แล้ว canvas โดน taint (**บนเว็บที่ redirect ไป R2 น่าจะพังอยู่แล้ว ยังไม่ได้ยืนยัน**) · header `X-Echo-Media: cache|local` · ไม่มีในแคช → (dev: `client/public`) → R2
+   - dev: ไม่ตั้ง `ECHO_MEDIA_MANIFEST` = ข้ามการโหลด ใช้ `client/public` ตรงๆ · exe ใช้ manifest บน R2 เสมอ โหลด manifest ไม่ได้ = เข้าหน้าแรกไม่ได้ (มีปุ่มลองใหม่)
+   - ทดสอบในแอปจริงด้วย manifest ย่อย 7 ไฟล์จาก R2 จริง: โหลดครบ, ชื่อไฟล์ไทย+เว้นวรรค, Range 206, กรอวิดีโอ (readyState 4), canvas อ่านพิกเซลได้, socket.io ผ่าน, เปิดรอบสองไม่โหลดซ้ำ · เทสต์ `tests/desktop-media.test.js` · **ยังไม่ได้ลองโหลดเต็ม 1.1GB**
 4. electron-updater + ด่านที่ 1 + สคริปต์ปล่อยเวอร์ชัน
 5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin
 

@@ -17,8 +17,18 @@
 
     <p id="message" class="notice" hidden></p>
 
+    <!-- เตรียมไฟล์เกม (ด่านที่ 2) — ผ่านแล้วถึงไปหน้าแรก -->
+    <section id="prepare" class="panel">
+      <h2>กำลังเตรียมไฟล์เกม</h2>
+      <p id="prepare-status" class="muted">กำลังตรวจรายการไฟล์…</p>
+      <div class="bar"><div id="prepare-bar" class="bar-fill"></div></div>
+      <p id="prepare-detail" class="hint">ครั้งแรกต้องโหลดประมาณ 1.1 GB · ปิดโปรแกรมกลางทางได้ เปิดใหม่จะโหลดต่อจากเดิม</p>
+      <p id="prepare-error" class="warn" hidden></p>
+      <button id="prepare-retry" class="btn primary" hidden>ลองใหม่</button>
+    </section>
+
     <!-- หน้าแรก -->
-    <section id="home" class="panel">
+    <section id="home" class="panel" hidden>
       <button id="go-host" class="btn primary">สร้างห้อง</button>
       <button id="go-join" class="btn">เข้าร่วม</button>
       <button id="quit" class="btn ghost">ออกจากเกม</button>
