@@ -104,6 +104,7 @@
 - **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยน · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) ปิดด้วย `taskkill //F //IM ECHO.exe //T` · ทดสอบในเครื่องผู้ใช้ให้ย้าย `%APPDATA%\ECHO` (1.2GB ของจริง) ไปสำรองก่อน
 
 ### C. ECHO 5.1 — ธีม ORDEAL CALL (แทน Avalon) · branch `feat/ordeal-call` (2026-10-01)
+✅ **ปล่อย 5.1.0 ขึ้น R2 แล้ว** (2026-10-01, build จาก branch นี้ — ยังไม่ merge เข้า main) · ลิงก์ติดตั้ง `updates/ECHO-Setup-5.1.0.exe` · อัปเพลงใหม่ 2 ไฟล์แล้ว
 ต้นแบบที่ผู้ใช้อนุมัติ: artifact `https://claude.ai/artifact/Tj8U5YdrUD6XGPeUJxqwcV` · ขาวเด่น ฟ้าแซม ม่วง ECHO เป็นสีเน้น · ในเกมแผงน้ำเงินเข้ม
 - **ของกลาง:** `client/src/globe/globeCore.js` (ลูกโลก three.js ใช้ทุกหน้า + launcher ผ่าน iife) · `GlobeCanvas.jsx` · `client/src/oc/theme.css` (โทเคน `--oc-*`) · `oc/ui.jsx`
   - three r186 = แสงแบบ physical + sRGB — ค่าแสงจูนแล้ว · ShaderMaterial ต้อง `#include <colorspace_fragment>` ไม่งั้นสีเข้มเพี้ยน
