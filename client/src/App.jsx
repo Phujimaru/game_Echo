@@ -10,10 +10,9 @@ import Game from "./screens/Game";
 import SeraphGame from "./seraph/SeraphGame";
 import VolumeControl from "./components/VolumeControl";
 import TransitionCurtain from "./components/TransitionCurtain";
-import GameIntro from "./components/GameIntro";
 import OrtArrival from "./raid/OrtArrival";
-import JourneyMap from "./journey/JourneyMap";
-import GlobeDive from "./oc/intro/GlobeDive";
+import MatchIntro from "./oc/intro/MatchIntro";
+import RegionTravel from "./oc/intro/RegionTravel";
 import { OcScreen } from "./oc/ui";
 import { SharedGlobeStage } from "./globe/SharedGlobe";
 import { GLOBE_SCREENS } from "./components/TransitionCurtain";
@@ -31,7 +30,7 @@ function saveSessionToken(token) {
   } catch {}
 }
 
-// การเดินทาง: ความยาวฉากแผนที่ = เวลาที่ server ยังพักเกมเหลืออยู่ (หักเผื่อ 0.4 วิ) ไม่เกินความยาวที่ออกแบบไว้
+// การเดินทาง: ความยาวฉากลูกโลก = เวลาที่ server ยังพักเกมเหลืออยู่ (หักเผื่อ 0.4 วิ) ไม่เกินความยาวที่ออกแบบไว้
 function journeyDurationMs(secondsLeft, designMs) {
   const left = (Number(secondsLeft) || 0) * 1000 - 400;
   return Math.max(3000, Math.min(designMs, left > 0 ? left : designMs));
@@ -47,18 +46,20 @@ export default function App() {
   const curtainRef = useRef(null); // ม่านเปลี่ยนฉาก — ควบคุมจังหวะปิด/เปิดจอตอนสลับหน้า
   // กันดับเบิ้ลคลิก/กดรัวบนปุ่มนำทาง (ถัดไป/ยืนยัน/ย้อนกลับ) ไม่ให้ยิงคำสั่งเปลี่ยนฉากซ้อนกัน
   const navLockRef = useRef(false);
-  // ฉากเปิดตัวผู้เล่นตอนแมตช์เริ่ม (LOBBY -> เกม) — เล่นก่อนเข้าฉากสนามจริงเสมอ
+  // ฉากเปิดแมตช์ (LOBBY -> เกม): MatchIntro = เปิดตัวผู้เล่นรอบลูกโลก + ดิ่งลงภูมิภาคเริ่มต้น บนลูกโลกใบเดียว
+  //  intro = overlay ที่กำลังเล่น (วางนอก screen) · showIntro = กระดานยังเป็นตัวชั่วคราว (muteScenes) ใต้ฉาก
+  //  MatchIntro เรียก onHandoff ตอนฉากทึบบังจอ -> สลับเป็นกระดานตัวจริงข้างใต้ก่อนเผย
+  const [intro, setIntro] = useState(null); // { key, players, area }
   const [showIntro, setShowIntro] = useState(false);
-  const [introPlayers, setIntroPlayers] = useState([]);
   // Type Mercury: ฉากเปิดตัว ORT แทนฉากเปิดตัวผู้เล่น
   const [showArrival, setShowArrival] = useState(false);
   const arrivalSeqRef = useRef(null); // ฉากเปิดตัว ORT ครั้งที่เล่นไปแล้ว (กันเล่นซ้ำในการพักเกมรอบเดียวกัน)
-  // การเดินทาง: ฉากแผนที่ (start = ต่อจากฉากเปิดตัวผู้เล่น · advance = เข้าภูมิภาคใหม่) — server พักเกมรอไว้แล้ว
+  // การเดินทาง: ฉากลูกโลก (start = ช่วงดิ่งของ MatchIntro · advance = ฉากเปลี่ยนภูมิภาค RegionTravel) — server พักเกมรอไว้แล้ว
   //  ความยาวฉากคิดจากเวลาที่เหลือของช่วงพัก (timeLeft) ทุกเครื่องจึงจบพร้อมกันแม้ฉากเปิดตัวของแต่ละเครื่องจะจบไม่พร้อมกัน
-  const [journeyMap, setJourneyMap] = useState(null); // { seq, mode, area, fromArea, durationMs }
-  const journeySeqRef = useRef(null);      // ฉากแผนที่ครั้งที่เล่น/จองไว้แล้ว (กันเล่นซ้ำจากบรอดแคสต์ถัดๆ ไป)
-  const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอฉากเปิดตัวผู้เล่นเล่นจบก่อน
-  const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (finishIntro อ่านว่าช่วงพักยังไม่หมด)
+  const [travel, setTravel] = useState(null); // ฉาก advance: { seq, area, fromArea, durationMs }
+  const journeySeqRef = useRef(null);      // ฉากที่เล่น/จองไว้แล้ว (กันเล่นซ้ำจากบรอดแคสต์ถัดๆ ไป)
+  const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอช่วงเปิดตัวผู้เล่นจบก่อน
+  const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (startPendingJourney อ่านว่าช่วงพักยังไม่หมด)
   const prevGameStateRef = useRef(null);
   const screenKeyRef = useRef("setup"); // หน้าปัจจุบัน (navigate ใช้ตัดสินว่าต้องมีม่านไหม)
   const [roster, setRoster] = useState([]);
@@ -120,16 +121,18 @@ export default function App() {
       //  บุกเทิร์น 60 ของโหมดปกติ (ซึ่งเกิดกลางแมตช์) · รีคอนเนกต์หลังช่วงพักจะไม่เล่นซ้ำ เพราะ active เป็น false แล้ว
       if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(s.gameState)) {
         setShowArrival(false);
-        setJourneyMap(null);
+        setTravel(null);
+        setIntro(null);
+        setShowIntro(false);
         pendingJourneyRef.current = null;
       }
-      // การเดินทาง: ช่วงพักรอฉากแผนที่เริ่มใหม่ -> start รอฉากเปิดตัวจบก่อน · advance เล่นทันที
+      // การเดินทาง: ช่วงพักรอฉากลูกโลกเริ่มใหม่ -> start รอช่วงเปิดตัวผู้เล่นจบก่อน · advance เล่นทันที
       journeyStateRef.current = s.journey || null;
       const jScene = s.journey?.scene;
       if (jScene?.active && jScene.seq !== journeySeqRef.current) {
         journeySeqRef.current = jScene.seq;
         if (jScene.mode === "start") pendingJourneyRef.current = jScene;
-        else setJourneyMap({ ...jScene, durationMs: journeyDurationMs(s.timeLeft, 6000) });
+        else setTravel({ seq: jScene.seq, area: jScene.area, fromArea: jScene.fromArea, durationMs: journeyDurationMs(s.timeLeft, 6000) });
       }
       const arrival = s.ortArrival;
       if (arrival?.active && arrival.seq !== arrivalSeqRef.current) {
@@ -141,7 +144,7 @@ export default function App() {
         curtainRef.current?.skip("game");
       } else if (!wasInMatch && nowInMatch && !s.seraph) {
         curtainRef.current?.skip("gameintro");
-        setIntroPlayers(s.players);
+        setIntro({ key: Date.now(), players: s.players, area: s.journey?.scene?.area || 1 });
         setShowIntro(true);
       }
       prevGameStateRef.current = s.gameState;
@@ -266,6 +269,7 @@ export default function App() {
   const skillMusic = stage === "connected" && state ? state.skillMusic : null;
   const skillMusicSeq = stage === "connected" && state ? state.skillMusicSeq : 0;
   const mandatoryCutscene = phase === "CUTSCENE" && state?.cutscene?.kind === "overloadForce";
+  const introOn = !!intro; // ฉากเปิดแมตช์ (รวมช่วงดิ่ง) ยังเป็นเพลงห้องรอ
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: เพลงกลางวัน/กลางคืน | อื่นๆ: main_home
@@ -299,7 +303,7 @@ export default function App() {
       // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
       // 5.1: เข้าห้องแล้ว (ตั้งแต่หน้าเลือกลำดับ) เปลี่ยนเป็นเพลงห้องรอ lobby5 ทันที — main5 อยู่แค่ใน launcher · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็น lobby5 (intro)
       const track = musicForState(stage === "connected" ? state : null, {
-        lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: showIntro || journeyMap?.mode === "start",
+        lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: introOn,
       });
       if (track.name) playMusic(track.name, track.seq);
       else stopMusic();
@@ -319,7 +323,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, showIntro, journeyMap?.mode]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);
@@ -368,23 +372,27 @@ export default function App() {
     curtainRef.current?.skip("game");
     setShowArrival(false);
   };
-  // การเดินทาง: ฉาก "การเดินทางเริ่มต้นขึ้น" ต่อจากฉากเปิดตัวถ้า server ยังพักเกมรออยู่ (รีคอนเนกต์หลังช่วงพัก = ข้าม)
-  //  เรียกตั้งแต่ฉากเปิดตัว "เริ่มปิดฉาก" (onOutro) — แผนที่ (z 60) ขึ้นรอใต้ฉากเปิดตัว (z 95) ที่กำลังจางหาย
-  //  ฉากเปิดตัวจึงเผยแผนที่แทนกระดานเกม · เรียกซ้ำจาก finishIntro ได้ (ครั้งที่สองไม่มีผล)
+  // การเดินทาง: MatchIntro ถามตอนช่วงเปิดตัวผู้เล่นจบ (onOutro) ว่าต้องดิ่งลงภูมิภาคเริ่มต้นต่อไหม
+  //  คืน { area, durationMs } ถ้า server ยังพักเกมรอฉากนี้อยู่ (รีคอนเนกต์หลังช่วงพัก / โหมดไม่มีการเดินทาง = null -> ฉากจางจบ)
   const startPendingJourney = () => {
     const pending = pendingJourneyRef.current;
     pendingJourneyRef.current = null;
     const live = journeyStateRef.current?.scene;
     if (pending && live?.active && live.seq === pending.seq) {
-      setJourneyMap({ ...pending, durationMs: journeyDurationMs(getTickSeconds(), 7000) });
+      return { area: pending.area, durationMs: journeyDurationMs(getTickSeconds(), 7000) };
     }
+    return null;
   };
-  const finishIntro = () => {
+  // ฉากเปิดแมตช์ทึบบังจอแล้ว -> สลับเป็นกระดานตัวจริงข้างใต้ (ไม่มีม่าน — ฉากนี้มีการเผยของตัวเอง)
+  const handoffIntro = () => {
     curtainRef.current?.skip("game");
     setShowIntro(false);
-    startPendingJourney();
   };
-  const finishJourneyMap = () => setJourneyMap(null);
+  const finishIntro = () => {
+    handoffIntro();
+    setIntro(null);
+  };
+  const finishTravel = () => setTravel(null);
 
   let screen;
   let screenKey;
@@ -442,11 +450,10 @@ export default function App() {
     );
     screenKey = "ortarrival";
   } else if (showIntro) {
-    // แมตช์เพิ่งเริ่ม -> เผยผู้เล่นทีละคนก่อนเสมอ (ควบคุมด้วย navigate เอง ไม่ผูกกับ state ของเกมที่เดินต่อไปเรื่อยๆ)
+    // แมตช์เพิ่งเริ่ม -> กระดานชั่วคราว (ไม่เล่นคลิป) อยู่ใต้ฉากเปิดแมตช์ (MatchIntro นอก screen) จนฉากส่งต่อ (handoffIntro)
     screen = (
       <>
         <Game state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} muteScenes />
-        <GameIntro players={introPlayers} onDone={finishIntro} onOutro={startPendingJourney} />
       </>
     );
     screenKey = "gameintro";
@@ -465,26 +472,27 @@ export default function App() {
       <VolumeControl />
       <TransitionCurtain ref={curtainRef} screenKey={screenKey} />
       {screen}
-      {/* การเดินทาง: แผนที่ลอยทับกระดาน (server พักเกมในเฟส CUTSCENE ที่ไม่มีคลิป) — วางนอก screen
+      {/* ฉากลูกโลกลอยทับกระดาน (server พักเกมในเฟส CUTSCENE ที่ไม่มีคลิป) — วางนอก screen
           เพื่อไม่ให้ <Game> ถูก mount ใหม่ตอนเปิด/ปิดฉาก (กระดานทั้งจอ mount ใหม่ = กระตุก) */}
-      {journeyMap && !showArrival && stage === "connected" && journeyMap.mode === "start" && (
-        <GlobeDive
-          key={journeyMap.seq}
-          area={journeyMap.area}
-          durationMs={journeyMap.durationMs}
+      {intro && !showArrival && stage === "connected" && (
+        <MatchIntro
+          key={intro.key}
+          players={intro.players}
+          area={intro.area}
           lowQ={lowQ}
-          onDone={finishJourneyMap}
+          onOutro={startPendingJourney}
+          onHandoff={handoffIntro}
+          onDone={finishIntro}
         />
       )}
-      {journeyMap && !showArrival && stage === "connected" && journeyMap.mode !== "start" && (
-        <JourneyMap
-          key={journeyMap.seq}
-          mode={journeyMap.mode}
-          area={journeyMap.area}
-          fromArea={journeyMap.fromArea}
-          durationMs={journeyMap.durationMs}
+      {travel && !intro && !showArrival && stage === "connected" && (
+        <RegionTravel
+          key={travel.seq}
+          from={travel.fromArea}
+          to={travel.area}
+          durationMs={travel.durationMs}
           lowQ={lowQ}
-          onDone={finishJourneyMap}
+          onDone={finishTravel}
         />
       )}
     </SharedGlobeStage>

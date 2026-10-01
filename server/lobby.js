@@ -256,7 +256,7 @@ function modeSelectBackToLobby() {
   view.broadcastState();
   return true;
 }
-// ฉากเปิดตัวผู้เล่น (GameIntro ฝั่ง client) กินเวลาเท่านี้ — สูตรเดียวกันกับ client/src/components/GameIntro.jsx
+// ฉากเปิดตัวผู้เล่น (ช่วงแรกของ MatchIntro ฝั่ง client) กินเวลาเท่านี้ — สูตรเดียวกันกับ client/src/oc/intro/MatchIntro.jsx
 //  วีดีโอเปิดตัวของตัวละครต้องรอให้มันจบก่อน ไม่งั้นคลิปจะเล่นอยู่ใต้ม่านแล้วโดนตัดกลางคัน
 //  (เวลาของคิวเดินอยู่ใต้ม่าน พอม่านเปิดก็เหลือแต่ท้ายคลิป)
 function gameIntroHoldSeconds() {
@@ -321,7 +321,7 @@ function startMatch() {
   if (journeyStart) match.journeyScene = { seq: ++match.journeySceneSeq, active: true, mode: "start", area: 1, fromArea: null };
   if (journeyStart || connerIntro || miyakoIntro || daisukeIntro || yagurumaIntro || kagamiIntro || tsurugiIntro || strikerIntro) {
     // พักคิวไว้ก่อนจนกว่าฉากเปิดตัวผู้เล่นจะจบ — อยู่ในเฟส CUTSCENE แต่ยังไม่มีคลิป
-    //  (cutsceneInfo = null -> client วาดกระดานปกติไว้ใต้ม่าน GameIntro ซึ่งบังอยู่แล้ว)
+    //  (cutsceneInfo = null -> client วาดกระดานปกติไว้ใต้ฉากเปิดแมตช์ (MatchIntro) ซึ่งบังอยู่แล้ว)
     match.cutsceneInfo = null;
     match.gameState = "CUTSCENE";
     timers.startPhaseTimer(gameIntroHoldSeconds() + (journeyStart ? JOURNEY_START_SECONDS : 0), () => {

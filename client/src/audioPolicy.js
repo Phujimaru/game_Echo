@@ -17,11 +17,9 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
     }
     return { name: phase === "SERAPH_PLACE" ? "sc_rest" : "sc_day" };
   }
-  // การเดินทาง: ระหว่างฉากแผนที่ (เริ่มเกม / เข้าภูมิภาคใหม่) เพลง map.mp3 ทับทุกอย่าง — เริ่มใหม่ทุกฉาก (seq)
+  // การเดินทาง: ฉากเปลี่ยนภูมิภาค (ลูกโลก) ไม่มีเพลงของตัวเอง — state.journey เป็นภูมิภาคปลายทางแล้ว
+  //  เพลงประจำภูมิภาคใหม่จึงเริ่มตั้งแต่ฉากเริ่ม (App ขยับ cycleSeq เมื่อภูมิภาค/ช่วงเวลาเปลี่ยน)
   const journey = state?.journey;
-  if (journey?.scene?.active && ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) {
-    return { name: "journey_map", seq: journey.scene.seq };
-  }
   if (state?.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
   // Type Mercury: เพลงประจำตัว ORT ตลอดทั้ง Raid (รวมฉากเปิดตัว ORT ซึ่งเป็นเฟส CUTSCENE ที่ไม่มีคลิป)
   if (state?.mercury && ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) return { name: "ort_theme" };

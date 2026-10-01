@@ -5,7 +5,7 @@ import { POSITION_COLORS } from "../data/positions";
 import GlobeCanvas from "../globe/GlobeCanvas";
 import { SharedGlobeContext } from "../globe/SharedGlobe";
 import { setHeroHandoff } from "../oc/heroHandoff";
-import { OcScreen, OcPanel, OcButton } from "../oc/ui";
+import { OcScreen, OcButton } from "../oc/ui";
 import { createCharRings } from "../oc/charselect/charRings";
 import { preloadPortraits, getPortrait, portraitDone } from "../oc/charselect/portraits";
 import "../oc/charselect/charselect.css";
@@ -18,6 +18,7 @@ import "../oc/charselect/charselect.css";
 //  กดที่ว่าง / Esc = เลิกเลือก + ถอยกลับภาพรวม (การ์ดบินกลับเข้าวง) · ปุ่มย้อนกลับอยู่มุมซ้ายล่างเสมอ
 //  การ์ด/ภาพหลักเป็นหกเหลี่ยมแบบตราโปรไฟล์ในห้องรอ · กดยืนยัน (ช่วงก่อนเข้าเกม) = ส่งตำแหน่งภาพหลักให้ห้องรอ (heroHandoff)
 //         ทำภาพลอยต่อจากจุดเดิม — ภาพหลักค้างนิ่งอยู่ที่เดิมจนหน้านี้ถูกถอด
+//  แผงข้อมูลไม่ใช่กล่อง: เส้นโคจรโค้งรอบภาพหลัก + แผ่นชื่อ/แผ่นสกิลแขวนบนเส้น (layoutArc) · คำอธิบายสกิลโผล่ใต้/เหนือแผ่นที่ชี้
 const LAYOUT_ALL = { x: 0.12, y: 0.04, s: 0.9 };
 const LAYOUT_RING = { x: 0.16, y: 0.27, s: 0.98 };
 const LAYOUT_SEL = { x: -1.12, y: 0.18, s: 0.78 };
@@ -71,7 +72,33 @@ function CardArt({ c }) {
 // เส้นฟ้าด้านในกรอบหกเหลี่ยม (ตรงกับการ์ดในวง: ภาพ 224×256 เส้นห่างขอบ 9.5px)
 const HEX_LINE = "112,10.9 214.5,69.5 214.5,186.5 112,245.1 9.5,186.5 9.5,69.5";
 
-// ประเภทสกิลจากป้าย — ใช้แต่งสีแถบหน้าแถว
+// เส้นโคจรของแผงข้อมูล: วงกลมรัศมี ARC_R ที่โค้งรอบภาพหลัก — ห่างขอบขวาของหกเหลี่ยม ARC_GAP ที่แนวกึ่งกลาง
+//  พิกัดในกล่อง .cs-side: x = 0 คือขอบซ้ายกล่อง (= ขอบขวาหกเหลี่ยม - ARC_OFF ตรงกับ --cs-arc-off ใน css) · y วัดจากกึ่งกลางภาพหลัก
+const ARC_R = 520, ARC_GAP = 58, ARC_OFF = 96, ARC_TAIL = 36;
+const arcX = (dy) => ARC_OFF + ARC_GAP - ARC_R + Math.sqrt(Math.max(0, ARC_R * ARC_R - dy * dy));
+
+// วางแถวตามเส้นโคจร: วัดตำแหน่งแนวตั้งจริงของแต่ละแถว [data-arc] (รวมตอนเลื่อนรายการ) → --ax = ตำแหน่งเส้นโค้งที่ระดับนั้น
+//  + วาดเส้นโคจรให้เต็มความสูงกล่อง · refit = เช็คใหม่ว่าสกิลล้นไหม (ล้น = แถวแบบกระชับ data-dense · ยังล้นอีก = เลื่อนได้ data-scroll)
+function layoutArc(box, list, refit) {
+  if (!box) return;
+  if (list && refit) {
+    delete list.dataset.dense;
+    if (list.scrollHeight > list.clientHeight + 1) list.dataset.dense = "1";
+  }
+  const br = box.getBoundingClientRect();
+  if (!br.height) return;
+  const mid = br.top + br.height / 2;
+  box.querySelectorAll("[data-arc]").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--ax", `${Math.round(arcX(r.top + r.height / 2 - mid))}px`);
+  });
+  const h = br.height / 2 + ARC_TAIL, c = br.height / 2;
+  const d = `M ${arcX(-h).toFixed(1)} ${(c - h).toFixed(1)} A ${ARC_R} ${ARC_R} 0 0 1 ${arcX(h).toFixed(1)} ${(c + h).toFixed(1)}`;
+  box.querySelectorAll(".cs-orbit path").forEach((p) => p.setAttribute("d", d));
+  if (list) { if (list.scrollHeight > list.clientHeight + 1) list.dataset.scroll = "1"; else delete list.dataset.scroll; }
+}
+
+// ประเภทสกิลจากป้าย — ใช้แต่งสีหัวแผ่น/หกเหลี่ยมแต้ม
 const skillKind = (label) => (label.startsWith("ท่าไม้ตาย") ? "ult" : label.startsWith("ติดตัว") ? "passive" : label.startsWith("สกิลรอง") ? "sec" : "basic");
 
 // สีตัวอักษรบนปุ่มหมวดที่ถูกเลือก (พื้นเป็นสีหมวด) — พื้นสว่างใช้ตัวเข้ม
@@ -177,10 +204,14 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   const reason = blockReason(shown);
   const canConfirm = !!sel && !sel.locked && !blockReason(sel);
   const selWhy = sel ? blockReason(sel) || (sel.locked ? "ยังไม่ปลดล็อก" : null) : null;
+  const skills = skillRows(shown);
+  const slot = pairSlotOf(shown);
 
   const ringsRef = useRef(null);
   const tipRef = useRef(null);
   const panelRef = useRef(null);
+  const listRef = useRef(null);
+  const scrollRaf = useRef(0);
   const slotRef = useRef(null);
   const fliesRef = useRef([]);
   const flyEls = useRef(new Map());
@@ -322,15 +353,37 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   };
   const ringsKey = grouped.map((g) => `${g.key}:${g.chars.map((c) => c.id).join(",")}`).join("|");
 
-  // คำอธิบายลอยข้างแผง (ซ่อนไว้ จนกว่าจะชี้/โฟกัสแถว)
+  // จัดแถวตามเส้นโคจรทุกครั้งที่ตัวที่แสดงเปลี่ยน / จอเปลี่ยนขนาด / ฟอนต์โหลดเสร็จ
+  const shownKey = shown ? `${shown.id}|${skills.length}|${slot ? slot.role : ""}` : "";
+  useLayoutEffect(() => { layoutArc(panelRef.current, listRef.current, true); }, [shownKey]);
+  useEffect(() => {
+    const run = () => layoutArc(panelRef.current, listRef.current, true);
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(run) : null;
+    if (ro) { if (panelRef.current) ro.observe(panelRef.current); if (listRef.current) ro.observe(listRef.current); }
+    window.addEventListener("resize", run);
+    document.fonts?.ready?.then(run);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", run); };
+  }, [shownKey]);
+  const onListScroll = () => {
+    setDesc(null);
+    if (scrollRaf.current) return;
+    scrollRaf.current = requestAnimationFrame(() => { scrollRaf.current = 0; layoutArc(panelRef.current, listRef.current, false); });
+  };
+
+  // คำอธิบาย (ซ่อนไว้ จนกว่าจะชี้/โฟกัสแถว) — ลอยใต้/เหนือแผ่นที่ชี้ ในคอลัมน์ขวา ไม่ทับภาพหลัก
   const showDesc = (key, titleText, text) => (e) => {
     if (!text) return;
-    const row = e.currentTarget.getBoundingClientRect();
+    const el = e.currentTarget;
+    const row = el.getBoundingClientRect();
+    const plate = (el.querySelector(".cs-sk-plate") || el.closest("[data-arc]")?.querySelector(".cs-opts-plate") || el).getBoundingClientRect();
     const panel = panelRef.current?.getBoundingClientRect();
     const scr = panelRef.current?.closest(".oc-screen")?.getBoundingClientRect() || { left: 0, top: 0, width: innerWidth, height: innerHeight };
-    const right = scr.left + scr.width - (panel ? panel.left : row.left) + 12;
-    const low = row.top - scr.top > scr.height * 0.58;
-    setDesc({ key, title: titleText, text, right, ...(low ? { bottom: scr.top + scr.height - row.bottom } : { top: row.top - scr.top }) });
+    const colRight = panel ? panel.right : row.right;
+    const width = Math.max(300, colRight - plate.left);
+    const left = colRight - width - scr.left;
+    const mid = panel ? panel.top + panel.height / 2 : scr.top + scr.height / 2;
+    const low = row.top + row.height / 2 > mid + 40;
+    setDesc({ key, title: titleText, text, left, width, ...(low ? { bottom: scr.top + scr.height - row.top + 8 } : { top: row.bottom - scr.top + 8 }) });
   };
   const hideDesc = (key) => () => setDesc((d) => (d && d.key === key ? null : d));
   const descProps = (key, titleText, text) => ({
@@ -358,8 +411,6 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     onConfirm(picked, picked === "shiki" ? { shikiUlt } : undefined);
   };
 
-  const skills = skillRows(shown);
-  const slot = pairSlotOf(shown);
   const byId = new Map(roster.map((c) => [c.id, c]));
 
   return (
@@ -447,61 +498,73 @@ export default function CharacterSelect({ roster, position, color: myColor, name
         );
       })}
 
-      <div className={`cs-side${sel ? " open" : ""}`} ref={panelRef} aria-hidden={!sel}>
-        <OcPanel className="cs-card" style={{ "--g": shownGroup?.color || "var(--oc-azure)" }}>
-          {shown && (
-            <div className="cs-head">
+      {/* แผงข้อมูล: แขวนอยู่บนเส้นโคจรที่โค้งรอบภาพหลัก — แผ่นชื่อด้านบน + แผ่นสกิลเรียงตามเส้น (หัวแผ่นเป็นหกเหลี่ยมแต้ม) */}
+      <div className={`cs-side${sel ? " open" : ""}`} ref={panelRef} aria-hidden={!sel} style={{ "--g": shownGroup?.color || "var(--oc-azure)", "--g-ink": inkOn(shownGroup?.color) }}>
+        <svg className="cs-orbit" key={`o${shown?.id}`} aria-hidden="true">
+          <defs>
+            <linearGradient id="cs-orbit-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" style={{ stopColor: "var(--g)", stopOpacity: 0 }} />
+              <stop offset="0.1" style={{ stopColor: "var(--g)", stopOpacity: 0.95 }} />
+              <stop offset="0.32" style={{ stopColor: "var(--oc-azure)", stopOpacity: 0.8 }} />
+              <stop offset="0.86" style={{ stopColor: "var(--oc-azure)", stopOpacity: 0.6 }} />
+              <stop offset="1" style={{ stopColor: "var(--oc-azure)", stopOpacity: 0 }} />
+            </linearGradient>
+          </defs>
+          <path className="cs-orbit-echo" />
+          <path className="cs-orbit-line" pathLength="1" />
+        </svg>
+        {shown && (
+          <div className="cs-title" data-arc key={`t${shown.id}`}>
+            <span className="cs-node cs-title-node" aria-hidden="true"><i /></span>
+            <div className="cs-title-plate">
               <div className="cs-chips">
-                {shownGroup && (
-                  <span className="cs-group">
-                    <i className="oc-diamond" />
-                    {shownGroup.label}
-                  </span>
-                )}
+                {shownGroup && <span className="cs-group">{shownGroup.label}</span>}
                 {reason && <span className="cs-flag bad">{reason}</span>}
                 {!reason && shown.locked && <span className="cs-flag">ยังไม่ปลดล็อก</span>}
               </div>
               <h2 className="cs-name">{shown.name}</h2>
             </div>
-          )}
+          </div>
+        )}
 
-          {skills.length > 0 && (
-            <div className="cs-sec">
-              <span className="oc-label">สกิล</span>
-              <i aria-hidden="true" />
-            </div>
-          )}
-          {skills.length > 0 && (
-            <div className="cs-skills" key={`sk${shown?.id}`} onScroll={() => setDesc(null)}>
-              {skills.map((s, i) => {
-                const key = `s${i}`;
-                return (
-                  <div
-                    key={key}
-                    className={`cs-sk k-${skillKind(s.label)}${desc?.key === key ? " on" : ""}`}
-                    tabIndex={0}
-                    aria-label={`${s.label} ${s.skill.name}${s.skill.cost != null ? ` ${s.skill.cost} แต้ม` : ""}. ${s.skill.desc || ""}`}
-                    {...descProps(key, s.skill.name, s.skill.desc)}
-                  >
-                    <span className="cs-sk-k">{s.label}</span>
-                    <span className="cs-sk-n">{s.skill.name}</span>
-                    {s.skill.cost != null && <span className="cs-sk-c">{s.skill.cost}</span>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div className="cs-skills" ref={listRef} key={`sk${shown?.id}`} onScroll={onListScroll}>
+          {skills.map((s, i) => {
+            const key = `s${i}`;
+            const kind = skillKind(s.label);
+            return (
+              <div
+                key={key}
+                data-arc
+                className={`cs-sk k-${kind}${desc?.key === key ? " on" : ""}`}
+                style={{ "--i": i }}
+                tabIndex={0}
+                aria-label={`${s.label} ${s.skill.name}${s.skill.cost != null ? ` ${s.skill.cost} แต้ม` : ""}. ${s.skill.desc || ""}`}
+                {...descProps(key, s.skill.name, s.skill.desc)}
+              >
+                <span className={`cs-node${s.skill.cost != null ? "" : " empty"}`} aria-hidden="true">
+                  {s.skill.cost != null ? s.skill.cost : <i />}
+                </span>
+                <span className="cs-sk-plate">
+                  <span className="cs-sk-k">{s.label}</span>
+                  <span className="cs-sk-n">{s.skill.name}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-          {shown?.pair && (
-            <div className="cs-opts">
+        {shown?.pair && (
+          <div className="cs-opts" data-arc key={`p${shown.id}`} style={{ "--i": skills.length }}>
+            <span className="cs-node empty k-echo" aria-hidden="true"><i /></span>
+            <div className="cs-opts-plate">
               {slot ? (
                 <div className="cs-pair" tabIndex={0} {...descProps("pair", PAIR_ROLE_TEXT[slot.role]?.t, `${PAIR_ROLE_TEXT[slot.role]?.d || ""} · ใช้ที่นั่งเดียวกับคู่หู`)}>
-                  <i className="oc-diamond" style={{ background: "var(--oc-echo)" }} />
-                  คู่กับ {slot.hostName} · {PAIR_ROLE_TEXT[slot.role]?.t}
+                  <span className="cs-sk-k">คู่หู</span>
+                  <span className="cs-pair-n">คู่กับ {slot.hostName} · {PAIR_ROLE_TEXT[slot.role]?.t}</span>
                 </div>
               ) : (
                 <>
-                  <span className="oc-label">บทบาท</span>
+                  <span className="cs-sk-k">บทบาท</span>
                   <div className="cs-opts-row" role="group" aria-label="บทบาท">
                     {["pilot", "gunner"].map((k) => (
                       <button
@@ -519,11 +582,14 @@ export default function CharacterSelect({ roster, position, color: myColor, name
                 </>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {shown?.id === "shiki" && shown.ultimate2 && (
-            <div className="cs-opts">
-              <span className="oc-label">ท่าไม้ตายที่ใช้</span>
+        {shown?.id === "shiki" && shown.ultimate2 && (
+          <div className="cs-opts" data-arc key={`u${shown.id}`} style={{ "--i": skills.length }}>
+            <span className="cs-node empty k-echo" aria-hidden="true"><i /></span>
+            <div className="cs-opts-plate">
+              <span className="cs-sk-k">ท่าไม้ตายที่ใช้</span>
               <div className="cs-opts-row" role="group" aria-label="ท่าไม้ตายที่ใช้">
                 {SHIKI_ULTS.map((o) => (
                   <button
@@ -539,8 +605,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
                 ))}
               </div>
             </div>
-          )}
-        </OcPanel>
+          </div>
+        )}
       </div>
 
       {/* ยืนยัน — มุมขวาล่าง โผล่เฉพาะตอนเลือกตัว · เลือกไม่ได้ = ปุ่มกดไม่ได้ + ป้ายเหตุผล */}
@@ -555,7 +621,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
       </OcButton>
 
       {desc && (
-        <div className="cs-desc" role="tooltip" style={{ right: desc.right, top: desc.top, bottom: desc.bottom }}>
+        <div className={`cs-desc${desc.bottom != null ? " up" : ""}`} role="tooltip" style={{ left: desc.left, width: desc.width, top: desc.top, bottom: desc.bottom }}>
           {desc.title && <b>{desc.title}</b>}
           {desc.text}
         </div>

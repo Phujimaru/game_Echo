@@ -751,11 +751,11 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `filterShopRoll`/`shopStock` → `openShop()` (ช่องหลายชิ้นใช้ `stock`/`stockMax` — `sold` เป็น true ตอนหมดช่องเท่านั้น) ·
   `goldBonus` + `onEndTurn` → `endTurn()` (หลังลูปลดเทิร์นสถานะ ก่อนกวาดคนตาย — สตั้น/ผุพังที่ติดจึงมีผลเต็มเทิร์นหน้า)
 - ความเสียหายจากสนาม (`fieldDamage`) ลดเกราะก่อน + ท่อกันตายชุดเดียวกับพิษร้าย และตั้ง `_statusDamage`
-- **ฉากแผนที่**: server พักเฟส CUTSCENE (ไม่มีคลิป) แบบเดียวกับฉากเปิดตัว ORT — `journeyScene` `{ seq, active, mode, area, fromArea }`
-  · `start` = ต่อท้าย `gameIntroHoldSeconds()` ใน `startMatch()` (+`JOURNEY_START_SECONDS` 6 — client เริ่มแผนที่ตั้งแต่ฉากเปิดตัวเริ่มปิดฉาก `onOutro`) · `advance` = `maybeJourneyAdvance()` ท้าย `endTurn`
+- **ฉากเดินทาง** (5.1: บนลูกโลก — `client/src/oc/intro/MatchIntro.jsx` เปิดแมตช์+ดิ่ง, `RegionTravel.jsx` เปลี่ยนภูมิภาค): server พักเฟส CUTSCENE (ไม่มีคลิป) แบบเดียวกับฉากเปิดตัว ORT — `journeyScene` `{ seq, active, mode, area, fromArea }`
+  · `start` = ต่อท้าย `gameIntroHoldSeconds()` ใน `startMatch()` (+`JOURNEY_START_SECONDS` 6 — client ดิ่งต่อจากฉากเปิดตัวที่ `onOutro`) · `advance` = `maybeJourneyAdvance()` ท้าย `endTurn`
   ก่อนเทิร์นแรกของภูมิภาคใหม่ (+`JOURNEY_ADVANCE_SECONDS` 7) · เทสต์ที่ต้องการเทิร์น 1 ทันทีตั้ง env `JOURNEY_START_SECONDS=0`
-  · `state.journey` (`Journey.publicInfo`) ระหว่างฉาก advance แสดงภูมิภาค **ปลายทาง** แล้ว (ฉากหลัง/เพลงเปลี่ยนใต้แผนที่)
-- เพลง: `journey_<area>_<day|night>` + `journey_map` (ระหว่างฉากแผนที่) ใน `client/src/audio.js` — ไฟล์อยู่ `client/public/journey/` (R2)
+  · `state.journey` (`Journey.publicInfo`) ระหว่างฉาก advance แสดงภูมิภาค **ปลายทาง** แล้ว (ฉากหลัง/เพลงเปลี่ยนใต้ฉากเดินทาง)
+- เพลง: `journey_<area>_<day|night>` ใน `client/src/audio.js` (5.1 เลิกใช้เพลง `journey_map` ระหว่างฉากเดินทาง — เล่นเพลงภูมิภาคปลายทางทันที · เปิดแมตช์ยังเป็น `lobby5`) — ไฟล์อยู่ `client/public/journey/` (R2)
 
 ---
 

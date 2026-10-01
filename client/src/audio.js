@@ -16,7 +16,6 @@ const FILES = {
   battle_phase: "/theme_song/battle_phase.mp3", // เพลงเฉพาะช่วงโจมตี — เริ่มใหม่ทุกครั้งที่เข้าช่วง
   // การเดินทาง 7 ภูมิภาค (โหมดสงครามทั่วไป): เพลงสนามแยกกลางวัน/กลางคืนต่อภูมิภาค — แทน new_morning/new_night
   //  ไฟล์ที่มีวงเล็บในชื่อ = กลางวัน · map.mp3 = เพลงระหว่างฉากแผนที่การเดินทาง
-  journey_map: "/journey/map.mp3",
   journey_1_day: "/journey/map1/Fire Emblem Engage Faraway Holy Land (Flare).mp3",
   journey_1_night: "/journey/map1/Fire Emblem Engage Faraway Holy Land.mp3",
   journey_2_day: "/journey/map2/Fire Emblem Engage Full Bloom in the Breeze (Blossom).mp3",

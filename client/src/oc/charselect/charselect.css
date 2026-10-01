@@ -3,9 +3,11 @@
   --cs-side-r: max(28px, 3vw);
   --cs-side-w: 384px;
   /* สูงคงที่ทุกตัวละคร — เว้นแถบบนและปุ่มยืนยันขวาล่าง */
-  --cs-side-h: min(580px, calc(100vh - 210px));
+  --cs-side-h: min(640px, calc(100vh - 240px));
   --cs-show-w: min(340px, 24vw, 46vh);
   --cs-gap: max(28px, 2.4vw);
+  /* กล่องแผงข้อมูลยื่นซ้ายเข้าหาภาพหลักเท่านี้ (เส้นโคจรปลายบน/ล่างโค้งเข้าไป) — ตรงกับ ARC_OFF ใน CharacterSelect.jsx */
+  --cs-arc-off: 96px;
 }
 .cs-screen .oc-globe { cursor: default; }
 .cs-screen .oc-globe.is-focus { cursor: grab; }
@@ -100,75 +102,150 @@
 @keyframes cs-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 @media (prefers-reduced-motion: reduce) { .cs-fly[data-landed] .cs-fly-card { animation: none; } }
 
-/* ---------- แผงข้อมูลตัวละคร (โผล่เมื่อเลือกตัว) — ขนาดคงที่ทุกตัว กึ่งกลางแนวตั้งเดียวกับภาพหลัก · สกิลยาวเลื่อนภายใน ---------- */
+/* ---------- แผงข้อมูลตัวละคร (โผล่เมื่อเลือกตัว) — ไม่ใช่กล่อง: แผ่นป้ายแขวนบนเส้นโคจรที่โค้งรอบภาพหลัก ----------
+   กล่อง .cs-side ขนาดคงที่ทุกตัว กึ่งกลางแนวตั้งเดียวกับภาพหลัก · ขอบซ้ายกล่อง = ขอบขวาหกเหลี่ยม - --cs-arc-off (ARC_OFF ใน jsx)
+   JS (bend) ตั้ง --ax ของทุกแถว [data-arc] = ตำแหน่งเส้นโค้งที่ระดับแถวนั้น → หกเหลี่ยมหัวแถววางบนเส้นพอดี
+   บนลงล่าง: แผ่นชื่อ (หัวเป็นหกเหลี่ยมสีหมวด) → แผ่นสกิลเรียงตามเส้น (หกเหลี่ยม = แต้ม) → ตัวเลือกบทบาท/ท่าไม้ตาย */
 .cs-side {
-  position: absolute; z-index: 5; top: 50%; right: var(--cs-side-r); width: var(--cs-side-w); height: var(--cs-side-h);
-  display: flex; flex-direction: column;
-  transform: translate(48px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
+  --hexp: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  --node-w: 30px;
+  --plate: polygon(13px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 13px 100%, 0 50%);
+  position: absolute; z-index: 5; top: 50%; right: var(--cs-side-r); height: var(--cs-side-h);
+  width: calc(var(--cs-side-w) + var(--cs-gap) + var(--cs-arc-off));
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  transform: translate(36px, -50%); opacity: 0; visibility: hidden;
   transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s, visibility 0s 0.55s;
 }
 .cs-side.open { transform: translate(0, -50%); opacity: 1; visibility: visible; transition-delay: 0.12s, 0.12s, 0s; }
-.cs-side.open .oc-panel { pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { .cs-side { transition: none; } }
-.cs-card { flex: 1 1 auto; min-height: 0; box-sizing: border-box; padding: 0; gap: 0; background: rgba(255, 255, 255, 0.82); }
 
-.cs-head {
-  position: relative; flex: none; display: flex; flex-direction: column; gap: 10px; padding: 24px 24px 18px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--g) 9%, #fff) 0%, rgba(255, 255, 255, 0) 100%);
+/* เส้นโคจร: เส้นหลัก (ไล่จากสีหมวดด้านบนเป็นฟ้า จางที่ปลาย) + เส้นประคู่ขนานจางๆ แบบวงโคจรรอบโลก */
+.cs-orbit { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cs-orbit path { fill: none; vector-effect: non-scaling-stroke; }
+.cs-orbit-line { stroke: url(#cs-orbit-grad); stroke-width: 1.5px; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.cs-orbit-echo { stroke: var(--oc-sky); stroke-opacity: 0.55; stroke-width: 1px; stroke-dasharray: 2 7; transform: translateX(13px); }
+
+/* หกเหลี่ยมหัวแถว (วางบนเส้นโคจร) — มีแต้ม = ทึบสีประเภท · ไม่มีแต้ม = กรอบสีประเภท + เพชรกลาง */
+.cs-node {
+  --k: var(--oc-azure);
+  position: relative; z-index: 0; flex: none; width: var(--node-w); height: 34px; display: grid; place-items: center;
+  font: 600 14px/1 var(--oc-f-ui); color: #fff; transition: transform 0.2s;
 }
-/* แถบสีหมวดบนสุด */
-.cs-head::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--g), color-mix(in srgb, var(--g) 15%, transparent)); }
-.cs-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 24px; }
-.cs-group {
-  display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px 5px 8px; font: 600 12px/1.2 var(--oc-f-ui); color: var(--oc-ink);
-  background: color-mix(in srgb, var(--g) 12%, #fff); border: 1px solid color-mix(in srgb, var(--g) 45%, transparent);
+.cs-node::before, .cs-node::after { content: ""; position: absolute; inset: 0; z-index: -1; clip-path: var(--hexp); }
+.cs-node::before { background: linear-gradient(160deg, color-mix(in srgb, var(--k) 72%, #fff), var(--k) 70%); }
+.cs-node.empty::after { inset: 2px; background: #fff; }
+.cs-node i { width: 7px; height: 7px; background: var(--k); transform: rotate(45deg); }
+.cs-node.k-echo { --k: var(--oc-echo); }
+
+/* แถวที่แขวนบนเส้น: [หกเหลี่ยม][แผ่น] — ขยับซ้าย/ขวาตามเส้นด้วย --ax · ขอบขวาทุกแผ่นตรงกัน */
+.cs-title, .cs-sk, .cs-opts {
+  position: relative; flex: none; display: grid; grid-template-columns: var(--node-w) minmax(0, 1fr); column-gap: 7px; align-items: center;
+  margin-left: calc(var(--ax, 150px) - var(--node-w) / 2); pointer-events: auto;
 }
-.cs-group .oc-diamond { background: var(--g); }
-.cs-flag { font: 600 12px/1.2 var(--oc-f-ui); padding: 5px 8px; border: 1px solid var(--oc-line); color: var(--oc-ink-2); background: #fff; }
-.cs-flag.bad { border-color: rgba(210, 69, 91, 0.5); color: var(--oc-hp); }
+/* ขีดเชื่อมหกเหลี่ยมกับปลายแผ่น */
+.cs-title::before, .cs-sk::before, .cs-opts::before {
+  content: ""; position: absolute; left: var(--node-w); width: 9px; top: 50%; height: 1px; background: var(--k, var(--oc-azure)); opacity: 0.8;
+}
+
+/* แผ่นชื่อ: หัวแหลมชี้เข้าหาภาพหลัก ตัดมุมขวาบน · แถบสีหมวดบนสุด */
+.cs-title { --k: var(--g); margin-bottom: 4px; }
+.cs-title-node::before { background: var(--g); }
+.cs-title-node::after { content: ""; inset: 2.5px; background: #fff; }
+.cs-title-node i { background: var(--g); width: 8px; height: 8px; }
+.cs-title-plate {
+  --cut: polygon(18px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 18px 100%, 0 50%);
+  position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; gap: 9px;
+  padding: 14px 18px 15px 30px; clip-path: var(--cut); background: color-mix(in srgb, var(--g) 50%, transparent);
+}
+.cs-title-plate::before {
+  content: ""; position: absolute; inset: 1px; z-index: -1; clip-path: var(--cut);
+  background: linear-gradient(105deg, color-mix(in srgb, var(--g) 10%, #fff) 0%, rgba(255, 255, 255, 0.94) 62%);
+}
+.cs-title-plate::after { content: ""; position: absolute; left: 16px; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--g), color-mix(in srgb, var(--g) 10%, transparent)); }
+.cs-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.cs-group, .cs-flag {
+  font: 600 12px/1.2 var(--oc-f-ui); padding: 4px 13px 4px 11px;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.cs-group { background: var(--g); color: var(--g-ink, #fff); }
+.cs-flag { background: var(--oc-frost); color: var(--oc-ink-2); }
+.cs-flag.bad { background: color-mix(in srgb, var(--oc-hp) 14%, #fff); color: var(--oc-hp); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oc-hp) 45%, transparent); }
 .cs-name {
-  margin: 0; font: 600 26px/1.2 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; text-wrap: balance;
+  margin: 0; font: 600 30px/1.18 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; text-wrap: balance;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-.cs-sec { flex: none; display: flex; align-items: center; gap: 10px; padding: 0 24px 10px; }
-.cs-sec i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--oc-line), transparent); }
-
+/* แผ่นชื่อ + รายการสกิล + ตัวเลือก รวมเป็นกลุ่มเดียว กึ่งกลางแนวตั้งที่ภาพหลัก · สกิลล้น = แบบกระชับ (data-dense) · ยังล้น = เลื่อน (data-scroll) */
+.cs-side > .cs-title { margin-top: auto; }
+.cs-side > :last-child { margin-bottom: auto; }
 .cs-skills {
-  flex: 1 1 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
-  padding: 2px 18px 18px 24px; scrollbar-width: thin; scrollbar-color: var(--oc-sky) transparent; overscroll-behavior: contain;
+  flex: 0 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; gap: 7px;
+  padding: 6px 2px 6px 0; pointer-events: none; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--oc-sky) transparent;
 }
-.cs-sk {
-  --k: var(--oc-azure);
-  position: relative; flex: none; background: #fff; border: 1px solid var(--oc-line); padding: 9px 10px 9px 14px;
-  display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; align-items: center; cursor: help; outline: none;
-  transition: border-color 0.2s, background 0.2s;
+.cs-skills[data-scroll] {
+  pointer-events: auto;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
 }
-.cs-sk::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--k); }
+.cs-skills[data-dense] { gap: 5px; }
+
+.cs-sk { --k: var(--oc-azure); cursor: help; outline: none; }
 .cs-sk.k-passive { --k: var(--oc-sky); }
 .cs-sk.k-sec { --k: var(--oc-ink-2); }
-.cs-sk.k-ult { --k: var(--oc-echo); background: linear-gradient(110deg, rgba(155, 79, 150, 0.09), #fff 70%); border-color: rgba(155, 79, 150, 0.35); }
-.cs-sk:hover, .cs-sk:focus-visible, .cs-sk.on { border-color: var(--k); background: color-mix(in srgb, var(--k) 7%, #fff); }
-.cs-sk-k { font: 600 11.5px/1.15 var(--oc-f-ui); color: color-mix(in srgb, var(--k) 80%, var(--oc-ink)); }
-.cs-sk-n { grid-column: 1; font: 600 14.5px/1.3 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; }
-.cs-sk-c {
-  grid-column: 2; grid-row: 1 / span 2; width: 30px; height: 34px; display: grid; place-items: center; font: 600 14px/1 var(--oc-f-ui); color: #fff;
-  background: var(--k); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+.cs-sk.k-ult { --k: var(--oc-echo); }
+.cs-sk.k-passive .cs-node::before { background: linear-gradient(160deg, #a9d0ef, var(--oc-azure) 80%); }
+.cs-sk.k-ult .cs-node { filter: drop-shadow(0 0 5px rgba(201, 154, 214, 0.95)); }
+.cs-sk-plate {
+  position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 16px 9px 24px; clip-path: var(--plate); background: var(--oc-line); transition: background 0.2s;
 }
-.cs-sk.k-passive .cs-sk-c { background: var(--oc-azure); }
+.cs-sk-plate::before { content: ""; position: absolute; inset: 1px; z-index: -1; clip-path: var(--plate); background: rgba(255, 255, 255, 0.92); transition: background 0.2s; }
+/* ปลายแหลมสีประเภท */
+.cs-sk-plate::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 15px; background: var(--k); clip-path: polygon(13px 0, 15px 0, 2px 50%, 15px 100%, 13px 100%, 0 50%); }
+.cs-sk-k { font: 600 11.5px/1.2 var(--oc-f-ui); color: color-mix(in srgb, var(--k) 78%, var(--oc-ink)); white-space: nowrap; }
+.cs-sk-n { font: 600 15px/1.3 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; }
+.cs-sk.k-ult .cs-sk-plate { background: color-mix(in srgb, var(--oc-echo) 55%, transparent); }
+.cs-sk.k-ult .cs-sk-plate::before { background: linear-gradient(100deg, color-mix(in srgb, var(--oc-echo) 15%, #fff) 0%, rgba(255, 255, 255, 0.94) 72%); }
+.cs-sk.k-ult .cs-sk-n { color: var(--oc-echo-deep); }
+.cs-sk:hover .cs-sk-plate, .cs-sk:focus-visible .cs-sk-plate, .cs-sk.on .cs-sk-plate { background: var(--k); }
+.cs-sk:hover .cs-sk-plate::before, .cs-sk:focus-visible .cs-sk-plate::before, .cs-sk.on .cs-sk-plate::before { background: color-mix(in srgb, var(--k) 9%, #fff); }
+.cs-sk:hover .cs-node, .cs-sk:focus-visible .cs-node, .cs-sk.on .cs-node { transform: scale(1.1); }
+.cs-skills[data-dense] .cs-sk-plate { flex-direction: row; align-items: baseline; gap: 10px; padding-block: 7px 8px; }
+.cs-skills[data-dense] .cs-sk-n { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-skills[data-dense] .cs-node { width: 26px; height: 30px; justify-self: center; font-size: 13px; }
 
-.cs-opts { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 14px 24px 20px; border-top: 1px solid var(--oc-line); background: rgba(255, 255, 255, 0.6); }
-.cs-opts + .cs-opts { border-top: 0; padding-top: 0; }
+/* ตัวเลือก (บทบาทตัวละครคู่ / ท่าไม้ตายของชิกิ) — แผ่นเดียวกัน หัวหกเหลี่ยมม่วง */
+.cs-opts { --k: var(--oc-echo); }
+.cs-opts-plate {
+  position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; gap: 7px;
+  padding: 9px 14px 11px 24px; clip-path: var(--plate); background: color-mix(in srgb, var(--oc-echo) 45%, transparent);
+}
+.cs-opts-plate::before { content: ""; position: absolute; inset: 1px; z-index: -1; clip-path: var(--plate); background: rgba(255, 255, 255, 0.94); }
 .cs-opts-row { display: flex; gap: 6px; }
 .cs-opt {
-  appearance: none; flex: 1; min-width: 0; font: 600 13px/1.25 var(--oc-f-ui); padding: 9px 10px; border: 1px solid var(--oc-line); background: #fff; color: var(--oc-ink);
-  cursor: pointer; text-align: center; transition: background 0.2s, border-color 0.2s, color 0.2s;
+  --sl: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  appearance: none; flex: 1; min-width: 0; font: 600 13px/1.25 var(--oc-f-ui); padding: 8px 14px; border: 0; background: var(--oc-frost); color: var(--oc-ink);
+  cursor: pointer; text-align: center; clip-path: var(--sl); transition: background 0.2s, color 0.2s;
 }
-.cs-opt:hover { border-color: var(--oc-azure); }
-.cs-opt:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
-.cs-opt[aria-pressed="true"] { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; }
-.cs-pair { display: flex; align-items: center; gap: 8px; font: 600 13px/1.3 var(--oc-f-ui); color: var(--oc-ink); padding: 9px 10px; border: 1px dashed var(--oc-echo); background: #fff; cursor: help; outline: none; }
+.cs-opt:hover { background: var(--oc-ice); }
+.cs-opt:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: -2px; }
+.cs-opt[aria-pressed="true"] { background: var(--oc-echo); color: #fff; }
+.cs-pair { display: flex; flex-direction: column; gap: 2px; cursor: help; outline: none; }
 .cs-pair:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.cs-pair-n { font: 600 14px/1.3 var(--oc-f-ui); color: var(--oc-ink); }
+
+/* ลำดับตอนเปิด (หลังภาพหลักลอยออก): เส้นโคจรลากตัวเอง → แผ่นชื่อ → แผ่นสกิลทีละแผ่น */
+.cs-side.open .cs-orbit-line { animation: cs-draw 0.95s cubic-bezier(0.45, 0, 0.2, 1) 0.4s both; }
+.cs-side.open .cs-orbit-echo { animation: cs-fade 0.9s ease 0.75s both; }
+.cs-side.open .cs-title { animation: cs-hang 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.55s both; }
+.cs-side.open .cs-sk, .cs-side.open .cs-opts { animation: cs-hang 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.68s + var(--i, 0) * 0.05s) both; }
+@keyframes cs-draw { from { stroke-dashoffset: 1; } }
+@keyframes cs-fade { from { opacity: 0; } }
+@keyframes cs-hang { from { opacity: 0; transform: translateX(-16px); } }
+@media (prefers-reduced-motion: reduce) {
+  .cs-side.open .cs-orbit-line, .cs-side.open .cs-orbit-echo, .cs-side.open .cs-title, .cs-side.open .cs-sk, .cs-side.open .cs-opts { animation: none; }
+}
 
 /* ปุ่มยืนยัน — มุมขวาล่าง (คู่กับปุ่มย้อนกลับซ้ายล่าง) โผล่เฉพาะตอนเลือกตัว */
 .cs-confirm-wrap {
@@ -181,10 +258,16 @@
 .cs-confirm { min-width: 184px; padding: 15px 28px; font-size: 16px; }
 .cs-confirm-why { font: 600 13px/1 var(--oc-f-ui); color: var(--oc-hp); background: #fff; border: 1px solid rgba(210, 69, 91, 0.45); padding: 8px 10px; }
 
-/* คำอธิบายสกิล: โผล่เฉพาะตอนชี้/โฟกัสแถว — วางนอกแผง (แผงมี backdrop-filter + เลื่อนได้ จะตัดกล่องทิ้ง) */
+/* คำอธิบาย: โผล่เฉพาะตอนชี้/โฟกัสแถว — ลอยใต้แผ่นที่ชี้ (แถวล่าง = ลอยเหนือ) กว้างเท่าคอลัมน์ขวา ไม่ทับภาพหลัก
+   วางระดับหน้าจอ (รายการสกิลเลื่อนได้ จะตัดกล่องทิ้ง) · ตำแหน่ง left/width/top|bottom ตั้งจาก showDesc */
 .cs-desc {
-  position: absolute; z-index: 8; width: min(340px, 40vw); box-sizing: border-box; pointer-events: none;
-  background: #fff; border: 1px solid var(--oc-azure); padding: 12px 14px; font: 300 13.5px/1.6 var(--oc-f-body); color: var(--oc-ink);
-  box-shadow: 0 18px 40px -18px rgba(28, 63, 110, 0.45); white-space: pre-line; animation: oc-rise 0.2s ease-out both;
+  position: absolute; z-index: 8; box-sizing: border-box; pointer-events: none;
+  background: rgba(255, 255, 255, 0.97); border: 1px solid var(--oc-azure); border-left-width: 3px; padding: 11px 14px 12px;
+  font: 300 13.5px/1.6 var(--oc-f-body); color: var(--oc-ink);
+  box-shadow: 0 18px 40px -18px rgba(28, 63, 110, 0.45); white-space: pre-line; animation: cs-desc-in 0.18s ease-out both;
 }
-.cs-desc b { display: block; font: 600 13px/1.3 var(--oc-f-ui); color: var(--oc-azure); margin-bottom: 4px; }
+.cs-desc.up { animation-name: cs-desc-up; }
+.cs-desc b { display: block; font: 600 13.5px/1.3 var(--oc-f-ui); color: var(--oc-azure); margin-bottom: 4px; }
+@keyframes cs-desc-in { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes cs-desc-up { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .cs-desc { animation: none; } }
