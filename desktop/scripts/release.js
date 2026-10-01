@@ -6,6 +6,7 @@
 //  npm run release -- --dry-run    ดูอย่างเดียวว่าจะอัป/ลบอะไร (ไม่ต้องมีกุญแจ ยกเว้น --prune)
 //  npm run release -- --skip-build ใช้ exe ใน desktop/dist ที่ build ไว้แล้ว
 //  npm run release -- --prune      ลบไฟล์สื่อบน R2 ที่ไม่อยู่ใน manifest แล้ว (ตัวละครที่ถูกถอด ฯลฯ)
+//  npm run release -- --prune-only ลบไฟล์สื่อเก่าอย่างเดียว ไม่ build/ไม่อัปอะไร (ใช้ได้กับเวอร์ชันที่ปล่อยไปแล้ว)
 //
 //  ลำดับอัป (สำคัญ): ไฟล์สื่อ → media-manifest.json → exe + blockmap → latest.yml เป็นอย่างสุดท้าย
 //  เครื่องผู้เล่นเห็นเวอร์ชันใหม่ก็ต่อเมื่อไฟล์ทุกอย่างพร้อมแล้ว
@@ -19,7 +20,8 @@ const MEDIA_DIRS = require("../../server/mediaDirs");
 const args = new Set(process.argv.slice(2));
 const DRY = args.has("--dry-run");
 const SKIP_BUILD = args.has("--skip-build");
-const PRUNE = args.has("--prune");
+const PRUNE_ONLY = args.has("--prune-only");
+const PRUNE = args.has("--prune") || PRUNE_ONLY;
 
 const desktop = path.resolve(__dirname, "..");
 const repo = path.resolve(desktop, "..");
@@ -44,6 +46,16 @@ async function fetchPublic(key) {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${key}: HTTP ${res.status}`);
   return res.text();
+}
+
+// รายชื่อไฟล์สื่อบน R2 ที่ไม่อยู่ใน manifest (เฉพาะโฟลเดอร์สื่อ — โฟลเดอร์อื่นใน bucket ไม่แตะ)
+async function staleMedia(r2, manifest) {
+  const keys = (await Promise.all(MEDIA_DIRS.map((d) => r2.list(`${d}/`)))).flat();
+  const stale = keys.filter((k) => !manifest.files["/" + k]);
+  console.log(`• ไฟล์สื่อบน R2 ที่ไม่ใช้แล้ว (จะลบ): ${stale.length} ไฟล์`);
+  for (const k of stale.slice(0, 30)) console.log(`    - ${k}`);
+  if (stale.length > 30) console.log(`    … อีก ${stale.length - 30} ไฟล์`);
+  return stale;
 }
 
 // ---------- R2 (S3 API) ----------
@@ -129,6 +141,15 @@ function readLatestYml(text) {
 (async () => {
   console.log(`ECHO ${version} — ปล่อยขึ้น R2${DRY ? " (dry-run: ไม่อัปจริง)" : ""}\n`);
 
+  if (PRUNE_ONLY) {
+    const manifest = await buildManifest(publicDir, MEDIA_DIRS);
+    const r2 = r2Client();
+    const stale = await staleMedia(r2, manifest);
+    if (DRY || !stale.length) return console.log(DRY ? "\ndry-run จบ — ยังไม่ได้ลบอะไร" : "ไม่มีอะไรต้องลบ");
+    await r2.remove(stale);
+    return console.log(`\n✔ ลบไฟล์สื่อเก่า ${stale.length} ไฟล์แล้ว`);
+  }
+
   // 0) เวอร์ชันนี้ต้องยังไม่เคยปล่อย — เครื่องเพื่อนที่มี 5.x.y อยู่แล้วจะไม่รู้ว่าไฟล์เปลี่ยน
   const remoteLatest = await fetchPublic("updates/latest.yml");
   const releasedVersion = remoteLatest ? readLatestYml(remoteLatest).version : null;
@@ -164,14 +185,7 @@ function readLatestYml(text) {
 
   // 3) ลบไฟล์สื่อเก่า (เฉพาะเมื่อสั่ง --prune)
   let stale = [];
-  if (PRUNE) {
-    const r2 = r2Client();
-    const keys = (await Promise.all(MEDIA_DIRS.map((d) => r2.list(`${d}/`)))).flat();
-    stale = keys.filter((k) => !manifest.files["/" + k]);
-    console.log(`• ไฟล์สื่อบน R2 ที่ไม่ใช้แล้ว (จะลบ): ${stale.length} ไฟล์`);
-    for (const k of stale.slice(0, 30)) console.log(`    - ${k}`);
-    if (stale.length > 30) console.log(`    … อีก ${stale.length - 30} ไฟล์`);
-  }
+  if (PRUNE) stale = await staleMedia(r2Client(), manifest);
 
   if (DRY) {
     console.log("\ndry-run จบ — ยังไม่ได้อัป/ลบอะไร");
