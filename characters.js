@@ -28,7 +28,7 @@ const CHARACTERS = [
     id: "hikaru",
     name: "ไรโด ฮิคารุ",
     avatar: 0,
-    difficulty: "easy", // หมวดในหน้าเลือกตัวละคร: easy | medium | hard | fun | impossible | special | zect | calamity
+    difficulty: "easy", // หมวดในหน้าเลือกตัวละคร: easy | medium | hard | fun | special | zect | calamity
     //  (คีย์ต้องตรงกับ DIFFICULTY_GROUPS ใน client/src/screens/CharacterSelect.jsx — คีย์ที่ไม่ตรงจะตกไปท้ายสุดในแท็บ "ทั้งหมด")
     img: "/characters/hikaru/hikaru_ginga.jpg",
     transformImg: "/characters/hikaru/ginga.jpg", // สลับรูปเป็นร่าง Ginga ระหว่างสกิลรอง 1 ทำงาน
@@ -664,7 +664,7 @@ const CHARACTERS = [
     id: "nanaya",
     name: "นานายะ ชิกิ",
     avatar: 22,
-    difficulty: "impossible", // ระดับความยากใหม่ อยู่เหนือกว่าความยากสุดขีด — "ทักษิณ จะโปรหาบิดาท่านหรือ?"
+    difficulty: "calamity", // 5.1.4: หมวด "ทักษิณ…" ถูกลบ — ย้ายมาอยู่มหันตภัย
     img: "/characters/nanaya/nanaya.png",
     // ---------- นานายะ ชิกิ (patch 2.1.9) ----------
     //  เริ่มเกม: ภาพ shiki_fill.png ซ้อนทับฉากหลังเหมือนเรียวกิ ชิกิ/โทโนะ ชิกิ พร้อมเพลง nanaya_theme.mp3 แทน
@@ -1209,7 +1209,7 @@ const CHARACTERS = [
     id: "princess_shiki",
     name: "เจ้าหญิงราก (เรียวกิ ชิกิ)",
     avatar: 32,
-    difficulty: "impossible",
+    difficulty: "calamity", // 5.1.4: ย้ายจากหมวด "ทักษิณ…" ที่ถูกลบ
     img: "/characters/princess_shiki/p_shiki.jpg",
     // ---------- เจ้าหญิงราก (เรียวกิ ชิกิ) (patch 2.2.7) ----------
     //  สกิลติดตัว: แต้มสกิลฟื้นเอง +1/เทิร์น · โจมตีปกติไม่ได้เลย (เว้นแต่ติด "ชักดาบ") ·
