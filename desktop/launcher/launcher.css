@@ -20,6 +20,18 @@
   --f-ui: "Chakra Petch", "Kanit", system-ui, sans-serif;
   --f-body: "Kanit", "Chakra Petch", system-ui, sans-serif;
   --cut: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  /* ชื่อโทเคนของเกม (client/src/oc/theme.css) — ให้ vendor/volume.css ใช้ได้ตรงๆ */
+  --oc-paper: var(--paper);
+  --oc-frost: var(--frost);
+  --oc-azure: var(--azure);
+  --oc-ink: var(--ink);
+  --oc-ink-2: var(--ink-2);
+  --oc-ink-3: var(--ink-3);
+  --oc-echo: var(--echo);
+  --oc-hp: var(--hp);
+  --oc-line: var(--line);
+  --oc-f-logo: var(--f-logo);
+  --oc-f-ui: var(--f-ui);
 }
 
 * { box-sizing: border-box; }
@@ -66,7 +78,7 @@ body.can-drag .globe { cursor: grab; }
 /* ---------- หน้าจอ ---------- */
 .screen { position: fixed; inset: 0; z-index: 5; display: flex; pointer-events: none; transition: opacity 0.3s ease; }
 .screen > * { pointer-events: auto; }
-body.leaving .screen, body.leaving .chrome { opacity: 0; pointer-events: none; }
+body.leaving .screen, body.leaving .chrome, body.leaving .ocv { opacity: 0; pointer-events: none; }
 
 .enter { animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .enter.d1 { animation-delay: 0.08s; }
@@ -89,7 +101,8 @@ body.leaving .screen, body.leaving .chrome { opacity: 0; pointer-events: none; }
 #boot { align-items: flex-end; justify-content: center; padding: 0 16px 13vh; }
 .boot { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; pointer-events: none; }
 .boot .btn { pointer-events: auto; }
-.boot-bar { width: min(320px, 70vw); height: 2px; background: var(--frost); position: relative; overflow: hidden; margin-top: 10px; }
+.boot-bar { width: min(320px, 70vw); height: 2px; background: var(--frost); position: relative; overflow: hidden; margin-top: 10px; transition: opacity 0.6s ease, visibility 0s; }
+#boot.ready .boot-bar { opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s 0.6s; } /* โหลดเสร็จ = แถบจางหาย เหลือโลโก้ + แตะเพื่อเริ่ม */
 .boot-bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--sky), var(--azure)); transition: width 0.3s ease; }
 .boot-status { font: 500 13px/1.4 var(--f-ui); color: var(--ink-2); min-height: 1.4em; font-variant-numeric: tabular-nums; }
 .boot-error { font: 500 14px/1.5 var(--f-ui); color: var(--hp); max-width: min(520px, 90vw); }
@@ -173,6 +186,13 @@ h2 { font: 600 26px/1.15 var(--f-ui); margin: 0; }
 .conn { font: 500 13px/1.5 var(--f-ui); color: var(--azure); min-height: 1.5em; }
 .conn.err { color: var(--hp); }
 .conn:empty { display: none; }
+
+/* ---------- มุมขวาบน: เสียง + เมนู (สไตล์หลักอยู่ vendor/volume.css) ---------- */
+.ocv { top: 18px; right: 50px; transition: opacity 0.3s ease; } /* หลบขีดมุมขวาบน */
+/* ไอคอนลำโพงในปุ่ม: HTML มีทั้งคลื่นเสียงและกากบาท — โชว์ตามสถานะปิดเสียง */
+.ocv-btn .ocv-ico-x { display: none; }
+.ocv-btn.is-muted .ocv-ico-x { display: inline; }
+.ocv-btn.is-muted .ocv-ico-wave { display: none; }
 
 /* ---------- ฉากเปลี่ยนเข้าห้อง: ลูกโลกซูมเต็มจอแล้วขาวทั้งจอ ---------- */
 .whiteout {

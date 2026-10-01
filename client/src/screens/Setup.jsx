@@ -10,6 +10,7 @@ import "../oc/seat/seat.css";
 
 // หน้าเลือกลำดับผู้เล่น (ORDEAL CALL): ลูกโลก + วงแหวนที่นั่ง P1–P7
 //  ยังไม่เลือกที่นั่ง = โลกใหญ่กลางจอ ไม่มีแผง · เลือกแล้ว = โลกย่อเลื่อนไปซ้าย แผงชื่อ/สีเลื่อนเข้ามาทางขวา
+//  กดที่ว่าง / Esc = ยกเลิกที่นั่ง (คืนที่จองให้ server) แผงเลื่อนออก โลกกลับมาใหญ่กลางจอ
 const LAYOUT_BIG = { x: 0, y: -0.08, s: 1.22 };
 const LAYOUT = { x: -0.55, y: -0.05, s: 0.92 };
 const NAME_MAX = 12;
@@ -24,13 +25,14 @@ function cleanHex(c) {
 export default function Setup({ taken, initialName = "", initialPos = null, initialColor = null, onNext }) {
   const [name, setName] = useState(initialName);
   const [pos, setPos] = useState(initialPos);
+  const [shownPos, setShownPos] = useState(initialPos); // ที่นั่งที่แผงแสดง (ค้างไว้ระหว่างแผงเลื่อนออกตอนยกเลิก)
   const [color, setColor] = useState(() => cleanHex(initialColor || POSITION_COLORS[initialPos] || "#9B4F96"));
   // เลือกสีเองแล้ว = เปลี่ยนที่นั่งทีหลังสีไม่เปลี่ยนตาม
   const userColor = useRef(!!initialColor && cleanHex(initialColor) !== cleanHex(POSITION_COLORS[initialPos] || "#9B4F96"));
   const ringRef = useRef(null);
   const tagRefs = useRef([]);
-  const ctlRef = useRef(null);
   const pickRef = useRef(null);
+  const cancelRef = useRef(null);
 
   useEffect(() => {
     if (pos && taken.includes(pos)) {
@@ -46,15 +48,29 @@ export default function Setup({ taken, initialName = "", initialPos = null, init
     if (taken.includes(n) && n !== pos) return;
     clickSound();
     setPos(n);
+    setShownPos(n);
     if (!userColor.current) setColor(cleanHex(POSITION_COLORS[n] || "#9B4F96"));
     socket.emit("reserve", { position: n });
   };
-  useLayoutEffect(() => { pickRef.current = pick; });
+  // ยกเลิกที่นั่ง: ส่ง reserve ว่าง = server ปล่อยที่จองทันที (ไม่ต้องรอหมดเวลาจอง)
+  const cancel = () => {
+    if (!pos) return;
+    clickSound();
+    setPos(null);
+    socket.emit("reserve", { position: null });
+  };
+  useLayoutEffect(() => { pickRef.current = pick; cancelRef.current = cancel; });
+
+  useEffect(() => {
+    if (!pos) return undefined;
+    const onKey = (e) => { if (e.key === "Escape" && !e.target.closest?.("input")) cancelRef.current?.(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pos]);
 
   const onReady = (core) => {
-    const ring = createSeatRing(core, { onSeat: (s) => pickRef.current(s) });
+    const ring = createSeatRing(core, { onSeat: (s) => pickRef.current(s), onEmpty: () => cancelRef.current() });
     ring.setTags(tagRefs.current);
-    ring.setControls(ctlRef.current);
     ring.setState({ pos, taken, color });
     if (initialPos) ring.toFront(initialPos, true);
     ringRef.current = ring;
@@ -105,16 +121,11 @@ export default function Setup({ taken, initialName = "", initialPos = null, init
         })}
       </div>
 
-      <div className="seat-ctl" ref={ctlRef}>
-        <button type="button" aria-label="หมุนซ้าย" onClick={() => ringRef.current?.turn(-1)}>‹</button>
-        <button type="button" aria-label="หมุนขวา" onClick={() => ringRef.current?.turn(1)}>›</button>
-      </div>
-
       <div className={`seat-side${pos ? " open" : ""}`} aria-hidden={!pos}>
         <OcPanel as="form" onSubmit={(e) => { e.preventDefault(); if (ready) submit(); }}>
           <div className="seat-pick">
-            <span className={`big${pos ? "" : " none"}`}>{pos ? `P${pos}` : "P–"}</span>
-            {pos && <span className="oc-muted">ลำดับที่ {pos}</span>}
+            <span className={`big${shownPos ? "" : " none"}`}>{shownPos ? `P${shownPos}` : "P–"}</span>
+            {shownPos && <span className="oc-muted">ลำดับที่ {shownPos}</span>}
           </div>
 
           <div className="seat-field">

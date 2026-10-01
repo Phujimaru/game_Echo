@@ -1,9 +1,11 @@
 // ห้องรอ ORDEAL CALL — หน้าเดียวครอบ 3 สถานะก่อนเริ่มเกม (ลูกโลกตัวเดียว เลื่อนตำแหน่งตามหน้า)
 //  LOBBY = ห้องรอ (oc/lobby/LobbyRoom) · TEAM_MODE = เลือกโหมดบนโลก (ModeVote) · TEAM_SETUP = จัดทีม (TeamSetup)
 //  อีโมตปักบนโลกใช้ได้ทุกหน้า (server ส่งต่อ "lobbyEmote" ให้ทุกคนในห้อง)
+//  เปลี่ยนหน้า: ลูกโลกเลื่อนไปตำแหน่งใหม่ · UI หน้าเก่าค้างเป็นภาพจางหายไป (ViewLayer) · UI หน้าใหม่ลอยขึ้น (oc-enter)
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GlobeCanvas from "../globe/GlobeCanvas";
 import { OcScreen } from "../oc/ui";
+import { clickSound } from "../audio";
 import { useLobbyEmotes, sendEmote } from "../oc/lobby/emotes";
 import LobbyRoom from "../oc/lobby/LobbyRoom";
 import ModeVote from "../oc/lobby/ModeVote";
@@ -46,6 +48,37 @@ function globeLayout(view, w, h) {
   return { x: 0, y: r3((h / 2 - (top + availH / 2)) / ppu), s: r3(r / ppu) };
 }
 
+/** ลูกโลกในหน่วยพิกเซลจอ (กลาง + รัศมี) — ให้ UI วางของรอบโลกได้ */
+function globeRing(layout, w, h) {
+  const ppu = h / VIEW_H;
+  return { cx: w / 2 + layout.x * ppu, cy: h / 2 - layout.y * ppu, r: layout.s * ppu };
+}
+
+/**
+ * กรอบของ UI หนึ่งหน้า — ตอนออกจากหน้า (view เปลี่ยน) โคลน DOM ไว้ในชั้นผี แล้วจางหายไปเอง
+ *  เช็คหลัง commit ว่าถูกถอดจริง (StrictMode จำลองถอด/ใส่ใหม่ตอน dev — element ยังติดจออยู่ = ไม่ทำผี)
+ */
+function ViewLayer({ ghostRef, children }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const host = ghostRef.current; // ชั้นผีอยู่ก่อน ViewLayer ใน DOM — ref พร้อมแล้วตอนนี้
+    return () => {
+      if (!el || !host) return;
+      const ghost = el.cloneNode(true);
+      queueMicrotask(() => {
+        if (el.isConnected || !host.isConnected) return;
+        ghost.classList.add("ocl-ghost");
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.inert = true;
+        host.appendChild(ghost);
+        setTimeout(() => ghost.remove(), 480);
+      });
+    };
+  }, [ghostRef]);
+  return <div ref={ref} className="ocl-view">{children}</div>;
+}
+
 export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmOn = true, onToggleSkillConfirm, pairRole = null }) {
   const view = state.gameState === "TEAM_MODE" ? "TEAM_MODE" : state.gameState === "TEAM_SETUP" ? "TEAM_SETUP" : "LOBBY";
   const vp = useViewport();
@@ -66,7 +99,7 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
       const emo = armedRef.current;
       if (!emo) return;
       const d = core.hitGlobe(ev);
-      if (d) sendEmote(emo, d);
+      if (d && sendEmote(emo, d)) clickSound(); // กดบนโลกไม่ใช่ปุ่ม — เสียงคลิกต้องเรียกเอง
     });
   }, [core]);
 
@@ -78,26 +111,36 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
   }, [armed]);
 
   const layout = globeLayout(view, vp.w, vp.h);
+  const ghostRef = useRef(null);
 
   return (
     <OcScreen className="ocl" data-view={view} data-armed={armed ? "true" : undefined}>
       <GlobeCanvas layout={layout} onReady={(c) => { setCore(c); return () => setCore(null); }} />
+      <div ref={ghostRef} className="ocl-ghosts" aria-hidden="true" />
       {view === "TEAM_MODE" ? (
-        <ModeVote state={state} core={core} interceptRef={interceptRef} armed={armed} onArm={setArmed} onBack={onBack} />
+        <ViewLayer key="TEAM_MODE" ghostRef={ghostRef}>
+          <ModeVote state={state} core={core} interceptRef={interceptRef} armed={armed} onArm={setArmed} onBack={onBack} />
+        </ViewLayer>
       ) : view === "TEAM_SETUP" ? (
-        <TeamSetup state={state} onBack={onBack} />
+        <ViewLayer key="TEAM_SETUP" ghostRef={ghostRef}>
+          <TeamSetup state={state} onBack={onBack} />
+        </ViewLayer>
       ) : (
-        <LobbyRoom
-          state={state}
-          armed={armed}
-          onArm={setArmed}
-          lowQ={lowQ}
-          onToggleLowQ={onToggleLowQ}
-          skillConfirmOn={skillConfirmOn}
-          onToggleSkillConfirm={onToggleSkillConfirm}
-          pairRole={pairRole}
-          onBack={onBack}
-        />
+        <ViewLayer key="LOBBY" ghostRef={ghostRef}>
+          <LobbyRoom
+            state={state}
+            ring={globeRing(layout, vp.w, vp.h)}
+            vh={vp.h}
+            armed={armed}
+            onArm={setArmed}
+            lowQ={lowQ}
+            onToggleLowQ={onToggleLowQ}
+            skillConfirmOn={skillConfirmOn}
+            onToggleSkillConfirm={onToggleSkillConfirm}
+            pairRole={pairRole}
+            onBack={onBack}
+          />
+        </ViewLayer>
       )}
     </OcScreen>
   );

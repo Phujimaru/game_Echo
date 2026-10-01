@@ -99,9 +99,15 @@ test('authorizes game events, rate limits abuse, and reconnects the same player'
     await delay(200);
     assert.equal(restored.gameState, 'LOBBY');
 
-    const started = waitForEvent(reconnectClient.socket, 'state', (state) => state.gameState !== 'LOBBY');
+    // เล่นคนเดียว (ทดสอบ): startGame พาไปหน้าเลือกโหมดก่อน แล้วโหวตโหมดถึงเริ่มแมตช์
+    const modeSelect = waitForEvent(reconnectClient.socket, 'state', (state) => state.gameState !== 'LOBBY');
     reconnectClient.socket.emit('startGame');
-    assert.notEqual((await started).gameState, 'LOBBY');
+    assert.equal((await modeSelect).gameState, 'TEAM_MODE');
+    const started = waitForEvent(reconnectClient.socket, 'state', (state) => state.gameState !== 'TEAM_MODE');
+    reconnectClient.socket.emit('selectGameMode', { mode: 'ffa' });
+    const firstMatchState = await started;
+    assert.notEqual(firstMatchState.gameState, 'LOBBY');
+    assert.equal(firstMatchState.gameMode, 'ffa');
 
     reconnectClient.socket.disconnect();
     await delay(250); // longer than lobby grace; active-match sessions must remain parked

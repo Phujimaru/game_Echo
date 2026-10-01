@@ -1,6 +1,6 @@
 // build ของที่หน้าแรกของโปรแกรม (desktop/launcher) ใช้ → desktop/launcher/vendor (ไม่ track ใน git)
 //  - globe.js = ลูกโลกกลาง (src/globe/globeCore.js + three) แบบ iife → window.EchoGlobe
-//  - main5.0.mp3 + logo_current.webp คัดลอกจาก public/ (หน้าแรกต้องเล่นเพลง/โชว์โลโก้ได้ตั้งแต่เปิดครั้งแรก
+//  - main5.0.mp3 + logo_current.webp + click.mp3 คัดลอกจาก public/ · volume.css จาก src/oc/ui-extra/ (หน้าแรกต้องเล่นเพลง/โชว์โลโก้ได้ตั้งแต่เปิดครั้งแรก
 //    ก่อนไฟล์สื่อโหลดเสร็จ และ exe ไม่ได้พก client/public ไปด้วย)
 //  เรียกจาก desktop/scripts/build-launcher-vendor.js (ตอน npm start และตอน stage exe)
 import { defineConfig } from "vite";
@@ -13,6 +13,8 @@ const outDir = path.resolve(here, "../desktop/launcher/vendor");
 const COPY = [
   ["public/theme_song/main5.0.mp3", "main5.0.mp3"],
   ["public/image/logo_current.webp", "logo_current.webp"],
+  ["public/effect_sound/click.mp3", "click.mp3"], // เสียงคลิกทุกปุ่ม (เหมือนในเกม)
+  ["src/oc/ui-extra/volume.css", "volume.css"], // ปุ่มเสียง + เมนูมุมขวาบน หน้าตาเดียวกับในเกม
 ];
 
 export default defineConfig({

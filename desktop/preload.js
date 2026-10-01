@@ -10,11 +10,18 @@ if (location.protocol === "file:") {
     onMediaProgress: (callback) => ipcRenderer.on("echo:mediaProgress", (_e, progress) => callback(progress)),
     copy: (text) => ipcRenderer.invoke("echo:copy", text),
     host: () => ipcRenderer.invoke("echo:host"),
-    // musicTime = ตำแหน่งเพลง main5 (วินาที) ให้หน้าเกมเล่นต่อ
-    enterHostedRoom: (musicTime) => ipcRenderer.invoke("echo:enterHostedRoom", musicTime),
+    // musicTime = ตำแหน่งเพลง main5 (วินาที) · volume = ระดับเสียงหน้าแรก (0–1) → หน้าเกมเริ่มที่ระดับเดียวกัน
+    enterHostedRoom: (musicTime, volume) => ipcRenderer.invoke("echo:enterHostedRoom", musicTime, volume),
     closeHostedRoom: () => ipcRenderer.invoke("echo:closeHostedRoom"),
     join: (address) => ipcRenderer.invoke("echo:join", address),
-    enterJoinedRoom: (musicTime) => ipcRenderer.invoke("echo:enterJoinedRoom", musicTime),
+    enterJoinedRoom: (musicTime, volume) => ipcRenderer.invoke("echo:enterJoinedRoom", musicTime, volume),
     quit: () => ipcRenderer.invoke("echo:quit"),
+  });
+} else if (location.protocol === "http:") {
+  // หน้าเกม (มาจากเครื่อง host — เชื่อไม่ได้เต็มที่) ได้แค่ 2 อย่างนี้: ออกจากห้องกลับหน้าแรก (เหมือน F10 แต่ไม่ถามซ้ำ
+  //  เพราะเมนูในเกมยืนยันแล้ว) และถามว่าเครื่องนี้เป็นคนเปิดห้องไหม — main.js ตรวจอีกชั้นว่าอยู่ในห้องจริง
+  contextBridge.exposeInMainWorld("echoApp", {
+    leaveRoom: () => ipcRenderer.invoke("echoApp:leaveRoom"),
+    isHost: () => ipcRenderer.invoke("echoApp:isHost"),
   });
 }

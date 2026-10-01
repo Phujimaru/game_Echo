@@ -1,6 +1,7 @@
 // หน้าแรกของโปรแกรม ECHO (ธีม ORDEAL CALL) — เปิดโปรแกรม → สร้างห้อง / เข้าร่วม
 //  คำสั่งจริงอยู่ใน main.js ผ่าน window.echo (preload.js) · ลูกโลก = window.EchoGlobe (vendor/globe.js)
-//  เพลง main5 เล่นทันทีที่เปิด แล้วส่งตำแหน่งเพลงให้หน้าเกมเล่นต่อ (#music=main5&mt=… ดู client/src/audio.js)
+//  เพลง main5 เล่นทันทีที่เปิด แล้วส่งตำแหน่งเพลง + ระดับเสียงให้หน้าเกม (#music=main5&mt=…&vol=… ดู client/src/audio.js)
+//  มุมขวาบน: ปุ่มเสียง + เมนู หน้าตาเดียวกับในเกม (client/src/components/VolumeControl.jsx · vendor/volume.css)
 const $ = (id) => document.getElementById(id);
 const SCREENS = ["boot", "home", "host", "join"];
 const params = new URLSearchParams(location.search);
@@ -18,8 +19,54 @@ const LAYOUT = {
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ---------- ระดับเสียง (หลอดเดียวกับในเกม: 0–1 · ความดังจริง = ฐาน × ระดับ^1.6 แบบ masterGain ใน audio.js) ----------
+const VOL_KEY = "echo_vol"; // ชื่อเดียวกับในเกม (localStorage ของหน้านี้แยกจากของหน้าเกมอยู่แล้ว)
+const MUSIC_BASE = 0.75 * 0.85; // MUSIC_BASE × LOUDNESS_GAIN ของ main5.0.mp3 ในเกม → ระดับ 0.8 ดังเท่าเดิม (~0.45)
+const CLICK_BASE = 0.55;
+const clampVol = (v) => Math.max(0, Math.min(1, v));
+let volume = 0.8;
+try {
+  const saved = parseFloat(localStorage.getItem(VOL_KEY));
+  if (Number.isFinite(saved)) volume = clampVol(saved);
+} catch { /* ไม่มี storage */ }
+// กลับมาจากห้อง: main.js ส่งระดับเสียงล่าสุดในหน้าเกมมาด้วย (?vol=)
+{
+  const fromGame = parseFloat(params.get("vol"));
+  if (Number.isFinite(fromGame)) {
+    volume = clampVol(fromGame);
+    try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* ไม่มี storage */ }
+  }
+}
+const gain = () => Math.pow(volume, 1.6);
+const musicVolume = () => Math.min(1, MUSIC_BASE * gain());
+
+// ---------- เสียงคลิก (ทุกการกด — เหมือน installClickSound ในเกม) ----------
+const clickPool = Array.from({ length: 4 }, () => {
+  const a = new Audio("vendor/click.mp3");
+  a.preload = "auto";
+  return a;
+});
+let clickIdx = 0;
+let lastClickAt = 0;
+function clickSound() {
+  const now = performance.now();
+  if (now - lastClickAt < 90) return; // กันดังซ้อน (ตัวดักทั้งหน้า + โค้ดที่เรียกเอง)
+  lastClickAt = now;
+  const v = CLICK_BASE * gain();
+  if (v <= 0) return;
+  const a = clickPool[clickIdx++ % clickPool.length];
+  a.volume = Math.min(1, v);
+  try { a.currentTime = 0; } catch { /* ยังโหลดไม่เสร็จ */ }
+  a.play().catch(() => {});
+}
+const CLICKABLE = "button, a[href], [role=\"button\"], input[type=\"checkbox\"], input[type=\"radio\"], select, summary, label[for]";
+document.addEventListener("click", (e) => {
+  const el = e.target instanceof Element ? e.target.closest(CLICKABLE) : null;
+  if (!el || el.disabled) return;
+  clickSound();
+}, true);
+
 // ---------- เพลง main5 ----------
-const MUSIC_VOLUME = 0.45;
 const music = new Audio("vendor/main5.0.mp3");
 music.loop = true;
 music.preload = "auto";
@@ -39,7 +86,7 @@ function fadeMusic(target, ms) {
 }
 
 function startMusic() {
-  music.play().then(() => fadeMusic(MUSIC_VOLUME, 1500)).catch(() => {
+  music.play().then(() => fadeMusic(musicVolume(), 1500)).catch(() => {
     // เล่นเองไม่ได้ (ไม่น่าเกิดในโปรแกรม — main.js ตั้ง autoplayPolicy ไว้) → เล่นเมื่อแตะจอครั้งแรก
     const retry = () => {
       document.removeEventListener("pointerdown", retry, true);
@@ -51,6 +98,73 @@ function startMusic() {
   });
 }
 startMusic();
+
+// ---------- มุมขวาบน: แผงเสียง / เมนู (เปิดได้ทีละแผง) ----------
+const BARS = 5;
+let lastOn = volume > 0 ? volume : 0.8; // ระดับก่อนกดปิดเสียง
+let openPanel = null; // null | "vol" | "menu"
+
+function setVolume(v) {
+  volume = clampVol(v);
+  if (volume > 0) lastOn = volume;
+  try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* ไม่มี storage */ }
+  if (!entering) {
+    cancelAnimationFrame(fadeRaf);
+    music.volume = musicVolume();
+  }
+  renderVolume();
+}
+
+function renderVolume() {
+  const pct = Math.round(volume * 100);
+  const muted = volume <= 0;
+  const lit = muted ? 0 : Math.max(1, Math.ceil(volume * BARS - 0.001));
+  $("vol-btn").classList.toggle("is-muted", muted);
+  [...$("vol-bars").children].forEach((bar, i) => bar.classList.toggle("on", i < lit));
+  $("vol-num").textContent = String(pct);
+  $("vol-pct").classList.toggle("is-muted", muted);
+  $("vol-slider").style.setProperty("--fill", `${pct}%`);
+  [...$("vol-track").querySelectorAll("b")].forEach((tick, i) => tick.classList.toggle("on", i * 10 <= pct));
+  const range = $("vol-range");
+  if (Number(range.value) !== pct) range.value = String(pct);
+  range.setAttribute("aria-valuetext", `${pct}%`);
+  $("vol-mute").classList.toggle("is-on", muted);
+  $("vol-mute").setAttribute("aria-pressed", String(muted));
+}
+
+function setPanel(name) {
+  openPanel = name;
+  $("vol-panel").hidden = name !== "vol";
+  $("menu-panel").hidden = name !== "menu";
+  $("vol-btn").classList.toggle("is-open", name === "vol");
+  $("menu-btn").classList.toggle("is-open", name === "menu");
+  $("vol-btn").setAttribute("aria-expanded", String(name === "vol"));
+  $("menu-btn").setAttribute("aria-expanded", String(name === "menu"));
+}
+
+function initCorner() {
+  for (let i = 0; i <= 10; i++) {
+    const tick = document.createElement("b");
+    tick.style.left = `${i * 10}%`;
+    $("vol-track").append(tick);
+  }
+  renderVolume();
+  $("vol-btn").addEventListener("click", () => setPanel(openPanel === "vol" ? null : "vol"));
+  $("menu-btn").addEventListener("click", () => setPanel(openPanel === "menu" ? null : "menu"));
+  $("vol-range").addEventListener("input", (e) => setVolume(Number(e.target.value) / 100));
+  $("vol-mute").addEventListener("click", () => setVolume(volume <= 0 ? (lastOn > 0 ? lastOn : 0.8) : 0));
+  $("menu-quit").addEventListener("click", quit);
+  // คลิกนอกแผง / Esc = ปิดแผง (Esc ไม่ส่งต่อให้ปุ่มลัดอื่น เช่น Esc ในหน้าเข้าร่วม = ย้อนกลับ)
+  document.addEventListener("pointerdown", (e) => {
+    if (openPanel && !$("ocv").contains(e.target)) setPanel(null);
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && openPanel) {
+      e.stopImmediatePropagation();
+      setPanel(null);
+    }
+  }, true);
+}
 
 // ---------- ลูกโลก ----------
 let globe = null;
@@ -196,7 +310,9 @@ function maybeReady() {
 
 function onTap(event) {
   if (!ready || current !== "boot") return;
-  if (event.type === "keydown" && ["F10", "F11", "Tab", "Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
+  if (event.type === "keydown" && ["F10", "F11", "Tab", "Shift", "Control", "Alt", "Meta", "Escape"].includes(event.key)) return;
+  if (event.target instanceof Element && event.target.closest("#ocv")) return; // กดปุ่มเสียง/เมนูด้วยคีย์บอร์ด
+  clickSound();
   goHome();
 }
 
@@ -288,7 +404,7 @@ async function join(event) {
     return;
   }
   status.textContent = "กำลังเข้าห้อง";
-  const entered = await enterRoom((t) => window.echo.enterJoinedRoom(t));
+  const entered = await enterRoom((t, v) => window.echo.enterJoinedRoom(t, v));
   if (!entered) button.disabled = false;
 }
 
@@ -307,16 +423,17 @@ async function enterRoom(go) {
     globe.setLayout(LAYOUT.enter);
   }
   $("whiteout").classList.add("on");
+  setPanel(null);
   fadeMusic(0, 850);
   await wait(900);
-  const result = await go(music.currentTime);
+  const result = await go(music.currentTime, volume);
   if (result && result.ok) return true; // main.js กำลังโหลดหน้าเกม — หน้านี้จะถูกแทนที่
 
   // เข้าไม่สำเร็จ → ถอยกลับหน้าเดิม
   entering = false;
   document.body.classList.remove("leaving");
   $("whiteout").classList.remove("on");
-  fadeMusic(MUSIC_VOLUME, 600);
+  fadeMusic(musicVolume(), 600);
   if (globe) {
     globe.setAutoSpin(0.1);
     show(current);
@@ -332,8 +449,14 @@ async function enterRoom(go) {
   return false;
 }
 
+function quit() {
+  fadeMusic(0, 250);
+  window.echo.quit();
+}
+
 // ---------- เริ่ม ----------
 async function init() {
+  initCorner();
   window.echo.onUpdateStatus(renderUpdate);
   window.echo.onMediaProgress(renderMediaProgress);
 
@@ -346,11 +469,8 @@ async function init() {
 
   $("go-host").addEventListener("click", startHosting);
   $("go-join").addEventListener("click", openJoin);
-  $("quit").addEventListener("click", () => {
-    fadeMusic(0, 250);
-    window.echo.quit();
-  });
-  $("enter-room").addEventListener("click", () => enterRoom((t) => window.echo.enterHostedRoom(t)));
+  $("quit").addEventListener("click", quit);
+  $("enter-room").addEventListener("click", () => enterRoom((t, v) => window.echo.enterHostedRoom(t, v)));
   $("host-close").addEventListener("click", closeHosting);
   $("join-form").addEventListener("submit", join);
   $("join-back").addEventListener("click", goHome);

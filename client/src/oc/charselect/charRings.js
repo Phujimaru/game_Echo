@@ -3,6 +3,7 @@
 //          รัศมีต่างกันเล็กน้อย การ์ดเกาะวงแล้วโคจรช้าๆ สลับทิศ · ชี้การ์ด = วงนั้นหยุด + เด่นขึ้น + บอกชื่อ
 //  โฟกัส: setFocus(k) = วง k หมุนมาตั้งเป็นวงรีเอียงหน้าโลก (การ์ดใหญ่ขึ้น) วงอื่นจางหาย + กดไม่ได้
 //          ลาก / ล้อเมาส์ / rotate(±1) = หมุนวงทีละใบ · กดที่ว่าง (ไม่โดนการ์ดหรือโลก) = onEmpty()
+//  ยกการ์ด: setLifted(ids) = ช่องของการ์ดนั้นจางลง (หน้าจอวาดการ์ด DOM ลอยออกไปแทน) · cardRect(id) = กรอบการ์ดบนจอ (px)
 //  การ์ดทุกใบหันหน้าเข้ากล้องเสมอ — ตำแหน่งคำนวณจากท่าทางของวง (quaternion + รัศมี) ทุกเฟรม
 import { THREE } from "../../globe/globeCore";
 import { FALLBACK } from "../../data/avatars";
@@ -113,6 +114,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
   let selected = null;
   let focus = null; // index วงที่โฟกัส | null = ภาพรวม
   let highlight = -1; // วงที่ชี้อยู่ที่รายชื่อหมวด
+  let lifted = new Set(); // การ์ดที่ถูกยกออกจากวง (ช่องจางลง)
 
   const torus = new THREE.TorusGeometry(1, 0.0042, 6, 192);
   torus.rotateX(Math.PI / 2); // นอนในระนาบ xz ของวง
@@ -137,7 +139,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
       tex.anisotropy = 4;
       const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
       m.userData = { id: c.id, ring: k, idx: i };
-      const card = { m, c, ctx, tex, entry: null, drawn: undefined, idx: i };
+      const card = { m, c, ctx, tex, entry: null, drawn: undefined, idx: i, op: 1 };
       card.redraw = () => {
         const st = statusOf.get(c.id) || null;
         drawCard(ctx, c, st, card.entry);
@@ -240,6 +242,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
 
   // ---------- ลูป ----------
   const pos = new THREE.Vector3();
+  const rc = new THREE.Vector3();
   const offFrame = core.onFrame((dt) => {
     const k = REDUCED ? 1 : 1 - Math.pow(0.015, dt);
     const kb = REDUCED ? 1 : 1 - Math.pow(0.012, dt);
@@ -279,13 +282,15 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
         cd.m.position.copy(pos);
         cd.m.scale.setScalar((0.8 + 0.4 * f) * grow);
         const op = (0.2 + 0.14 * e + (0.8 - 0.14 * e) * Math.pow(f, 1.3)) * r.vis * dimOthers;
-        cd.m.material.opacity = op;
+        const up = lifted.has(cd.c.id);
+        cd.op = op; // ความทึบจริงของช่อง (ไม่นับการยก) — การ์ดลอยใช้เทียบตอนบินกลับ
+        cd.m.material.opacity = up ? op * 0.16 : op;
         cd.m.visible = op > 0.01;
         if (cd.c.id === selected && cd.m.visible) {
           selFrame.visible = true;
           selFrame.position.set(pos.x, pos.y, pos.z - 0.004);
           selFrame.scale.copy(cd.m.scale);
-          selFrame.material.opacity = op;
+          selFrame.material.opacity = up ? op * 0.4 : op;
         }
       });
     });
@@ -330,6 +335,21 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
       const r = rings[focus];
       snap(r);
       r.target += dir * r.step;
+    },
+    /** การ์ดที่ถูกยกออกจากวง (ช่องจางลง) */
+    setLifted(ids) { lifted = new Set(ids || []); },
+    /** กรอบการ์ดบนจอ (px ภายในพื้นที่รับเมาส์) + ความทึบของช่อง · null = ไม่มีการ์ดนี้ */
+    cardRect(id) {
+      const hit = byId.get(id);
+      if (!hit) return null;
+      const m = hit.cd.m;
+      m.getWorldPosition(rc);
+      const s = m.scale.x * world.scale.x;
+      const c = core.project(rc);
+      rc.x += (CARD_W / 2) * s; rc.y += (CARD_H / 2) * s;
+      const p = core.project(rc);
+      const hw = Math.abs(p.x - c.x), hh = Math.abs(c.y - p.y);
+      return { x: c.x - hw, y: c.y - hh, w: hw * 2, h: hh * 2, op: m.visible ? hit.cd.op : 0 };
     },
     /** ชี้ชื่อหมวด = วงนั้นเด่นขึ้น (−1 = เลิก) */
     setHighlight(k) { highlight = k == null ? -1 : k; },

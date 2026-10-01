@@ -1,6 +1,6 @@
 // ECHO 5.0 — โปรแกรมเปิดห้อง/เข้าร่วม (Electron)
 //  หน้าแรก (launcher/) เป็นไฟล์ในเครื่อง · เข้าเกมแล้วหน้าต่างโหลดหน้าเกมจาก server ของห้อง (http://IP:3000)
-//  ปุ่มลัด: F11 = สลับเต็มจอ · F10 = ออกจากห้องกลับหน้าแรก
+//  ปุ่มลัด: F11 = สลับเต็มจอ · F10 = ออกจากห้องกลับหน้าแรก (หรือเมนูมุมขวาบนในเกม → window.echoApp.leaveRoom)
 const { app, BrowserWindow, Menu, ipcMain, clipboard, dialog, session, net } = require("electron");
 const fs = require("fs");
 const os = require("os");
@@ -27,6 +27,7 @@ app.userAgentFallback = `${app.userAgentFallback} ${UA_TOKEN}`;
 
 let win = null;
 let inGame = false;
+let gameBase = null; // origin ของห้องที่อยู่ตอนนี้ (http://IP:3000)
 let media = null; // MediaCache — สร้างหลัง app ready (ต้องรู้ path userData)
 let mediaPrep = null; // Promise ของการเตรียมไฟล์สื่อรอบปัจจุบัน
 let mediaReady = false;
@@ -80,38 +81,76 @@ async function fetchJson(url, timeoutMs) {
 }
 
 // ---------- หน้าต่าง ----------
+// ระดับเสียง 0–1 (ส่งระหว่างหน้าแรก ↔ หน้าเกม) — ค่าอื่น = null
+function cleanVolume(value) {
+  const v = typeof value === "string" ? parseFloat(value) : value;
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
+}
+
 // back = กลับมาจากห้อง (F10/ห้องปิด/โหลดหน้าเกมไม่ได้) → หน้าแรกข้ามหน้า "แตะเพื่อเริ่ม" ไปเมนูเลย
-function showLauncher(message, back = true) {
+// volume = ระดับเสียงล่าสุดในหน้าเกม → หน้าแรกใช้ต่อ
+function showLauncher(message, back = true, volume = null) {
   inGame = false;
+  gameBase = null;
   pendingJoin = null;
   const query = {};
   if (message) query.message = message;
   if (back) query.back = "1";
+  if (cleanVolume(volume) != null) query.vol = String(cleanVolume(volume));
   win.loadFile(LAUNCHER, { query });
 }
 
-// musicTime = ตำแหน่งเพลง main5 ของหน้าแรก (วินาที) → หน้าเกมเล่นต่อจากจุดเดิม (client/src/audio.js อ่าน #music=…&mt=…)
-function enterGame(base, musicTime) {
+// musicTime = ตำแหน่งเพลง main5 ของหน้าแรก (วินาที) → หน้าเกมเล่นต่อจากจุดเดิม · volume = ระดับเสียงหน้าแรก
+//  (client/src/audio.js อ่าน #music=…&mt=…&vol=… ครั้งเดียวตอนเปิดหน้า)
+function enterGame(base, musicTime, volume) {
   inGame = true;
+  gameBase = base;
+  const hash = new URLSearchParams();
   const t = Number(musicTime);
-  win.loadURL(Number.isFinite(t) && t >= 0 ? `${base}/#music=main5&mt=${t.toFixed(2)}` : base);
+  if (Number.isFinite(t) && t >= 0) {
+    hash.set("music", "main5");
+    hash.set("mt", t.toFixed(2));
+  }
+  const v = cleanVolume(volume);
+  if (v != null) hash.set("vol", v.toFixed(2));
+  const h = hash.toString();
+  win.loadURL(h ? `${base}/#${h}` : base);
 }
 
-async function leaveRoom() {
-  if (!inGame) return;
-  const hosting = room.isRunning();
-  const { response } = await dialog.showMessageBox(win, {
-    type: "question",
-    buttons: ["ออกจากห้อง", "ยกเลิก"],
-    defaultId: 1,
-    cancelId: 1,
-    title: "ECHO",
-    message: "ออกจากห้องแล้วกลับหน้าแรก?",
-    detail: hosting ? "คุณเป็นคนเปิดห้องนี้ — ออกแล้วห้องจะปิด ทุกคนในห้องจะหลุดจากเกม" : "",
-  });
-  if (response !== 0) return;
+// ระดับเสียงที่ผู้เล่นตั้งในหน้าเกม (localStorage ของ origin ห้อง) — อ่านไม่ได้/ช้า = null
+async function readGameVolume() {
+  try {
+    const value = await Promise.race([
+      win.webContents.executeJavaScript('localStorage.getItem("echo_vol")', false),
+      new Promise((resolve) => setTimeout(() => resolve(null), 400)),
+    ]);
+    return cleanVolume(value);
+  } catch {
+    return null;
+  }
+}
+
+// ask = ถามยืนยันด้วย dialog (F10) · เมนูในเกมยืนยันในเมนูแล้ว → ไม่ถามซ้ำ
+async function leaveRoom({ ask = true } = {}) {
+  if (!inGame) return false;
+  if (ask) {
+    const hosting = room.isRunning();
+    const { response } = await dialog.showMessageBox(win, {
+      type: "question",
+      buttons: ["ออกจากห้อง", "ยกเลิก"],
+      defaultId: 1,
+      cancelId: 1,
+      title: "ECHO",
+      message: "ออกจากห้องแล้วกลับหน้าแรก?",
+      detail: hosting ? "คุณเป็นคนเปิดห้องนี้ — ออกแล้วห้องจะปิด ทุกคนในห้องจะหลุดจากเกม" : "",
+    });
+    if (response !== 0 || !inGame) return false;
+  }
+  const volume = await readGameVolume();
+  if (!inGame) return false;
   room.stop();
-  showLauncher();
+  showLauncher(null, true, volume);
+  return true;
 }
 
 function createWindow() {
@@ -138,7 +177,7 @@ function createWindow() {
       win.setFullScreen(!win.isFullScreen());
     } else if (input.key === "F10") {
       event.preventDefault();
-      leaveRoom();
+      leaveRoom({ ask: true });
     }
   });
 
@@ -226,9 +265,11 @@ ipcMain.handle("echo:host", async () => {
   return { ...result, addresses: localAddresses() };
 });
 
-ipcMain.handle("echo:enterHostedRoom", (_e, musicTime) => {
+const hostedBase = () => `http://127.0.0.1:${room.PORT}`;
+
+ipcMain.handle("echo:enterHostedRoom", (_e, musicTime, volume) => {
   if (!room.isRunning()) return { ok: false, error: "ห้องยังไม่ได้เปิด" };
-  enterGame(`http://127.0.0.1:${room.PORT}`, musicTime);
+  enterGame(hostedBase(), musicTime, volume);
   return { ok: true };
 });
 
@@ -260,15 +301,35 @@ ipcMain.handle("echo:join", async (_e, input) => {
 });
 
 // เข้าร่วม ขั้นที่ 2: เปลี่ยนไปหน้าเกมของห้องที่ตรวจผ่านแล้ว
-ipcMain.handle("echo:enterJoinedRoom", (_e, musicTime) => {
+ipcMain.handle("echo:enterJoinedRoom", (_e, musicTime, volume) => {
   if (!pendingJoin) return { ok: false, error: "ยังไม่ได้เลือกห้อง" };
   const base = pendingJoin;
   pendingJoin = null;
-  enterGame(base, musicTime);
+  enterGame(base, musicTime, volume);
   return { ok: true };
 });
 
 ipcMain.handle("echo:quit", () => app.quit());
+
+// ---------- IPC จากหน้าเกม (window.echoApp — สิทธิ์น้อยที่สุด) ----------
+// รับเฉพาะเฟรมหลักของหน้าต่างเกม ขณะอยู่ในห้องจริง และ origin ตรงกับห้องที่เข้า
+function fromGamePage(event) {
+  if (!win || win.isDestroyed() || !inGame || !gameBase) return false;
+  if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) return false;
+  try {
+    return new URL(event.senderFrame.url).origin === new URL(gameBase).origin;
+  } catch {
+    return false;
+  }
+}
+
+ipcMain.handle("echoApp:leaveRoom", async (event) => {
+  if (!fromGamePage(event)) return false;
+  return leaveRoom({ ask: false });
+});
+
+// เครื่องนี้เป็นคนเปิดห้องที่อยู่ตอนนี้ไหม (ออกแล้วห้องปิด)
+ipcMain.handle("echoApp:isHost", (event) => fromGamePage(event) && room.isRunning() && gameBase === hostedBase());
 
 // ---------- วงจรชีวิตแอป ----------
 if (!app.requestSingleInstanceLock()) {

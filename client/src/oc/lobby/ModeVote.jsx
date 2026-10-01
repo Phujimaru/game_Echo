@@ -21,7 +21,7 @@ const turnRange = (i, n) => (i === n - 1 ? `เทิร์น ${i * 10 + 1} ข
 function useOptions(state) {
   const count = state.players.length;
   const list = state.modeVotes?.length ? state.modeVotes : (state.modeOptions?.length ? state.modeOptions : [
-    { mode: "ffa", enabled: count >= 2, voters: [], voteCount: 0 },
+    { mode: "ffa", enabled: count >= 1, voters: [], voteCount: 0 }, // 1 คน = เล่นทดสอบ (server/lobby.js validGameMode)
     { mode: "duo", enabled: count >= 4 && count % 2 === 0, voters: [], voteCount: 0 },
     { mode: "trio", enabled: count === 6, voters: [], voteCount: 0 },
   ]);

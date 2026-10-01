@@ -6,6 +6,7 @@
     content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'" />
   <title>ECHO</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Chakra+Petch:wght@400;500;600;700&family=Kanit:wght@300;400;500&display=swap" />
+  <link rel="stylesheet" href="vendor/volume.css" />
   <link rel="stylesheet" href="launcher.css" />
 </head>
 <!-- ธีม ORDEAL CALL (ECHO 5.1) · ลูกโลก = vendor/globe.js (build จาก client/src/globe ด้วย client/vite.globe.config.js) -->
@@ -16,6 +17,49 @@
     <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
     <span class="mark latin">ECHO <b id="mark-version"></b> · ORDEAL CALL</span>
     <span class="foot" id="version"></span>
+  </div>
+
+  <!-- มุมขวาบน: เสียง + เมนู (หน้าตาชุดเดียวกับในเกม — vendor/volume.css มาจาก client/src/oc/ui-extra/volume.css) -->
+  <div class="ocv" id="ocv">
+    <div class="ocv-bar">
+      <button type="button" class="ocv-btn" id="vol-btn" aria-expanded="false" aria-label="เสียง" title="เสียง">
+        <svg class="ocv-ico" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 7.5h3.2L10.5 4v12L6.2 12.5H3z" class="ocv-ico-body" />
+          <path d="M13 7.3a3.6 3.6 0 0 1 0 5.4" class="ocv-ico-wave" />
+          <path d="M15.3 5.2a6.6 6.6 0 0 1 0 9.6" class="ocv-ico-wave" />
+          <path d="M13.2 7.6l4.6 4.8M17.8 7.6l-4.6 4.8" class="ocv-ico-x" />
+        </svg>
+        <span class="ocv-bars" id="vol-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </button>
+      <button type="button" class="ocv-btn ocm-btn" id="menu-btn" aria-expanded="false" title="เมนู">
+        <svg class="ocv-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h9" class="ocm-ico-line" /></svg>
+        <span class="ocm-btn-t">เมนู</span>
+      </button>
+    </div>
+
+    <div class="ocv-panel" id="vol-panel" role="dialog" aria-label="เสียง" hidden>
+      <div class="ocv-head">
+        <span class="ocv-label">เสียง</span>
+        <span class="ocv-pct" id="vol-pct"><span id="vol-num">80</span><small>%</small></span>
+      </div>
+      <div class="ocv-slider" id="vol-slider">
+        <span class="ocv-track" id="vol-track" aria-hidden="true"><i class="ocv-fill"></i></span>
+        <span class="ocv-thumb" aria-hidden="true"></span>
+        <input type="range" id="vol-range" min="0" max="100" step="5" value="80" aria-label="เสียง" />
+      </div>
+      <button type="button" class="ocv-mute" id="vol-mute" aria-pressed="false">
+        <svg class="ocv-ico" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 7.5h3.2L10.5 4v12L6.2 12.5H3z" class="ocv-ico-body" />
+          <path d="M13.2 7.6l4.6 4.8M17.8 7.6l-4.6 4.8" class="ocv-ico-x" />
+        </svg>
+        ปิดเสียง
+      </button>
+    </div>
+
+    <div class="ocv-panel ocm-panel" id="menu-panel" role="dialog" aria-label="เมนู" hidden>
+      <span class="ocv-label">เมนู</span>
+      <button type="button" class="ocm-item is-danger" id="menu-quit">ออกจากเกม</button>
+    </div>
   </div>
 
   <!-- เปิดโปรแกรม: ด่าน (1) ตรวจเวอร์ชัน/อัปเดต (2) เตรียมไฟล์เกม → แตะเพื่อเริ่ม -->

@@ -1,22 +1,28 @@
 // วงแหวนที่นั่ง 7 ดวงรอบลูกโลก (หน้าเลือกลำดับผู้เล่น) — ไม่หมุนเอง ผู้เล่นหมุนเอง:
-//  ลากวงแหวน / ล้อเมาส์ / ปุ่ม ‹ › / กดที่นั่ง (หมุนที่นั่งนั้นมาไว้หน้าสุด) · ปล่อยมือแล้ววงแหวนเข้าล็อกที่นั่งที่ใกล้ที่สุด
+//  ลากวงแหวน / ล้อเมาส์ / กดที่นั่ง (หมุนที่นั่งนั้นมาไว้หน้าสุด) · ปล่อยมือแล้ววงแหวนเข้าล็อกที่นั่งที่ใกล้ที่สุด
+//  กดที่ว่าง (ไม่โดนที่นั่ง) = onEmpty() · วงแหวนโผล่หลังโลกถอยจากมุมซูม (ลูกโลกร่วมเริ่มแบบซูมเต็มจอ) จนขนาดใกล้ปกติ
 //  ป้าย P# (DOM ของ React) ลอยตามดาวเทียมแต่ละดวง — ตัวควบคุมนี้แค่ตั้ง transform ให้ทุกเฟรม
 import { THREE } from "../../globe/globeCore";
 
 export const SEAT_N = 7;
 const ORB_R = 1.62;
+const ORB_Y = -0.24; // วงแหวนต่ำกว่าศูนย์กลางโลกเล็กน้อย (มุมเอียงเท่าเดิม)
+const SHOW_SCALE = 1.7; // โลกยังใหญ่กว่านี้ (กำลังถอยจากมุมซูม) = ยังไม่โผล่วงแหวน/ป้าย
 const STEP = (Math.PI * 2) / SEAT_N;
 const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * @param core   ฉากจาก createGlobe
  * @param opts.onSeat(seat)  กดที่ดาวเทียม (หมุนมาหน้าสุดให้แล้ว — ตัดสินว่าจองได้ไหมที่หน้าจอ)
+ * @param opts.onEmpty()  กดที่ว่าง (ไม่โดนที่นั่ง)
  */
-export function createSeatRing(core, { onSeat }) {
+export function createSeatRing(core, { onSeat, onEmpty }) {
   const { world, camera, canvas } = core;
 
   const orbit = new THREE.Group();
   orbit.rotation.set(1.18, 0, 0.22);
+  orbit.position.y = ORB_Y;
+  orbit.visible = false;
   world.add(orbit);
   const fadeMats = [];
   const addFade = (m) => { m.userData.o = m.opacity; fadeMats.push(m); return m; };
@@ -90,7 +96,8 @@ export function createSeatRing(core, { onSeat }) {
   });
   const offClick = core.onClick((ev) => {
     const s = seatAt(ev);
-    if (s) { toFront(s); onSeat?.(s); }
+    if (s) { toFront(s); onSeat?.(s); return; }
+    if (orbit.visible) onEmpty?.();
   });
   const offHover = core.onHover((ev) => {
     const s = ev ? seatAt(ev) : 0;
@@ -107,12 +114,18 @@ export function createSeatRing(core, { onSeat }) {
   };
   canvas.addEventListener("wheel", onWheel, { passive: false });
 
-  // ---------- ป้าย + ปุ่มหมุน ----------
-  let tags = [], ctl = null;
+  // ---------- ป้าย ----------
+  let tags = [];
   let intro = REDUCED ? 1 : 0;
-  const t0 = performance.now();
+  let t0 = 0; // เริ่มนับฉากโผล่เมื่อโลกถอยจนเล็กพอ
   const wp = new THREE.Vector3();
   const offFrame = core.onFrame((dt) => {
+    const sc = world.scale.x;
+    if (!t0) {
+      if (sc > SHOW_SCALE && !REDUCED) { tags.forEach((el) => { if (el) el.dataset.back = "1"; }); return; }
+      t0 = performance.now();
+      orbit.visible = true;
+    }
     if (intro < 1) {
       intro = Math.min(1, (performance.now() - t0) / 900);
       const e = 1 - Math.pow(1 - intro, 3);
@@ -123,7 +136,6 @@ export function createSeatRing(core, { onSeat }) {
     holder.rotation.z = rot;
     sats.forEach((s) => { s.body.rotation.y += dt * 0.8; s.frame.lookAt(camera.position); });
     orbit.updateMatrixWorld(true);
-    const sc = world.scale.x;
     sats.forEach((s, i) => {
       const el = tags[i];
       if (!el) return;
@@ -134,13 +146,11 @@ export function createSeatRing(core, { onSeat }) {
       if (wp.z < -0.35 * sc || intro < 0.5) el.dataset.back = "1";
       else delete el.dataset.back;
     });
-    if (ctl) ctl.style.left = `${core.project(world.position).x}px`;
   });
 
   return {
     setState(next) { st = { ...st, ...next }; paint(); },
     setTags(els) { tags = els; },
-    setControls(el) { ctl = el; },
     toFront,
     turn,
     dispose() {

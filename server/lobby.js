@@ -4,7 +4,7 @@ Object.assign(module.exports, {
   normalizeColor, colorOf, teamModeActive, isAlly, pregameStateActive, resetTeamAssignments,
   resetModeVotes, resetPregameFlowToLobby, validGameMode, modeOptionsFor, currentTeamOptions,
   modeVoteSummary, voteGameMode, chooseTeam, confirmTeam, remainingTeamWinInfo, releaseReservation,
-  reservePosition, positionsFor, positionUsedByOther, checkLobbyReady, startMatch, backToLobby,
+  reservePosition, positionsFor, positionUsedByOther, checkLobbyReady, startSoloTest, startMatch, backToLobby,
   relayLobbyEmote,
 });
 
@@ -80,7 +80,7 @@ function resetPregameFlowToLobby() {
 function validGameMode(mode, count = Object.keys(match.players).length) {
   // สไตรเกอร์ ยูเรก้า: คู่หูนับเป็นทีมเต็ม 1 ทีมในโหมดทีม (duo = 2 ช่อง · trio = 3 ช่อง)
   if (mode === "duo" || mode === "trio") count += pair.teamHeadcount(mode === "duo" ? 2 : 3) - Object.keys(match.players).length;
-  if (mode === "ffa") return count >= 2;
+  if (mode === "ffa") return count >= 1; // 1 คน = เล่นทดสอบคนเดียว (ปุ่ม "เล่นคนเดียว" ในห้องรอ)
   if (mode === "seraph") return count >= 2; // SE.RA.PH: รับผู้เล่นทุกจำนวน (ตั้งแต่ 2 คนขึ้นไป)
   if (mode === "duo") return count >= 4 && count % 2 === 0;
   if (mode === "trio") return count === 6;
@@ -236,7 +236,17 @@ function positionUsedByOther(pos, sid) {
 function checkLobbyReady() {
   if (match.gameState !== "LOBBY") return;
   const list = Object.values(match.players);
-  if (list.length >= 1 && list.every((p) => p.ready)) enterModeSelect(); // เล่นคนเดียวได้ (Type Mercury)
+  if (list.length >= 1 && list.every((p) => p.ready)) enterModeSelect(); // เล่นคนเดียวได้ (อิสระแบบทดสอบ / Type Mercury)
+}
+// ปุ่ม "เล่นคนเดียว (ทดสอบ)" (socket startGame) — ผ่านหน้าเลือกโหมดเหมือนเกมปกติ ไม่กระโดดเข้าแมตช์ทันที
+//  ตัวละครคู่ (สไตรเกอร์) ไม่ใช้ทางนี้ — ต้องกดพร้อมทีละคนผ่าน toggleReady
+function startSoloTest(playerId) {
+  if (match.gameState !== "LOBBY") return false;
+  const p = match.players[playerId];
+  if (!p || p.pair || Object.keys(match.players).length !== 1) return false;
+  p.ready = true;
+  enterModeSelect();
+  return match.gameState === "TEAM_MODE";
 }
 // ฉากเปิดตัวผู้เล่น (GameIntro ฝั่ง client) กินเวลาเท่านี้ — สูตรเดียวกันกับ client/src/components/GameIntro.jsx
 //  วีดีโอเปิดตัวของตัวละครต้องรอให้มันจบก่อน ไม่งั้นคลิปจะเล่นอยู่ใต้ม่านแล้วโดนตัดกลางคัน

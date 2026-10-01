@@ -1,5 +1,5 @@
 // เตรียมไฟล์ที่หน้าแรก (launcher) ต้องใช้ → desktop/launcher/vendor (ไฟล์ที่ build ได้ ไม่ track ใน git)
-//  globe.js (ลูกโลกกลางแบบ iife) + main5.0.mp3 + logo_current.webp — ดู client/vite.globe.config.js
+//  globe.js (ลูกโลกกลางแบบ iife) + main5.0.mp3 + logo_current.webp + click.mp3 + volume.css — ดู client/vite.globe.config.js
 //  ใช้ใน start.js (ข้ามถ้าไฟล์ยังใหม่กว่าต้นทาง) และ stage-game.js (build ใหม่ทุกครั้ง)
 //  รันเอง: node scripts/build-launcher-vendor.js [--force]
 const { execFileSync } = require("child_process");
@@ -8,7 +8,7 @@ const path = require("path");
 
 const client = path.resolve(__dirname, "../../client");
 const vendor = path.resolve(__dirname, "../launcher/vendor");
-const OUTPUTS = ["globe.js", "main5.0.mp3", "logo_current.webp"].map((f) => path.join(vendor, f));
+const OUTPUTS = ["globe.js", "main5.0.mp3", "logo_current.webp", "click.mp3", "volume.css"].map((f) => path.join(vendor, f));
 // เวลาที่ build เสร็จล่าสุด (copyFileSync บน Windows คงเวลาแก้ไขของไฟล์ต้นทางไว้ เทียบ mtime ของ output ตรงๆ ไม่ได้)
 const STAMP = path.join(vendor, ".built");
 const SOURCES = [
@@ -18,6 +18,8 @@ const SOURCES = [
   "package-lock.json",
   "public/theme_song/main5.0.mp3",
   "public/image/logo_current.webp",
+  "public/effect_sound/click.mp3",
+  "src/oc/ui-extra/volume.css",
 ].map((f) => path.join(client, f));
 
 const mtime = (file) => {

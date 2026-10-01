@@ -1,8 +1,10 @@
 /* ============================================================
    ปุ่มเสียง ORDEAL CALL (VolumeControl) — มุมขวาบนทุกหน้า
    ต้องอ่านง่ายทั้งบนหน้าขาวและกระดานเกมสีน้ำเงินเข้ม/สีสด → กระจกขาวทึบพอ + ขอบฟ้า + เงา
+   ไฟล์นี้ใช้ร่วมกับหน้าแรกของโปรแกรม (desktop/launcher — คัดลอกไป vendor/ ตอน build) → ใช้เฉพาะโทเคน --oc-*
    ============================================================ */
 .ocv { position: fixed; top: 16px; right: 16px; z-index: 70; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.ocv-bar { display: flex; align-items: center; gap: 8px; }
 
 .ocv-btn {
   appearance: none; position: relative; display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 12px 0 10px;
@@ -89,5 +91,27 @@
 .ocv-mute.is-on { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; }
 .ocv-mute.is-on .ocv-ico-body { fill: #fff; }
 .ocv-mute.is-on .ocv-ico-x { stroke: #fff; }
+
+/* ---------- ปุ่ม/แผงเมนู (GameMenu.jsx · launcher) ---------- */
+.ocm-btn { padding: 0 14px 0 11px; }
+.ocm-btn-t { font: 600 14px/1 var(--oc-f-ui); color: var(--oc-ink); }
+.ocm-ico-line { fill: none; stroke: var(--oc-ink); stroke-width: 1.8; stroke-linecap: round; }
+.ocm-btn.is-open .ocm-ico-line { stroke: var(--oc-echo); }
+
+.ocm-panel { width: 220px; gap: 12px; }
+.ocm-row { display: flex; gap: 8px; }
+.ocm-row .ocm-item { flex: 1; justify-content: center; }
+.ocm-item {
+  appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px; cursor: pointer; text-align: left;
+  font: 600 15px/1 var(--oc-f-ui); color: var(--oc-ink); background: #fff; border: 1px solid var(--oc-line);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.ocm-item:hover { background: var(--oc-paper); border-color: var(--oc-azure); }
+.ocm-item:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.ocm-item:disabled { opacity: 0.5; cursor: default; }
+.ocm-item.is-danger { color: var(--oc-hp); }
+.ocm-item.is-danger:hover { background: var(--oc-hp); border-color: var(--oc-hp); color: #fff; }
+.ocm-tag { font: 600 12px/1 var(--oc-f-ui); color: var(--oc-hp); padding: 5px 8px; border: 1px solid rgba(210, 69, 91, 0.4); background: #fff; }
 
 @media (prefers-reduced-motion: reduce) { .ocv-panel { animation: none; } }

@@ -7,10 +7,17 @@ import { OcScreen, OcPanel, OcButton } from "../oc/ui";
 import { createCharRings } from "../oc/charselect/charRings";
 import "../oc/charselect/charselect.css";
 
-// หน้าเลือกตัวละคร (ORDEAL CALL): การ์ดตัวละครโคจรรอบลูกโลก หนึ่งวงต่อหนึ่งหมวด + แผงข้อมูลด้านขวา
-//  ภาพรวม: ทุกวงโคจรรอบโลกคนละระนาบ · กดชื่อหมวด/การ์ด = ซูมเข้าวงนั้นวงเดียว · กดที่ว่าง/ปุ่ม "หมวดทั้งหมด"/Esc = ถอยกลับภาพรวม
-const LAYOUT = { x: -0.4, y: -0.02, s: 0.86 };
-const FOCUS_LAYOUT = { x: -0.45, y: 0.15, s: 0.9 };
+// หน้าเลือกตัวละคร (ORDEAL CALL): การ์ดตัวละครโคจรรอบลูกโลก หนึ่งวงต่อหนึ่งหมวด
+//  เปิดมา: โลกใหญ่ + วงทุกหมวด (แบบอะตอม) + ตัวกรองหมวดด้านซ้าย · ยังไม่มีแผงข้อมูลจนกว่าจะเลือกตัว
+//  กดหมวด/การ์ด = ซูมเข้าวงนั้นวงเดียว · เลือกการ์ด = การ์ดลอยออกจากวงไปเป็นภาพหลักข้างแผงข้อมูล (ช่องในวงจางลง)
+//  กดที่ว่าง / Esc = เลิกเลือก + ถอยกลับภาพรวม (การ์ดบินกลับเข้าวง) · ปุ่มย้อนกลับอยู่มุมซ้ายล่างเสมอ
+const LAYOUT_ALL = { x: 0.25, y: 0, s: 0.8 };
+const LAYOUT_RING = { x: 0.25, y: 0.14, s: 0.9 };
+const LAYOUT_SEL = { x: -0.84, y: 0.14, s: 0.68 };
+const OUT_MS = 720, BACK_MS = 560;
+const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const mix = (a, b, e) => a + (b - a) * e;
 
 const DIFFICULTY_GROUPS = [
   { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["hikaru", "mageslayer", "ignis", "daichi", "artoria_caster", "satoru"] },
@@ -32,16 +39,15 @@ function charsInGroup(roster, g) {
   return roster.filter((c) => !c.hidden && (c.difficulty || "easy") === g.key).sort((a, b) => idx(a) - idx(b));
 }
 
-function Thumb({ c, dim }) {
+// ภาพการ์ดที่ลอยออกจากวง (ครอปแบบเดียวกับการ์ดในวง: cover เอนขึ้นบน)
+//  รูปข้ามโดเมนต้องขอแบบ CORS เหมือนที่ charRings โหลดไว้ ไม่งั้นเบราว์เซอร์ไม่ใช้แคชเดิม (การ์ดขาวโล่งระหว่างรอโหลดใหม่)
+const corsOf = (url) => {
+  try { return new URL(url, location.href).origin !== location.origin ? "anonymous" : undefined; } catch { return undefined; }
+};
+function CardArt({ c }) {
   const [broken, setBroken] = useState(null);
-  if (c.img && broken !== c.img) {
-    return (
-      <div className={`cs-thumb${dim ? " dim" : ""}`}>
-        <img src={c.img} alt="" decoding="async" onError={() => setBroken(c.img)} />
-      </div>
-    );
-  }
-  return <div className="cs-thumb emoji" aria-hidden="true">{FALLBACK[c.avatar] || "🙂"}</div>;
+  if (c.img && broken !== c.img) return <img src={c.img} alt="" crossOrigin={corsOf(c.img)} decoding="sync" draggable={false} onError={() => setBroken(c.img)} />;
+  return <span className="cs-fly-emoji" aria-hidden="true">{FALLBACK[c.avatar] || "🙂"}</span>;
 }
 
 // lostChars / blockedChars / confirmLabel / backLabel / title: ใช้ตอนเลือกตัวใหม่กลางโหมด Type Mercury
@@ -121,19 +127,29 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   };
 
   const [picked, setPicked] = useState(null); // เปิดหน้ามายังไม่เลือกใคร
+  const [shownId, setShownId] = useState(null); // ตัวที่แผงแสดง (ค้างไว้ระหว่างแผงเลื่อนออกตอนเลิกเลือก)
   const [focus, setFocus] = useState(null); // key หมวดที่ซูมอยู่ | null = ภาพรวม
   const [shikiUlt, setShikiUlt] = useState("deatheye");
   const [pairRole, setPairRole] = useState("pilot"); // ตัวละครคู่: บทบาทที่คนแรกเลือก
   const [desc, setDesc] = useState(null); // คำอธิบายที่ลอยข้างแผง { key, title, text, top|bottom, right }
+  // การ์ดที่ลอยออกจากวง: [{ key, id, dir: "out" | "back", t0, dur, from }] — ตำแหน่งตั้งทุกเฟรมใน flyFrame
+  const [flies, setFlies] = useState([]);
 
   const sel = roster.find((c) => c.id === picked);
-  const selGroup = sel ? grouped.find((g) => g.chars.some((c) => c.id === sel.id)) : null;
-  const reason = blockReason(sel);
-  const canConfirm = !!sel && !sel.locked && !reason;
+  const shown = roster.find((c) => c.id === (picked || shownId));
+  const shownGroup = shown ? grouped.find((g) => g.chars.some((c) => c.id === shown.id)) : null;
+  const reason = blockReason(shown);
+  const canConfirm = !!sel && !sel.locked && !blockReason(sel);
 
   const ringsRef = useRef(null);
   const tipRef = useRef(null);
   const panelRef = useRef(null);
+  const slotRef = useRef(null);
+  const fliesRef = useRef([]);
+  const flyEls = useRef(new Map());
+  const flySeq = useRef(0);
+  // ฉาก 3 มิติ/ปุ่ม Esc เรียก callback ผ่าน ref เสมอ (ได้ค่าล่าสุดของหน้าจอ)
+  const cbRef = useRef(null);
 
   const focusIdx = focus ? grouped.findIndex((g) => g.key === focus) : -1;
   const focusGroup = focusIdx >= 0 ? grouped[focusIdx] : null;
@@ -146,29 +162,54 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   useEffect(() => { ringsRef.current?.setFocus(focusIdx >= 0 ? focusIdx : null); }, [focusIdx]);
   useEffect(() => { ringsRef.current?.select(picked); }, [picked]);
 
-  // Esc = ถอยกลับภาพรวม
+  // Esc = เลิกเลือก + ถอยกลับภาพรวม
+  const active = !!(focus || picked);
   useEffect(() => {
-    if (!focus) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); setFocus(null); } };
+    if (!active) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); cbRef.current.closeAll(); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focus]);
+  }, [active]);
+
+  // เปลี่ยนตัวที่เลือก: ตัวเดิมบินกลับเข้าวง · ตัวใหม่ลอยออกจากวงไปเป็นภาพหลัก
+  const pick = (id) => {
+    if (id === picked) return;
+    const now = performance.now();
+    let list = fliesRef.current;
+    if (picked) list = list.map((f) => (f.id === picked && f.dir === "out" ? { ...f, dir: "back", t0: now, dur: BACK_MS, from: f.cur || null } : f));
+    if (id) {
+      const ex = list.find((f) => f.id === id);
+      list = list.filter((f) => f.id !== id);
+      list.push({ key: ex ? ex.key : `f${++flySeq.current}`, id, dir: "out", t0: now, dur: OUT_MS, from: ex?.cur || null });
+      setShownId(id);
+    }
+    fliesRef.current = list;
+    setFlies(list);
+    ringsRef.current?.setLifted(list.map((f) => f.id));
+    if (tipRef.current) tipRef.current.hidden = true;
+    setDesc(null);
+    setPicked(id);
+  };
 
   const choose = (id) => {
     clickSound();
-    setDesc(null);
-    setPicked(id);
     if (id === picked) ringsRef.current?.select(id); // กดตัวเดิมซ้ำ (ที่หมุนออกไปแล้ว) = หมุนกลับมาหน้าสุด
+    pick(id);
     const g = grouped.find((x) => x.chars.some((c) => c.id === id));
     if (g) setFocus(g.key); // กดการ์ดจากภาพรวม = ซูมเข้าวงของการ์ดนั้นด้วย
   };
+  // ตัวกรองหมวด: กดหมวด = ซูมวงนั้น · กดหมวดที่เปิดอยู่ซ้ำ / "ทั้งหมด" = กลับภาพรวม
   const openGroup = (key) => {
-    clickSound();
     ringsRef.current?.setHighlight(-1);
-    setFocus(key);
+    const next = key === focus ? null : key;
+    const g = next ? grouped.find((x) => x.key === next) : null;
+    if (picked && !(g && g.chars.some((c) => c.id === picked))) pick(null);
+    setFocus(next);
   };
-  const closeGroup = () => {
+  const closeAll = () => {
+    if (!focus && !picked) return;
     clickSound();
+    pick(null);
     setFocus(null);
   };
   const onCardHover = (h, ev) => {
@@ -182,24 +223,61 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     const r = tip.parentElement.getBoundingClientRect();
     tip.style.transform = `translate(${ev.clientX - r.left}px, ${ev.clientY - r.top}px) translate(-50%, -150%)`;
   };
-  // ฉาก 3 มิติเรียก callback ผ่าน ref เสมอ (ได้ค่าล่าสุดของหน้าจอ)
-  const cbRef = useRef(null);
+
+  // ทุกเฟรม: วางการ์ดที่ลอยอยู่ระหว่างช่องในวง (ตำแหน่งสด) กับที่ภาพหลัก
+  const flyFrame = (core) => {
+    const list = fliesRef.current;
+    const rings = ringsRef.current, slot = slotRef.current, scr = slot?.parentElement;
+    if (!list.length || !rings || !scr) return;
+    const sr = scr.getBoundingClientRect(), cr = core.canvas.getBoundingClientRect(), so = slot.getBoundingClientRect();
+    if (!so.width) return;
+    const dx = cr.left - sr.left, dy = cr.top - sr.top;
+    const show = { x: so.left - sr.left, y: so.top - sr.top, w: so.width, h: so.height, op: 1 };
+    const now = performance.now();
+    let finished = false;
+    for (const f of list) {
+      const el = flyEls.current.get(f.key);
+      const live = rings.cardRect(f.id);
+      const card = live && live.w > 0 ? { x: live.x + dx, y: live.y + dy, w: live.w, h: live.h, op: live.op } : { ...show, op: 0 };
+      const t = REDUCED ? 1 : Math.min(1, Math.max(0, (now - f.t0) / f.dur));
+      const e = ease(t);
+      const a = f.from || (f.dir === "out" ? card : show);
+      const b = f.dir === "out" ? show : card;
+      const r = { x: mix(a.x, b.x, e), y: mix(a.y, b.y, e), w: mix(a.w, b.w, e), h: mix(a.h, b.h, e), op: mix(a.op, b.op, e) };
+      f.cur = r;
+      if (f.dir === "back" && t >= 1) { f.done = true; finished = true; }
+      if (!el) continue;
+      el.style.transform = `translate(${r.x}px, ${r.y}px) scale(${r.w / so.width})`;
+      el.style.opacity = String(r.op);
+      el.dataset.placed = "1";
+      if (f.dir === "out" && t >= 1) el.dataset.landed = "1"; else delete el.dataset.landed;
+    }
+    if (finished) {
+      const next = list.filter((f) => !f.done);
+      fliesRef.current = next;
+      setFlies(next);
+      rings.setLifted(next.map((f) => f.id));
+    }
+  };
+
   useLayoutEffect(() => {
-    cbRef.current = { choose, closeGroup, onCardHover, statusMap, focusIdx, picked, byId: new Map(roster.map((c) => [c.id, c])) };
+    cbRef.current = { choose, closeAll, onCardHover, flyFrame, statusMap, focusIdx, picked, byId: new Map(roster.map((c) => [c.id, c])) };
   });
 
   const onReady = (core) => {
     const rings = createCharRings(core, grouped, {
       onSelect: (id) => cbRef.current.choose(id),
       onHover: (h, ev) => cbRef.current.onCardHover(h, ev),
-      onEmpty: () => cbRef.current.closeGroup(),
+      onEmpty: () => cbRef.current.closeAll(),
     });
     const cb = cbRef.current;
     rings.setStatus(cb.statusMap);
+    rings.setLifted(fliesRef.current.map((f) => f.id));
     if (cb.focusIdx >= 0) rings.setFocus(cb.focusIdx, true);
     if (cb.picked) rings.select(cb.picked, true);
     ringsRef.current = rings;
-    return () => { rings.dispose(); ringsRef.current = null; };
+    const offFly = core.onFrame(() => cbRef.current.flyFrame(core));
+    return () => { offFly(); rings.dispose(); ringsRef.current = null; };
   };
   const ringsKey = grouped.map((g) => `${g.key}:${g.chars.map((c) => c.id).join(",")}`).join("|");
 
@@ -227,47 +305,53 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     onConfirm(picked, picked === "shiki" ? { shikiUlt } : undefined);
   };
 
-  const skills = skillRows(sel);
-  const slot = pairSlotOf(sel);
+  const skills = skillRows(shown);
+  const slot = pairSlotOf(shown);
+  const byId = new Map(roster.map((c) => [c.id, c]));
 
   return (
     <OcScreen className="cs-screen">
-      <GlobeCanvas key={ringsKey} className={focusGroup ? "is-focus" : ""} layout={focusGroup ? FOCUS_LAYOUT : LAYOUT} drag={false} onReady={onReady} />
+      <GlobeCanvas
+        key={ringsKey}
+        className={focusGroup ? "is-focus" : ""}
+        layout={sel ? LAYOUT_SEL : focusGroup ? LAYOUT_RING : LAYOUT_ALL}
+        drag={false}
+        onReady={onReady}
+      />
 
-      {focusGroup ? (
-        <div className="cs-nav cs-focus" key="focus">
-          <button type="button" className="cs-back" onClick={closeGroup}>
-            <span aria-hidden="true">←</span> หมวดทั้งหมด
+      <div className="cs-filter-wrap">
+        <OcPanel as="nav" className="cs-filter oc-enter d1" aria-label="หมวด" onMouseLeave={() => ringsRef.current?.setHighlight(-1)}>
+          <span className="oc-label cs-filter-head">หมวด</span>
+          <button
+            type="button"
+            className={`cs-cat all${focusGroup ? "" : " on"}`}
+            aria-pressed={!focusGroup}
+            style={{ "--c": "var(--oc-azure)" }}
+            onClick={() => openGroup(null)}
+          >
+            <i className="cs-cat-mark" aria-hidden="true" />
+            <span className="cs-cat-name">ทั้งหมด</span>
+            <span className="cs-cat-n">{orderedRoster.length}</span>
           </button>
-          <h2 className="cs-focus-name">
-            <i className="oc-diamond" style={{ background: focusGroup.color }} />
-            {focusGroup.label}
-          </h2>
-          {focusGroup.chars.length > 1 && (
-            <div className="cs-spin" role="group" aria-label="หมุนวง">
-              <button type="button" className="cs-spin-btn" aria-label="ก่อนหน้า" onClick={() => { clickSound(); ringsRef.current?.rotate(-1); }}>‹</button>
-              <button type="button" className="cs-spin-btn" aria-label="ถัดไป" onClick={() => { clickSound(); ringsRef.current?.rotate(1); }}>›</button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <nav className="cs-nav cs-cats" key="cats" aria-label="หมวด" onMouseLeave={() => ringsRef.current?.setHighlight(-1)}>
           {grouped.map((g, i) => (
             <button
               key={g.key}
               type="button"
-              className={`cs-cat${selGroup?.key === g.key ? " has-sel" : ""}`}
+              className={`cs-cat${focus === g.key ? " on" : ""}`}
+              aria-pressed={focus === g.key}
+              style={{ "--c": g.color }}
               onClick={() => openGroup(g.key)}
               onMouseEnter={() => ringsRef.current?.setHighlight(i)}
               onFocus={() => ringsRef.current?.setHighlight(i)}
               onBlur={() => ringsRef.current?.setHighlight(-1)}
             >
-              <i className="oc-diamond" style={{ background: g.color }} />
-              <span>{g.label}</span>
+              <i className="cs-cat-mark" aria-hidden="true" />
+              <span className="cs-cat-name">{g.label}</span>
+              <span className="cs-cat-n">{g.chars.length}</span>
             </button>
           ))}
-        </nav>
-      )}
+        </OcPanel>
+      </div>
 
       <div className="cs-top oc-enter">
         {title && <h1 className="oc-h2">{title}</h1>}
@@ -280,31 +364,47 @@ export default function CharacterSelect({ roster, position, color: myColor, name
         )}
       </div>
 
-      <div className="cs-side" ref={panelRef}>
-        <OcPanel className="oc-enter d1">
-          <span className="oc-label">เลือกตัวละคร</span>
+      {/* ที่วางภาพหลัก (มองไม่เห็น ใช้วัดตำแหน่ง) + การ์ดที่ลอยออกจากวง */}
+      <div className="cs-show-slot" ref={slotRef} aria-hidden="true" />
+      {flies.map((f) => {
+        const c = byId.get(f.id);
+        if (!c) return null;
+        const st = cardStatus(c);
+        return (
+          <div
+            key={f.key}
+            className="cs-fly"
+            aria-hidden="true"
+            ref={(el) => { if (el) flyEls.current.set(f.key, el); else flyEls.current.delete(f.key); }}
+          >
+            <div className={`cs-fly-card${blockReason(c) ? " dim" : ""}${c.img ? "" : " emoji"}`}>
+              <CardArt c={c} />
+              {st && <span className={`cs-fly-flag ${st.tone}`}>{st.label}</span>}
+            </div>
+          </div>
+        );
+      })}
 
-          {sel && (
+      <div className={`cs-side${sel ? " open" : ""}`} ref={panelRef} aria-hidden={!sel}>
+        <OcPanel>
+          {shown && (
             <div className="cs-head">
-              <Thumb key={sel.id} c={sel} dim={!!reason} />
-              <div className="cs-head-txt">
-                <div className="cs-chips">
-                  {selGroup && (
-                    <span className="cs-group">
-                      <i className="oc-diamond" style={{ background: selGroup.color }} />
-                      {selGroup.label}
-                    </span>
-                  )}
-                  {reason && <span className="cs-flag bad">{reason}</span>}
-                  {!reason && sel.locked && <span className="cs-flag">ยังไม่ปลดล็อก</span>}
-                </div>
-                <h2 className="oc-h2">{sel.name}</h2>
+              <div className="cs-chips">
+                {shownGroup && (
+                  <span className="cs-group">
+                    <i className="oc-diamond" style={{ background: shownGroup.color }} />
+                    {shownGroup.label}
+                  </span>
+                )}
+                {reason && <span className="cs-flag bad">{reason}</span>}
+                {!reason && shown.locked && <span className="cs-flag">ยังไม่ปลดล็อก</span>}
               </div>
+              <h2 className="oc-h2">{shown.name}</h2>
             </div>
           )}
 
           {skills.length > 0 && (
-            <div className="cs-skills" key={`sk${sel?.id}`} onScroll={() => setDesc(null)}>
+            <div className="cs-skills" key={`sk${shown?.id}`} onScroll={() => setDesc(null)}>
               {skills.map((s, i) => {
                 const key = `s${i}`;
                 const ult = s.label.startsWith("ท่าไม้ตาย");
@@ -325,7 +425,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
             </div>
           )}
 
-          {sel?.pair && (
+          {shown?.pair && (
             <div className="cs-opts">
               {slot ? (
                 <div className="cs-pair" tabIndex={0} {...descProps("pair", PAIR_ROLE_TEXT[slot.role]?.t, `${PAIR_ROLE_TEXT[slot.role]?.d || ""} · ใช้ที่นั่งเดียวกับคู่หู`)}>
@@ -342,7 +442,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
                         type="button"
                         className="cs-opt"
                         aria-pressed={pairRole === k}
-                        onClick={() => { clickSound(); setPairRole(k); }}
+                        onClick={() => setPairRole(k)}
                         {...descProps(`role-${k}`, PAIR_ROLE_TEXT[k].t, PAIR_ROLE_TEXT[k].d)}
                       >
                         {PAIR_ROLE_TEXT[k].t}
@@ -354,7 +454,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
             </div>
           )}
 
-          {sel?.id === "shiki" && sel.ultimate2 && (
+          {shown?.id === "shiki" && shown.ultimate2 && (
             <div className="cs-opts">
               <span className="oc-label">ท่าไม้ตายที่ใช้</span>
               <div className="cs-opts-row" role="group" aria-label="ท่าไม้ตายที่ใช้">
@@ -364,8 +464,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
                     type="button"
                     className="cs-opt"
                     aria-pressed={shikiUlt === o.k}
-                    onClick={() => { clickSound(); setShikiUlt(o.k); }}
-                    {...descProps(`ult-${o.k}`, o.t, o.d || (o.k === "deatheye" ? sel.ultimate?.desc : null))}
+                    onClick={() => setShikiUlt(o.k)}
+                    {...descProps(`ult-${o.k}`, o.t, o.d || (o.k === "deatheye" ? shown.ultimate?.desc : null))}
                   >
                     {o.t}
                   </button>
@@ -374,12 +474,14 @@ export default function CharacterSelect({ roster, position, color: myColor, name
             </div>
           )}
 
-          <div className="cs-actions">
-            <OcButton variant="primary" disabled={!canConfirm} onClick={confirm}>{confirmLabel}</OcButton>
-            <OcButton variant="ghost" onClick={onBack}>{backLabel}</OcButton>
-          </div>
+          <OcButton variant="primary" className="cs-confirm" disabled={!canConfirm} onClick={confirm}>{confirmLabel}</OcButton>
         </OcPanel>
       </div>
+
+      <OcButton className="cs-back oc-enter d2" onClick={onBack}>
+        <span aria-hidden="true">←</span>
+        {backLabel}
+      </OcButton>
 
       {desc && (
         <div className="cs-desc" role="tooltip" style={{ right: desc.right, top: desc.top, bottom: desc.bottom }}>

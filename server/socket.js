@@ -279,10 +279,8 @@ io.on('connection', (socket) => {
     view.broadcastPositions();
   });
 
-  onPlayerEvent(socket, 'startGame', () => {
-    // This button is for solo testing; multiplayer starts only after everyone is ready.
-    if (match.gameState === 'LOBBY' && Object.keys(match.players).length === 1) lobby.startMatch();
-  }, 2);
+  // ปุ่มเล่นคนเดียว (ทดสอบ): คนเดียวในห้อง -> เข้าหน้าเลือกโหมดเหมือนเกมปกติ (หลายคนเริ่มได้ทางกดพร้อมครบเท่านั้น)
+  onPlayerEvent(socket, 'startGame', (id) => lobby.startSoloTest(id), 2);
   // Type Mercury: ตายแล้วเลือกตัวละครใหม่ลงสนามเทิร์นถัดไป / โหวตยอมแพ้
   onPlayerEvent(socket, 'mercuryPick', (id, { characterId, shikiUlt } = {}) => {
     if (typeof characterId !== 'string') return;

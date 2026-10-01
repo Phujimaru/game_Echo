@@ -528,12 +528,15 @@ function armUnlock() {
 }
 // เพลงต่อจากหน้าแรกของโปรแกรม: launcher ส่ง #music=main5&mt=<วินาที> มากับ URL ของห้อง
 //  -> เพลงเดียวกันเล่นต่อจากจุดเดิมแทนที่จะเริ่มใหม่ (ใช้ครั้งเดียว แล้วล้าง hash ทิ้ง)
+//  &vol=<0..1> = ระดับเสียงที่ตั้งไว้ในหน้าแรก → หน้าเกมเริ่มที่ระดับเดียวกัน (localStorage แยกตาม origin ของห้อง)
 let handoff = null;
 try {
   const h = new URLSearchParams((typeof location !== "undefined" && location.hash || "").slice(1));
   const t = parseFloat(h.get("mt"));
   if (h.get("music") && Number.isFinite(t)) handoff = { name: h.get("music"), t };
-  if (h.has("mt")) history.replaceState(null, "", location.pathname + location.search);
+  const vol = h.has("vol") ? parseFloat(h.get("vol")) : NaN;
+  if (Number.isFinite(vol) && vol >= 0 && vol <= 1) setMasterVolume(vol);
+  if (h.has("mt") || h.has("vol")) history.replaceState(null, "", location.pathname + location.search);
 } catch { /* ไม่มี location (เทสต์) */ }
 function applyHandoff(name, a) {
   if (!handoff || handoff.name !== name) return;

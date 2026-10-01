@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { getMasterVolume, setMasterVolume, onVolumeChange, clickSound } from "../audio";
+import { GameMenuPanel, MenuIcon } from "../oc/ui-extra/GameMenu";
+import { echoApp } from "../oc/ui-extra/gameMenuState";
 import "../oc/ui-extra/volume.css";
 
 // ปุ่มเสียงมุมขวาบน (ทุกหน้า รวมกระดานเกมสีเข้ม) — ธีม ORDEAL CALL
 //  ปุ่มเล็ก = ไอคอนลำโพง + แท่งระดับ 5 ขั้น · กดแล้วเปิดแผงกระจก: หลอดเลื่อน + ปุ่มปิดเสียง
+//  ข้างกันมีปุ่ม "เมนู" (oc/ui-extra/GameMenu.jsx — เฉพาะในโปรแกรม ECHO) · เปิดได้ทีละแผง
+//  หน้าแรกของโปรแกรม (desktop/launcher) มีปุ่มชุดเดียวกัน ใช้ volume.css ไฟล์นี้ร่วมกัน
 const BARS = 5;
 
 function SpeakerIcon({ muted }) {
@@ -23,7 +27,7 @@ function SpeakerIcon({ muted }) {
 }
 
 export default function VolumeControl() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(null); // null | "vol" | "menu"
   const [vol, setVol] = useState(getMasterVolume());
   const lastOnRef = useRef(getMasterVolume() > 0 ? getMasterVolume() : 0.8); // ระดับก่อนกดปิดเสียง (กดอีกครั้งคืนค่านี้)
   const rootRef = useRef(null);
@@ -37,8 +41,8 @@ export default function VolumeControl() {
   // คลิกนอกแผง / กด Esc = ปิดแผง
   useEffect(() => {
     if (!open) return undefined;
-    const onDown = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); };
-    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    const onDown = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(null); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(null); };
     document.addEventListener("pointerdown", onDown, true);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -63,21 +67,37 @@ export default function VolumeControl() {
 
   return (
     <div className="ocv" ref={rootRef}>
-      <button
-        type="button"
-        className={`ocv-btn${open ? " is-open" : ""}${muted ? " is-muted" : ""}`}
-        onClick={() => { clickSound(); setOpen((o) => !o); }}
-        aria-expanded={open}
-        aria-label="เสียง"
-        title="เสียง"
-      >
-        <SpeakerIcon muted={muted} />
-        <span className="ocv-bars" aria-hidden="true">
-          {Array.from({ length: BARS }, (_, i) => <i key={i} className={i < lit ? "on" : ""} />)}
-        </span>
-      </button>
+      <div className="ocv-bar">
+        <button
+          type="button"
+          className={`ocv-btn${open === "vol" ? " is-open" : ""}${muted ? " is-muted" : ""}`}
+          onClick={() => { clickSound(); setOpen((o) => (o === "vol" ? null : "vol")); }}
+          aria-expanded={open === "vol"}
+          aria-label="เสียง"
+          title="เสียง"
+        >
+          <SpeakerIcon muted={muted} />
+          <span className="ocv-bars" aria-hidden="true">
+            {Array.from({ length: BARS }, (_, i) => <i key={i} className={i < lit ? "on" : ""} />)}
+          </span>
+        </button>
+        {echoApp && (
+          <button
+            type="button"
+            className={`ocv-btn ocm-btn${open === "menu" ? " is-open" : ""}`}
+            onClick={() => { clickSound(); setOpen((o) => (o === "menu" ? null : "menu")); }}
+            aria-expanded={open === "menu"}
+            title="เมนู"
+          >
+            <MenuIcon />
+            <span className="ocm-btn-t">เมนู</span>
+          </button>
+        )}
+      </div>
 
-      {open && (
+      {open === "menu" && <GameMenuPanel />}
+
+      {open === "vol" && (
         <div className="ocv-panel" role="dialog" aria-label="เสียง">
           <div className="ocv-head">
             <span className="ocv-label">เสียง</span>

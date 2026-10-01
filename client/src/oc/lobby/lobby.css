@@ -2,7 +2,7 @@
    ห้องรอ ORDEAL CALL (Lobby.jsx + oc/lobby/*) — คลาสขึ้นต้น ocl-
    ห้ามใส่ letter-spacing / uppercase กับข้อความไทย (ใช้ .oc-latin กับตัวอังกฤษ/ตัวเลขเท่านั้น)
    ============================================================ */
-.ocl { --ocl-col: clamp(270px, 24vw, 360px); --ocl-side: max(32px, 4vw); }
+.ocl { --ocl-side: max(32px, 4vw); }
 .ocl .oc-globe { cursor: grab; }
 .ocl[data-armed] .oc-globe { cursor: crosshair; }
 .ocl .oc-globe[data-hot] { cursor: pointer; }
@@ -11,65 +11,95 @@
 .ocl-title { position: absolute; top: 54px; left: 52px; display: flex; flex-direction: column; gap: 6px; pointer-events: none !important; }
 .ocl-back { position: absolute; left: calc(var(--ocl-side) - 6px); bottom: 26px; font-size: 14px; }
 
-/* ---------- ห้องรอ: คอลัมน์ซ้าย (เรา) ---------- */
-.ocl-left {
-  position: absolute; left: var(--ocl-side); top: 132px; bottom: 76px; width: var(--ocl-col);
-  display: flex; flex-direction: column; gap: 12px; min-height: 0;
+/* ---------- เปลี่ยนหน้า: กรอบ UI ของแต่ละหน้า + ภาพจางของหน้าเก่า (Lobby.jsx ViewLayer) ---------- */
+.ocl-view, .ocl-ghosts { position: absolute; inset: 0; pointer-events: none; }
+.ocl-ghost { position: absolute; inset: 0; pointer-events: none !important; animation: ocl-leave 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.ocl-ghost * { pointer-events: none !important; animation: none !important; transition: none !important; }
+@keyframes ocl-leave { to { opacity: 0; filter: blur(3px); transform: scale(0.985); } }
+@keyframes ocl-fade { from { opacity: 0; } }
+
+/* ---------- ห้องรอ: ที่นั่งรอบลูกโลก ---------- */
+.ocl-prefs { position: absolute; top: 40px; right: var(--ocl-side); display: flex; gap: 8px; }
+.ocl-prefs .ocl-switch { width: auto; }
+
+.ocl-orbit { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none !important; }
+.ocl-orbit-ring { fill: none; stroke: var(--oc-sky); stroke-opacity: 0.5; stroke-width: 1; stroke-dasharray: 2 8; animation: ocl-fade 0.9s 0.25s ease both; }
+.ocl-tether { animation: ocl-fade 0.6s ease both; }
+.ocl-tether line { stroke: var(--c); stroke-width: 1.5; stroke-dasharray: 3 5; stroke-linecap: round; opacity: 0.9; animation: ocl-flow 1.4s linear infinite; }
+.ocl-tether circle { fill: #fff; stroke: var(--c); stroke-width: 1.5; }
+.ocl-tether[data-status="ready"] line { stroke: var(--oc-echo); stroke-width: 2; stroke-dasharray: none; animation: none; }
+.ocl-tether[data-status="ready"] circle { fill: var(--oc-echo); stroke: #fff; }
+@keyframes ocl-flow { to { stroke-dashoffset: -16; } }
+
+.ocl-seat { position: absolute; transform: translateY(-50%); width: max-content; }
+.ocl-seat-in { display: flex; align-items: center; animation: ocl-seat-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; --dx: -20px; }
+.ocl-seat.l .ocl-seat-in { flex-direction: row-reverse; text-align: right; --dx: 20px; }
+@keyframes ocl-seat-in { from { opacity: 0; transform: translateX(var(--dx)) scale(0.96); } }
+.ocl-seat[data-off="true"] .ocl-seat-in { opacity: 0.55; }
+
+/* ตราหกเหลี่ยม — ของเรา = ภาพตัวละคร · คนอื่น = ตราผนึก (ตัวละครถูกซ่อน) */
+.ocl-emb { --hex: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); position: relative; z-index: 1; flex: none; width: 56px; height: 64px; transition: filter 0.3s; }
+.ocl-emb::before { content: ""; position: absolute; inset: 0; clip-path: var(--hex); background: var(--c); transition: background 0.3s; }
+.ocl-emb-face {
+  position: absolute; inset: 3px; clip-path: var(--hex); display: grid; place-items: center; overflow: hidden;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 24%, transparent) 0 2px, transparent 2px 7px), #fff;
 }
-.ocl-hero { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.ocl-hero-art {
-  position: relative; flex: 1 1 auto; min-height: 150px; overflow: hidden; clip-path: var(--oc-cut);
-  background:
-    radial-gradient(120% 80% at 50% 0%, #fff 0%, transparent 60%),
-    linear-gradient(160deg, color-mix(in srgb, var(--c) 30%, #fff) 0%, var(--oc-frost) 100%);
+.ocl-emb-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; user-select: none; }
+.ocl-seal { font: 400 18px/1 var(--oc-f-logo); color: var(--c); background: #fff; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 1.5px var(--c); }
+.ocl-seat[data-status="ready"] .ocl-emb { filter: drop-shadow(0 0 9px var(--oc-echo-glow)); }
+.ocl-seat[data-status="ready"] .ocl-emb::before { background: var(--oc-echo); }
+.ocl-seat.me .ocl-emb { width: 92px; height: 106px; }
+.ocl-seat.me .ocl-emb-face { inset: 4px; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 30%, #fff) 0%, var(--oc-frost) 100%); }
+.ocl-seat[data-status="empty"] .ocl-emb { width: 40px; height: 46px; }
+.ocl-seat[data-status="empty"] .ocl-emb::before { background: var(--oc-sky); opacity: 0.55; }
+.ocl-seat[data-status="empty"] .ocl-emb-face { inset: 1.5px; background: rgba(255, 255, 255, 0.72); }
+
+/* ป้ายชื่อ (กระจก) — ตราซ้อนขอบด้านที่หันเข้าโลก */
+.ocl-seat-info {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: clamp(170px, 13vw, 240px);
+  padding: 9px 30px 9px 14px; margin-right: -20px;
+  background: var(--oc-glass); border: 1px solid var(--oc-line); clip-path: var(--oc-cut);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
-.ocl-hero-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; user-select: none; }
-.ocl-hero-art::before {
-  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(18, 38, 72, 0.35) 0%, transparent 22%, transparent 55%, rgba(18, 38, 72, 0.82) 100%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px);
-}
-.ocl-hero-art::after {
-  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  box-shadow: inset 0 0 0 2px var(--c), inset 6px 0 0 0 var(--c);
-  transition: box-shadow 0.3s;
-}
-.ocl-hero[data-ready="true"] .ocl-hero-art::after { box-shadow: inset 0 0 0 3px var(--oc-echo), inset 6px 0 0 0 var(--c), inset 0 0 60px rgba(201, 154, 214, 0.55); }
-.ocl-hero-seat {
-  position: absolute; z-index: 3; top: 14px; left: 18px; font: 400 28px/1 var(--oc-f-logo); color: #fff;
-  text-shadow: 0 2px 12px var(--c), 0 0 2px rgba(0, 0, 0, 0.4);
-}
-.ocl-hero-you {
-  position: absolute; z-index: 3; top: 14px; right: 14px; font: 600 12px/1 var(--oc-f-ui); color: #fff;
-  background: var(--c); padding: 6px 9px; clip-path: var(--oc-cut);
-}
-.ocl-hero-name { position: absolute; z-index: 3; left: 18px; right: 16px; bottom: 14px; display: flex; flex-direction: column; gap: 4px; color: #fff; min-width: 0; }
-.ocl-hero-name b { font: 600 22px/1.15 var(--oc-f-ui); overflow-wrap: anywhere; }
-.ocl-hero-name small { font: 400 13px/1.2 var(--oc-f-body); color: var(--oc-ice); }
+.ocl-seat.r .ocl-seat-info { order: 1; padding: 9px 14px 9px 30px; margin-right: 0; margin-left: -20px; }
+.ocl-seat.l .ocl-seat-info { align-items: flex-end; }
+.ocl-seat.me .ocl-seat-info { background: rgba(255, 255, 255, 0.94); border-color: var(--c); padding-block: 12px; max-width: clamp(190px, 15vw, 270px); }
+.ocl-seat-top { display: flex; align-items: center; gap: 7px; }
+.ocl-seat.l .ocl-seat-top { flex-direction: row-reverse; }
+.ocl-seat-no { font: 400 12px/1 var(--oc-f-logo); color: var(--c); }
+.ocl-seat-you { font: 600 11px/1 var(--oc-f-ui); color: #fff; background: var(--c); padding: 4px 7px; }
+.ocl-seat-state { font: 600 11px/1 var(--oc-f-ui); padding: 4px 7px; border: 1px solid var(--oc-line); color: var(--oc-ink-3); background: #fff; }
+.ocl-seat[data-status="ready"] .ocl-seat-state { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; }
+.ocl-seat-name { font: 600 16px/1.2 var(--oc-f-ui); color: var(--oc-ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ocl-seat.me .ocl-seat-name { font-size: 20px; }
+.ocl-seat-char { font: 400 13px/1.2 var(--oc-f-body); color: var(--oc-ink-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ocl-seat-warn { font: 500 12px/1 var(--oc-f-ui); color: var(--oc-warn); }
+.ocl-seat[data-status="empty"] .ocl-seat-info { padding-block: 7px; background: rgba(255, 255, 255, 0.4); border-style: dashed; clip-path: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ocl-seat[data-status="empty"] .ocl-seat-name { font: 500 13px/1 var(--oc-f-ui); color: var(--oc-ink-3); }
+.ocl-seat[data-status="empty"] .ocl-seat-no { color: var(--oc-ink-3); }
 
 .ocl-pair { display: flex; flex-direction: column; gap: 3px; font: 400 12px/1.3 var(--oc-f-body); color: var(--oc-ink-2); }
 .ocl-pair span { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.ocl-seat.l .ocl-pair span { justify-content: flex-end; }
 .ocl-pair b { font: 600 11px/1 var(--oc-f-ui); color: var(--oc-azure); flex: none; }
+.ocl-pair em { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ocl-pair i { font-style: normal; color: var(--oc-echo); font-weight: 600; }
 .ocl-pair span.on { color: var(--oc-ink); }
 
-.ocl-readybox {
-  flex: none; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px;
-  background: var(--oc-glass); border: 1px solid var(--oc-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
-.ocl-readyhead { display: flex; align-items: baseline; justify-content: space-between; }
-.ocl-readynum { font: 400 14px/1 var(--oc-f-logo); color: var(--oc-ink-2); font-variant-numeric: tabular-nums; }
-.ocl-readynum b { font-size: 24px; font-weight: 400; color: var(--oc-echo); }
-.ocl-pips { display: flex; gap: 8px; flex-wrap: wrap; }
-.ocl-pips i { width: 11px; height: 11px; transform: rotate(45deg); border: 1.5px solid var(--c); background: transparent; transition: background 0.25s; }
+/* ---------- ห้องรอ: ปุ่มพร้อม (ขวาล่าง) ---------- */
+.ocl-ready { position: absolute; right: var(--ocl-side); bottom: 32px; width: clamp(240px, 16vw, 300px); display: flex; flex-direction: column; gap: 10px; }
+.ocl-ready-head { display: flex; align-items: center; gap: 10px; }
+.ocl-pips { flex: 1; display: flex; gap: 7px; flex-wrap: wrap; }
+.ocl-pips i { width: 10px; height: 10px; transform: rotate(45deg); border: 1.5px solid var(--c); background: transparent; transition: background 0.25s; }
 .ocl-pips i[data-on="true"] { background: var(--c); box-shadow: 0 0 8px var(--c); }
-.ocl-readybtn { width: 100%; font-size: 18px; padding: 16px 20px; }
+.ocl-readynum { font: 400 13px/1 var(--oc-f-logo); color: var(--oc-ink-2); font-variant-numeric: tabular-nums; }
+.ocl-readynum b { font-size: 22px; font-weight: 400; color: var(--oc-echo); }
+.ocl-readybtn { width: 100%; font-size: 20px; padding: 20px; }
 
-.ocl-settings { flex: none; display: flex; flex-direction: column; gap: 6px; }
 .ocl-switch {
   appearance: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
-  padding: 9px 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--oc-line); cursor: pointer;
+  padding: 9px 12px; background: var(--oc-glass); border: 1px solid var(--oc-line); cursor: pointer;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   font: 500 13px/1 var(--oc-f-ui); color: var(--oc-ink-2); transition: border-color 0.2s, color 0.2s;
 }
 .ocl-switch:hover { border-color: var(--oc-azure); color: var(--oc-ink); }
@@ -80,43 +110,12 @@
 .ocl-switch[aria-checked="true"] i { background: var(--oc-azure); }
 .ocl-switch[aria-checked="true"] i::after { transform: translateX(16px); }
 
-/* ---------- ห้องรอ: คอลัมน์ขวา (ผู้เล่นคนอื่น) ---------- */
-.ocl-right {
-  position: absolute; right: var(--ocl-side); top: 64px; bottom: 76px; width: var(--ocl-col);
-  display: flex; flex-direction: column; gap: 10px; min-height: 0;
+@media (prefers-reduced-motion: reduce) {
+  .ocl-seat-in, .ocl-tether, .ocl-orbit-ring, .ocl-ghost { animation: none; }
+  .ocl-tether line { animation: none; }
+  .ocl-ghost { display: none; }
 }
-.ocl-righthead { display: flex; align-items: center; gap: 10px; }
-.ocl-righthead::after { content: ""; flex: 1; height: 1px; background: var(--oc-line); order: 1; }
-.ocl-count { order: 2; font: 400 13px/1 var(--oc-f-logo); color: var(--oc-azure); }
-.ocl-roster { list-style: none; margin: 0; padding: 0 2px 0 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
-.ocl-row {
-  position: relative; display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center;
-  padding: 10px 12px 10px 16px; background: rgba(255, 255, 255, 0.84); border: 1px solid var(--oc-line);
-  clip-path: var(--oc-cut); transition: background 0.25s, opacity 0.25s;
-}
-.ocl-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); transition: width 0.25s; }
-.ocl-row[data-ready="true"] { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 16%, #fff) 0%, #fff 70%); }
-.ocl-row[data-ready="true"]::before { width: 6px; }
-.ocl-row[data-off="true"] { opacity: 0.6; }
-/* การ์ดคว่ำ = ตัวละครของคนอื่นถูกซ่อน */
-.ocl-row-back {
-  width: 40px; height: 52px; display: grid; place-items: center; border: 1.5px solid var(--c);
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 28%, transparent) 0 2px, transparent 2px 7px), #fff;
-}
-.ocl-row-back span { font: 400 16px/1 var(--oc-f-logo); color: var(--c); background: #fff; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; }
-.ocl-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.ocl-row-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.ocl-row-seat { font: 400 12px/1 var(--oc-f-logo); color: var(--c); flex: none; }
-.ocl-row-name { font: 600 16px/1.2 var(--oc-f-ui); color: var(--oc-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ocl-row-warn { font: 500 12px/1 var(--oc-f-ui); color: var(--oc-warn); }
-.ocl-row-state { font: 600 12px/1 var(--oc-f-ui); padding: 6px 8px; border: 1px solid var(--oc-line); color: var(--oc-ink-3); background: #fff; white-space: nowrap; }
-.ocl-row[data-ready="true"] .ocl-row-state { background: var(--oc-echo); border-color: var(--oc-echo); color: #fff; }
-.ocl-row-empty {
-  grid-template-columns: auto 1fr; padding: 9px 14px; background: transparent; border: 1px dashed var(--oc-sky); clip-path: none;
-  color: var(--oc-ink-3); font: 500 13px/1 var(--oc-f-ui);
-}
-.ocl-row-empty::before { display: none; }
-.ocl-row-empty .ocl-row-seat { color: var(--oc-ink-3); }
+
 
 /* ---------- อีโมต ---------- */
 .ocl-dock {
@@ -125,7 +124,7 @@
   background: var(--oc-glass); border: 1px solid var(--oc-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-radius: 999px; box-shadow: 0 18px 40px -26px rgba(28, 63, 110, 0.45);
 }
-.ocl-dock { max-width: calc(100vw - 2 * (var(--ocl-side) + var(--ocl-col) + 16px)); flex-wrap: wrap; justify-content: center; border-radius: 28px; box-sizing: border-box; }
+.ocl-dock { max-width: calc(100vw - 2 * (var(--ocl-side) + clamp(240px, 16vw, 300px) + 24px)); flex-wrap: wrap; justify-content: center; border-radius: 28px; box-sizing: border-box; }
 .ocl-dock-vote { right: calc(min(400px, 34vw) + max(16px, 5vw) + 32px); max-width: none; }
 .ocl-emotes-label { font: 600 12px/1 var(--oc-f-ui); color: var(--oc-ink-2); margin-right: 6px; }
 .ocl-emotes button {
