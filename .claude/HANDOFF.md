@@ -54,14 +54,26 @@
 - ทำทีละตัวละคร ตัวละ 1 commit และเขียนเทสต์ก่อนย้าย
 - ข้อเสนอที่ยังไม่ได้คำตอบ: เพิ่มกฎ eslint `max-lines` ~1,100 สำหรับ `server/`
 
-### B. ECHO 5.0 — แจกเกมเป็น exe (คุยแผนจบแล้ว ยังไม่เริ่มเขียนโค้ด)
-- Electron ในโฟลเดอร์ใหม่ `desktop/` แบบ **เปิดห้องเอง**: "สร้างห้อง" = รัน `server.js` ในเครื่อง (`require.main` guard มีแล้ว) · "เข้าร่วม" = ใส่ IP แล้วโหลด `http://IP:3000`
-- เพื่อนอยู่ไกลกัน → ใช้ **Radmin VPN** (IP ขึ้นต้น `26.`) — หน้าสร้างห้องหา IP นี้แล้วโชว์ปุ่มคัดลอก · จำ IP ล่าสุด · เตือนเรื่อง Windows Firewall ต้องติ๊ก Public
-- exe ตัวแรก = **5.0.0** · ตัวติดตั้ง NSIS (Setup.exe ~90MB) · ไฟล์สื่อโหลดจาก R2 ครั้งแรกแล้วแคช (ดักคำขอ `/characters/...` ใน Electron) · build ต้องข้ามไฟล์สื่อใน `client/dist`
-- อัปเดตอัตโนมัติด้วย `electron-updater` · ไฟล์อัปเดตเก็บ **R2 bucket เดิม โฟลเดอร์ `updates/`**
-- ด่านตรวจ 3 ชั้นทุกครั้งที่เปิด: (1) เช็คเวอร์ชันกับ R2 — เช็คไม่ได้ = ไม่ให้เข้า มีแค่ปุ่มลองใหม่ · มีใหม่ = โหลดแล้วรีสตาร์ท (2) เช็ค/โหลดไฟล์สื่อที่เปลี่ยน (3) ตอนเข้าร่วม ถาม `/version` ของเครื่อง host — ต้องตรงทุกตัวเลข ไม่ตรงไม่ให้เข้า · ไม่อัปเดตกลางแมตช์
-- ต้องเพิ่ม endpoint `/version` ใน server (ไม่แตะ engine)
+### B. ECHO 5.0 — แจกเกมเป็น exe (กำลังทำ — ขั้น 1 เสร็จแล้ว)
+- Electron ในโฟลเดอร์ใหม่ `desktop/` แบบ **เปิดห้องเอง**: "สร้างห้อง" = fork `server.js` ด้วย `utilityProcess.fork` (ไม่ require เข้า main process — ให้ตาข่าย error/listen ใน server.js ทำงานเอง, server พังไม่ลากแอปพัง, ปิดห้อง = kill process ล้างสถานะแมตช์หมด) · "เข้าร่วม" = ใส่ IP แล้วโหลด `http://IP:3000` (หน้าเกมมาจาก host — `client/src/socket.js` ใช้ `io()` ไม่ต้องแก้)
+- เพื่อนอยู่ไกลกัน → ใช้ **Radmin VPN** (IP ขึ้นต้น `26.`) — หน้าสร้างห้องหา IP นี้แล้วโชว์ปุ่มคัดลอก · จำ IP ล่าสุด · เตือนเรื่อง Windows Firewall ต้องติ๊ก Public · ดัก `EADDRINUSE` (พอร์ต 3000 ถูกใช้) แล้วบอกเป็นภาษาไทย
+- exe ตัวแรก = **5.0.0** · ตัวติดตั้ง NSIS (Setup.exe ~90MB) · build ต้องข้ามไฟล์สื่อใน `client/dist` (`copyPublicDir: false`) และต้องพก `server/`, `characters/`, `characters.js`, `seraph.js` + dependency ฝั่ง server
+- **เลขเวอร์ชันมีที่เดียว = `desktop/package.json`** → ส่งให้ server เป็น env `ECHO_VERSION` ตอน fork
+- **ไฟล์สื่อ: ผู้ใช้เลือกแบบ (ก) โหลดครบ ~1.3GB ตอนเปิดครั้งแรก** มีแถบความคืบหน้า + โหลดต่อจากที่ค้างได้ แล้วแคชในเครื่อง
+  - ดักคำขอให้ครบทั้ง 8 โฟลเดอร์ใน `R2_DIRS` ([server/app.js](../server/app.js)): characters, item, overload_force, theme_song, effect_sound, image, mooncell, journey — ไม่ใช่แค่ `/characters`
+  - ต้องมี `updates/media-manifest.json` บน R2 (path + ขนาด + hash) + สคริปต์สร้างตอนออกเวอร์ชัน — ด่านที่ 2 เทียบกับไฟล์นี้
+  - **ความเสี่ยง:** ส่ง mp4 จากแคชผ่าน protocol handler ต้องรองรับ header `Range` เอง ไม่งั้นคัตซีนกรอ/เล่นไม่ได้ — ลองให้ได้ตั้งแต่ต้น
+- อัปเดตอัตโนมัติด้วย `electron-updater` (generic provider) · ไฟล์อัปเดต (`latest.yml`, Setup.exe, `.blockmap`) เก็บ **R2 bucket เดิม โฟลเดอร์ `updates/`** · session ของ Claude เข้า R2 ไม่ได้ → ต้องทำสคริปต์ปล่อยเวอร์ชัน (rclone/wrangler) ให้ผู้ใช้รันเอง
+- ด่านตรวจ 3 ชั้นทุกครั้งที่เปิด: (1) เช็คเวอร์ชันกับ R2 — เช็คไม่ได้ = ไม่ให้เข้า มีแค่ปุ่มลองใหม่ · มีใหม่ = โหลดแล้วรีสตาร์ท (2) เช็ค/โหลดไฟล์สื่อที่เปลี่ยนตาม manifest (3) ตอนเข้าร่วม ถาม `/version` ของเครื่อง host — ต้องตรงทุกตัวเลข ไม่ตรงไม่ให้เข้า · ไม่อัปเดตกลางแมตช์
 - SmartScreen: ไม่ซื้อใบรับรอง — เตรียมคำแนะนำให้เพื่อนกด More info → Run anyway (อัปเดตอัตโนมัติไม่โดนเตือนซ้ำ)
+- ข้อสังเกตเล็ก: localStorage แยกตาม origin (= IP ของ host) → ค่าที่จำไว้ เช่นระดับเสียง ต้องตั้งใหม่เมื่อเข้าห้องของ host คนใหม่
+
+**ลำดับงาน:**
+1. ✅ endpoint `/version` ใน [server/app.js](../server/app.js) (ตอบ `{ version }` จาก `ECHO_VERSION`, ไม่มี = `"dev"`, `no-store` + CORS `*`) + เทสต์ `tests/version-endpoint.test.js`
+2. `desktop/` โครงพื้นฐาน: หน้าสร้างห้อง/เข้าร่วม, fork server, หา IP Radmin, ด่านที่ 3
+3. แคชไฟล์สื่อ + manifest + ทดสอบกรอวิดีโอ (Range)
+4. electron-updater + ด่านที่ 1 + สคริปต์ปล่อยเวอร์ชัน
+5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin
 
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)
 - eslint 2 errors: `tests/characters/escanor.test.js` บรรทัด ~722 (`no-control-regex` จาก `\x08`)

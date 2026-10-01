@@ -41,6 +41,16 @@ if (ASSET_BASE_URL) {
   }
 }
 
+// เวอร์ชันของเกม — exe (desktop/) ส่ง ECHO_VERSION มาตอน fork server ของห้อง เครื่องที่จะเข้าร่วมถามตรงนี้
+//  แล้วต้องได้เลขตรงกับตัวเองทุกตัวถึงจะเข้าห้องได้ · รันแบบเว็บ/dev ไม่มีค่านี้ = "dev"
+//  เปิด CORS ให้ เพราะหน้าเข้าร่วมของ exe ถามจาก origin อื่น (ข้อมูลแค่เลขเวอร์ชัน ไม่มีอะไรลับ)
+const GAME_VERSION = process.env.ECHO_VERSION || "dev";
+app.get("/version", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({ version: GAME_VERSION });
+});
+
 // gzip ให้ index.html + bundle js/css ของ vite (637 KB -> ~170 KB) — compression ข้ามไฟล์ที่บีบมาแล้ว
 //  อย่าง jpg/png/webp/mp3/mp4 ให้เองอยู่แล้ว จึงไม่เปลืองซีพียูฟรี ๆ กับไฟล์สื่อ
 app.use(compression());
