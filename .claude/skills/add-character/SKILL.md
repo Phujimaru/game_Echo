@@ -6,7 +6,7 @@ description: เพิ่มตัวละครใหม่หรือรื�
 # เพิ่ม/รื้อตัวละครในเกม ECHO
 
 โครงเกมแยก **ข้อมูล** (`characters.js`) ออกจาก **พฤติกรรม** (`characters/<id>.js`) แล้วให้
-`server.js` เรียกผ่าน `CHAR_HOOKS` จุดเดียว — เพิ่มตัวละครจึงไม่ต้องรื้อ engine แต่ต้องเสียบ
+`server/` เรียกผ่าน `CHAR_HOOKS` จุดเดียว — เพิ่มตัวละครจึงไม่ต้องรื้อ engine แต่ต้องเสียบ
 ให้ครบทุกจุด ไม่งั้นสกิลจะ "เขียนแล้วไม่ทำงาน" แบบเงียบๆ
 
 ## ลำดับที่ควรทำ
@@ -19,10 +19,10 @@ description: เพิ่มตัวละครใหม่หรือรื�
 4. ลงทะเบียนใน `characters/index.js`
 5. เพิ่มคัตซีนใน `characters/_transforms.js`
 6. เพิ่มข้อมูลตัวละครใน `characters.js`
-7. เสียบ hook ใน `server.js`
+7. เสียบ hook ใน `server/` (ตารางด้านล่างบอกไฟล์)
 8. ฝั่ง client: `client/src/screens/Game.jsx` (+ `arena.css` ถ้ามีเอฟเฟกต์สนาม)
 9. เขียนเทสต์ `tests/characters/<id>.test.js`
-10. `npm test` (รัน 2-3 รอบเช็คความเสถียร) · `npx eslint server.js characters characters.js client/src` · `cd client && npx vite build`
+10. `npm test` (รัน 2-3 รอบเช็คความเสถียร) · `npx eslint server.js server characters characters.js client/src` · `cd client && npx vite build`
 
 ## ไฟล์ที่ต้องแตะ
 
@@ -32,32 +32,33 @@ description: เพิ่มตัวละครใหม่หรือรื�
 | `characters/index.js` | `require` + ใส่ใน `CHARACTER_MODULES` |
 | `characters.js` | ชื่อ/ความยาก/รูป/คำอธิบายสกิล/ราคา (`effect: null` ถ้าจัดการเองในโมดูล) |
 | `characters/_transforms.js` | คัตซีน: `{ img, video, title, label, seconds, music, afterReveal }` |
-| `server.js` | เสียบ hook ตามตารางด้านล่าง |
+| `server/*.js` | เสียบ hook ตามตารางด้านล่าง (ฟังก์ชันไหนอยู่ไฟล์ไหน: GAME_SYSTEM.md §1.1) |
 | `client/src/screens/Game.jsx` | ป้ายสถานะ · ปุ่มสกิล disable · โหมดเลือกเป้าหมาย · เอฟเฟกต์สนาม |
 | `client/src/screens/CharacterSelect.jsx` | ใส่ id ใน `order` ของหมวดความยาก (ไม่ใส่ก็ขึ้น แต่ไปต่อท้ายสุด) |
 | `tests/characters/<id>.test.js` | เทสต์ |
 
-## จุดเสียบใน server.js
+## จุดเสียบใน server/
 
-เสียบเท่าที่ตัวละครใช้ ค้นด้วยการ grep ตัวละครที่ทำคล้ายกันแล้วแปะข้างๆ กัน
+เสียบเท่าที่ตัวละครใช้ ค้นด้วยการ grep ตัวละครที่ทำคล้ายกันแล้วแปะข้างๆ กัน (`grep -rn "<ตัวที่คล้ายกัน>" server`)
+เรียกฟังก์ชันข้ามไฟล์ผ่านชื่อโมดูล (`combat.healHp(...)`) และสถานะแมตช์ผ่าน `match.*` — ดูกติกาใน GAME_SYSTEM.md §1.1
 
 | ต้องการ | จุดเสียบ |
 |---|---|
-| ล้างฟิลด์ทุกแมตช์ | `resetCombat(p)` |
-| วีดีโอเปิดตัวตอนเริ่มแมตช์ | `startMatch()` ข้างๆ `conner.maybeQueueIntro` |
-| เปลี่ยนรูปบนสนาม | `displayImg(p)` |
-| ด่านเงื่อนไขก่อนหักแต้ม | `useSkill()` — `canUseSkill(engine, p, tier)` |
-| ลงผลสกิล | `useSkill()` ช่วง `flashSuffix = ...applyInstantSkill(...)` |
-| ผลต้นเทิร์น | `startRound()` — `onRoundStartTick(engine, p)` |
+| ล้างฟิลด์ทุกแมตช์ | `resetCombat(p)` — `server/combat.js` |
+| วีดีโอเปิดตัวตอนเริ่มแมตช์ | `server/lobby.js` `startMatch()` ข้างๆ `conner.maybeQueueIntro` |
+| เปลี่ยนรูปบนสนาม | `displayImg(p)` — `server/view.js` |
+| ด่านเงื่อนไขก่อนหักแต้ม | `server/skills.js` `useSkill()` — `canUseSkill(engine, p, tier)` |
+| ลงผลสกิล | `server/skills.js` `useSkill()` ช่วง `flashSuffix = ...applyInstantSkill(...)` |
+| ผลต้นเทิร์น | `server/phases/draw.js` `dealRound()` — `onRoundStartTick(engine, p)` |
 | โบนัส/หักพลังโจมตี | `damageBonus(engine, attacker, target, ctx)` |
-| หลบการโจมตีปกติ | `doAttack()` — `tryAttackDodge(engine, attacker, target)` |
+| หลบการโจมตีปกติ | `server/phases/attack.js` `doAttack()` — `tryAttackDodge(engine, attacker, target)` |
 | หลบ/ลดดาเมจจากสกิล | `adjustIncomingDamage(engine, p, n, isNormalAttack, kind)` |
-| แก้ดาเมจ/เกราะตอนโจมตี | `doAttack()` ก่อน `const hpBefore` |
-| ผลหลังหมัดลง | `doAttack()` ข้างๆ `ippo.resolveUpper` |
-| กันเกราะฟื้น | ด่านฟื้นเกราะใน `startRound` ข้างๆ `bat_ben.blocksArmorRegen` |
-| แช่ผู้เล่นอื่น | `hit()` · `lock()` · `useSkill()` · `useInventoryItem()` · `buyShopItem()` |
-| แก้เวลาเฟสจั่วไพ่ | `cardPhaseSeconds()` |
-| ข้อมูลส่งให้ client | `buildStateFor()` — `<id>: p.characterId === "<id>" ? ...publicState(p) : undefined` |
+| แก้ดาเมจ/เกราะตอนโจมตี | `server/phases/attack.js` `doAttack()` ก่อน `const hpBefore` |
+| ผลหลังหมัดลง | `server/phases/attack.js` `doAttack()` ข้างๆ `ippo.resolveUpper` |
+| กันเกราะฟื้น | ด่านฟื้นเกราะใน `dealRound` (`server/phases/draw.js`) ข้างๆ `bat_ben.blocksArmorRegen` |
+| แช่ผู้เล่นอื่น | `hit()` · `lock()` (`phases/draw.js`) · `useSkill()` (`skills.js`) · `useInventoryItem()` · `buyShopItem()` (`shop.js`) |
+| แก้เวลาเฟสจั่วไพ่ | `cardPhaseSeconds()` — `server/timers.js` |
+| ข้อมูลส่งให้ client | `server/view.js` `buildStateFor()` — `<id>: p.characterId === "<id>" ? ...publicState(p) : undefined` |
 | สลับกลางวัน/กลางคืน | `onDayNightTransition(engine, night, roundNumber, prevNight)` |
 
 ## กับดักที่เคยพลาดมาแล้ว — อ่านก่อนเขียน

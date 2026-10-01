@@ -8,7 +8,8 @@
 ## 1. ภาพรวมสถาปัตยกรรม
 
 ```
-server.js (6.3k บรรทัด)          เอนจินกลางทั้งหมด: state, เฟส, การ์ด, ดาเมจ, สกิล, socket handler
+server.js                        จุดเริ่ม: ตาข่าย error + require server/socket + export ให้เทสต์ + listen
+server/                          เอนจินกลางทั้งหมด แยกตามระบบ (ตารางด้านล่าง)
 characters.js (1.7k)             DATA ล้วน — roster/ชื่อสกิล/desc/cost/img + POSITION_COLORS + publicRoster()
 characters/index.js              มัดรวม CHAR_HOOKS = { [characterId]: module } — ตัวละครใหม่ต้อง require+push ที่นี่
 characters/<id>.js               LOGIC ของตัวละครนั้น (43 ตัว) — export { id, ...methods(engine, ...) }
@@ -21,12 +22,51 @@ tests/                           node --test (ไม่มี dep เพิ่�
 
 **หลักการแบ่งความรับผิดชอบ**
 - `characters.js` = ตัวเลข/ข้อความที่ผู้เล่นเห็น (ไม่มี logic)
-- `characters/<id>.js` = ผลของสกิลจริง — เรียก state ผ่าน `engine.*` เท่านั้น ห้าม require server.js (จะ circular)
-- `server.js` = ผู้ถือ state จริง + เรียก hook ตามจังหวะ (dispatcher)
+- `characters/<id>.js` = ผลของสกิลจริง — เรียก state ผ่าน `engine.*` เท่านั้น ห้าม require server.js หรือ server/* (จะ circular)
+- `server/` = ผู้ถือ state จริง + เรียก hook ตามจังหวะ (dispatcher)
 - ผลที่ "ตัวละครไหนก็ควรใช้ร่วมกันได้" → ใช้สถานะ universal ไม่สร้าง key เฉพาะตัวใหม่
 
-**engine object** (`server.js:6112`) คือ context ที่ส่งให้ hook ทุกตัว — เพราะ `gameState`/`roundNumber`/`centralDeck` เป็น `let`
+**engine object** (`server/engine.js`) คือ context ที่ส่งให้ hook ทุกตัว — `gameState`/`roundNumber`/`centralDeck` ฯลฯ อยู่ใน `match`
 จึง expose ผ่าน getter/setter (`engine.gameState`, `engine.setGameState(v)`) ไม่ใช่ค่า primitive ตรงๆ
+
+### 1.1 ไฟล์ใน server/ — ฟังก์ชันไหนอยู่ไหน
+
+| ไฟล์ | เนื้อหา (ฟังก์ชันหลัก) |
+|---|---|
+| `app.js` | Express + HTTP + Socket.IO (`app`, `server`, `io`), redirect ไฟล์สื่อไป R2 |
+| `constants.js` | ค่าคงที่ทั้งหมด (`CARD_TIME`, `MAX_HP`, ราคาร้านค้า, `DOOM_*`, `BARD_*`, `OGURI_*`, `TRANSFORMS` ฯลฯ) |
+| `match.js` | **สถานะของแมตช์** (เดิมเป็น `let` ระดับไฟล์): `players`, `gameState`, `gameMode`, `roundNumber`, `timeLeft`, `centralDeck`, `lastLog`, `cutsceneQueue`, `shopItems`, `turnSnapshot` … |
+| `engine.js` | `engine` object |
+| `lobby.js` | สี/ตำแหน่ง, โหวตโหมด, จัดทีม, `checkLobbyReady`, `startMatch`, `backToLobby` |
+| `timers.js` | `startPhaseTimer`/`clearPhaseTimer`, Clock Up, `cardPhaseSeconds`, `reduceCardTimer` |
+| `deck.js` | กองกลาง 43 ใบ, `drawCardFor`, `calculateScore`, `scoreOf`, `bustedOf`, เอฟเฟกต์สีการ์ด |
+| `combat.js` | `maxHpOf`/`maxArmorOf`, `healHp`, `loseHp`/`loseArmor`, `dealDirect`/`dealMixed`, `adjustIncomingDamage`, `instantDeath`, บัฟ/ดีบัฟ wrapper, `withEffectSource`, `resetCombat` |
+| `skills.js` | `useSkill`/`useSkillCore`, Bard (`bardCompose`/`bardPerform`), Locacaca, Overhaul |
+| `shop.js` | เหรียญ (`addGold`), ร้านค้ามายา (`openShop`, `buyShopItem`), ไอเทม (`useInventoryItem`), ปืน GUTS |
+| `view.js` | `displayImg`, `activeSkillMusic`, `buildStateFor`, `broadcastState`, `broadcastPositions` |
+| `cutscene.js` | `triggerCutscene`, `queueCutscene`, `notifyTransform`, `runCutsceneQueue` |
+| `qte.js` | QTE กลาง (`startQte`, `qteKey`, `finishQte`) |
+| `dayNight.js` | `isNightRound`, `dayCycleIndex`, `morningBonusActive` |
+| `overload.js` | snapshot ย้อนเทิร์น + Overload Force |
+| `characterRules.js` | กติกาเฉพาะตัวละครที่ระบบกลางยังเรียกตรง (Miyako/Shiki/Oguri/Recruit/Mark 42/Striker ฯลฯ) — ควรค่อยๆ ย้ายเข้า `characters/<id>.js` |
+| `pair.js` | สไตรเกอร์ ยูเรก้า: ผู้เล่น 2 คนบังคับตัวละครเดียว |
+| `socket.js` | `io.on('connection')` + handler ทุก event, session/reconnect, `newPlayerRecord` |
+| `phases/draw.js` | `dealRound`, `hit`, `lock`, `checkAllLocked` |
+| `phases/summary.js` | `resolveRound`, `afterResolve`, `goSummary` |
+| `phases/attack.js` | `afterSummary`, `computeAttackBase`, `doAttack`, `postAttackFollowup` |
+| `phases/endTurn.js` | `endTurn` |
+| `modes/mercury.js` | Type Mercury (ORT): `mercuryActive`, `isOrt`, `mercuryPick`, โหวตยอมแพ้ |
+| `modes/seraph.js` | SE.RA.PH: เฟสเลือกสถานที่ + `seraphAdvance` |
+
+**กติกาเวลาแก้โค้ดใน server/**
+- สถานะแมตช์อ่าน/เขียนผ่าน `match.<ชื่อ>` เสมอ (`match.gameState = "SUMMARY"`) — ห้าม destructure ออกมาเก็บ ค่าจะไม่อัปเดต
+  สถานะใหม่ของแมตช์ = เพิ่ม field ใน `server/match.js`
+- เรียกฟังก์ชันข้ามไฟล์ผ่านชื่อโมดูล (`combat.healHp(p, 1)`, `view.broadcastState()`) — ไฟล์ใน server/ require วนกันเอง
+  จึง **ห้าม** `const { healHp } = require("./combat")` (ได้ undefined ถ้าโหลดก่อน) · ยกเว้นไฟล์ที่ไม่ require ใครกลับ:
+  `constants`, `match`, `app` และ `engine` ที่ destructure ได้
+- ฟังก์ชันที่ไฟล์อื่นเรียกต้องอยู่ใน `Object.assign(module.exports, {...})` **บนสุดของไฟล์** (ก่อน require)
+  ใช้ได้เพราะ function declaration ถูก hoist — ห้ามเปลี่ยนเป็น `const fn = () => {}` ถ้าจะ export
+- ไฟล์ใหม่ใน server/ ไม่ต้องลงทะเบียนที่ไหน แค่ require จากไฟล์ที่ใช้
 
 ---
 
@@ -51,7 +91,7 @@ LOBBY → TEAM_MODE → TEAM_SETUP → PLAYING ⇄ CUTSCENE → SUMMARY → ATTA
 Clock Up (ไรเดอร์ Zect): ระหว่างแช่ตั้งตาข่าย 90 วิ แล้วจำเวลาที่เหลือไว้ที่ `clockUpResumeSeconds` — คลาย (เปิดไพ่ครบ/กดปิด) = เดินต่อจากค่านั้น
   ผ่าน `takeClockUpResume()` (แช่ตั้งแต่ต้นเทิร์น = เวลาเต็มของเฟส) · เดิมบังคับเหลือ 10 วิ
 
-`startPhaseTimer(seconds, onExpire)` (`:847`) มีตัวเดียวทั้งเกม — ต้อง `clearPhaseTimer()` ทุกครั้งที่เปลี่ยนเฟส
+`startPhaseTimer(seconds, onExpire)` (`server/timers.js`) มีตัวเดียวทั้งเกม — ต้อง `clearPhaseTimer()` ทุกครั้งที่เปลี่ยนเฟส
 
 ---
 
@@ -281,7 +321,7 @@ yuuki · nanaya · miyako (คอมโบ) · takuto (คอมโบ + คร�
 - `basic2`/`secondary2`/`ultimate2` สลับมาทับทั้งสามช่องผ่าน `dynamicSkillFor()` — ต้องคิดสูตรเดียวกัน
   ทั้งที่ `useSkill()` และ `publicState()` เหมือนทุกตัวละครที่สลับชุดสกิล
 
-**QTE (Quick Time Event) — ระบบกลาง (patch 3.0)** `server.js` · ตัวแรกที่ใช้คือ "ทำนองเพลงร็อก" ของยุย
+**QTE (Quick Time Event) — ระบบกลาง (patch 3.0)** `server/qte.js` · ตัวแรกที่ใช้คือ "ทำนองเพลงร็อก" ของยุย
 ```
 startQte(p, { count, perNoteMs, tag })   สุ่มลำดับ w/a/s/d เก็บที่ p.qte
 qteKey(id, key) / qteTimeout(id)         socket handler — ตรวจทั้ง "ตัวถูก" และ "มาทัน" ที่ server
@@ -480,7 +520,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 **Recruit (ยาก)** — `characters/recruit.js` · พลังชีวิต 5 / เกราะ 2 / กระสุน 6 (`p.recruit.bullets`)
 - **QTE คลิกจุดแดงเป็นระบบแยกจาก QTE กลาง** (`p.qte` = กดปุ่ม w/a/s/d) เก็บที่ `p.recruit.qte` — `dots` (จุดขึ้นพร้อมกัน ตำแหน่งสุ่มที่ server)
   / `chase` (จุดเดียววิ่ง เส้นทางสุ่มฝั่ง client) · ไม่มี setTimeout: เส้นตายเป็น ms + `syncPause` หัว `broadcastState` แบบโจทย์ของอุซากิ
-  · socket `recruitQteHit` (นับจุด) / `recruitQteDone` (server ตรวจเวลาซ้ำ) → `recruitQteFinish()` ใน server.js
+  · socket `recruitQteHit` (นับจุด) / `recruitQteDone` (server ตรวจเวลาซ้ำ) → `recruitQteFinish()` ใน `server/characterRules.js`
 - **โจมตีปกติ**: `recruitInterceptAttack` (หัว `doAttack` หลังด่านตรวจเป้า) เปิด QTE แทนการตี แล้วพักเฟส ATTACK ด้วย
   `RECRUIT_ATTACK_SAFETY_SECONDS` เป็นตาข่ายกันค้าง · ผ่านแล้วปัก `p.recruit.shot` แล้วเรียก `doAttack` ซ้ำเป็นการยิงจริง
   (ล่อเป้า/หลบหลีกของเป้าหมายยังทำงานตามปกติในรอบนั้น) · พลาด/กระสุนหมด = การ์ดสรุป `dodge: true` แล้วจบเทิร์น
@@ -514,7 +554,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · ไม่นับเป็นการหลบ: โล่ · ลบล้างของซาโตรุ · ขัดจังหวะของเอจิ
 - เทสต์: [tests/tohno.test.js](tests/tohno.test.js)
 
-**สไตรเกอร์ ยูเรก้า (พิเศษ · ตัวละครคู่)** — กลไกต่อสู้ `characters/striker.js` · ระบบคู่หูอยู่ใน `server.js` ("Striker Eureka: คู่หู")
+**สไตรเกอร์ ยูเรก้า (พิเศษ · ตัวละครคู่)** — กลไกต่อสู้ `characters/striker.js` · ระบบคู่หูอยู่ใน `server/pair.js`
 - **ระบบคู่หู — ในเกมมีระเบียนผู้เล่นแค่ 1 ระเบียน** (ของคนที่เลือกตัวละครก่อน = host) คนที่สองเก็บที่ `p.pair.co`
   engine ต่อสู้จึงเห็นยูเรก้าเป็นผู้เล่นคนเดียวโดยไม่ต้องแก้ลูปใดๆ ("แพ้ก็แพ้คู่" ได้มาฟรี) · **ห้ามใส่คู่หูลงใน `players`**
   - `playerIdFor(socket)` คืน host id ให้ socket ของคู่หูด้วย · `onPlayerEvent` กรองตาม `PAIR_ROLE_EVENTS`
@@ -637,13 +677,13 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   (เลือดไหลของเป้าหมายยังถูกล้างทุกครั้ง จึงต้องสะสมใหม่ให้ครบ 3 หน่วยก่อนถึงระเบิดได้อีก)
 
 **ภาระเวท (`spellburden`) — กฎกลาง ห้าม bypass**
-ทุกแหล่งต้องเรียก **`engine.applySpellburden(p, turns)`** เท่านั้น (`_universal_status.js` → wrapper ใน `server.js`)
+ทุกแหล่งต้องเรียก **`engine.applySpellburden(p, turns)`** เท่านั้น (`_universal_status.js` → wrapper ใน `server/combat.js`)
 ห้ามเขียน `p.statuses.spellburden` / `applyDebuff(p, "spellburden", ...)` ตรงๆ
 - จำนวนสะสม **+1 ต่อครั้ง เพดาน `SPELLBURDEN_MAX = 2`** (เพิ่มราคาสกิลของเป้าหมายได้มากสุด 2 แต้ม)
 - **ใช้ซ้ำใส่คนเดิมขณะสถานะยังติดอยู่ = ไม่ต่ออายุ** — `turns` ใช้เฉพาะตอนที่สถานะยังไม่ติด (ผ่าน `setTurnsNoRefresh()`)
 - `turns` เป็นของแต่ละแหล่ง: ผู้สังหารเมจ `MS_BURDEN_TURNS` 5 · ซาโตรุ `SPELLBURDEN_TURNS` 4 · โคโตเนะ `KOTONE_DANCE_NIGHT_BURDEN` 2
 - `resist` กันได้ทั้งก้อน (คืน `false`) · หมดอายุที่ `endTurn()` แล้วล้าง `statusAmt` ให้เอง (จำนวนไม่ค้าง)
-- wrapper ใน `server.js` กันเฉพาะ "เพื่อนร่วมทีม**คนอื่น**" ไม่กันการใส่ตัวเอง — สกิลที่แลกภาระเวทของตัวเองเป็นพลัง
+- wrapper ใน `server/combat.js` กันเฉพาะ "เพื่อนร่วมทีม**คนอื่น**" ไม่กันการใส่ตัวเอง — สกิลที่แลกภาระเวทของตัวเองเป็นพลัง
   (Dance Lession กลางคืน) ต้องทำงานได้ในโหมดทีมด้วย
 - เทสต์: [tests/spellburden.test.js](tests/spellburden.test.js)
 
@@ -694,7 +734,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   Overload Force ปิดทั้งโหมด รวมวันดวล (กันทั้งจุดทอยและ `triggerOverloadForce()`)
 
 - **เหรียญ**: จบเทิร์น +1 ทุกคน · ชนะจั่ว +1 · การ์ด King +10 · เพดาน `goldCapOf(p)` = 30 (โคโตเนะ 45 จากสกิลติดตัว)
-  - **ทุกการได้รับเหรียญต้องผ่าน `addGold(p, n)`** (`server.js`, เปิดให้ hook ผ่าน `engine.addGold`) — เป็นจุดเดียวที่
+  - **ทุกการได้รับเหรียญต้องผ่าน `addGold(p, n)`** (`server/shop.js`, เปิดให้ hook ผ่าน `engine.addGold`) — เป็นจุดเดียวที่
     บังคับเพดานรายบุคคลและยิง `CHAR_HOOKS.kotone.onGoldGained()` (กระปุกออมสิน 60% แบ่งเหรียญที่เพิ่งได้ไปหยอด
     ไม่เกินครั้งละ 3 เต็ม 15 — **หักจากยอดที่ได้รับ**) เขียน `p.gold` ตรงๆ = กระปุกออมสินเงียบ
   - `addGold()` คืน **ยอดสุทธิที่เหลืออยู่ในกระเป๋า** (หลังกระปุกแบ่งไปแล้ว) ไม่ใช่ยอดก่อนแบ่ง
@@ -859,7 +899,7 @@ module.exports = {
   attackBaseOverride(engine, attacker, target, ctx) { return 1; },  // แทนที่ดาเมจฐาน
   adjustIncomingDamage(engine, p, n, isNormalAttack) { return n; }, // ปรับดาเมจขาเข้า
 
-  // ที่เหลือคือ method ที่ server.js เรียกเองแบบเจาะจง: CHAR_HOOKS.<id>.<method>(engine, ...)
+  // ที่เหลือคือ method ที่ server/ เรียกเองแบบเจาะจง: CHAR_HOOKS.<id>.<method>(engine, ...)
   activateSomething(engine, p) { engine.log("..."); },
 };
 ```
@@ -867,7 +907,7 @@ module.exports = {
 **กฎเหล็ก**
 1. เข้าถึง state ผ่าน `engine.*` เท่านั้น (`engine.log`, `engine.healHp`, `engine.dealMixed`, `engine.players`, …)
 2. อ่านค่า `let` ของ server ผ่าน getter (`engine.roundNumber`) — เขียนผ่าน setter (`engine.setRoundNumber`)
-3. ค่าคงที่เฉพาะตัวละครเก็บในไฟล์ตัวเอง — ที่ยังค้างใน server.js คือตัวที่ shared loop ยังใช้อยู่ (มีคอมเมนต์กำกับทุกตัว)
+3. ค่าคงที่เฉพาะตัวละครเก็บในไฟล์ตัวเอง — ที่ยังค้างใน `server/constants.js` คือตัวที่ shared loop ยังใช้อยู่ (มีคอมเมนต์กำกับทุกตัว)
 4. ตัวละครใหม่ = เพิ่ม data ใน `characters.js` + ไฟล์ใน `characters/` + `require`+push ใน `characters/index.js`
 
 ---
@@ -885,7 +925,7 @@ module.exports = {
 9. ไฟล์สื่อ (รูป/วีดีโอ/เพลง) ไม่ track ใน git — ไม่มีไฟล์ในเครื่อง client จะ fallback เป็นอีโมจิ (`client/src/data/avatars.js`)
 10. **ตัวละคร `unique`** (คอนเนอร์ RK800 · ยุย โยชิโอกะ · อิสึกะ ชิโด) กันซ้ำ **2 ชั้น**: handler `join` ตอบ `characterTaken` และหน้าเลือกตัวละคร
     ปิดการ์ดจาก event `takenChars` — เพิ่มตัว unique ใหม่ต้องแค่ใส่ `unique: true` ใน `characters.js` เท่านั้น
-11. `resetCombat(p)` `:1939` คือรายการฟิลด์ผู้เล่นทั้งหมด — **ฟิลด์ใหม่ของตัวละครต้องรีเซ็ตที่นี่** ไม่งั้นค้างข้ามแมตช์
+11. `resetCombat(p)` (`server/combat.js`) คือรายการฟิลด์ผู้เล่นทั้งหมด — **ฟิลด์ใหม่ของตัวละครต้องรีเซ็ตที่นี่** ไม่งั้นค้างข้ามแมตช์
 
 ---
 
@@ -897,4 +937,5 @@ npm test    # node --test "tests/**/*.test.js"
 - `server.integration.test.js` — spawn server จริงแล้วต่อด้วย socket.io-client (port 32000 + pid%1000)
 - `computeAttackBase.test.js` — `require("../server.js").computeAttackBase` ตรงๆ (server ไม่ listen เมื่อไม่ใช่ main module)
 - `tests/characters/*.test.js` — ทดสอบ hook รายตัวละครโดย mock `engine`
-- อยากเทสต์ฟังก์ชันใหม่ใน server.js ต้องเพิ่มเข้า `module.exports` ท้ายไฟล์ก่อน
+- อยากเทสต์ฟังก์ชันใหม่ใน server/ ต้องเพิ่มเข้า `module.exports` ท้าย `server.js` ก่อน (เช่น `doAttack: attack.doAttack`)
+- เทสต์ที่ค้นข้อความในโค้ดฝั่ง server ใช้ `serverSource()` จาก `tests/serverSource.js` (อ่าน server.js + server/ ทั้งหมด)

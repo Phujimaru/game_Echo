@@ -28,7 +28,7 @@ grep -rn "<id>\|<Id>\|<ID>" --include=*.js --include=*.jsx --include=*.css . \
 ไล่จาก "ปลายน้ำ" เข้าหา "ต้นน้ำ" แล้วเช็ค syntax ทุกก้าว — ถ้าลบ `characters/<id>.js`
 ตั้งแต่แรก ไฟล์อื่นจะพังหมดจนหาจุดที่เหลือไม่เจอ
 
-1. `server.js` (จุดเยอะสุด) → `node --check server.js`
+1. `server/` (จุดเยอะสุด — `grep -rn "<id>" server`) → `node -e "require('./server.js')"`
 2. `client/src/screens/Game.jsx` → `npx eslint client/src/screens/Game.jsx`
 3. `characters.js` · `characters/_transforms.js` · `characters/index.js`
 4. ไฟล์เล็ก: `audio.js` · `arena.css` · `CharacterSelect.jsx` · `BattleScenes.jsx` · `permanentStatus.js`
@@ -36,14 +36,14 @@ grep -rn "<id>\|<Id>\|<ID>" --include=*.js --include=*.jsx --include=*.css . \
 6. เทสต์ที่เหลือซึ่งอ้างถึงเขา (`computeAttackBase.test.js`, `modalMounts.test.js`)
 7. `npm test` 2-3 รอบ · `npx eslint` · `cd client && npm run build`
 
-## จุดที่ต้องถอนใน server.js
+## จุดที่ต้องถอนใน server/
 
 ใช้เป็นเช็คลิสต์คู่กับผล grep — ทุกบรรทัดที่ `add-character` บอกให้ "เสียบ" คือบรรทัดที่ต้อง "ถอน"
 
 | หมวด | สิ่งที่ต้องถอน |
 |---|---|
 | ค่าคงที่ | `<ID>_*_IMG` ทั้งชุด **และชื่อที่ไปโผล่ในก้อน `img` ที่ส่งให้ `buildTransforms`** |
-| ตัวแปร module-level | ธงสนามของเขา (`oberonDevour`) + ทุกที่ที่ reset และที่อยู่ในสแนปช็อตย้อนเวลา |
+| สถานะแมตช์ (`server/match.js`) | ธงสนามของเขา (`match.oberonDevour`) + ทุกที่ที่ reset และที่อยู่ในสแนปช็อตย้อนเวลา |
 | ฮุค | `resetCombat` · `onRoundStartTick` · `canUseSkill` · `applyInstantSkill` · `damageBonus` · `tryAttackDodge` · `displayImg` · `publicState` · `maybeQueueIntro` |
 | ด่านกลางเกม | `hit()` · `lock()` · `useSkill()` · `buyShopItem()` · `useInventoryItem()` · `endTurn()` |
 | ฟังก์ชันเฉพาะตัว | ฟังก์ชันระดับไฟล์ที่เขียนไว้ให้เขาคนเดียว (`beginKotarouRewindDraw`) + ที่ export ให้เทสต์ |
@@ -107,7 +107,7 @@ j = next(k for k in range(i + 1, len(lines))
 **5. คอมเมนต์ท้ายบรรทัด `require` มีของตัวละครอื่นติดมาด้วย** — ใน `_transforms.js` คอมเมนต์
 ของสามตัวละครถูกต่อกันอยู่บรรทัดเดียว ลบทั้งบรรทัดจะพาคำอธิบายของคนอื่นหายไปด้วย
 
-**6. สำรองไฟล์ก่อนรันสคริปต์ลบ** — `cp server.js /tmp/server.bak.js` ทุกครั้ง สคริปต์ที่ assert
+**6. สำรองไฟล์ก่อนรันสคริปต์ลบ** — `git stash` หรือ commit ก่อนทุกครั้ง สคริปต์ที่ assert
 กลางทางจะทิ้งไฟล์ไว้ครึ่งๆ กลางๆ ถ้าเขียนแบบ write ทีละจุด (เขียนแบบสะสมใน memory แล้ว
 write ครั้งเดียวตอนจบจะปลอดภัยกว่า)
 
@@ -119,7 +119,7 @@ write ครั้งเดียวตอนจบจะปลอดภัย�
 
 บัคที่เจอซ้ำๆ ในโค้ดเบสนี้มาจากรากเดียวกัน: **แกนร่วมที่ตัวละครหลายตัวใช้**
 
-**ฮุคร่วมถูกเรียกซ้ำ** — `server.js` เรียก `CHAR_HOOKS.a.onRoundStartTick(p)` และ
+**ฮุคร่วมถูกเรียกซ้ำ** — `server/` เรียก `CHAR_HOOKS.a.onRoundStartTick(p)` และ
 `CHAR_HOOKS.b.onRoundStartTick(p)` กับผู้เล่น**ทุกคน** ถ้าทั้งสองไฟล์ส่งต่อให้แกนร่วมที่
 ด่านเป็น "เป็นตระกูลนี้ไหม" ผลจะถูกคิดสองรอบ (Clock Up เคยกินแต้ม 4/เทิร์นแทน 2)
 → **ทุกฮุคต้องมีด่าน id ตัวเองก่อนส่งต่อให้แกนร่วมเสมอ** และเทสต์ควรเรียกฮุคของ**ทุกตัวในตระกูล**

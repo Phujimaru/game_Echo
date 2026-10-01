@@ -6,9 +6,9 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 
 function serverSeconds(name) {
-  const src = fs.readFileSync(path.join(root, "server.js"), "utf8");
+  const src = fs.readFileSync(path.join(root, "server", "constants.js"), "utf8");
   const m = new RegExp(`const ${name}\\s*=\\s*(\\d+(?:\\.\\d+)?)`).exec(src);
-  assert.ok(m, `หา ${name} ใน server.js ไม่เจอ`);
+  assert.ok(m, `หา ${name} ใน server/constants.js ไม่เจอ`);
   return Number(m[1]);
 }
 

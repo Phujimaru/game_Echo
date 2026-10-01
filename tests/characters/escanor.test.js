@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const escanor = require('../../characters/escanor.js');
 const universal = require('../../characters/_universal_status.js');
+const { serverSource } = require('../serverSource');
 const escanorCharacter = require('../../characters.js').CHARACTERS.find((entry) => entry.id === 'escanor');
 
 function mkPlayer(over = {}) {
@@ -317,7 +318,7 @@ test('Eternal Sunshine leaves Escanor in Morning when Solar reaches zero during 
 });
 
 test('server preserves Solar during the generic status countdown', () => {
-  const serverText = fs.readFileSync(path.resolve(__dirname, '../../server.js'), 'utf8');
+  const serverText = serverSource();
   const persistentStatusRule = serverText.split('\n').find((line) => line.includes('escanorMorning') && line.includes('continue;')) || '';
   assert.match(persistentStatusRule, /escanorSolar/, 'Solar must not be decremented immediately after it is granted');
 });
@@ -669,7 +670,7 @@ test('Morning and Night form notifications are hidden because the profile alread
 });
 
 test('pending Escanor after-reveal skills stay hidden from opponents', () => {
-  const serverText = fs.readFileSync(path.resolve(__dirname, '../../server.js'), 'utf8');
+  const serverText = serverSource();
   for (const status of ['escanorSpearBurst', 'escanorFlare', 'escanorFlareNoon', 'escanorPunch', 'escanorRhitta', 'escanorRhittaNoon']) {
     assert.match(serverText, new RegExp(`HIDDEN_UNTIL_REVEAL[\\s\\S]{0,400}${status}`));
   }
@@ -719,7 +720,7 @@ test('Noon self-cost deaths go through the shared death-save pipeline', () => {
 test('the retired escanorSpear status is gone from the hook', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', '..', 'characters', 'escanor.js'), 'utf8');
   assert.equal(/escanorSpear(?!Burst)/.test(src), false, 'escanorSpear เป็นโค้ดตาย ไม่มีจุดไหนเซ็ตสถานะนี้');
-  const server = fs.readFileSync(path.join(__dirname, '..', '..', 'server.js'), 'utf8');
+  const server = serverSource();
   assert.equal(/escanorSpear(?!Burst)/.test(server), false);
 });
 

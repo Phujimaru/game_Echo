@@ -25,7 +25,7 @@
 
 ## สแตก
 - **Frontend**: React (Vite) + Tailwind CSS — โฟลเดอร์ `client/` (ธีม ECHO)
-- **Backend/Realtime**: Node.js + Express + Socket.IO — `server.js` (เกมเดียวทั้งเว็บ, ยังไม่มีระบบห้อง)
+- **Backend/Realtime**: Node.js + Express + Socket.IO — `server.js` + `server/` (เกมเดียวทั้งเว็บ, ยังไม่มีระบบห้อง)
 
 ## รันในเครื่อง
 
@@ -78,16 +78,23 @@ npm start            # เปิด http://localhost:3000 (server เสิร�
   โลโก้เก็บเป็น `.webp` (เล็กกว่า png เดิม ~10 เท่า) · mp3 ในโฟลเดอร์ `theme_song` เข้ารหัสที่ ~120 kbps อยู่แล้ว
   ไม่ควร re-encode ซ้ำเพราะเสียคุณภาพโดยแทบไม่ได้ขนาดคืน
 - **ข้อมูลเกม (WebSocket)** — ตัวจับเวลาส่งแค่ event `tick` (ตัวเลขนับถอยหลังล้วน ๆ) ทุกวินาที และ broadcast
-  state ตัวเต็มทุก `RESYNC_EVERY` วินาทีเท่านั้น (`server.js`) · socket.io เปิด `perMessageDeflate` ไว้แล้ว
+  state ตัวเต็มทุก `RESYNC_EVERY` วินาทีเท่านั้น (`server/timers.js`) · socket.io เปิด `perMessageDeflate` ไว้แล้ว
   ถ้าจะเพิ่มฟิลด์ใหม่ลง state อย่าลืมว่ามันถูกส่งให้ผู้เล่นทุกคน — เลี่ยงการยัดข้อความยาว ๆ ที่ไม่เปลี่ยนค่า
   (วัดจริงกับแมตช์ 6 คนที่นั่งเฉย ๆ: ก่อนแก้ 720 MB/ชม. หลังแก้ 10.4 MB/ชม.)
 - **bundle (HTTP)** — เปิด `compression()` ไว้แล้ว js/css ของ vite ถูก gzip ก่อนส่ง (637 KB -> 175 KB)
 
 ## โครงสร้างไฟล์
 ```
-server.js              เซิร์ฟเวอร์ + เอนจินเกม (Socket.io) — HP/เกราะ/สกิล/ต่อสู้/ตำแหน่ง/ห้องรอ
+server.js              จุดเริ่มเซิร์ฟเวอร์ (require server/ แล้ว listen)
+server/                เอนจินเกมแยกตามระบบ — ดูตาราง "ฟังก์ชันไหนอยู่ไหน" ใน GAME_SYSTEM.md §1.1
+  match.js             สถานะของแมตช์ (players/gameState/roundNumber …)
+  constants.js         ค่าคงที่ทั้งหมด
+  engine.js            engine object ที่ส่งให้ characters/*.js
+  combat.js · skills.js · view.js · shop.js · lobby.js · socket.js · deck.js · timers.js …
+  phases/              draw · summary · attack · endTurn (วงจร 1 รอบ)
+  modes/               mercury (Raid Boss ORT) · seraph (SE.RA.PH)
 characters.js          roster ตัวละคร (id/ชื่อ/รูปโปรไฟล์/ชื่อสกิล) + สีตำแหน่ง P1-P6 — ไม่ใช่ที่แก้เอฟเฟกต์สกิล (ดูด้านล่าง)
-characters/             โค้ดเอฟเฟกต์/พาสซีฟจริงของแต่ละตัวละคร แยกไฟล์ต่อคน (server.js require ผ่าน characters/index.js)
+characters/             โค้ดเอฟเฟกต์/พาสซีฟจริงของแต่ละตัวละคร แยกไฟล์ต่อคน (server/ require ผ่าน characters/index.js)
   index.js              รวม CHAR_HOOKS — ทุกตัวละครต้องลงทะเบียนที่นี่
   _universal_status.js  ระบบบัฟ/ดีบัฟกลางที่ตัวละครไหนก็ใช้ร่วมกันได้ (ไม่ใช่ตัวละคร ไม่มี id)
                         เช่น เสริมพลัง/คุ้มครอง/ต้านสถานะผิดปกติ/หลบหลีก/ลุกไหม้/เนตรมณะ (โอกาสสังหาร 20%)
@@ -109,7 +116,7 @@ client/                React (Vite) + Tailwind — ธีม ECHO
 
 ## เพิ่ม/แก้ตัวละคร
 1. **ข้อมูล roster** (ชื่อ, รูปโปรไฟล์, ชื่อสกิล, ค่าคงที่ที่ engine กลางต้องรู้) แก้ที่ [characters.js](characters.js)
-2. **เอฟเฟกต์สกิล/พาสซีฟจริง** แก้ที่ไฟล์ของตัวละครนั้นใน [characters/](characters/) (เช่น `characters/tohno.js`) — แต่ละไฟล์ export ฟังก์ชันที่ `server.js` เรียกผ่าน `CHAR_HOOKS.<id>.<method>(engine, ...)` ดูตัวอย่างจากไฟล์ตัวละครที่มีอยู่แล้วเป็นแนวทาง — ตัวละครใหม่ต้องเพิ่ม `require`+เข้า array ใน [characters/index.js](characters/index.js) ด้วย
+2. **เอฟเฟกต์สกิล/พาสซีฟจริง** แก้ที่ไฟล์ของตัวละครนั้นใน [characters/](characters/) (เช่น `characters/tohno.js`) — แต่ละไฟล์ export ฟังก์ชันที่ `server/` เรียกผ่าน `CHAR_HOOKS.<id>.<method>(engine, ...)` ดูตัวอย่างจากไฟล์ตัวละครที่มีอยู่แล้วเป็นแนวทาง — ตัวละครใหม่ต้องเพิ่ม `require`+เข้า array ใน [characters/index.js](characters/index.js) ด้วย
 3. ถ้าเอฟเฟกต์นั้นเป็นกลไก**กลาง**ที่ตัวละครไหนก็ควรใช้ร่วมกันได้ (เช่น "ดาเมจเพิ่ม N", "ห้ามใช้สกิล N เทิร์น") ให้ใช้ระบบสถานะ universal ใน [characters/_universal_status.js](characters/_universal_status.js) แทนการสร้าง key สถานะใหม่เฉพาะตัว
 
 ## รัน test

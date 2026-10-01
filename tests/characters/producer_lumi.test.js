@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { engine, computeAttackBase } = require('../../server.js');
 const lumi = require('../../characters/producer_lumi.js');
 const CHARACTERS = require('../../characters.js');
+const { serverSource } = require('../serverSource');
 
 const saved = {
   queueCutscene: engine.queueCutscene,
@@ -273,8 +274,7 @@ test('[regression] ไอดอลทุกคนต้องมีภาพป�
 });
 
 test('[regression] buildStateFor ต้องสลับปุ่มให้ตรงกับ useSkill (ไม่ใช่แค่ฝั่งเดียว)', () => {
-  const fs = require('fs');
-  const src = fs.readFileSync(require('path').join(__dirname, '../../server.js'), 'utf8');
+  const src = serverSource();
   const n = (src.match(/producer_lumi\.dynamicSkillFor/g) || []).length;
   assert.ok(n >= 3, `ต้องเรียก dynamicSkillFor ทั้งใน useSkill และ buildStateFor (basic+ultimate) — พบ ${n} จุด`);
 });
@@ -482,9 +482,7 @@ test('[regression] luminous: นับ "จำนวนครั้ง" ไม�
 test('[regression] luminous: จุดนับต้องอยู่ก่อนด่านหลบหลีกใน doAttack', () => {
   // luminous มีการหลบ 40% ของคาโฮะติดมาด้วย — ถ้านับหลังด่านหลบ หมัดที่ถูกหลบ (~40%) จะหายไปเงียบๆ
   //  จนรางวัลแทบไม่มีทางเกิดขึ้นเลย (บั๊กที่ผู้เล่นเจอจริง)
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
+  const src = serverSource();
   const iCount = src.indexOf('producer_lumi.onAttackedNormally');
   const iDodge = src.indexOf('producer_lumi.tryAttackDodge');
   const iEiji = src.indexOf('eiji.tryAttackDodge(engine, attacker, target)');
@@ -495,9 +493,7 @@ test('[regression] luminous: จุดนับต้องอยู่ก่อ
 
 test('[regression] luminous: รางวัลต้องจ่ายได้แม้หมัดที่ทำให้ครบถูกหลบ (มีตาข่ายที่ endTurn)', () => {
   // หมัดที่ถูกหลบทำให้ doAttack return ตั้งแต่ด่านหลบ ไม่ผ่าน postAttackFollowup ที่เรียก flushBurst
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
+  const src = serverSource();
   const n = (src.match(/producer_lumi\.flushBurst/g) || []).length;
   assert.ok(n >= 2, `flushBurst ต้องถูกเรียกทั้งที่ postAttackFollowup และ endTurn — พบ ${n} จุด`);
 });

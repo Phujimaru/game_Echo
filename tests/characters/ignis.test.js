@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const ignis = require('../../characters/ignis.js');
+const { serverSourcePaths } = require('../serverSource');
 const { CHAR_BY_ID } = require('../../characters.js');
 
 function mkEngine(over = {}) {
@@ -145,7 +146,7 @@ test('ไฟล์ภาพและวิดีโอของ Trigger Dark ท
 
 test('ข้อความไทยของ Ignis ยังคงเป็น UTF-8 และไม่มีอักขระเพี้ยน', () => {
   const root = path.resolve(__dirname, '../..');
-  for (const file of ['characters/ignis.js', 'characters.js', 'characters/_transforms.js', 'server.js', 'client/src/screens/Game.jsx']) {
+  for (const file of ['characters/ignis.js', 'characters.js', 'characters/_transforms.js', ...serverSourcePaths(), 'client/src/screens/Game.jsx']) {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
     assert.equal(text.includes('\uFFFD'), false, `${file} contains a replacement character`);
     assert.equal(/à[¸¹]|ðŸ/.test(text), false, `${file} contains mojibake`);
