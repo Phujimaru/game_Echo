@@ -301,6 +301,8 @@ io.on('connection', (socket) => {
     match.gameState = 'TEAM_MODE';
     view.broadcastState();
   }, 4);
+  // หน้าเลือกโหมด -> ย้อนกลับห้องรอ (ทุกคนยกเลิกพร้อม)
+  onPlayerEvent(socket, 'modeBackToLobby', () => lobby.modeSelectBackToLobby(), 4);
   onPlayerEvent(socket, 'chooseTeam', (id, { teamId } = {}) => lobby.chooseTeam(id, teamId), 8);
   onPlayerEvent(socket, 'confirmTeam', (id, { confirmed } = {}) => lobby.confirmTeam(id, confirmed), 8);
   // ห้องรอ: กดพร้อม/ยกเลิกพร้อม — ครบทุกคน (อย่างน้อย 2 คน) เริ่มเกมอัตโนมัติ

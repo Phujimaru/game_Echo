@@ -2,6 +2,8 @@
 //  เปิดหน้ามา = ยังไม่เลือกดูโหมดไหน (โลก + หมุดเท่านั้น ไม่มีแผง ไม่มีเส้นทาง)
 //  กดหมุด/ป้าย = เลือกดู: โลกหันเข้าหาหมุดแล้วซูมเล็กน้อย (Lobby.jsx globeLayout) แผงเลื่อนเข้ามาทางขวา
 //  กดที่ว่าง / Esc = เลิกดู: แผงเลื่อนออก เส้นทางหาย โลกกลับไปมุมภาพรวม
+//  ท่าพัก (ไม่ได้เลือกดูโหมดไหน): หมุด "อิสระ" อยู่กลางโลกหันตรงหน้า · หน้านี้โลกไม่หมุนเอง (ออกจากหน้าแล้วคืนค่า)
+//  ย้อนกลับ = กลับห้องรอ (modeBackToLobby — ทุกคนยกเลิกพร้อม) ไม่ใช่ออกจากห้อง
 //  โหมดที่มีการเดินทาง (อิสระ/คู่หู/สหายทั้ง 3 เอ๋ย) แสดงเส้นทางภูมิภาค I→VII บนโลก (ดูอย่างเดียว)
 //  ป้ายชื่อโหมดแต่ละโหมดมีกรอบของตัวเอง (lobby.css .ocl-modetag[data-mode]) · หน้านี้ไม่มีอีโมต
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -35,7 +37,7 @@ function useOptions(state) {
  * @param focus   โหมดที่เลือกดูอยู่ (null = ภาพรวม) — Lobby.jsx ถือค่านี้เพราะใช้คิดตำแหน่งลูกโลกด้วย
  * @param onFocus (mode|null)
  */
-export default function ModeVote({ state, core, interceptRef, focus, onFocus, onBack }) {
+export default function ModeVote({ state, core, interceptRef, focus, onFocus }) {
   const options = useOptions(state);
   const me = state.players.find((p) => p.id === state.youId);
   const myVote = me?.modeVote || null;
@@ -101,6 +103,7 @@ export default function ModeVote({ state, core, interceptRef, focus, onFocus, on
     const areaDirs = JOURNEY_AREAS.map((_, i) => regionDir(i));
     const s = { root, markers, hits, token, route: null, curve: null, areaDirs, focus: null };
     scene.current = s;
+    core.setAutoSpin(0); // หน้าเลือกโหมด: โลกนิ่ง หมุนเฉพาะตอนหันเข้าหาหมุด (focusDir)
 
     const tmp = new THREE.Vector3();
     const offFrame = core.onFrame((dt, clock) => {
@@ -154,6 +157,7 @@ export default function ModeVote({ state, core, interceptRef, focus, onFocus, on
       root.traverse((o) => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
       scene.current = null;
       core.focusDir(null);
+      core.setAutoSpin(0.1); // ค่าปกติของลูกโลกร่วม (หน้าห้องรอ/จัดทีม)
     };
   }, [core, interceptRef]);
 
@@ -170,14 +174,14 @@ export default function ModeVote({ state, core, interceptRef, focus, onFocus, on
     }
   });
 
-  // โหมดที่เลือกดูอยู่: หันโลกเข้าหา + เส้นทางการเดินทาง · null = ปล่อยโลกหมุนเอง ไม่มีเส้นทาง
+  // โหมดที่เลือกดูอยู่: หันโลกเข้าหา + เส้นทางการเดินทาง · null = ท่าพัก (หมุดอิสระกลางโลก) ไม่มีเส้นทาง
   useEffect(() => {
     const s = scene.current;
     if (!s || !core) return;
     const { THREE } = core;
     s.focus = focus;
     for (const [mode, m] of Object.entries(s.markers)) m.ring.material.opacity = mode === focus ? 0.9 : 0;
-    core.focusDir(s.markers[focus] ? s.markers[focus].dir : null);
+    core.focusDir((s.markers[focus] || s.markers.ffa).dir);
     if (s.route) { s.root.remove(s.route); s.route.geometry.dispose(); s.route.material.dispose(); s.route = null; }
     s.curve = null;
     s.token.visible = false;
@@ -287,7 +291,7 @@ export default function ModeVote({ state, core, interceptRef, focus, onFocus, on
         )}
       </div>
 
-      <OcButton variant="ghost" className="ocl-back oc-enter d2" onClick={onBack}>← ย้อนกลับ</OcButton>
+      <OcButton variant="ghost" className="ocl-back oc-enter d2" onClick={() => socket.emit("modeBackToLobby")}>← ย้อนกลับ</OcButton>
     </div>
   );
 }

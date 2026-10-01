@@ -11,8 +11,13 @@ import { THREE } from "../../globe/globeCore";
 import { FALLBACK } from "../../data/avatars";
 import { getPortrait, portraitDone } from "./portraits";
 
-const CARD_W = 0.2, CARD_H = 0.267;
-const TW = 192, TH = 256;
+// การ์ดหกเหลี่ยม (ยอดแหลมบน-ล่าง สัดส่วน 7:8 แบบตราโปรไฟล์ในห้องรอ) — plane สี่เหลี่ยมแต่นอกหกเหลี่ยมโปร่งใส
+const CARD_W = 0.21, CARD_H = 0.24;
+const TW = 224, TH = 256;
+// จุดยอดหกเหลี่ยมเป็นสัดส่วนของกรอบ (เหมือน clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%))
+const HEX = [[0.5, 0], [1, 0.25], [1, 0.75], [0.5, 1], [0, 0.75], [0, 0.25]];
+// uv ของ plane (v ขึ้นบน) อยู่ในหกเหลี่ยมไหม — ใช้กรองการกดโดนมุมโปร่งใส
+const inHex = (u, v) => Math.abs(u - 0.5) <= 0.5 && Math.abs(v - 0.5) <= 0.5 - 0.5 * Math.abs(u - 0.5);
 const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ฉากเปิด: วง k เริ่มลากเส้นที่ DRAW_DELAY + k·DRAW_GAP วิ ใช้เวลา DRAW_DUR วิ · การ์ดโผล่ใช้ APPEAR วิ · สร้าง texture ≤ BUILD_PER_FRAME ใบ/เฟรม
 const DRAW_DELAY = 0.12, DRAW_GAP = 0.09, DRAW_DUR = 1.0, APPEAR = 0.42, BUILD_PER_FRAME = 2;
@@ -23,40 +28,71 @@ const FOCUS_TILT = 0.82, FOCUS_R = 1.75, FOCUS_Y = 0, FOCUS_CARD = 1.45;
 const Q_FOCUS = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), FOCUS_TILT);
 const UP = new THREE.Vector3(0, 1, 0);
 
-// status: null | { label, tone: "lost" | "block" } · entry = ภาพจาก portraits.js (ครอปสัดส่วนช่องภาพมาแล้ว)
+// เส้นหกเหลี่ยมหดเข้าจากขอบภาพ d px (หดตามแนวตั้งฉากของแต่ละด้าน — ขอบหนาเท่ากันทุกด้าน)
+function hexPath(ctx, d) {
+  const m = TH / (2 * TW); // ความชันด้านเฉียง
+  const sl = Math.hypot(TW / 2, TH / 4) / (TW / 2); // ด้านเฉียงเลื่อนเข้า d = ยอดบน/ล่างเลื่อนแนวตั้ง d·sl
+  const k = d * (sl - m);
+  const pts = [[TW / 2, d * sl], [TW - d, TH / 4 + k], [TW - d, (TH * 3) / 4 - k], [TW / 2, TH - d * sl], [d, (TH * 3) / 4 - k], [d, TH / 4 + k]];
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+}
+
+// status: null | { label, tone: "lost" | "block" } · entry = ภาพจาก portraits.js (ครอปสัดส่วน 7:8 มาแล้ว)
+//  หน้าตาเดียวกับตราโปรไฟล์ในห้องรอ: กรอบหกเหลี่ยมขาว + เส้นฟ้าด้านใน + ภาพตัวละครเต็มหกเหลี่ยม · นอกหกเหลี่ยมโปร่งใส
 function drawCard(ctx, c, status, entry) {
   ctx.clearRect(0, 0, TW, TH);
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, TW, TH);
   const dim = !!status;
-  const x0 = 6, y0 = 6, w = TW - 12, h = TH - 12;
+  // ขอบนอกขาว
+  hexPath(ctx, 1);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  // ภาพตัวละคร (ตัดเป็นหกเหลี่ยม)
+  ctx.save();
+  hexPath(ctx, 7);
+  ctx.clip();
   if (entry && entry.state === "ok" && entry.bmp) {
     const im = entry.bmp, iw = im.width || 1, ih = im.height || 1;
-    const s = Math.max(w / iw, h / ih), sw = w / s, sh = h / s;
+    const s = Math.max(TW / iw, TH / ih), sw = TW / s, sh = TH / s;
     const sx = (iw - sw) / 2, sy = Math.max(0, Math.min(ih - sh, (ih - sh) * 0.16)); // ครอปแบบ cover เอนขึ้นบน (หน้าตัวละคร)
     if (dim) ctx.filter = "grayscale(1) brightness(.85)";
-    ctx.drawImage(im, sx, sy, sw, sh, x0, y0, w, h);
+    ctx.drawImage(im, sx, sy, sw, sh, 0, 0, TW, TH);
     ctx.filter = "none";
   } else {
     const g = ctx.createLinearGradient(0, 0, TW, TH);
     g.addColorStop(0, dim ? "#b9c3cf" : "#c99ad6");
     g.addColorStop(1, dim ? "#8ba3c2" : "#3d8bd9");
     ctx.fillStyle = g;
-    ctx.fillRect(x0, y0, w, h);
-    ctx.font = "96px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+    ctx.fillRect(0, 0, TW, TH);
+    ctx.font = "92px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(FALLBACK[c.avatar] || "🙂", TW / 2, TH / 2);
   }
-  ctx.lineWidth = 6; ctx.strokeStyle = "#ffffff"; ctx.strokeRect(3, 3, TW - 6, TH - 6);
-  ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(61,139,217,.75)"; ctx.strokeRect(7, 7, TW - 14, TH - 14);
   if (status) {
-    ctx.fillStyle = "rgba(18,38,72,.82)";
-    ctx.fillRect(7, TH - 52, TW - 14, 38);
+    ctx.fillStyle = "rgba(18,38,72,.84)";
+    ctx.fillRect(0, TH * 0.6, TW, 40);
     ctx.fillStyle = status.tone === "lost" ? "#ffb3bf" : "#eaf3fc";
     ctx.font = "600 21px 'Chakra Petch', 'Kanit', sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(status.label, TW / 2, TH - 33, TW - 24);
+    ctx.fillText(status.label, TW / 2, TH * 0.6 + 21, TW - 28);
   }
+  ctx.restore();
+  // เส้นฟ้าด้านใน
+  hexPath(ctx, 9.5);
+  ctx.lineWidth = 1.6; ctx.strokeStyle = "rgba(61,139,217,.8)";
+  ctx.stroke();
+}
+
+// หกเหลี่ยมเป็น geometry (กรอบไฮไลต์การ์ดที่เลือก) ขนาด w×h อยู่กลางจุดศูนย์กลาง
+function hexGeometry(w, h) {
+  const sh = new THREE.Shape();
+  HEX.forEach(([u, v], i) => {
+    const x = (u - 0.5) * w, y = (0.5 - v) * h;
+    if (i) sh.lineTo(x, y); else sh.moveTo(x, y);
+  });
+  sh.closePath();
+  return new THREE.ShapeGeometry(sh);
 }
 
 // ระนาบวงที่ k จาก n วง: เส้นตั้งฉากกระจายรอบแกนสายตา → บนจอเป็นวงรีที่แกนยาวหมุนไปทีละ 180°/n (แบบสัญลักษณ์อะตอม)
@@ -145,7 +181,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
       hover: false, b: 0, vis: 1, hl: 0, cards: [],
     };
     r.cards = g.chars.map((c, i) => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: blank, transparent: true, opacity: 0 }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: blank, transparent: true, opacity: 0, alphaTest: 0.01 }));
       m.userData = { id: c.id, ring: k, idx: i };
       // ap = ความคืบหน้าการโผล่ (0..1) · ready = มี texture แล้ว · gate = วงต้องลากเส้นถึงไหนก่อนการ์ดใบนี้โผล่
       const card = { m, c, ctx: null, tex: null, entry: null, drawn: undefined, idx: i, op: 0, ap: 0, ready: false, gate: 0.2 + ((i + 0.5) / n) * 0.7 };
@@ -181,7 +217,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
     if (REDUCED) card.ap = 1;
   };
 
-  const selFrame = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W + 0.04, CARD_H + 0.04), new THREE.MeshBasicMaterial({ color: 0x9b4f96, transparent: true }));
+  const selFrame = new THREE.Mesh(hexGeometry(CARD_W + 0.042, CARD_H + 0.048), new THREE.MeshBasicMaterial({ color: 0x9b4f96, transparent: true }));
   selFrame.visible = false;
   selFrame.renderOrder = -0.5;
   root.add(selFrame);
@@ -208,9 +244,12 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
     });
     return out;
   };
+  // การ์ดใต้เมาส์ — นับเฉพาะจุดที่อยู่ในหกเหลี่ยม (มุมโปร่งใสของ plane ไม่บังการ์ดใบหลัง) และไม่ถูกโลกบัง
   const cardAt = (ev) => {
-    const h = core.pick(ev, interactive());
-    return h ? h.object.userData : null;
+    const hits = core.raycaster(ev).intersectObjects(interactive(), false);
+    const h = hits.find((x) => !x.uv || inHex(x.uv.x, x.uv.y));
+    if (!h) return null;
+    return core.pick(ev, [h.object]) ? h.object.userData : null;
   };
 
   let hoverRing = -1;

@@ -51,6 +51,9 @@
 .ocl-seat[data-status="ready"] .ocl-emb::before { background: var(--oc-echo); }
 .ocl-seat.me .ocl-emb { width: 92px; height: 106px; }
 .ocl-seat.me .ocl-emb-face { inset: 4px; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 30%, #fff) 0%, var(--oc-frost) 100%); }
+/* มาจากหน้าเลือกตัว (heroArrival): ที่นั่งเราแค่จางเข้า (ไม่เลื่อน — ภาพลอยต้องจอดตรงจุด) · ภาพจริงซ่อนจนภาพลอยจอด */
+.ocl-seat[data-hero] .ocl-seat-in { animation-name: ocl-fade; }
+.ocl-seat[data-hero-hide] .ocl-emb-face img { opacity: 0; }
 .ocl-seat[data-status="empty"] .ocl-emb { width: 40px; height: 46px; }
 .ocl-seat[data-status="empty"] .ocl-emb::before { background: var(--oc-sky); opacity: 0.55; }
 .ocl-seat[data-status="empty"] .ocl-emb-face { inset: 1.5px; background: rgba(255, 255, 255, 0.72); }

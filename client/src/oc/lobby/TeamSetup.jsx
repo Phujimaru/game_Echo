@@ -1,4 +1,5 @@
-// จัดทีม (gameState TEAM_SETUP) — คอลัมน์ทีมละใบ · เข้าทีม (chooseTeam) · ยืนยัน (confirmTeam) · เปลี่ยนโหมด (teamBackToMode)
+// จัดทีม (gameState TEAM_SETUP) — คอลัมน์ทีมละใบ · เข้าทีม (chooseTeam) · ยืนยัน (confirmTeam)
+//  ย้อนกลับ (ซ้ายล่าง) = ถอยทีละขั้นไปหน้าเลือกโหมด (teamBackToMode) ไม่ใช่ออกจากห้อง
 import { socket } from "../../socket";
 import { clickSound } from "../../audio";
 import { OcButton } from "../ui";
@@ -6,7 +7,7 @@ import { OcButton } from "../ui";
 const TEAM_COLORS = { A: "#b95fc4", B: "#e8bf5a", C: "#5fc4a0" };
 const teamColor = (id) => TEAM_COLORS[id] || "var(--oc-echo)";
 
-export default function TeamSetup({ state, onBack }) {
+export default function TeamSetup({ state }) {
   const me = state.players.find((p) => p.id === state.youId);
   const teams = state.teamOptions || [];
   const teamSize = state.teamSize || 2;
@@ -21,7 +22,6 @@ export default function TeamSetup({ state, onBack }) {
       </header>
 
       <div className="ocl-team-actions oc-enter d1">
-        <OcButton onClick={() => { clickSound(); socket.emit("teamBackToMode"); }}>เปลี่ยนโหมด</OcButton>
         <OcButton
           variant={me?.teamConfirmed ? "" : "primary"}
           disabled={!me?.teamId}
@@ -78,7 +78,7 @@ export default function TeamSetup({ state, onBack }) {
         <b>{readyCount} / {state.players.length}</b>
       </div>
 
-      <OcButton variant="ghost" className="ocl-back" onClick={onBack}>← ย้อนกลับ</OcButton>
+      <OcButton variant="ghost" className="ocl-back" onClick={() => socket.emit("teamBackToMode")}>← ย้อนกลับ</OcButton>
     </div>
   );
 }

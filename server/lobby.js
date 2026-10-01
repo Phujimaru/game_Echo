@@ -5,7 +5,7 @@ Object.assign(module.exports, {
   resetModeVotes, resetPregameFlowToLobby, validGameMode, modeOptionsFor, currentTeamOptions,
   modeVoteSummary, voteGameMode, chooseTeam, confirmTeam, remainingTeamWinInfo, releaseReservation,
   reservePosition, positionsFor, positionUsedByOther, checkLobbyReady, startSoloTest, startMatch, backToLobby,
-  relayLobbyEmote,
+  relayLobbyEmote, modeSelectBackToLobby,
 });
 
 const { CHAR_BY_ID, POSITION_COLORS } = require("../characters");
@@ -247,6 +247,14 @@ function startSoloTest(playerId) {
   p.ready = true;
   enterModeSelect();
   return match.gameState === "TEAM_MODE";
+}
+// หน้าเลือกโหมด -> ย้อนกลับห้องรอ (ปุ่มย้อนกลับ ถอยทีละขั้น) — ทุกคนกลับมาเป็น "ยังไม่พร้อม" (ไม่งั้นครบพร้อมแล้วเด้งกลับทันที)
+//  ล้างโหวตโหมด/ทีมด้วย · ใช้ได้เฉพาะตอนอยู่หน้าเลือกโหมด
+function modeSelectBackToLobby() {
+  if (match.gameState !== "TEAM_MODE") return false;
+  resetPregameFlowToLobby();
+  view.broadcastState();
+  return true;
 }
 // ฉากเปิดตัวผู้เล่น (GameIntro ฝั่ง client) กินเวลาเท่านี้ — สูตรเดียวกันกับ client/src/components/GameIntro.jsx
 //  วีดีโอเปิดตัวของตัวละครต้องรอให้มันจบก่อน ไม่งั้นคลิปจะเล่นอยู่ใต้ม่านแล้วโดนตัดกลางคัน

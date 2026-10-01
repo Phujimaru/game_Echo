@@ -1,8 +1,11 @@
 /* หน้าเลือกตัวละคร (ORDEAL CALL) — วงการ์ดตามหมวดรอบลูกโลก + ปุ่มหมวดซ้าย + การ์ดลอย/แผงข้อมูลขวา/ปุ่มยืนยันขวาล่าง (เมื่อเลือกตัว) */
 .cs-screen {
   --cs-side-r: max(28px, 3vw);
-  --cs-side-w: min(360px, calc(100vw - 32px));
-  --cs-show-w: min(280px, 20vw, 34vh);
+  --cs-side-w: 384px;
+  /* สูงคงที่ทุกตัวละคร — เว้นแถบบนและปุ่มยืนยันขวาล่าง */
+  --cs-side-h: min(580px, calc(100vh - 210px));
+  --cs-show-w: min(340px, 24vw, 46vh);
+  --cs-gap: max(28px, 2.4vw);
 }
 .cs-screen .oc-globe { cursor: default; }
 .cs-screen .oc-globe.is-focus { cursor: grab; }
@@ -59,71 +62,103 @@
 
 .cs-tip { position: absolute; z-index: 7; left: 0; top: 0; pointer-events: none; background: var(--oc-ink); color: #fff; font: 500 13px/1 var(--oc-f-body); padding: 7px 10px; white-space: nowrap; }
 
-/* ---------- การ์ดที่ลอยออกจากวง → ภาพหลักข้างแผง ---------- */
+/* ---------- การ์ดที่ลอยออกจากวง → ภาพหลักหกเหลี่ยม (หน้าตาเดียวกับตราโปรไฟล์ในห้องรอ) ข้างแผง ---------- */
 .cs-show-slot {
   position: absolute; visibility: hidden; pointer-events: none; top: 50%;
-  right: calc(var(--cs-side-r) + var(--cs-side-w) + 28px); width: var(--cs-show-w); aspect-ratio: 3 / 4; transform: translateY(-50%);
+  right: calc(var(--cs-side-r) + var(--cs-side-w) + var(--cs-gap)); width: var(--cs-show-w); aspect-ratio: 7 / 8; transform: translateY(-50%);
 }
 .cs-fly {
-  position: absolute; left: 0; top: 0; z-index: 4; width: var(--cs-show-w); aspect-ratio: 3 / 4;
+  position: absolute; left: 0; top: 0; z-index: 4; width: var(--cs-show-w); aspect-ratio: 7 / 8;
   transform-origin: 0 0; pointer-events: none; opacity: 0; will-change: transform, opacity;
 }
 .cs-fly:not([data-placed]) { visibility: hidden; }
-.cs-fly-card {
-  position: absolute; inset: 0; box-sizing: border-box; padding: 3.2%; background: #fff; overflow: hidden;
-  box-shadow: 0 0 0 1px var(--oc-line), 0 34px 60px -30px rgba(28, 63, 110, 0.6);
-  transition: box-shadow 0.4s;
+.cs-fly-card { --hex: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); position: absolute; inset: 0; filter: drop-shadow(0 22px 26px rgba(28, 63, 110, 0.3)); transition: filter 0.4s; }
+/* วงหกเหลี่ยมจางๆ รอบภาพหลักตอนลงจอด (กรอบทรงหกเหลี่ยมใช้ box-shadow ไม่ได้) */
+.cs-fly-card::before {
+  content: ""; position: absolute; inset: -3.2% -2.8%; clip-path: var(--hex); opacity: 0; transition: opacity 0.4s;
+  background: linear-gradient(160deg, rgba(201, 154, 214, 0.55), rgba(127, 184, 230, 0.45));
 }
-.cs-fly-card::after { content: ""; position: absolute; inset: 3.6% 4.8%; border: 1px solid rgba(61, 139, 217, 0.75); pointer-events: none; }
-.cs-fly-art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; display: block; }
+.cs-fly-hex { position: absolute; inset: 0; clip-path: var(--hex); background: #fff; }
+.cs-fly-face {
+  position: absolute; inset: 2.7%; clip-path: var(--hex); overflow: hidden;
+  background: linear-gradient(160deg, var(--oc-paper) 0%, var(--oc-frost) 100%);
+}
+.cs-fly-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; display: block; }
 .cs-fly-card.dim .cs-fly-art { filter: grayscale(1) brightness(0.85); }
-.cs-fly-card.emoji { background: linear-gradient(150deg, var(--oc-echo-glow), var(--oc-azure)); display: grid; place-items: center; }
-.cs-fly-card.dim.emoji { background: linear-gradient(150deg, #b9c3cf, #8ba3c2); }
-.cs-fly-emoji { font-size: calc(var(--cs-show-w) * 0.42); line-height: 1; }
+.cs-fly-face.emoji { background: linear-gradient(150deg, var(--oc-echo-glow), var(--oc-azure)); display: grid; place-items: center; }
+.cs-fly-card.dim .cs-fly-face.emoji { background: linear-gradient(150deg, #b9c3cf, #8ba3c2); }
+.cs-fly-emoji { font-size: calc(var(--cs-show-w) * 0.4); line-height: 1; }
+.cs-fly-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cs-fly-line polygon { fill: none; stroke: rgba(61, 139, 217, 0.8); stroke-width: 1.4px; vector-effect: non-scaling-stroke; }
 .cs-fly-flag {
-  position: absolute; left: 4.8%; right: 4.8%; bottom: 6%; padding: 9px 6px; text-align: center;
-  background: rgba(18, 38, 72, 0.82); color: #eaf3fc; font: 600 16px/1.2 var(--oc-f-ui);
+  position: absolute; left: 0; right: 0; top: 60%; padding: 9px 6px; text-align: center;
+  background: rgba(18, 38, 72, 0.84); color: #eaf3fc; font: 600 16px/1.2 var(--oc-f-ui);
 }
 .cs-fly-flag.lost { color: #ffb3bf; }
-.cs-fly[data-landed] .cs-fly-card { animation: cs-bob 4.6s ease-in-out infinite; box-shadow: 0 0 0 1px var(--oc-line), 0 0 0 7px rgba(155, 79, 150, 0.14), 0 40px 70px -30px rgba(28, 63, 110, 0.65); }
+.cs-fly[data-landed] .cs-fly-card { animation: cs-bob 4.6s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(155, 79, 150, 0.28)) drop-shadow(0 30px 28px rgba(28, 63, 110, 0.32)); }
+.cs-fly[data-landed] .cs-fly-card::before { opacity: 0.75; }
 @keyframes cs-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 @media (prefers-reduced-motion: reduce) { .cs-fly[data-landed] .cs-fly-card { animation: none; } }
 
-/* ---------- แผงข้อมูลตัวละคร (โผล่เมื่อเลือกตัว) ---------- */
+/* ---------- แผงข้อมูลตัวละคร (โผล่เมื่อเลือกตัว) — ขนาดคงที่ทุกตัว กึ่งกลางแนวตั้งเดียวกับภาพหลัก · สกิลยาวเลื่อนภายใน ---------- */
 .cs-side {
-  position: absolute; z-index: 5; top: 76px; bottom: 112px; right: var(--cs-side-r); width: var(--cs-side-w);
-  display: flex; flex-direction: column; justify-content: center;
-  transform: translateX(48px); opacity: 0; visibility: hidden; pointer-events: none;
+  position: absolute; z-index: 5; top: 50%; right: var(--cs-side-r); width: var(--cs-side-w); height: var(--cs-side-h);
+  display: flex; flex-direction: column;
+  transform: translate(48px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
   transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s, visibility 0s 0.55s;
 }
-.cs-side.open { transform: none; opacity: 1; visibility: visible; transition-delay: 0.12s, 0.12s, 0s; }
+.cs-side.open { transform: translate(0, -50%); opacity: 1; visibility: visible; transition-delay: 0.12s, 0.12s, 0s; }
 .cs-side.open .oc-panel { pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { .cs-side { transition: none; } }
-.cs-side .oc-panel { padding: 22px; gap: 14px; flex: 0 1 auto; min-height: 0; max-height: 100%; box-sizing: border-box; }
-.cs-head { display: flex; flex-direction: column; gap: 8px; }
-.cs-head .oc-h2 { font-size: 24px; overflow-wrap: anywhere; }
-.cs-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.cs-group { display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
-.cs-flag { font: 600 11px/1 var(--oc-f-ui); padding: 4px 6px; border: 1px solid var(--oc-line); color: var(--oc-ink-2); background: var(--oc-paper); }
-.cs-flag.bad { border-color: rgba(210, 69, 91, 0.5); color: var(--oc-hp); background: #fff; }
+.cs-card { flex: 1 1 auto; min-height: 0; box-sizing: border-box; padding: 0; gap: 0; background: rgba(255, 255, 255, 0.82); }
 
-.cs-skills { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; flex: 0 1 auto; padding-right: 2px; scrollbar-width: thin; }
+.cs-head {
+  position: relative; flex: none; display: flex; flex-direction: column; gap: 10px; padding: 24px 24px 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--g) 9%, #fff) 0%, rgba(255, 255, 255, 0) 100%);
+}
+/* แถบสีหมวดบนสุด */
+.cs-head::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--g), color-mix(in srgb, var(--g) 15%, transparent)); }
+.cs-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 24px; }
+.cs-group {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px 5px 8px; font: 600 12px/1.2 var(--oc-f-ui); color: var(--oc-ink);
+  background: color-mix(in srgb, var(--g) 12%, #fff); border: 1px solid color-mix(in srgb, var(--g) 45%, transparent);
+}
+.cs-group .oc-diamond { background: var(--g); }
+.cs-flag { font: 600 12px/1.2 var(--oc-f-ui); padding: 5px 8px; border: 1px solid var(--oc-line); color: var(--oc-ink-2); background: #fff; }
+.cs-flag.bad { border-color: rgba(210, 69, 91, 0.5); color: var(--oc-hp); }
+.cs-name {
+  margin: 0; font: 600 26px/1.2 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; text-wrap: balance;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.cs-sec { flex: none; display: flex; align-items: center; gap: 10px; padding: 0 24px 10px; }
+.cs-sec i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--oc-line), transparent); }
+
+.cs-skills {
+  flex: 1 1 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  padding: 2px 18px 18px 24px; scrollbar-width: thin; scrollbar-color: var(--oc-sky) transparent; overscroll-behavior: contain;
+}
 .cs-sk {
-  position: relative; background: #fff; border: 1px solid var(--oc-line); padding: 8px 10px; flex: none;
-  display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; cursor: help; outline: none; transition: border-color 0.2s;
+  --k: var(--oc-azure);
+  position: relative; flex: none; background: #fff; border: 1px solid var(--oc-line); padding: 9px 10px 9px 14px;
+  display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; align-items: center; cursor: help; outline: none;
+  transition: border-color 0.2s, background 0.2s;
 }
-.cs-sk:hover, .cs-sk:focus-visible, .cs-sk.on { border-color: var(--oc-azure); }
-.cs-sk-k { font: 600 11px/1.1 var(--oc-f-ui); color: var(--oc-azure); }
-.cs-sk-n { grid-column: 1; font: 600 14px/1.25 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; }
+.cs-sk::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--k); }
+.cs-sk.k-passive { --k: var(--oc-sky); }
+.cs-sk.k-sec { --k: var(--oc-ink-2); }
+.cs-sk.k-ult { --k: var(--oc-echo); background: linear-gradient(110deg, rgba(155, 79, 150, 0.09), #fff 70%); border-color: rgba(155, 79, 150, 0.35); }
+.cs-sk:hover, .cs-sk:focus-visible, .cs-sk.on { border-color: var(--k); background: color-mix(in srgb, var(--k) 7%, #fff); }
+.cs-sk-k { font: 600 11.5px/1.15 var(--oc-f-ui); color: color-mix(in srgb, var(--k) 80%, var(--oc-ink)); }
+.cs-sk-n { grid-column: 1; font: 600 14.5px/1.3 var(--oc-f-ui); color: var(--oc-ink); overflow-wrap: anywhere; }
 .cs-sk-c {
-  grid-column: 2; grid-row: 1 / span 2; min-width: 30px; height: 30px; display: grid; place-items: center; font: 600 15px/1 var(--oc-f-ui); color: var(--oc-azure);
-  border: 1px solid var(--oc-line); background: #fff; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  grid-column: 2; grid-row: 1 / span 2; width: 30px; height: 34px; display: grid; place-items: center; font: 600 14px/1 var(--oc-f-ui); color: #fff;
+  background: var(--k); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
-.cs-sk.ult { background: linear-gradient(135deg, rgba(155, 79, 150, 0.1), #fff); border-color: rgba(155, 79, 150, 0.45); }
-.cs-sk.ult .cs-sk-k, .cs-sk.ult .cs-sk-c { color: var(--oc-echo); }
-.cs-sk.ult:hover, .cs-sk.ult:focus-visible, .cs-sk.ult.on { border-color: var(--oc-echo); }
+.cs-sk.k-passive .cs-sk-c { background: var(--oc-azure); }
 
-.cs-opts { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.cs-opts { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 14px 24px 20px; border-top: 1px solid var(--oc-line); background: rgba(255, 255, 255, 0.6); }
+.cs-opts + .cs-opts { border-top: 0; padding-top: 0; }
 .cs-opts-row { display: flex; gap: 6px; }
 .cs-opt {
   appearance: none; flex: 1; min-width: 0; font: 600 13px/1.25 var(--oc-f-ui); padding: 9px 10px; border: 1px solid var(--oc-line); background: #fff; color: var(--oc-ink);

@@ -4,8 +4,9 @@
 //  warmPortraits() = เริ่มโหลดล่วงหน้าตั้งแต่หน้าเลือกลำดับ (รายชื่อตัวละครได้จาก socket "roster" ที่ server ส่งมาตอนเชื่อมต่อ)
 import { socket } from "../../socket";
 
-// สัดส่วนเดียวกับช่องภาพในการ์ด (180×244) · ครอปแบบ cover เอนขึ้นบน (หน้าตัวละคร)
-export const PORTRAIT_W = 320, PORTRAIT_H = 434;
+// สัดส่วนเดียวกับการ์ดหกเหลี่ยม (7:8 เท่ากับตราโปรไฟล์ในห้องรอ) · ครอปแบบ cover เอนขึ้นบน (หน้าตัวละคร)
+//  = ครอปเดียวกับ object-fit:cover + object-position 50% 16% ของตราในห้องรอ → ภาพต่อเนื่องตอนส่งต่อหน้า
+export const PORTRAIT_W = 320, PORTRAIT_H = 366;
 const TOP_BIAS = 0.16;
 const MAX_JOBS = 2;
 

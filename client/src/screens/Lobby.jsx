@@ -2,6 +2,8 @@
 //  LOBBY = ห้องรอ (oc/lobby/LobbyRoom) · TEAM_MODE = เลือกโหมดบนโลก (ModeVote) · TEAM_SETUP = จัดทีม (TeamSetup)
 //  อีโมตปักบนโลกได้เฉพาะหน้าห้องรอ (server ส่งต่อ "lobbyEmote" ให้ทุกคนในห้อง) — หน้าเลือกโหมด/จัดทีมไม่มีอีโมต
 //  เปลี่ยนหน้า: ลูกโลกเลื่อนไปตำแหน่งใหม่ · UI หน้าเก่าค้างเป็นภาพจางหายไป (ViewLayer) · UI หน้าใหม่ลอยขึ้น (oc-enter)
+//  ปุ่มย้อนกลับถอยทีละขั้น: จัดทีม → เลือกโหมด (teamBackToMode) → ห้องรอ (modeBackToLobby) → เลือกตัว (onBack = ออกจากห้อง)
+//  มาจากหน้าเลือกตัว: ภาพตัวละครบินลงตราของเรา (oc/lobby/heroArrival)
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GlobeCanvas from "../globe/GlobeCanvas";
 import { OcScreen } from "../oc/ui";
@@ -10,6 +12,7 @@ import { useLobbyEmotes, sendEmote } from "../oc/lobby/emotes";
 import LobbyRoom from "../oc/lobby/LobbyRoom";
 import ModeVote from "../oc/lobby/ModeVote";
 import TeamSetup from "../oc/lobby/TeamSetup";
+import { useHeroArrival } from "../oc/lobby/heroArrival";
 import "../oc/lobby/lobby.css";
 
 const VIEW_H = 2 * 6 * Math.tan((16 * Math.PI) / 180); // ความสูงจอเป็นหน่วยฉาก (กล้อง fov 32 ห่าง 6)
@@ -101,6 +104,7 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
   const interceptRef = useRef(null); // หน้าย่อยดักคลิกบนโลกก่อน (หมุดโหมด) — คืน true = กินคลิกนั้น
 
   useLobbyEmotes(core);
+  const hero = useHeroArrival(view === "LOBBY");
 
   // คลิกบนโลก (ไม่ใช่ลาก): หมุดของหน้าย่อยก่อน ไม่โดนหมุดค่อยปักอีโมตที่เลือกไว้
   useEffect(() => {
@@ -130,11 +134,11 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
       <div ref={ghostRef} className="ocl-ghosts" aria-hidden="true" />
       {view === "TEAM_MODE" ? (
         <ViewLayer key="TEAM_MODE" ghostRef={ghostRef}>
-          <ModeVote state={state} core={core} interceptRef={interceptRef} focus={modeFocus} onFocus={setModeFocus} onBack={onBack} />
+          <ModeVote state={state} core={core} interceptRef={interceptRef} focus={modeFocus} onFocus={setModeFocus} />
         </ViewLayer>
       ) : view === "TEAM_SETUP" ? (
         <ViewLayer key="TEAM_SETUP" ghostRef={ghostRef}>
-          <TeamSetup state={state} onBack={onBack} />
+          <TeamSetup state={state} />
         </ViewLayer>
       ) : (
         <ViewLayer key="LOBBY" ghostRef={ghostRef}>
@@ -149,6 +153,7 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
             skillConfirmOn={skillConfirmOn}
             onToggleSkillConfirm={onToggleSkillConfirm}
             pairRole={pairRole}
+            hero={hero}
             onBack={onBack}
           />
         </ViewLayer>

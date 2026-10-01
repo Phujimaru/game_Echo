@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { clickSound } from "../audio";
 import { FALLBACK } from "../data/avatars";
 import { POSITION_COLORS } from "../data/positions";
 import GlobeCanvas from "../globe/GlobeCanvas";
+import { SharedGlobeContext } from "../globe/SharedGlobe";
+import { setHeroHandoff } from "../oc/heroHandoff";
 import { OcScreen, OcPanel, OcButton } from "../oc/ui";
 import { createCharRings } from "../oc/charselect/charRings";
 import { preloadPortraits, getPortrait, portraitDone } from "../oc/charselect/portraits";
@@ -14,6 +16,8 @@ import "../oc/charselect/charselect.css";
 //  กดหมวด/การ์ด = ซูมเข้าวงนั้นวงเดียว · เลือกการ์ด = การ์ดลอยออกจากวงไปเป็นภาพหลักข้างแผงข้อมูล (ช่องในวงจางลง)
 //         ระหว่างเลือกตัว ปุ่มหมวดซ่อน (ไม่บังการ์ดในวง) · ปุ่มยืนยันขวาล่าง (โผล่เฉพาะตอนเลือกตัว)
 //  กดที่ว่าง / Esc = เลิกเลือก + ถอยกลับภาพรวม (การ์ดบินกลับเข้าวง) · ปุ่มย้อนกลับอยู่มุมซ้ายล่างเสมอ
+//  การ์ด/ภาพหลักเป็นหกเหลี่ยมแบบตราโปรไฟล์ในห้องรอ · กดยืนยัน (ช่วงก่อนเข้าเกม) = ส่งตำแหน่งภาพหลักให้ห้องรอ (heroHandoff)
+//         ทำภาพลอยต่อจากจุดเดิม — ภาพหลักค้างนิ่งอยู่ที่เดิมจนหน้านี้ถูกถอด
 const LAYOUT_ALL = { x: 0.12, y: 0.04, s: 0.9 };
 const LAYOUT_RING = { x: 0.16, y: 0.27, s: 0.98 };
 const LAYOUT_SEL = { x: -1.12, y: 0.18, s: 0.78 };
@@ -27,12 +31,11 @@ const DIFFICULTY_GROUPS = [
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines"] },
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["appleguy", "dan", "usagi"] },
-  { key: "impossible", label: "ทักษิณ จะโปรหาบิดาท่านหรือ?", color: "#450a0a", order: ["nanaya", "princess_shiki"] },
   { key: "special", label: "พิเศษ", color: "#0e7490", order: ["ultraman_trigger", "yui", "shido", "brian", "producer_lumi", "kim", "striker"] },
   // หมวดตามสังกัด ไม่ใช่ระดับความยาก — ไรเดอร์ทุกคนที่มี Clock Up (แกนร่วม characters/_zect.js)
   { key: "zect", label: "องค์กรZectz", color: "#3B5BA5", order: ["daisuke", "yaguruma", "kagami", "tsurugi"] },
-  // มหันตภัย: บอส (บอตเท่านั้น) — ดูข้อมูลได้แต่เลือกเล่นไม่ได้
-  { key: "calamity", label: "มหันตภัย", color: "#7f1d1d", order: ["ort"] },
+  // มหันตภัย: บอส (บอตเท่านั้น — ดูข้อมูลได้แต่เลือกเล่นไม่ได้) + ตัวโหดสุด (นานายะ / ชิกิ เจ้าหญิง)
+  { key: "calamity", label: "มหันตภัย", color: "#7f1d1d", order: ["ort", "nanaya", "princess_shiki"] },
 ];
 // ตัวที่ความยากไม่ตรงหมวดไหนเลย (ข้อมูลใหม่ที่ยังไม่ได้จัดหมวด) — รวมไว้วงสุดท้าย
 const OTHER_GROUP = { key: "_other", label: "อื่นๆ", color: "#8BA3C2", order: [] };
@@ -64,6 +67,12 @@ function CardArt({ c }) {
   if (state === "fail") return <span className="cs-fly-emoji" aria-hidden="true">{FALLBACK[c.avatar] || "🙂"}</span>;
   return <canvas ref={cvRef} className="cs-fly-art" width={1} height={1} />;
 }
+
+// เส้นฟ้าด้านในกรอบหกเหลี่ยม (ตรงกับการ์ดในวง: ภาพ 224×256 เส้นห่างขอบ 9.5px)
+const HEX_LINE = "112,10.9 214.5,69.5 214.5,186.5 112,245.1 9.5,186.5 9.5,69.5";
+
+// ประเภทสกิลจากป้าย — ใช้แต่งสีแถบหน้าแถว
+const skillKind = (label) => (label.startsWith("ท่าไม้ตาย") ? "ult" : label.startsWith("ติดตัว") ? "passive" : label.startsWith("สกิลรอง") ? "sec" : "basic");
 
 // สีตัวอักษรบนปุ่มหมวดที่ถูกเลือก (พื้นเป็นสีหมวด) — พื้นสว่างใช้ตัวเข้ม
 function inkOn(hex) {
@@ -121,6 +130,8 @@ function skillRows(sel) {
 
 export default function CharacterSelect({ roster, position, color: myColor, name, takenChars = [], pairSlots = [], lostChars = [], blockedChars = [], confirmLabel = "ยืนยัน", backLabel = "ย้อนกลับ", title, onConfirm, onBack }) {
   const color = myColor || POSITION_COLORS[position] || "#9B4F96";
+  // อยู่บนลูกโลกร่วม = ช่วงก่อนเข้าเกม (ต่อไปคือห้องรอ) · โหมด Raid เลือกตัวใหม่กลางเกมใช้ลูกโลกของตัวเอง → ไม่ส่งภาพต่อ
+  const preGame = !!useContext(SharedGlobeContext);
 
   const grouped = useMemo(() => {
     const gs = DIFFICULTY_GROUPS.map((g) => ({ ...g, chars: charsInGroup(roster, g) })).filter((g) => g.chars.length > 0);
@@ -176,6 +187,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   const flySeq = useRef(0);
   // ฉาก 3 มิติ/ปุ่ม Esc เรียก callback ผ่าน ref เสมอ (ได้ค่าล่าสุดของหน้าจอ)
   const cbRef = useRef(null);
+  // หลังกดยืนยัน (ส่งภาพต่อให้ห้องรอแล้ว) ภาพหลักต้องค้างที่เดิม — ไม่รับการเลือก/ถอยชั่วครู่ (server ปฏิเสธ = กลับมาใช้ได้เอง)
+  const holdUntil = useRef(0);
 
   const focusIdx = focus ? grouped.findIndex((g) => g.key === focus) : -1;
   const focusGroup = focusIdx >= 0 ? grouped[focusIdx] : null;
@@ -199,7 +212,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
 
   // เปลี่ยนตัวที่เลือก: ตัวเดิมบินกลับเข้าวง · ตัวใหม่ลอยออกจากวงไปเป็นภาพหลัก
   const pick = (id) => {
-    if (id === picked) return;
+    if (id === picked || performance.now() < holdUntil.current) return;
+    flyEls.current.forEach((el) => { if (el.firstChild) el.firstChild.style.animationPlayState = ""; });
     const now = performance.now();
     let list = fliesRef.current;
     if (picked) list = list.map((f) => (f.id === picked && f.dir === "out" ? { ...f, dir: "back", t0: now, dur: BACK_MS, from: f.cur || null } : f));
@@ -218,6 +232,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   };
 
   const choose = (id) => {
+    if (performance.now() < holdUntil.current) return;
     clickSound();
     if (id === picked) ringsRef.current?.select(id); // กดตัวเดิมซ้ำ (ที่หมุนออกไปแล้ว) = หมุนกลับมาหน้าสุด
     pick(id);
@@ -233,7 +248,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     setFocus(next);
   };
   const closeAll = () => {
-    if (!focus && !picked) return;
+    if ((!focus && !picked) || performance.now() < holdUntil.current) return;
     clickSound();
     pick(null);
     setFocus(null);
@@ -325,8 +340,20 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     onBlur: hideDesc(key),
   });
 
+  // ส่งภาพหลักต่อให้ห้องรอ: ภาพเดียวกับตราโปรไฟล์ (c.img) + กรอบบนจอตอนนี้ · หยุดการลอยขึ้นลงไว้ ภาพจึงค้างตรงจุดที่ส่งไป
+  const handOffHero = () => {
+    if (!preGame || !sel?.img) return;
+    const f = fliesRef.current.find((x) => x.id === sel.id && x.dir === "out");
+    const card = f ? flyEls.current.get(f.key)?.firstChild : null;
+    if (!card) return;
+    card.style.animationPlayState = "paused";
+    const r = card.getBoundingClientRect();
+    if (r.width > 0) { setHeroHandoff({ img: sel.img, rect: r, color }); holdUntil.current = performance.now() + 4000; }
+  };
+
   const confirm = () => {
     if (!picked || sel?.locked || blockReason(sel)) return;
+    handOffHero();
     if (sel?.pair) { onConfirm(picked, pairSlotOf(sel) ? { copilot: true } : { pairRole }); return; }
     onConfirm(picked, picked === "shiki" ? { shikiUlt } : undefined);
   };
@@ -405,41 +432,53 @@ export default function CharacterSelect({ roster, position, color: myColor, name
             aria-hidden="true"
             ref={(el) => { if (el) flyEls.current.set(f.key, el); else flyEls.current.delete(f.key); }}
           >
-            <div className={`cs-fly-card${blockReason(c) ? " dim" : ""}${c.img ? "" : " emoji"}`}>
-              <CardArt c={c} />
-              {st && <span className={`cs-fly-flag ${st.tone}`}>{st.label}</span>}
+            <div className={`cs-fly-card${blockReason(c) ? " dim" : ""}`}>
+              <div className="cs-fly-hex">
+                <div className={`cs-fly-face${c.img ? "" : " emoji"}`}>
+                  <CardArt c={c} />
+                  {st && <span className={`cs-fly-flag ${st.tone}`}>{st.label}</span>}
+                </div>
+              </div>
+              <svg className="cs-fly-line" viewBox="0 0 224 256" preserveAspectRatio="none" aria-hidden="true">
+                <polygon points={HEX_LINE} />
+              </svg>
             </div>
           </div>
         );
       })}
 
       <div className={`cs-side${sel ? " open" : ""}`} ref={panelRef} aria-hidden={!sel}>
-        <OcPanel>
+        <OcPanel className="cs-card" style={{ "--g": shownGroup?.color || "var(--oc-azure)" }}>
           {shown && (
             <div className="cs-head">
               <div className="cs-chips">
                 {shownGroup && (
                   <span className="cs-group">
-                    <i className="oc-diamond" style={{ background: shownGroup.color }} />
+                    <i className="oc-diamond" />
                     {shownGroup.label}
                   </span>
                 )}
                 {reason && <span className="cs-flag bad">{reason}</span>}
                 {!reason && shown.locked && <span className="cs-flag">ยังไม่ปลดล็อก</span>}
               </div>
-              <h2 className="oc-h2">{shown.name}</h2>
+              <h2 className="cs-name">{shown.name}</h2>
             </div>
           )}
 
           {skills.length > 0 && (
+            <div className="cs-sec">
+              <span className="oc-label">สกิล</span>
+              <i aria-hidden="true" />
+            </div>
+          )}
+          {skills.length > 0 && (
             <div className="cs-skills" key={`sk${shown?.id}`} onScroll={() => setDesc(null)}>
               {skills.map((s, i) => {
                 const key = `s${i}`;
-                const ult = s.label.startsWith("ท่าไม้ตาย");
                 return (
                   <div
                     key={key}
-                    className={`cs-sk${ult ? " ult" : ""}${desc?.key === key ? " on" : ""}`}
+                    className={`cs-sk k-${skillKind(s.label)}${desc?.key === key ? " on" : ""}`}
                     tabIndex={0}
                     aria-label={`${s.label} ${s.skill.name}${s.skill.cost != null ? ` ${s.skill.cost} แต้ม` : ""}. ${s.skill.desc || ""}`}
                     {...descProps(key, s.skill.name, s.skill.desc)}

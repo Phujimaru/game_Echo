@@ -59,7 +59,7 @@ function seatSpots(n, ring, h) {
 }
 
 /** ที่นั่งหนึ่งที่ — ของเรามีภาพตัวละคร · คนอื่นเป็นตราผนึก · ว่าง = กรอบเส้นประ */
-function Seat({ n, p, me, spot, i }) {
+function Seat({ n, p, me, spot, i, hero }) {
   const img = me ? (p.character?.img || p.img) : null;
   const status = !p ? "empty" : p.ready ? "ready" : "wait";
   const style = {
@@ -67,7 +67,14 @@ function Seat({ n, p, me, spot, i }) {
     ...(spot.side === "l" ? { right: `calc(100% - ${spot.x}px)` } : { left: `${spot.x}px` }),
   };
   return (
-    <div className={`ocl-seat ${spot.side}${me ? " me" : ""}`} style={style} data-status={status} data-off={p?.connected === false ? "true" : undefined}>
+    <div
+      className={`ocl-seat ${spot.side}${me ? " me" : ""}`}
+      style={style}
+      data-status={status}
+      data-off={p?.connected === false ? "true" : undefined}
+      data-hero={me && hero?.arrival ? "true" : undefined}
+      data-hero-hide={me && hero?.hide ? "true" : undefined}
+    >
       <div className="ocl-seat-in" style={{ "--c": p?.color || "var(--oc-sky)", animationDelay: `${0.12 + 0.05 * i}s` }}>
         <span className="ocl-emb" aria-hidden="true">
           <span className="ocl-emb-face">
@@ -90,7 +97,8 @@ function Seat({ n, p, me, spot, i }) {
   );
 }
 
-export default function LobbyRoom({ state, ring, vh, armed, onArm, lowQ, onToggleLowQ, skillConfirmOn, onToggleSkillConfirm, pairRole, onBack }) {
+/** @param hero { arrival, hide } จาก useHeroArrival — ภาพตัวละครบินจากหน้าเลือกตัวลงตราของเรา */
+export default function LobbyRoom({ state, ring, vh, armed, onArm, lowQ, onToggleLowQ, skillConfirmOn, onToggleSkillConfirm, pairRole, hero, onBack }) {
   const count = state.players.length;
   const me = state.players.find((p) => p.id === state.youId);
   // ตัวละครคู่ (สไตรเกอร์ ยูเรก้า): ปุ่มพร้อมเป็นของแต่ละคน — ระเบียนนับว่าพร้อมเมื่อครบคู่และพร้อมทั้งคู่
@@ -133,7 +141,7 @@ export default function LobbyRoom({ state, ring, vh, armed, onArm, lowQ, onToggl
 
       {seats.map((n, i) => {
         const p = byPos.get(n) || null;
-        return <Seat key={n} n={n} p={p} me={!!p && p.id === state.youId} spot={spots[i]} i={i} />;
+        return <Seat key={n} n={n} p={p} me={!!p && p.id === state.youId} spot={spots[i]} i={i} hero={hero} />;
       })}
 
       <EmoteDock armed={armed} onArm={onArm} className="ocl-dock oc-enter d2" />
