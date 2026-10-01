@@ -1,12 +1,15 @@
-// เลือกโหมด (gameState TEAM_MODE) — หมุดโหมดบนลูกโลก กดหมุดหรือป้าย = ดูรายละเอียด · โหวตจริงที่ปุ่ม "โหวต" ในแผง (selectGameMode)
+// เลือกโหมด (gameState TEAM_MODE) — หมุดโหมดบนลูกโลก · โหวตจริงที่ปุ่ม "โหวต" ในแผง (selectGameMode)
+//  เปิดหน้ามา = ยังไม่เลือกดูโหมดไหน (โลก + หมุดเท่านั้น ไม่มีแผง ไม่มีเส้นทาง)
+//  กดหมุด/ป้าย = เลือกดู: โลกหันเข้าหาหมุดแล้วซูมเล็กน้อย (Lobby.jsx globeLayout) แผงเลื่อนเข้ามาทางขวา
+//  กดที่ว่าง / Esc = เลิกดู: แผงเลื่อนออก เส้นทางหาย โลกกลับไปมุมภาพรวม
 //  โหมดที่มีการเดินทาง (อิสระ/คู่หู/สหายทั้ง 3 เอ๋ย) แสดงเส้นทางภูมิภาค I→VII บนโลก (ดูอย่างเดียว)
+//  ป้ายชื่อโหมดแต่ละโหมดมีกรอบของตัวเอง (lobby.css .ocl-modetag[data-mode]) · หน้านี้ไม่มีอีโมต
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { socket } from "../../socket";
 import { clickSound } from "../../audio";
 import { dirFromLonLat, regionDir, COLORS } from "../../globe/globeCore";
 import { JOURNEY_AREAS } from "../../journey/areas";
 import { OcButton, OcPanel } from "../ui";
-import EmoteDock from "./EmoteDock";
 
 const MODE_TITLES = { ffa: "อิสระ", duo: "คู่หู", trio: "สหายทั้ง 3 เอ๋ย", seraph: "Moon Cell", mercury: "Type Mercury" };
 const MODE_SUBTITLES = { ffa: "ทุกคนสู้กันเอง", duo: "ทีมละ 2 คน", trio: "ทีมละ 3 คน", seraph: "SE.RA.PH", mercury: "เรดบอส ORT · ทุกคนร่วมทีม" };
@@ -28,14 +31,17 @@ function useOptions(state) {
   return [...list].filter((o) => MODE_GEO[o.mode]).sort((a, b) => ORDER.indexOf(a.mode) - ORDER.indexOf(b.mode));
 }
 
-export default function ModeVote({ state, core, interceptRef, armed, onArm, onBack }) {
+/**
+ * @param focus   โหมดที่เลือกดูอยู่ (null = ภาพรวม) — Lobby.jsx ถือค่านี้เพราะใช้คิดตำแหน่งลูกโลกด้วย
+ * @param onFocus (mode|null)
+ */
+export default function ModeVote({ state, core, interceptRef, focus, onFocus, onBack }) {
   const options = useOptions(state);
   const me = state.players.find((p) => p.id === state.youId);
   const myVote = me?.modeVote || null;
-  const [focus, setFocus] = useState(() => myVote || options.find((o) => o.enabled)?.mode || options[0]?.mode || "ffa");
-  // โหวตเปลี่ยน -> หันไปดูโหมดที่เพิ่งโหวต (ปรับ state ระหว่าง render ตามแนวทางของ React)
-  const [seenVote, setSeenVote] = useState(myVote);
-  if (seenVote !== myVote) { setSeenVote(myVote); if (myVote) setFocus(myVote); }
+  // โหมดที่แผงแสดง — ค้างไว้ระหว่างแผงเลื่อนออกตอนเลิกดู (ปรับ state ระหว่าง render ตามแนวทางของ React)
+  const [shown, setShown] = useState(focus);
+  if (focus && focus !== shown) setShown(focus);
 
   const tagRefs = useRef({});
   const areaRefs = useRef([]);
@@ -45,15 +51,22 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
 
   const vote = (mode) => {
     const opt = optsRef.current.find((o) => o.mode === mode);
-    setFocus(mode);
     if (!opt || !opt.enabled || opt.suspended) return;
     clickSound();
     socket.emit("selectGameMode", { mode });
   };
-  // กดหมุด/ป้าย = เลือกดูอย่างเดียว ยังไม่โหวต (ผู้ใช้สั่ง: ต้องกดยืนยันก่อน)
-  const preview = (mode) => { if (mode !== focus) clickSound(); setFocus(mode); };
-  const previewRef = useRef(preview);
-  useLayoutEffect(() => { previewRef.current = preview; });
+  // กดหมุด/ป้าย = เลือกดูอย่างเดียว ยังไม่โหวต (ผู้ใช้สั่ง: ต้องกดยืนยันก่อน) · ป้ายเป็นปุ่ม (เสียงคลิกมาเอง) หมุดบนโลกต้องเรียกเอง
+  const preview = (mode, sound) => { if (sound && mode !== focus) clickSound(); onFocus(mode); };
+  const clear = () => { if (!focus) return; clickSound(); onFocus(null); };
+  const cbRef = useRef({ preview, clear });
+  useLayoutEffect(() => { cbRef.current = { preview, clear }; });
+
+  useEffect(() => {
+    if (!focus) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") cbRef.current.clear(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus]);
 
   // ---------- ของ 3D: หมุด + เส้นทาง ----------
   useEffect(() => {
@@ -102,7 +115,8 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
         if (!el) continue;
         const m = s.markers[mode];
         const p = core.project(m.g.localToWorld(tmp.set(0, 0.17, 0)));
-        el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -130%)`;
+        // --k = ขยายป้ายที่เลือกดู (ใส่ใน transform เดียวกัน — scale แยกจะขยายระยะเลื่อนไปด้วย)
+        el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -130%) scale(var(--k, 1))`;
         el.classList.toggle("back", core.facing(m.dir) < 0.18);
       }
       const showAreas = !!s.curve;
@@ -120,10 +134,11 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
       const h = core.pick(ev, hits);
       return h ? h.object.userData.mode : null;
     };
+    // กดบนโลก (ไม่ใช่ลาก): โดนหมุด = เลือกดู · ที่ว่าง = เลิกดู — กินทุกคลิก (หน้านี้ไม่มีอีโมต)
     interceptRef.current = (ev) => {
       const mode = pickMode(ev);
-      if (!mode) return false;
-      previewRef.current(mode);
+      if (mode) cbRef.current.preview(mode, true);
+      else cbRef.current.clear();
       return true;
     };
     const offHover = core.onHover((ev) => {
@@ -155,14 +170,14 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
     }
   });
 
-  // โหมดที่เลือกดูอยู่: หันโลกเข้าหา + เส้นทางการเดินทาง
+  // โหมดที่เลือกดูอยู่: หันโลกเข้าหา + เส้นทางการเดินทาง · null = ปล่อยโลกหมุนเอง ไม่มีเส้นทาง
   useEffect(() => {
     const s = scene.current;
     if (!s || !core) return;
     const { THREE } = core;
     s.focus = focus;
     for (const [mode, m] of Object.entries(s.markers)) m.ring.material.opacity = mode === focus ? 0.9 : 0;
-    if (s.markers[focus]) core.focusDir(s.markers[focus].dir);
+    core.focusDir(s.markers[focus] ? s.markers[focus].dir : null);
     if (s.route) { s.root.remove(s.route); s.route.geometry.dispose(); s.route.material.dispose(); s.route = null; }
     s.curve = null;
     s.token.visible = false;
@@ -184,7 +199,7 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
     }
   }, [focus, core]);
 
-  const focused = options.find((o) => o.mode === focus) || options[0];
+  const panelOpt = options.find((o) => o.mode === shown) || null;
   const votedCount = state.players.filter((p) => p.modeVote).length;
   const blocked = (o) => !o.enabled || o.suspended;
 
@@ -199,12 +214,14 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
               type="button"
               ref={(el) => { tagRefs.current[o.mode] = el; }}
               className={`oc-tag ocl-modetag back${myVote === o.mode ? " on" : ""}${focus === o.mode ? " focus" : ""}`}
+              data-mode={o.mode}
               data-blocked={blocked(o) ? "true" : "false"}
               aria-disabled={blocked(o)}
-              onClick={() => previewRef.current(o.mode)}
+              aria-pressed={focus === o.mode}
+              onClick={() => cbRef.current.preview(o.mode, false)}
             >
-              <span>{modeTitle(o.mode)}</span>
-              {o.suspended ? <small>พักใช้งาน</small> : !o.enabled ? <small>{MODE_NEED[o.mode]}</small> : null}
+              <span className="ocl-mt-frame" aria-hidden="true" />
+              <span className="ocl-mt-name">{modeTitle(o.mode)}</span>
               {voters.length > 0 && (
                 <span className="ocl-dots">{voters.map((p) => <i key={p.id} style={{ background: p.color }} />)}</span>
               )}
@@ -223,53 +240,54 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
         <span className="oc-label">โหวตแล้ว {votedCount} / {state.players.length}</span>
       </header>
 
-      {focused && (
-        <OcPanel className="ocl-votepanel oc-enter d1">
-          <div className="ocl-vp-head">
-            <h2 className="oc-h2">{modeTitle(focused.mode)}</h2>
-            <span className="oc-muted">{MODE_SUBTITLES[focused.mode]}</span>
-          </div>
+      <div className={`ocl-vote-side${focus ? " open" : ""}`} aria-hidden={!focus}>
+        {panelOpt && (
+          <OcPanel className="ocl-votepanel" data-mode={panelOpt.mode}>
+            <div className="ocl-vp-head">
+              <h2 className="oc-h2">{modeTitle(panelOpt.mode)}</h2>
+              <span className="oc-muted">{MODE_SUBTITLES[panelOpt.mode]}</span>
+            </div>
 
-          {JOURNEY.has(focused.mode) && (
+            {JOURNEY.has(panelOpt.mode) && (
+              <section className="ocl-sec">
+                <div className="ocl-seclabel">เส้นทาง</div>
+                <ol className="ocl-route">
+                  {JOURNEY_AREAS.map((a, i) => (
+                    <li key={a.id} className={i === 0 ? "first" : ""}>
+                      <span className="n oc-latin">{a.numeral}</span>
+                      <span>{a.short}</span>
+                      <span className="tt">{turnRange(i, JOURNEY_AREAS.length)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
             <section className="ocl-sec">
-              <div className="ocl-seclabel">เส้นทาง</div>
-              <ol className="ocl-route">
-                {JOURNEY_AREAS.map((a, i) => (
-                  <li key={a.id} className={i === 0 ? "first" : ""}>
-                    <span className="n oc-latin">{a.numeral}</span>
-                    <span>{a.short}</span>
-                    <span className="tt">{turnRange(i, JOURNEY_AREAS.length)}</span>
+              <div className="ocl-seclabel">ผลโหวต <span>{votedCount} / {state.players.length}</span></div>
+              <ul className="ocl-tally">
+                {[...state.players].sort((a, b) => a.position - b.position).map((p) => (
+                  <li key={p.id}>
+                    <i style={{ background: p.color }} />
+                    <span className="nm">{p.name}{p.id === state.youId ? " (คุณ)" : ""}</span>
+                    <span className={p.modeVote ? "v" : "v none"}>{p.modeVote ? modeTitle(p.modeVote) : "–"}</span>
                   </li>
                 ))}
-              </ol>
+              </ul>
             </section>
-          )}
 
-          <section className="ocl-sec">
-            <div className="ocl-seclabel">ผลโหวต <span>{votedCount} / {state.players.length}</span></div>
-            <ul className="ocl-tally">
-              {[...state.players].sort((a, b) => a.position - b.position).map((p) => (
-                <li key={p.id}>
-                  <i style={{ background: p.color }} />
-                  <span className="nm">{p.name}{p.id === state.youId ? " (คุณ)" : ""}</span>
-                  <span className={p.modeVote ? "v" : "v none"}>{p.modeVote ? modeTitle(p.modeVote) : "–"}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+            <OcButton
+              variant="primary"
+              disabled={!focus || blocked(panelOpt) || myVote === panelOpt.mode}
+              onClick={() => vote(panelOpt.mode)}
+            >
+              {panelOpt.suspended ? "พักใช้งาน" : !panelOpt.enabled ? MODE_NEED[panelOpt.mode] : myVote === panelOpt.mode ? "โหวตแล้ว" : "โหวต"}
+            </OcButton>
+          </OcPanel>
+        )}
+      </div>
 
-          <OcButton
-            variant="primary"
-            disabled={blocked(focused) || myVote === focused.mode}
-            onClick={() => vote(focused.mode)}
-          >
-            {focused.suspended ? "พักใช้งาน" : !focused.enabled ? MODE_NEED[focused.mode] : myVote === focused.mode ? "โหวตแล้ว" : "โหวต"}
-          </OcButton>
-          <OcButton variant="ghost" className="ocl-vp-back" onClick={onBack}>← ย้อนกลับ</OcButton>
-        </OcPanel>
-      )}
-
-      <EmoteDock armed={armed} onArm={onArm} className="ocl-dock ocl-dock-vote oc-enter d2" />
+      <OcButton variant="ghost" className="ocl-back oc-enter d2" onClick={onBack}>← ย้อนกลับ</OcButton>
     </div>
   );
 }

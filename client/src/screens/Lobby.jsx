@@ -1,6 +1,6 @@
 // ห้องรอ ORDEAL CALL — หน้าเดียวครอบ 3 สถานะก่อนเริ่มเกม (ลูกโลกตัวเดียว เลื่อนตำแหน่งตามหน้า)
 //  LOBBY = ห้องรอ (oc/lobby/LobbyRoom) · TEAM_MODE = เลือกโหมดบนโลก (ModeVote) · TEAM_SETUP = จัดทีม (TeamSetup)
-//  อีโมตปักบนโลกใช้ได้ทุกหน้า (server ส่งต่อ "lobbyEmote" ให้ทุกคนในห้อง)
+//  อีโมตปักบนโลกได้เฉพาะหน้าห้องรอ (server ส่งต่อ "lobbyEmote" ให้ทุกคนในห้อง) — หน้าเลือกโหมด/จัดทีมไม่มีอีโมต
 //  เปลี่ยนหน้า: ลูกโลกเลื่อนไปตำแหน่งใหม่ · UI หน้าเก่าค้างเป็นภาพจางหายไป (ViewLayer) · UI หน้าใหม่ลอยขึ้น (oc-enter)
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import GlobeCanvas from "../globe/GlobeCanvas";
@@ -25,8 +25,8 @@ function useViewport() {
   return vp;
 }
 
-/** ตำแหน่ง/ขนาดลูกโลกของแต่ละหน้า (คิดจากขนาดจอให้ไม่ชนแผงข้าง) */
-function globeLayout(view, w, h) {
+/** ตำแหน่ง/ขนาดลูกโลกของแต่ละหน้า (คิดจากขนาดจอให้ไม่ชนแผงข้าง) · modeFocus = หน้าเลือกโหมดกำลังเลือกดูโหมด (มีแผงขวา) */
+function globeLayout(view, w, h, modeFocus) {
   const ppu = h / VIEW_H;
   if (view === "TEAM_SETUP") {
     // ขอบฟ้าโค้งท้ายจอ ใต้คอลัมน์ทีม
@@ -34,10 +34,16 @@ function globeLayout(view, w, h) {
     return { x: 0, y: r3(-VIEW_H / 2 + 120 / ppu - s - 0.5), s }; // -0.5 = ชดเชยมุมมองกล้อง (ขอบโลกโผล่สูงกว่าที่คิด)
   }
   if (view === "TEAM_MODE") {
+    if (!modeFocus) {
+      // ภาพรวม: โลกกลางจอ ไม่มีแผง
+      const r = Math.min(w * 0.3, (h - 230) * 0.5, 1.12 * ppu);
+      return { x: 0, y: -0.06, s: r3(r / ppu) };
+    }
+    // เลือกดูโหมด: โลกเลื่อนไปซ้ายพ้นแผง และซูมเข้าเล็กน้อย (หมุดที่เลือกหันมาตรงหน้า — ModeVote focusDir)
     const panel = Math.min(400, w * 0.34) + Math.max(16, w * 0.05) + 32;
     const avail = w - panel - 40;
     const cx = 40 + avail / 2;
-    const r = Math.min(avail * 0.36, (h - 230) * 0.5, 1.12 * ppu);
+    const r = Math.min(avail * 0.42, (h - 190) * 0.5, 1.3 * ppu);
     return { x: r3((cx - w / 2) / ppu), y: -0.06, s: r3(r / ppu) };
   }
   const col = Math.max(270, Math.min(360, w * 0.24));
@@ -84,7 +90,12 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
   const vp = useViewport();
   const [core, setCore] = useState(null);
   const [armedPick, setArmed] = useState(null);
-  const armed = view === "TEAM_SETUP" ? null : armedPick; // หน้าจัดทีมไม่มีแถบอีโมต
+  const armed = view === "LOBBY" ? armedPick : null; // อีโมตมีเฉพาะห้องรอ
+  // โหมดที่หน้าเลือกโหมดกำลังเลือกดู (null = ภาพรวม) — เปลี่ยนหน้าแล้วล้าง (ปรับ state ระหว่าง render ตามแนวทางของ React)
+  const [modeFocusPick, setModeFocus] = useState(null);
+  const [seenView, setSeenView] = useState(view);
+  if (seenView !== view) { setSeenView(view); setModeFocus(null); setArmed(null); }
+  const modeFocus = view === "TEAM_MODE" ? modeFocusPick : null;
   const armedRef = useRef(null);
   useLayoutEffect(() => { armedRef.current = armed; });
   const interceptRef = useRef(null); // หน้าย่อยดักคลิกบนโลกก่อน (หมุดโหมด) — คืน true = กินคลิกนั้น
@@ -110,7 +121,7 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
     return () => window.removeEventListener("keydown", onKey);
   }, [armed]);
 
-  const layout = globeLayout(view, vp.w, vp.h);
+  const layout = globeLayout(view, vp.w, vp.h, modeFocus);
   const ghostRef = useRef(null);
 
   return (
@@ -119,7 +130,7 @@ export default function Lobby({ state, onBack, lowQ, onToggleLowQ, skillConfirmO
       <div ref={ghostRef} className="ocl-ghosts" aria-hidden="true" />
       {view === "TEAM_MODE" ? (
         <ViewLayer key="TEAM_MODE" ghostRef={ghostRef}>
-          <ModeVote state={state} core={core} interceptRef={interceptRef} armed={armed} onArm={setArmed} onBack={onBack} />
+          <ModeVote state={state} core={core} interceptRef={interceptRef} focus={modeFocus} onFocus={setModeFocus} onBack={onBack} />
         </ViewLayer>
       ) : view === "TEAM_SETUP" ? (
         <ViewLayer key="TEAM_SETUP" ghostRef={ghostRef}>

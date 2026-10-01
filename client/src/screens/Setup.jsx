@@ -6,6 +6,7 @@ import { hexToHsv, hsvToHex } from "../components/ColorForge";
 import GlobeCanvas from "../globe/GlobeCanvas";
 import { OcScreen, OcPanel, OcButton } from "../oc/ui";
 import { createSeatRing } from "../oc/seat/seatRing";
+import { warmPortraits } from "../oc/charselect/portraits";
 import "../oc/seat/seat.css";
 
 // หน้าเลือกลำดับผู้เล่น (ORDEAL CALL): ลูกโลก + วงแหวนที่นั่ง P1–P7
@@ -42,6 +43,12 @@ export default function Setup({ taken, initialName = "", initialPos = null, init
   }, [taken, pos]);
 
   useEffect(() => { ringRef.current?.setState({ pos, taken, color }); }, [pos, taken, color]);
+
+  // เริ่มโหลด/ถอดรหัสภาพตัวละครเบื้องหลังไว้ก่อน (หน้าถัดไปเปิดแล้วการ์ดพร้อม ไม่กระตุก) — รอฉากเปิดหน้านี้เล่นจบก่อน
+  useEffect(() => {
+    const t = setTimeout(warmPortraits, 900);
+    return () => clearTimeout(t);
+  }, []);
 
   const pick = (n) => {
     ringRef.current?.toFront(n);

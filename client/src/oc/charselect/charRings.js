@@ -5,48 +5,33 @@
 //          ลาก / ล้อเมาส์ / rotate(±1) = หมุนวงทีละใบ · กดที่ว่าง (ไม่โดนการ์ดหรือโลก) = onEmpty()
 //  ยกการ์ด: setLifted(ids) = ช่องของการ์ดนั้นจางลง (หน้าจอวาดการ์ด DOM ลอยออกไปแทน) · cardRect(id) = กรอบการ์ดบนจอ (px)
 //  การ์ดทุกใบหันหน้าเข้ากล้องเสมอ — ตำแหน่งคำนวณจากท่าทางของวง (quaternion + รัศมี) ทุกเฟรม
+//  เปิดหน้า (ไม่ให้กระตุก): วงค่อยๆ ลากเส้นตัวเองทีละวง (มีจุดนำหน้าเส้น) · ภาพตัวละครโหลด/ถอดรหัสเบื้องหลัง (portraits.js)
+//          การ์ดสร้าง texture ทีละไม่กี่ใบต่อเฟรมเมื่อภาพพร้อม แล้วค่อยขยาย+จางเข้ามา
 import { THREE } from "../../globe/globeCore";
 import { FALLBACK } from "../../data/avatars";
+import { getPortrait, portraitDone } from "./portraits";
 
 const CARD_W = 0.2, CARD_H = 0.267;
 const TW = 192, TH = 256;
 const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ฉากเปิด: วง k เริ่มลากเส้นที่ DRAW_DELAY + k·DRAW_GAP วิ ใช้เวลา DRAW_DUR วิ · การ์ดโผล่ใช้ APPEAR วิ · สร้าง texture ≤ BUILD_PER_FRAME ใบ/เฟรม
+const DRAW_DELAY = 0.12, DRAW_GAP = 0.09, DRAW_DUR = 1.0, APPEAR = 0.42, BUILD_PER_FRAME = 2;
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
 // ท่าทางของวงตอนโฟกัส: วงกลมใหญ่รอบโลก เอียงหน้าเข้ากล้อง ~47° → บนจอเป็นวงรีกว้าง ใบหน้าสุดอยู่ใต้โลก ใบหลังสุดอยู่เหนือโลก
 const FOCUS_TILT = 0.82, FOCUS_R = 1.75, FOCUS_Y = 0, FOCUS_CARD = 1.45;
 const Q_FOCUS = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), FOCUS_TILT);
 const UP = new THREE.Vector3(0, 1, 0);
 
-const imgCache = new Map(); // url → { img, ok, waiters }
-function loadImg(url, cb) {
-  let e = imgCache.get(url);
-  if (!e) {
-    const img = new Image();
-    e = { img, ok: null, waiters: new Set() };
-    imgCache.set(url, e);
-    try {
-      const u = new URL(url, location.href);
-      if (u.origin !== location.origin) img.crossOrigin = "anonymous"; // ห้ามให้ canvas ติด taint (อัปโหลดเป็น texture ไม่ได้)
-    } catch { /* url แปลก — ปล่อยให้ onerror จัดการ */ }
-    const done = (ok) => { e.ok = ok; e.waiters.forEach((fn) => fn()); e.waiters.clear(); };
-    img.onload = () => done(true);
-    img.onerror = () => done(false);
-    img.decoding = "async";
-    img.src = url;
-  }
-  if (e.ok == null) e.waiters.add(cb);
-  return e;
-}
-
-// status: null | { label, tone: "lost" | "block" }
+// status: null | { label, tone: "lost" | "block" } · entry = ภาพจาก portraits.js (ครอปสัดส่วนช่องภาพมาแล้ว)
 function drawCard(ctx, c, status, entry) {
   ctx.clearRect(0, 0, TW, TH);
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, TW, TH);
   const dim = !!status;
   const x0 = 6, y0 = 6, w = TW - 12, h = TH - 12;
-  if (entry && entry.ok) {
-    const im = entry.img, iw = im.naturalWidth || 1, ih = im.naturalHeight || 1;
+  if (entry && entry.state === "ok" && entry.bmp) {
+    const im = entry.bmp, iw = im.width || 1, ih = im.height || 1;
     const s = Math.max(w / iw, h / ih), sw = w / s, sh = h / s;
     const sx = (iw - sw) / 2, sy = Math.max(0, Math.min(ih - sh, (ih - sh) * 0.16)); // ครอปแบบ cover เอนขึ้นบน (หน้าตัวละคร)
     if (dim) ctx.filter = "grayscale(1) brightness(.85)";
@@ -117,43 +102,84 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
   let lifted = new Set(); // การ์ดที่ถูกยกออกจากวง (ช่องจางลง)
 
   const torus = new THREE.TorusGeometry(1, 0.0042, 6, 192);
-  torus.rotateX(Math.PI / 2); // นอนในระนาบ xz ของวง
+  torus.rotateX(Math.PI / 2); // นอนในระนาบ xz ของวง (uv.x = มุมรอบวง 0..1 → ใช้ตัดเส้นตอนลากเส้น)
+
+  // ลากเส้นวง: alphaMap ครึ่งขาว/ครึ่งดำ (nearest) แล้วยืด uv ด้วย repeat.x = 0.5/p → เห็นเฉพาะช่วงมุม 0..p ของวง
+  const cutImg = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255, 0, 0, 0, 255]), 2, 1);
+  cutImg.magFilter = cutImg.minFilter = THREE.NearestFilter;
+  cutImg.generateMipmaps = false;
+  cutImg.needsUpdate = true;
+  // จุดนำหน้าเส้นตอนลาก
+  const dotCv = document.createElement("canvas");
+  dotCv.width = dotCv.height = 64;
+  {
+    const g = dotCv.getContext("2d").createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.22, "rgba(255,255,255,.95)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    const dctx = dotCv.getContext("2d");
+    dctx.fillStyle = g; dctx.fillRect(0, 0, 64, 64);
+  }
+  const dotTex = new THREE.CanvasTexture(dotCv);
+  // การ์ดที่ยังไม่มี texture ใช้ภาพว่างร่วมกัน (shader เดียวกับการ์ดจริง — ไม่ต้องคอมไพล์ใหม่ตอนการ์ดโผล่)
+  const blank = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+  blank.needsUpdate = true;
+  let clock = 0;      // วินาทีนับจากเปิดหน้า (ฉากเปิด)
+  let warmed = false; // เฟรมแรกวาดการ์ดทุกใบ (ความทึบ 0) ให้ shader พร้อมตั้งแต่ต้น
+  const toBuild = []; // การ์ดที่ภาพพร้อมแล้ว รอสร้าง texture
 
   const rings = groups.map((g, k) => {
     const pose = overviewPose(k, N);
-    const line = new THREE.Mesh(torus, new THREE.MeshBasicMaterial({ color: new THREE.Color(g.color || "#7fb8e6"), transparent: true, opacity: 0.5, depthWrite: false }));
+    const cut = cutImg.clone();
+    cut.repeat.set(REDUCED ? 0.499 : 1000, 1);
+    const color = new THREE.Color(g.color || "#7fb8e6");
+    const line = new THREE.Mesh(torus, new THREE.MeshBasicMaterial({ color, alphaMap: cut, transparent: true, opacity: 0.5, depthWrite: false }));
     line.renderOrder = -1;
     root.add(line);
+    const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color, transparent: true, opacity: 0, depthWrite: false }));
+    dot.scale.setScalar(0.11);
+    dot.visible = false;
+    root.add(dot);
     const n = Math.max(1, g.chars.length);
     const r = {
-      k, g, line, q0: pose.q, R0: pose.R, q: pose.q.clone(), R: pose.R, y: 0, step: (Math.PI * 2) / n,
+      k, g, line, cut, dot, draw: REDUCED ? 1 : 0, q0: pose.q, R0: pose.R, q: pose.q.clone(), R: pose.R, y: 0, step: (Math.PI * 2) / n,
       base: k * 0.9, speed: (k % 2 ? -1 : 1) * (0.06 + 0.012 * (k % 3)), target: null,
       hover: false, b: 0, vis: 1, hl: 0, cards: [],
     };
     r.cards = g.chars.map((c, i) => {
-      const cv = document.createElement("canvas");
-      cv.width = TW; cv.height = TH;
-      const ctx = cv.getContext("2d");
-      const tex = new THREE.CanvasTexture(cv);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 4;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: blank, transparent: true, opacity: 0 }));
       m.userData = { id: c.id, ring: k, idx: i };
-      const card = { m, c, ctx, tex, entry: null, drawn: undefined, idx: i, op: 1 };
+      // ap = ความคืบหน้าการโผล่ (0..1) · ready = มี texture แล้ว · gate = วงต้องลากเส้นถึงไหนก่อนการ์ดใบนี้โผล่
+      const card = { m, c, ctx: null, tex: null, entry: null, drawn: undefined, idx: i, op: 0, ap: 0, ready: false, gate: 0.2 + ((i + 0.5) / n) * 0.7 };
       card.redraw = () => {
+        if (!card.ctx) return;
         const st = statusOf.get(c.id) || null;
-        drawCard(ctx, c, st, card.entry);
+        drawCard(card.ctx, c, st, card.entry);
         card.drawn = st;
-        tex.needsUpdate = true;
+        card.tex.needsUpdate = true;
       };
-      if (c.img) card.entry = loadImg(c.img, card.redraw);
-      card.redraw();
+      card.onLoaded = () => { toBuild.push(card); };
+      if (c.img) {
+        card.entry = getPortrait(c.img, card.onLoaded);
+        if (portraitDone(card.entry)) toBuild.push(card);
+      } else toBuild.push(card);
       root.add(m);
       return card;
     });
     return r;
   });
   const byId = new Map(rings.flatMap((r) => r.cards.map((cd) => [cd.c.id, { r, cd }])));
+
+  const build = (card) => {
+    const cv = document.createElement("canvas");
+    cv.width = TW; cv.height = TH;
+    card.ctx = cv.getContext("2d");
+    card.tex = new THREE.CanvasTexture(cv);
+    card.tex.colorSpace = THREE.SRGBColorSpace;
+    card.tex.anisotropy = 4;
+    card.redraw();
+    card.m.material.map = card.tex;
+    card.ready = true;
+    if (REDUCED) card.ap = 1;
+  };
 
   const selFrame = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W + 0.04, CARD_H + 0.04), new THREE.MeshBasicMaterial({ color: 0x9b4f96, transparent: true }));
   selFrame.visible = false;
@@ -178,7 +204,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
     rings.forEach((r) => {
       if (focus != null ? r.k !== focus : r.vis < 0.5) return;
       const min = focus != null ? 0.3 : 0.35;
-      r.cards.forEach((cd) => { if (cd.m.visible && cd.m.material.opacity >= min) out.push(cd.m); });
+      r.cards.forEach((cd) => { if (cd.ready && cd.ap > 0.6 && cd.m.visible && cd.m.material.opacity >= min) out.push(cd.m); });
     });
     return out;
   };
@@ -243,7 +269,14 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
   // ---------- ลูป ----------
   const pos = new THREE.Vector3();
   const rc = new THREE.Vector3();
+  const head = new THREE.Vector3();
   const offFrame = core.onFrame((dt) => {
+    clock += dt;
+    // สร้าง texture การ์ดที่ภาพพร้อมแล้ว ทีละไม่กี่ใบต่อเฟรม (กันเฟรมกระตุกตอนภาพเสร็จพร้อมกันหลายใบ)
+    for (let b = 0; b < BUILD_PER_FRAME && toBuild.length; b++) {
+      const cd = toBuild.shift();
+      if (!cd.ready) build(cd);
+    }
     const k = REDUCED ? 1 : 1 - Math.pow(0.015, dt);
     const kb = REDUCED ? 1 : 1 - Math.pow(0.012, dt);
     const hlRing = highlight >= 0 ? highlight : hoverRing;
@@ -262,8 +295,23 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
       r.line.position.set(0, r.y, 0);
       r.line.scale.setScalar(r.R);
       const dimOthers = r.hl < 0 ? 1 + 0.55 * r.hl : 1; // วงอื่นจางลงตอนชี้วงหนึ่ง
-      r.line.material.opacity = (0.42 + 0.4 * Math.max(0, r.hl) + 0.18 * e) * r.vis * dimOthers;
-      r.line.visible = r.line.material.opacity > 0.005;
+      // ฉากเปิด: ลากเส้นวงจากมุม 0 ไปรอบวง (เส้นที่กำลังลากเข้มกว่าปกติ + จุดนำหน้า)
+      if (r.draw < 1) {
+        r.draw = Math.min(1, Math.max(0, (clock - DRAW_DELAY - ri * DRAW_GAP) / DRAW_DUR));
+        const p = easeOut(r.draw);
+        r.cut.repeat.x = r.draw >= 1 ? 0.499 : 0.5 / Math.max(0.0005, p);
+        r.dot.visible = (r.draw > 0 && r.draw < 1) || !warmed;
+        if (r.dot.visible) {
+          const th = p * Math.PI * 2;
+          head.set(Math.cos(th), 0, Math.sin(th)).applyQuaternion(r.q).multiplyScalar(r.R);
+          head.y += r.y;
+          r.dot.position.copy(head);
+          r.dot.material.opacity = Math.min(1, r.draw * 8, (1 - r.draw) * 6) * r.vis;
+        }
+      }
+      const drawing = r.draw < 1 ? 0.35 * Math.sin(Math.PI * r.draw) : 0;
+      r.line.material.opacity = Math.min(1, (0.42 + 0.4 * Math.max(0, r.hl) + 0.18 * e + drawing) * r.vis * dimOthers);
+      r.line.visible = (r.draw > 0 || !warmed) && r.line.material.opacity > 0.005;
 
       // หมุนวง
       if (r.target != null) { r.base += (r.target - r.base) * k; if (Math.abs(r.target - r.base) < 0.0005) { r.base = r.target; r.target = null; } }
@@ -280,12 +328,15 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
         pos.multiplyScalar(r.R);
         pos.y += r.y;
         cd.m.position.copy(pos);
-        cd.m.scale.setScalar((0.8 + 0.4 * f) * grow);
-        const op = (0.2 + 0.14 * e + (0.8 - 0.14 * e) * Math.pow(f, 1.3)) * r.vis * dimOthers;
+        // การ์ดโผล่เมื่อ texture พร้อม + เส้นวงลากผ่านมาถึงแล้ว: ขยายจาก 55% + จางเข้า
+        if (cd.ready && cd.ap < 1 && r.draw >= cd.gate) cd.ap = Math.min(1, cd.ap + dt / APPEAR);
+        const ae = easeOut(cd.ap);
+        cd.m.scale.setScalar((0.8 + 0.4 * f) * grow * (0.55 + 0.45 * ae));
+        const op = (0.2 + 0.14 * e + (0.8 - 0.14 * e) * Math.pow(f, 1.3)) * r.vis * dimOthers * ae;
         const up = lifted.has(cd.c.id);
         cd.op = op; // ความทึบจริงของช่อง (ไม่นับการยก) — การ์ดลอยใช้เทียบตอนบินกลับ
         cd.m.material.opacity = up ? op * 0.16 : op;
-        cd.m.visible = op > 0.01;
+        cd.m.visible = op > 0.01 || !warmed;
         if (cd.c.id === selected && cd.m.visible) {
           selFrame.visible = true;
           selFrame.position.set(pos.x, pos.y, pos.z - 0.004);
@@ -294,6 +345,7 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
         }
       });
     });
+    warmed = true;
   });
 
   const api = {
@@ -358,7 +410,10 @@ export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
       canvas.removeEventListener("wheel", onWheel);
       core.setDragHandler(null);
       delete canvas.dataset.pointing;
-      byId.forEach(({ cd }) => { if (cd.entry) cd.entry.waiters.delete(cd.redraw); });
+      byId.forEach(({ cd }) => { if (cd.entry) cd.entry.waiters.delete(cd.onLoaded); });
+      toBuild.length = 0;
+      // texture ที่ไม่ได้ผูกกับวัตถุในฉากแล้ว (ของในฉาก ฉากร่วม/ลูกโลกของตัวเองเก็บกวาดให้)
+      blank.dispose(); cutImg.dispose(); dotTex.dispose();
     },
   };
   return api;

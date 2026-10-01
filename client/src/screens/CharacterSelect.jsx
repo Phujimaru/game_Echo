@@ -5,15 +5,18 @@ import { POSITION_COLORS } from "../data/positions";
 import GlobeCanvas from "../globe/GlobeCanvas";
 import { OcScreen, OcPanel, OcButton } from "../oc/ui";
 import { createCharRings } from "../oc/charselect/charRings";
+import { preloadPortraits, getPortrait, portraitDone } from "../oc/charselect/portraits";
 import "../oc/charselect/charselect.css";
 
 // หน้าเลือกตัวละคร (ORDEAL CALL): การ์ดตัวละครโคจรรอบลูกโลก หนึ่งวงต่อหนึ่งหมวด
-//  เปิดมา: โลกใหญ่ + วงทุกหมวด (แบบอะตอม) + ตัวกรองหมวดด้านซ้าย · ยังไม่มีแผงข้อมูลจนกว่าจะเลือกตัว
+//  เปิดมา: วงทุกหมวดค่อยๆ ลากเส้นรอบโลก (แบบอะตอม) ระหว่างภาพตัวละครโหลดเบื้องหลัง การ์ดโผล่ทีละใบเมื่อภาพพร้อม
+//         + ปุ่มหมวดเรียงด้านซ้าย · ยังไม่มีแผงข้อมูลจนกว่าจะเลือกตัว
 //  กดหมวด/การ์ด = ซูมเข้าวงนั้นวงเดียว · เลือกการ์ด = การ์ดลอยออกจากวงไปเป็นภาพหลักข้างแผงข้อมูล (ช่องในวงจางลง)
+//         ระหว่างเลือกตัว ปุ่มหมวดซ่อน (ไม่บังการ์ดในวง) · ปุ่มยืนยันขวาล่าง (โผล่เฉพาะตอนเลือกตัว)
 //  กดที่ว่าง / Esc = เลิกเลือก + ถอยกลับภาพรวม (การ์ดบินกลับเข้าวง) · ปุ่มย้อนกลับอยู่มุมซ้ายล่างเสมอ
-const LAYOUT_ALL = { x: 0.25, y: 0, s: 0.8 };
-const LAYOUT_RING = { x: 0.25, y: 0.14, s: 0.9 };
-const LAYOUT_SEL = { x: -0.84, y: 0.14, s: 0.68 };
+const LAYOUT_ALL = { x: 0.12, y: 0.04, s: 0.9 };
+const LAYOUT_RING = { x: 0.16, y: 0.27, s: 0.98 };
+const LAYOUT_SEL = { x: -1.12, y: 0.18, s: 0.78 };
 const OUT_MS = 720, BACK_MS = 560;
 const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -39,15 +42,35 @@ function charsInGroup(roster, g) {
   return roster.filter((c) => !c.hidden && (c.difficulty || "easy") === g.key).sort((a, b) => idx(a) - idx(b));
 }
 
-// ภาพการ์ดที่ลอยออกจากวง (ครอปแบบเดียวกับการ์ดในวง: cover เอนขึ้นบน)
-//  รูปข้ามโดเมนต้องขอแบบ CORS เหมือนที่ charRings โหลดไว้ ไม่งั้นเบราว์เซอร์ไม่ใช้แคชเดิม (การ์ดขาวโล่งระหว่างรอโหลดใหม่)
-const corsOf = (url) => {
-  try { return new URL(url, location.href).origin !== location.origin ? "anonymous" : undefined; } catch { return undefined; }
-};
+// ภาพการ์ดที่ลอยออกจากวง — วาดจากภาพที่ portraits.js ถอดรหัส+ครอปไว้แล้ว (ไม่ถอดรหัสไฟล์ใหญ่ซ้ำตอนกดเลือก)
 function CardArt({ c }) {
-  const [broken, setBroken] = useState(null);
-  if (c.img && broken !== c.img) return <img src={c.img} alt="" crossOrigin={corsOf(c.img)} decoding="sync" draggable={false} onError={() => setBroken(c.img)} />;
-  return <span className="cs-fly-emoji" aria-hidden="true">{FALLBACK[c.avatar] || "🙂"}</span>;
+  const cvRef = useRef(null);
+  const [, bump] = useState(0);
+  const e = c.img ? getPortrait(c.img) : null;
+  const state = e ? e.state : "fail";
+  useEffect(() => {
+    if (!e || portraitDone(e)) return undefined;
+    const fn = () => bump((n) => n + 1);
+    getPortrait(e.url, fn);
+    if (portraitDone(e)) fn(); // เสร็จระหว่าง render กับ effect
+    return () => e.waiters.delete(fn);
+  }, [e, state]);
+  useLayoutEffect(() => {
+    const cv = cvRef.current;
+    if (state !== "ok" || !cv || !e.bmp) return;
+    cv.width = e.bmp.width; cv.height = e.bmp.height;
+    cv.getContext("2d").drawImage(e.bmp, 0, 0);
+  }, [e, state]);
+  if (state === "fail") return <span className="cs-fly-emoji" aria-hidden="true">{FALLBACK[c.avatar] || "🙂"}</span>;
+  return <canvas ref={cvRef} className="cs-fly-art" width={1} height={1} />;
+}
+
+// สีตัวอักษรบนปุ่มหมวดที่ถูกเลือก (พื้นเป็นสีหมวด) — พื้นสว่างใช้ตัวเข้ม
+function inkOn(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b > 165 ? "var(--oc-ink)" : "#fff";
 }
 
 // lostChars / blockedChars / confirmLabel / backLabel / title: ใช้ตอนเลือกตัวใหม่กลางโหมด Type Mercury
@@ -106,6 +129,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     return gs;
   }, [roster]);
   const orderedRoster = useMemo(() => grouped.flatMap((g) => g.chars), [grouped]);
+  // ภาพตัวละคร: ดันขึ้นหน้าคิวตามลำดับวง (ส่วนใหญ่เริ่มโหลดไว้ตั้งแต่หน้าเลือกลำดับแล้ว)
+  useEffect(() => { preloadPortraits(orderedRoster.map((c) => c.img), { front: true }); }, [orderedRoster]);
 
   // ตัวละครคู่ที่ยังรอคู่หู = ยังเข้าร่วมได้ (เป็นคู่หู) แม้จะถูกเลือกไปแล้วหนึ่งคน
   const pairSlotOf = (c) => (c && c.pair ? pairSlots.find((s) => s.characterId === c.id) : null);
@@ -140,6 +165,7 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   const shownGroup = shown ? grouped.find((g) => g.chars.some((c) => c.id === shown.id)) : null;
   const reason = blockReason(shown);
   const canConfirm = !!sel && !sel.locked && !blockReason(sel);
+  const selWhy = sel ? blockReason(sel) || (sel.locked ? "ยังไม่ปลดล็อก" : null) : null;
 
   const ringsRef = useRef(null);
   const tipRef = useRef(null);
@@ -319,38 +345,40 @@ export default function CharacterSelect({ roster, position, color: myColor, name
         onReady={onReady}
       />
 
-      <div className="cs-filter-wrap">
-        <OcPanel as="nav" className="cs-filter oc-enter d1" aria-label="หมวด" onMouseLeave={() => ringsRef.current?.setHighlight(-1)}>
-          <span className="oc-label cs-filter-head">หมวด</span>
+      {/* ฉากเปิด: เส้นสแกนกวาดผ่านโลก (คู่กับวงที่ลากเส้นตัวเองใน charRings) */}
+      <div className="cs-scan" aria-hidden="true" />
+
+      {/* ปุ่มหมวด: ปุ่มเล็กแยกกัน · ซ่อนระหว่างเลือกตัว (ไม่บังการ์ดในวง) */}
+      <div className={`cs-filter-wrap${sel ? " hide" : ""}`} aria-hidden={!!sel || undefined}>
+        <nav className="cs-filter" aria-label="หมวด" onMouseLeave={() => ringsRef.current?.setHighlight(-1)}>
           <button
             type="button"
-            className={`cs-cat all${focusGroup ? "" : " on"}`}
+            className={`cs-chip all oc-enter${focusGroup ? "" : " on"}`}
             aria-pressed={!focusGroup}
-            style={{ "--c": "var(--oc-azure)" }}
+            tabIndex={sel ? -1 : undefined}
+            style={{ "--c": "#3D8BD9", "--fg": "#fff" }}
             onClick={() => openGroup(null)}
           >
-            <i className="cs-cat-mark" aria-hidden="true" />
-            <span className="cs-cat-name">ทั้งหมด</span>
-            <span className="cs-cat-n">{orderedRoster.length}</span>
+            ทั้งหมด
           </button>
           {grouped.map((g, i) => (
             <button
               key={g.key}
               type="button"
-              className={`cs-cat${focus === g.key ? " on" : ""}`}
+              className={`cs-chip oc-enter${focus === g.key ? " on" : ""}`}
               aria-pressed={focus === g.key}
-              style={{ "--c": g.color }}
+              tabIndex={sel ? -1 : undefined}
+              style={{ "--c": g.color, "--fg": inkOn(g.color), animationDelay: `${0.05 + (i + 1) * 0.035}s` }}
               onClick={() => openGroup(g.key)}
               onMouseEnter={() => ringsRef.current?.setHighlight(i)}
               onFocus={() => ringsRef.current?.setHighlight(i)}
               onBlur={() => ringsRef.current?.setHighlight(-1)}
             >
-              <i className="cs-cat-mark" aria-hidden="true" />
-              <span className="cs-cat-name">{g.label}</span>
-              <span className="cs-cat-n">{g.chars.length}</span>
+              <i className="cs-chip-dot" aria-hidden="true" />
+              {g.label}
             </button>
           ))}
-        </OcPanel>
+        </nav>
       </div>
 
       <div className="cs-top oc-enter">
@@ -473,9 +501,13 @@ export default function CharacterSelect({ roster, position, color: myColor, name
               </div>
             </div>
           )}
-
-          <OcButton variant="primary" className="cs-confirm" disabled={!canConfirm} onClick={confirm}>{confirmLabel}</OcButton>
         </OcPanel>
+      </div>
+
+      {/* ยืนยัน — มุมขวาล่าง โผล่เฉพาะตอนเลือกตัว · เลือกไม่ได้ = ปุ่มกดไม่ได้ + ป้ายเหตุผล */}
+      <div className={`cs-confirm-wrap${sel ? " open" : ""}`} aria-hidden={!sel}>
+        {sel && selWhy && <span className="cs-confirm-why">{selWhy}</span>}
+        <OcButton variant="primary" className="cs-confirm" disabled={!canConfirm} tabIndex={sel ? undefined : -1} onClick={confirm}>{confirmLabel}</OcButton>
       </div>
 
       <OcButton className="cs-back oc-enter d2" onClick={onBack}>

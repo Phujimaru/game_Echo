@@ -19,7 +19,8 @@
 @keyframes ocl-fade { from { opacity: 0; } }
 
 /* ---------- ห้องรอ: ที่นั่งรอบลูกโลก ---------- */
-.ocl-prefs { position: absolute; top: 40px; right: var(--ocl-side); display: flex; gap: 8px; }
+/* ตั้งค่า: ใต้กลุ่มปุ่มเสียง/เมนู (fixed top 16px สูง 40px — oc/ui-extra/volume.css) ชิดขวาแนวเดียวกัน */
+.ocl-prefs { position: absolute; top: 68px; right: 16px; display: flex; gap: 8px; }
 .ocl-prefs .ocl-switch { width: auto; }
 
 .ocl-orbit { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none !important; }
@@ -112,6 +113,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ocl-seat-in, .ocl-tether, .ocl-orbit-ring, .ocl-ghost { animation: none; }
+  .ocl-vote .ocl-vote-side { transition: none; }
   .ocl-tether line { animation: none; }
   .ocl-ghost { display: none; }
 }
@@ -125,7 +127,6 @@
   border-radius: 999px; box-shadow: 0 18px 40px -26px rgba(28, 63, 110, 0.45);
 }
 .ocl-dock { max-width: calc(100vw - 2 * (var(--ocl-side) + clamp(240px, 16vw, 300px) + 24px)); flex-wrap: wrap; justify-content: center; border-radius: 28px; box-sizing: border-box; }
-.ocl-dock-vote { right: calc(min(400px, 34vw) + max(16px, 5vw) + 32px); max-width: none; }
 .ocl-emotes-label { font: 600 12px/1 var(--oc-f-ui); color: var(--oc-ink-2); margin-right: 6px; }
 .ocl-emotes button {
   appearance: none; width: 42px; height: 42px; border-radius: 50%; border: 1px solid transparent; background: transparent;
@@ -138,14 +139,97 @@
 
 /* ---------- เลือกโหมด ---------- */
 .ocl-vote .ocl-tags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.ocl-modetag { font-size: 13px; padding: 7px 10px; }
-.ocl-modetag.focus { border-color: var(--oc-azure); box-shadow: 0 0 0 1px var(--oc-azure); }
-.ocl-modetag.on { box-shadow: none; }
-.ocl-modetag[data-blocked="true"] {
-  color: var(--oc-ink-3);
-  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0 6px, rgba(220, 231, 243, 0.92) 6px 12px);
+/* ป้ายชื่อโหมด — กรอบคนละแบบต่อโหมด
+   กรอบวาดใน .ocl-mt-frame (::before = เส้นขอบ ::after = พื้น ตัดรูปด้วย --shape) · ::before/::after ของปุ่ม = ลวดลายประจำโหมด
+   ตัวแปร: --edge เส้นขอบ · --fill พื้น · --ink ตัวอักษร · --orn ลวดลาย · --k ขนาด (ModeVote ใส่ใน transform ทุกเฟรม) */
+.ocl-modetag {
+  --edge: var(--oc-sky); --fill: rgba(255, 255, 255, 0.95); --ink: var(--oc-ink); --orn: var(--oc-echo); --orn2: var(--oc-azure);
+  --shape: inset(0); --bw: 1.5px;
+  isolation: isolate; gap: 8px; padding: 9px 16px; color: var(--ink);
+  background: none; border: 0; font: 600 14px/1 var(--oc-f-ui);
+  filter: drop-shadow(0 6px 8px rgba(28, 63, 110, 0.16));
+  transition: opacity 0.25s, filter 0.25s;
 }
-.ocl-modetag small { font: 400 11px/1 var(--oc-f-body); }
+.ocl-modetag:hover, .ocl-modetag:focus-visible { --edge: var(--oc-azure); }
+.ocl-modetag.on { background: none; color: var(--ink); }
+.ocl-mt-frame { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.ocl-mt-frame::before, .ocl-mt-frame::after { content: ""; position: absolute; clip-path: var(--shape); transition: background 0.2s; }
+.ocl-mt-frame::before { inset: 0; background: var(--edge); }
+.ocl-mt-frame::after { inset: var(--bw); background: var(--fill); }
+.ocl-mt-name { white-space: nowrap; }
+.ocl-modetag::before, .ocl-modetag::after { content: ""; position: absolute; pointer-events: none; transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
+
+/* อิสระ — หกเหลี่ยมหัวแหลม + เพชรสองข้าง (ต่างคนต่างไป) */
+.ocl-modetag[data-mode="ffa"] {
+  --shape: polygon(13px 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 13px) 100%, 13px 100%, 0 50%);
+  padding: 9px 22px;
+}
+.ocl-modetag[data-mode="ffa"]::before, .ocl-modetag[data-mode="ffa"]::after {
+  top: 50%; width: 6px; height: 6px; margin-top: -3px; background: var(--orn); transform: rotate(45deg);
+}
+.ocl-modetag[data-mode="ffa"]::before { left: -9px; }
+.ocl-modetag[data-mode="ffa"]::after { right: -9px; }
+
+/* คู่หู — แคปซูล ขอบสองชั้น + ห่วงคล้องกันสองวง */
+.ocl-modetag[data-mode="duo"] { --shape: inset(0 round 999px); padding: 9px 18px 9px 40px; }
+.ocl-modetag[data-mode="duo"] .ocl-mt-frame::before, .ocl-modetag[data-mode="duo"] .ocl-mt-frame::after { border-radius: 999px; }
+.ocl-modetag[data-mode="duo"] .ocl-mt-frame::after { box-shadow: inset 0 0 0 2px var(--fill), inset 0 0 0 3px color-mix(in srgb, var(--edge) 45%, transparent); }
+.ocl-modetag[data-mode="duo"]::before, .ocl-modetag[data-mode="duo"]::after {
+  top: 50%; width: 11px; height: 11px; margin-top: -7px; border-radius: 50%; border: 2px solid var(--orn2);
+}
+.ocl-modetag[data-mode="duo"]::before { left: 12px; }
+.ocl-modetag[data-mode="duo"]::after { left: 19px; border-color: var(--orn); }
+
+/* สหายทั้ง 3 เอ๋ย — แปดเหลี่ยมตัดมุม + สามจุดเหนือป้าย + แถบล่าง */
+.ocl-modetag[data-mode="trio"] {
+  --shape: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  padding: 10px 18px 11px;
+}
+.ocl-modetag[data-mode="trio"]::before {
+  top: -10px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--orn);
+  box-shadow: -10px 0 0 var(--orn2), 10px 0 0 var(--orn2);
+}
+.ocl-modetag[data-mode="trio"]::after { left: 14px; right: 14px; bottom: 3px; height: 2px; background: var(--orn); opacity: 0.55; }
+
+/* Type Mercury — สี่เหลี่ยมด้านขนานเอียง พื้นเงินโลหะเหลว ขอบน้ำเงินเข้ม + แถบเฉียงคู่ */
+.ocl-modetag[data-mode="mercury"] {
+  --shape: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  --edge: var(--oc-ink); --fill: linear-gradient(180deg, #ffffff 0%, #eef3f9 48%, #d5e1ee 52%, #f4f8fc 100%);
+  padding: 10px 22px 10px 34px; font: 400 12px/1 var(--oc-f-logo); letter-spacing: 0.08em;
+}
+.ocl-modetag[data-mode="mercury"]::before, .ocl-modetag[data-mode="mercury"]::after {
+  top: 6px; bottom: 6px; width: 3px; background: var(--orn); transform: skewX(-22deg);
+}
+.ocl-modetag[data-mode="mercury"]::before { left: 15px; }
+.ocl-modetag[data-mode="mercury"]::after { left: 21px; background: var(--orn2); }
+
+/* Moon Cell — ตัดมุมทแยง ขอบม่วงสองชั้น + จันทร์เสี้ยว */
+.ocl-modetag[data-mode="seraph"] {
+  --shape: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+  --edge: var(--oc-echo-glow);
+  padding: 10px 18px 10px 36px; font: 400 12px/1 var(--oc-f-logo); letter-spacing: 0.08em;
+}
+.ocl-modetag[data-mode="seraph"] .ocl-mt-frame::after { box-shadow: inset 0 0 0 3px var(--oc-snow), inset 0 0 0 4px color-mix(in srgb, var(--oc-echo-glow) 70%, transparent); }
+.ocl-modetag[data-mode="seraph"]::before {
+  left: 13px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%;
+  box-shadow: inset 4px -2px 0 0 var(--orn);
+}
+.ocl-modetag[data-mode="seraph"]::after { left: 26px; top: 8px; width: 3px; height: 3px; background: var(--orn2); transform: rotate(45deg); }
+
+/* สถานะ (อยู่หลังกรอบประจำโหมดเพื่อทับค่า) */
+.ocl-modetag.focus {
+  --edge: var(--oc-echo); --k: 1.1; --bw: 2px; z-index: 3;
+  filter: drop-shadow(0 0 7px rgba(155, 79, 150, 0.45)) drop-shadow(0 8px 10px rgba(28, 63, 110, 0.2));
+}
+.ocl-modetag.on { --fill: linear-gradient(135deg, var(--oc-echo) 0%, var(--oc-echo-deep) 100%); --edge: var(--oc-echo-deep); --ink: #fff; --orn: #fff; --orn2: var(--oc-echo-glow); }
+.ocl-modetag.on.focus { --edge: var(--oc-azure); }
+.ocl-modetag.on .ocl-mt-frame::after { box-shadow: none; }
+.ocl-modetag[data-blocked="true"] {
+  --fill: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0 6px, rgba(220, 231, 243, 0.95) 6px 12px);
+  --ink: var(--oc-ink-3); --orn: var(--oc-ink-3); --orn2: var(--oc-frost);
+}
+.ocl-modetag[data-blocked="true"]:not(.focus):not(:hover) { --edge: var(--oc-frost); }
+
 .ocl-dots { display: flex; gap: 3px; }
 .ocl-dots i { width: 8px; height: 8px; border-radius: 50%; display: block; box-shadow: 0 0 0 1.5px #fff; }
 .ocl-areatag {
@@ -155,12 +239,15 @@
 .ocl-areatag .oc-latin { font: 400 9px/1 var(--oc-f-logo); color: var(--oc-echo); letter-spacing: 0.06em; }
 .ocl-areatag.back { opacity: 0; }
 
-.ocl-votepanel {
-  position: absolute; right: max(16px, 5vw); top: 0; bottom: 0; margin-block: auto; height: fit-content;
-  width: min(400px, 34vw); box-sizing: border-box;
+/* แผงโหมด: ซ่อนจนกว่าจะเลือกดูโหมด แล้วเลื่อนเข้ามาจากขวา (โลกเลื่อนซ้าย/ซูมผ่าน layout ใน Lobby.jsx) */
+.ocl-vote .ocl-vote-side {
+  position: absolute; z-index: 5; top: 50%; right: max(16px, 5vw); width: min(400px, 34vw);
+  transform: translate(48px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s, visibility 0s 0.55s;
 }
+.ocl-vote .ocl-vote-side.open { transform: translate(0, -50%); opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0.15s, 0.15s, 0s; }
+.ocl-votepanel { width: 100%; box-sizing: border-box; }
 .ocl-vp-head { display: flex; flex-direction: column; gap: 6px; }
-.ocl-vp-back { align-self: flex-start; margin-top: -6px; font-size: 14px; }
 .ocl-vp-head .oc-muted { font-size: 14px; }
 .ocl-sec { display: flex; flex-direction: column; gap: 8px; }
 .ocl-seclabel { display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
