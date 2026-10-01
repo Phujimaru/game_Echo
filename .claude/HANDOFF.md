@@ -93,16 +93,15 @@
    - ✅ ลบไฟล์สื่อเก่าบน R2 แล้ว 154 ไฟล์ (620MB: ตัวละครที่ถูกถอดรวม musashi + ไฟล์ไม่ได้ใช้) ด้วย `npm run release -- --prune-only` · โฟลเดอร์ `_backup_audio/` `_backup_video/` ใน bucket ไม่ได้แตะ
 5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin — **ยังไม่ได้ทำ** (ผู้ใช้จะลองเอง)
 
-### ถอนการติดตั้งแล้วลบไฟล์เกมด้วย (เสร็จและทดสอบแล้ว 2026-10-01 — รอ release เป็น 5.0.1)
+### ถอนการติดตั้งแล้วลบไฟล์เกมด้วย (✅ ปล่อยเป็น 5.0.1 แล้ว 2026-10-01)
 ผู้ใช้สั่ง: ถอนการติดตั้ง = ลบไฟล์เกมที่โหลดมาด้วย **แต่ห้ามลบอะไรนอกโฟลเดอร์ของเกมเด็ดขาด** (กลัวแบบข่าว uninstaller ลบทั้งไดรฟ์)
-- ไฟล์: `desktop/installer.nsh` + `desktop/package.json` (`nsis.deleteAppDataOnUninstall: true`, `nsis.include: "installer.nsh"`) · ยังต้องเปลี่ยนเวอร์ชันเป็น 5.0.1 แล้ว `npm run release` (รอผู้ใช้สั่ง)
+- ไฟล์: `desktop/installer.nsh` + `desktop/package.json` (`nsis.deleteAppDataOnUninstall: true`, `nsis.include: "installer.nsh"`) · ✅ `npm run release` 5.0.1 ขึ้น R2 แล้ว (latest.yml = 5.0.1 · ลิงก์ติดตั้งใหม่ `updates/ECHO-Setup-5.0.1.exe`)
 - macro `customUnInstall` ทำงาน**ก่อน** electron-builder ลบไฟล์ (`templates/nsis/uninstaller.nsh`) → Abort = ไม่มีอะไรถูกลบ · ด่าน: `$INSTDIR` ต้องลงท้าย `\echo-desktop` และ (เฉพาะถอนจริง ไม่ใช่อัปเดต) ต้องมี `ECHO.exe` · ตอนอัปเดตไม่บังคับ `ECHO.exe` เพราะถ้า Abort ตอนอัปเดต ตัวติดตั้งจะวนลอง 5 รอบแล้วล้ม
 - **`$INSTDIR` ของตัวถอนมาจาก registry** `HKCU\Software\4e959771-d971-5c37-9ea6-6ef8e009d21b` ค่า `InstallLocation` (`multiUser.nsh`) ไม่ใช่ `_?=` — ทดสอบด่านต้องแก้ค่านี้ ไม่ใช่ก๊อปตัวถอนไปที่อื่น
 - ผลทดสอบเก่าที่ว่า "macro ไม่ทำงาน" ผิด — build debug ยืนยันว่า macro รัน + `DELETE_APP_DATA_ON_UNINSTALL` ถูก define
 - ทดสอบผ่านทั้งหมด (`/S`): ถอนจริง → โปรแกรม/`%APPDATA%\ECHO`/updater/ทางลัด/registry หาย โฟลเดอร์ข้างเคียงชื่อคล้ายกันยังอยู่ · ติดตั้งตัวเก่าจาก R2 แล้วติดตั้งตัวใหม่ทับ (กรณีเพื่อน) → ไฟล์เกมยังอยู่ ตัวถอนถูกเปลี่ยนเป็นรุ่นใหม่ · ติดตั้งตัวใหม่ทับตัวใหม่ → ไฟล์เกมยังอยู่ · `InstallLocation` ชี้โฟลเดอร์ชื่ออื่น หรือชี้ `...\echo-desktop` ที่ไม่มี `ECHO.exe` → ยกเลิก ไม่มีอะไรหายเลย
 - เพื่อนที่ใช้ 5.0.0 ไม่ต้องติดตั้งใหม่ — อัปเดตอัตโนมัติเป็น 5.0.1 แล้วได้ตัวถอนใหม่ (ถ้าถอนก่อนได้อัปเดต `%APPDATA%\ECHO` จะค้าง ต้องลบเอง)
 - **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยน · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) ปิดด้วย `taskkill //F //IM ECHO.exe //T` · ทดสอบในเครื่องผู้ใช้ให้ย้าย `%APPDATA%\ECHO` (1.2GB ของจริง) ไปสำรองก่อน
-- `desktop/dist/ECHO-Setup-5.0.0.exe` ในเครื่องเป็น build ทดสอบ (โค้ดถูกแล้วแต่เลขเวอร์ชันชนกับตัวบน R2) — ห้ามส่งให้เพื่อน ให้ส่งลิงก์ R2
 
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)
 - eslint 2 errors: `tests/characters/escanor.test.js` บรรทัด ~722 (`no-control-regex` จาก `\x08`)
