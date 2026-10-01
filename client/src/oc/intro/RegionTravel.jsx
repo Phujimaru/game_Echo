@@ -106,6 +106,42 @@ export default function RegionTravel({ from, to, durationMs, lowQ = false, onDon
     spin.add(dash);
     disposables.push(coreGeo, glowGeo, coreMat, glowMat, dashGeo, dashMat);
 
+    // ---------- เส้นทางที่เดินมาแล้ว (ภูมิภาค I → … → ต้นทาง) ค้างไว้บนโลก ไม่หายไป ----------
+    //  วาดเต็มเส้นตั้งแต่เปิดฉาก สีไล่ตามภูมิภาคแต่ละช่วงเหมือนเส้นใหม่ · จุดเล็กตรงภูมิภาคที่ผ่านมา
+    const trailMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
+    const trailGlowMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.16, depthWrite: false });
+    const dotGeo = new THREE.CircleGeometry(0.014, 20);
+    disposables.push(trailMat, trailGlowMat, dotGeo);
+    for (let k = 1; k < a && !same; k++) {
+      const s0 = regionDir(k - 1), s1 = regionDir(k);
+      const sAng = Math.acos(Math.max(-1, Math.min(1, s0.dot(s1))));
+      const sLift = 0.03 + 0.07 * (sAng / Math.PI);
+      const sp = [];
+      for (let i = 0; i <= N; i++) sp.push(slerpDir(THREE, s0, s1, i / N).multiplyScalar(1.006 + sLift * Math.sin(Math.PI * (i / N))));
+      const sCurve = new THREE.CatmullRomCurve3(sp);
+      const c0 = vivid(journeyArea(k).color), c1 = vivid(journeyArea(k + 1).color);
+      const paint = (geo) => {
+        const col = new Float32Array(geo.attributes.position.count * 3);
+        const c = new THREE.Color();
+        for (let j = 0; j <= N; j++) {
+          c.copy(c0).lerp(c1, j / N);
+          for (let i = 0; i <= RAD; i++) col.set([c.r, c.g, c.b], (j * (RAD + 1) + i) * 3);
+        }
+        geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        return geo;
+      };
+      const tGeo = paint(new THREE.TubeGeometry(sCurve, N, 0.0058, RAD, false));
+      const gGeo = paint(new THREE.TubeGeometry(sCurve, N, 0.016, RAD, false));
+      spin.add(new THREE.Mesh(gGeo, trailGlowMat), new THREE.Mesh(tGeo, trailMat));
+      disposables.push(tGeo, gGeo);
+      const dotMat = new THREE.MeshBasicMaterial({ color: c0, transparent: true, opacity: 0.95, depthWrite: false, side: THREE.DoubleSide });
+      const dot = new THREE.Mesh(dotGeo, dotMat);
+      dot.position.copy(s0).multiplyScalar(1.008);
+      dot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), s0);
+      spin.add(dot);
+      disposables.push(dotMat);
+    }
+
     // หัวเส้น: จุดขาว + แสงสีภูมิภาคปลายทาง
     const tex = glowTexture(THREE);
     const headGlowMat = new THREE.SpriteMaterial({ map: tex, color: cB, transparent: true, depthWrite: false, opacity: 0 });

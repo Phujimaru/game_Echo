@@ -104,6 +104,7 @@
 - **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยน · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) ปิดด้วย `taskkill //F //IM ECHO.exe //T` · ทดสอบในเครื่องผู้ใช้ให้ย้าย `%APPDATA%\ECHO` (1.2GB ของจริง) ไปสำรองก่อน
 
 ### C. ECHO 5.1 — ธีม ORDEAL CALL (แทน Avalon) · branch `feat/ordeal-call` (2026-10-01)
+✅ **5.1.7** (2026-10-02): ฉากเปลี่ยนภูมิภาค — เส้นทางที่เดินมาแล้ว (I → … → ต้นทาง) ค้างบนโลก + จุดตรงภูมิภาคที่ผ่าน แล้วค่อยลากเส้นช่วงใหม่ (`RegionTravel.jsx`)
 ✅ **5.1.6** (2026-10-02): ฉากเปิดแมตช์ไม่ตัดหลังโหวตโหมด (ลูกโลกร่วมลูกเดิม, `oc/intro/screenGhost.js` จางหน้าเลือกโหมด, การ์ดโคจรรอบโลก)
 ✅ **5.1.5** (2026-10-02): การ์ดรายละเอียดตัวละครแขวนบนเส้นโคจรรอบภาพหกเหลี่ยม (`layoutArc`, `ARC_OFF` ต้องตรง `--cs-arc-off`) · `oc/intro/MatchIntro.jsx` = เปิดตัวผู้เล่นรอบลูกโลก + ดิ่ง (canvas เดียว, App: state `intro`, `startPendingJourney()` คืน `{area,durationMs}`, `onHandoff`) · `RegionTravel.jsx` = เปลี่ยนภูมิภาค (ซูมออก → เส้นเดินทาง → ชื่อ → ดิ่งกลับ) · ลบ GameIntro / GlobeDive / JourneyMap / MapArt / mapGeometry / Emblem + เพลง journey_map
 📋 **แผนรอทำ (อีก session):** เข้าฉากด่านให้ลื่น ไม่ตัดฉับหลังฉากดิ่ง → [.claude/plans/scene-loading-plan.md](plans/scene-loading-plan.md)
