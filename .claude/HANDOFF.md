@@ -93,15 +93,16 @@
    - ✅ ลบไฟล์สื่อเก่าบน R2 แล้ว 154 ไฟล์ (620MB: ตัวละครที่ถูกถอดรวม musashi + ไฟล์ไม่ได้ใช้) ด้วย `npm run release -- --prune-only` · โฟลเดอร์ `_backup_audio/` `_backup_video/` ใน bucket ไม่ได้แตะ
 5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin — **ยังไม่ได้ทำ** (ผู้ใช้จะลองเอง)
 
-### 🚧 งานค้าง (session 2026-10-01 หยุดกลางทาง): ถอนการติดตั้งแล้วลบไฟล์เกมด้วย
+### ถอนการติดตั้งแล้วลบไฟล์เกมด้วย (เสร็จและทดสอบแล้ว 2026-10-01 — รอ release เป็น 5.0.1)
 ผู้ใช้สั่ง: ถอนการติดตั้ง = ลบไฟล์เกมที่โหลดมาด้วย **แต่ห้ามลบอะไรนอกโฟลเดอร์ของเกมเด็ดขาด** (กลัวแบบข่าว uninstaller ลบทั้งไดรฟ์)
-- สถานะ: **ยังไม่ commit** — `desktop/installer.nsh` (ใหม่) + `desktop/package.json` (`nsis.deleteAppDataOnUninstall: true`, `nsis.include: "installer.nsh"`) · **ห้าม `npm run release` จนกว่าจะแก้เสร็จและทดสอบผ่าน** (ต้องปล่อยเป็น 5.0.1)
-- `installer.nsh` มี macro `customUnInstall`: ด่านกันพลาด (ยกเลิกถ้า `$INSTDIR` ไม่ลงท้าย `\echo-desktop` หรือไม่มี `ECHO.exe`) + ลบ `%LOCALAPPDATA%\echo-desktop-updater` เมื่อไม่ใช่การอัปเดต
-- ข้อเท็จจริงที่เจอ: ติดตั้งจริงอยู่ที่ `%LOCALAPPDATA%\Programs\echo-desktop` (ตาม "name" ไม่ใช่ productName) · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) · ไฟล์เกมอยู่ `%APPDATA%\ECHO\media`
-- **ปัญหาที่ยังไม่รู้สาเหตุ:** ทดสอบ build ที่ด่านยังเช็ค `\ECHO` (ผิด) แล้วสั่ง `Uninstall ECHO.exe /S` → โฟลเดอร์โปรแกรม/ทางลัด/registry ถูกลบหมด (ด่านไม่หยุด) แต่ `%APPDATA%\ECHO` กับ updater **ไม่ถูกลบ** → สงสัยว่า macro `customUnInstall` ไม่ได้ทำงานใน uninstaller เลย และ/หรือ `DELETE_APP_DATA_ON_UNINSTALL` ไม่ถูก define (builder-debug.yml ยืนยันแค่ว่า `!include installer.nsh` ถูกใส่)
-- ขั้นต่อไป: build รุ่น debug ที่ `FileWrite` ค่า `$INSTDIR`, `${isUpdated}`, `!ifdef DELETE_APP_DATA_ON_UNINSTALL` ลง `$TEMP\echo-uninst-debug.txt` แล้วติดตั้ง/ถอนแบบ `/S` (ปิด `ECHO.exe` ที่เปิดเองหลังติดตั้งด้วย `taskkill //F //IM ECHO.exe //T`) · **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยนจน makensis error "unterminated string"
-- ทดสอบให้ครบ: ไฟล์ใน `%APPDATA%\ECHO` + updater หาย · โฟลเดอร์ข้างเคียง (`%APPDATA%\ECHO-neighbor-test`, `%LOCALAPPDATA%\Programs\neighbor-test`) ยังอยู่ · ก๊อป uninstaller ไปโฟลเดอร์อื่นแล้วรันด้วย `_?=<โฟลเดอร์นั้น>` ต้องถูกด่านยกเลิก ไฟล์ในนั้นต้องไม่หาย · อัปเดตอัตโนมัติ (`--updated`) ต้องไม่ลบไฟล์เกม
-- เครื่องผู้ใช้ตอนนี้: ถอน ECHO ที่ติดตั้งทดสอบออกแล้ว · `desktop/dist/ECHO-Setup-5.0.0.exe` ในเครื่องเป็น build ทดสอบ (มีด่าน `\ECHO` ผิด) — **ตัวที่ถูกต้องคือตัวบน R2** (build ตอน release ไม่มี installer.nsh) ห้ามส่งไฟล์ใน dist ให้เพื่อน ให้ส่งลิงก์ R2
+- ไฟล์: `desktop/installer.nsh` + `desktop/package.json` (`nsis.deleteAppDataOnUninstall: true`, `nsis.include: "installer.nsh"`) · ยังต้องเปลี่ยนเวอร์ชันเป็น 5.0.1 แล้ว `npm run release` (รอผู้ใช้สั่ง)
+- macro `customUnInstall` ทำงาน**ก่อน** electron-builder ลบไฟล์ (`templates/nsis/uninstaller.nsh`) → Abort = ไม่มีอะไรถูกลบ · ด่าน: `$INSTDIR` ต้องลงท้าย `\echo-desktop` และ (เฉพาะถอนจริง ไม่ใช่อัปเดต) ต้องมี `ECHO.exe` · ตอนอัปเดตไม่บังคับ `ECHO.exe` เพราะถ้า Abort ตอนอัปเดต ตัวติดตั้งจะวนลอง 5 รอบแล้วล้ม
+- **`$INSTDIR` ของตัวถอนมาจาก registry** `HKCU\Software\4e959771-d971-5c37-9ea6-6ef8e009d21b` ค่า `InstallLocation` (`multiUser.nsh`) ไม่ใช่ `_?=` — ทดสอบด่านต้องแก้ค่านี้ ไม่ใช่ก๊อปตัวถอนไปที่อื่น
+- ผลทดสอบเก่าที่ว่า "macro ไม่ทำงาน" ผิด — build debug ยืนยันว่า macro รัน + `DELETE_APP_DATA_ON_UNINSTALL` ถูก define
+- ทดสอบผ่านทั้งหมด (`/S`): ถอนจริง → โปรแกรม/`%APPDATA%\ECHO`/updater/ทางลัด/registry หาย โฟลเดอร์ข้างเคียงชื่อคล้ายกันยังอยู่ · ติดตั้งตัวเก่าจาก R2 แล้วติดตั้งตัวใหม่ทับ (กรณีเพื่อน) → ไฟล์เกมยังอยู่ ตัวถอนถูกเปลี่ยนเป็นรุ่นใหม่ · ติดตั้งตัวใหม่ทับตัวใหม่ → ไฟล์เกมยังอยู่ · `InstallLocation` ชี้โฟลเดอร์ชื่ออื่น หรือชี้ `...\echo-desktop` ที่ไม่มี `ECHO.exe` → ยกเลิก ไม่มีอะไรหายเลย
+- เพื่อนที่ใช้ 5.0.0 ไม่ต้องติดตั้งใหม่ — อัปเดตอัตโนมัติเป็น 5.0.1 แล้วได้ตัวถอนใหม่ (ถ้าถอนก่อนได้อัปเดต `%APPDATA%\ECHO` จะค้าง ต้องลบเอง)
+- **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยน · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) ปิดด้วย `taskkill //F //IM ECHO.exe //T` · ทดสอบในเครื่องผู้ใช้ให้ย้าย `%APPDATA%\ECHO` (1.2GB ของจริง) ไปสำรองก่อน
+- `desktop/dist/ECHO-Setup-5.0.0.exe` ในเครื่องเป็น build ทดสอบ (โค้ดถูกแล้วแต่เลขเวอร์ชันชนกับตัวบน R2) — ห้ามส่งให้เพื่อน ให้ส่งลิงก์ R2
 
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)
 - eslint 2 errors: `tests/characters/escanor.test.js` บรรทัด ~722 (`no-control-regex` จาก `\x08`)

@@ -62,7 +62,9 @@
       "perMachine": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "ECHO"
+      "shortcutName": "ECHO",
+      "deleteAppDataOnUninstall": true,
+      "include": "installer.nsh"
     },
     "publish": [
       {
