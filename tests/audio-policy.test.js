@@ -7,13 +7,13 @@ vm.runInContext(fs.readFileSync(require.resolve('../client/src/audioPolicy.js'),
 const moon = { gameState: 'PLAYING', seraph: { day: 7, daysTotal: 7, cycleRound: 2, night: true } };
 
 test('Moon Cell music follows cutscene -> skill -> duel priority, with silent pairing/intro', () => {
-  const skill = { ...moon, skillMusic: 'hakuno', skillMusicSeq: 5 };
+  const skill = { ...moon, skillMusic: 'dummy', skillMusicSeq: 5 };
   assert.equal(policy.musicForState(moon).name, 'sc_duel_night');
-  assert.equal(policy.musicForState(skill).name, 'hakuno');
+  assert.equal(policy.musicForState(skill).name, 'dummy');
   assert.equal(policy.musicForState(skill).seq, 5);
   const cutscene = { ...skill, gameState: 'CUTSCENE', cutscene: { id: 1, video: 'skill.mp4' } };
   assert.equal(policy.musicForState(cutscene).name, null);
-  assert.equal(policy.musicForState(cutscene, { lowQ: true }).name, 'hakuno');
+  assert.equal(policy.musicForState(cutscene, { lowQ: true }).name, 'dummy');
   for (const scene of ['pairing', 'duelIntro']) assert.equal(policy.musicForState(skill, { scene }).name, null);
 });
 

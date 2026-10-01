@@ -54,13 +54,9 @@ export default function VictoryScreen({ state, onBackToLobby }) {
       const ws = state.players.filter((p) => p.alive && p.teamId === state.winningTeamId);
       return { heading: `ทีม ${state.winningTeamId}`, winners: ws };
     }
-    if (state.allyWin) {
-      const ws = state.players.filter((p) => p.alive);
-      return { heading: ws.map((w) => w.name).join(" และ "), winners: ws };
-    }
     const c = state.players.find((p) => p.alive && !p.isBoss); // ORT (บุกเทิร์น 60) ไม่ใช่ผู้ชิงชัย
     return { heading: c ? c.name : "จบเกม", winners: c ? [c] : [] };
-  }, [state.gameMode, state.winningTeamId, state.allyWin, state.players, state.mercury?.result]);
+  }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result]);
 
   const names = winners.map((w) => w.name).join(" และ ");
 

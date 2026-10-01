@@ -16,7 +16,6 @@ const PHENEX_SELF_BURN = 2;       // หัวใจที่ไม่ดับ�
 const PHENEX_BURN_MAX = 5;        // ลุกไหม้ (ตัวเอง): สะสมได้ไม่เกิน 5 หน่วย
 const PHENEX_REFLECT_COST_HP = 2; // ฝันไปเถอะ: เสียพลังชีวิต 2 หน่วยไม่สนเกราะตอนกด
 const PHENEX_NTD_COST_HP = 3;     // ฝืนใช้งาน NTD-Sytem: เสียพลังชีวิต 3 หน่วยไม่สนเกราะตอนกด
-const PHENEX_BAN_ULT_TURNS = 3;   // อย่าอยู่เลย แกน่ะ!: ไม่มีท่าไม้ตายให้ลบ -> แบนท่าไม้ตายเป้าหมาย 3 เทิร์นแทน (มีสำเนาใน server.js สำหรับ purge resolution)
 const PHENEX_FORCE_SCORE = 20;    // อย่าอยู่เลย แกน่ะ!: บังคับแต้มการจั่วเป็น 20 ทันที
 const PHENEX_NTD_ATK_BONUS = 1;   // ฝืนใช้งาน NTD-Sytem: พลังโจมตีพื้นฐาน +1
 

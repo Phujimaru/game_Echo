@@ -188,7 +188,7 @@ const TOHNO_DEATH_IMG = CHAR_HOOKS.tohno.DEATH_IMG; // ร่างระหว�
 const MIYAKO_KILL_REDUCE = 0.40;      // นั่นพี่จ๋าหรอ?: ลดโอกาสถูกสังหารทันทีลง 40% ทุกครั้งที่รอด (สะสม — ใช้ใน miyakoKillChance shared infra)
 // ท่าไม้ตายที่ยกเลิกย้อนหลังได้ (เจ้าของท่ามาตีชิกิระหว่างถือชาร์จ) — สถานะท่าไม้ตายที่กำลังมีผลอยู่
 const SHIKI_CANCELABLE_ULTS = ["gingastrium", "chill",
-  "kready", "lai", "vortigern", "deatheye", "wither",
+  "kready", "deatheye", "wither",
   "anata",                  // patch 2.0.8: เพิ่ม ANATA WAAAAAAAA (เทมาริ) — ครอบคลุมท่าไม้ตายทุกตัวละครที่เก็บเป็นสถานะ
   "bloodDim", "soulDim",    // patch 2.0.8.1: มิติมายาบรรเลงทั้งสอง (คีตกวี) นับเป็นท่าไม้ตาย — ยกเลิกย้อนหลังได้
   "victorybeat", "ashen",   // patch 2.0.8.1: ท่าไม้ตายโอกูริ แคป ทั้งสองท่า
@@ -209,42 +209,12 @@ const OGURI_ENERGY_START = 8;      // Energy: เริ่มเกมได้�
 const OGURI_ENERGY_MAX = 16;       // Energy สะสมสูงสุด
 const OGURI_CHARGE_BASE_CAP = 52;  // Stamina ชาร์จ: ความจุพื้นฐาน
 const OGURI_CHARGE_CAP_MAX_BONUS = 48; // Training: เพิ่มความจุได้สูงสุดสะสม +48 (รวมเพดานสูงสุด 100)
-const OGURI_CHARGE_GAIN_MIN = 6;   // Stamina ชาร์จ: ได้รับทุกเทิร์น 6-12 หน่วย (สุ่ม) — Rework: เดิม 8-16 (ค่าจริงที่ใช้คำนวณอยู่ใน characters/oguri.js)
-const OGURI_CHARGE_GAIN_MAX = 12;
 const OGURI_GOLD_MAX = 3;          // ยุคทอง สะสมสูงสุด (Rework: เดิม 2 -> 3)
-const OGURI_GOLD_TURNS = 6;        // ยุคทอง อยู่ 6 เทิร์น (รีเฟรชเมื่อได้แต้มใหม่)
-const OGURI_GOLD_ATK_PER = 1;      // ยุคทอง: พลังโจมตีพื้นฐาน +1 ทุกๆแต้มที่ติดอยู่บนตัว
-const OGURI_GOLD_ATK_CAP = 2;      // ยุคทอง: พลังโจมตีบวกได้ไม่เกิน 2 หน่วย (Rework)
 const OGURI_GOLD_ARMOR_AT = 2;     // ยุคทอง: ครบ 2 แต้มขึ้นไป ได้เพดานเกราะ +1 (Rework — เดิมแค่มียุคทองก็ได้แล้ว)
-const OGURI_GRAYBEAST_SP_TURNS = 2; // GrayBeast: แต้มสกิล +1 ทุก 2 เทิร์น (Energy +1 ได้ทุกเทิร์น)
-const OGURI_BURNOUT_TURNS = 2;     // Burnout: คงอยู่ 2 เทิร์น (ไม่ใช่ถาวรแบบเดิมแล้ว)
-const OGURI_BURNOUT_ENERGY_PENALTY = 2; // Burnout: Breakfast ได้ Energy ลดลง -2
-const OGURI_BURNOUT_DECAY_TURNS = 2; // Burnout: มอบสถานะผุพัง 2 เทิร์น
-const OGURI_BREAKFAST_HEAL = 1;    // Breakfast: ฟื้นเลือด 1
-const OGURI_BREAKFAST_ENERGY = 4;  // Breakfast: Energy +4 ปกติ (Burnout ลดเหลือ +2)
 const OGURI_TRAIN_ENERGY_COST = 4; // Training: หัก Energy 4 (เดิมหัก Stamina)
-const OGURI_TRAIN_CAP_GAIN_MIN = 3; // Training: เพิ่มความจุ Stamina ชาร์จ 3-7 หน่วย (สุ่ม) — Rework: เดิม 4-8 (ค่าจริงที่ใช้คำนวณอยู่ใน characters/oguri.js)
-const OGURI_TRAIN_CAP_GAIN_MAX = 7;
-const OGURI_TRAIN_BASE = 0.6;      // โอกาสฝึกฝนสำเร็จพื้นฐาน 60%
-const OGURI_TRAIN_BONUS_RATE = 0.8; // บัฟ Bonus ทำงานอยู่: โอกาสสำเร็จเพิ่มเป็น 80%
-const OGURI_TRAIN_FAIL_DMG = 1;    // ฝึกฝนล้มเหลว: ดาเมจ 1 หน่วยไม่สนเกราะ
-const OGURI_TRAIN_EXTRA_ROLL = 0.25; // ฝึกฝนสำเร็จ: โอกาส 25% ได้บัฟเสริมเพิ่มอีก 1 อัน
-const OGURI_TRAIN_FLOW_W = 0.40;   // บัฟเสริม 3 แบบ (สุ่มถ่วงน้ำหนัก): Flow 40%
-const OGURI_TRAIN_BONUS_W = 0.40;  // Bonus 40%
-const OGURI_TRAIN_SUNNY_W = 0.20;  // Sunny Day 20%
-const OGURI_FLOW_TURNS = 3;        // Flow: อยู่ 3 เทิร์น หรือจนกว่าจะถูกโจมตี
-const OGURI_FLOW_DODGE = 0.5;      // Flow: โอกาสหลบการโจมตี 50%
-const OGURI_BONUS_TURNS = 3;       // Bonus: อยู่ 3 เทิร์น
-const OGURI_SUNNY_TURNS = 3;       // Sunny Day: อยู่ 3 เทิร์น
-const OGURI_SUNNY_FORTUNE = 1;     // Sunny Day: ได้โชคลาภ +1 ทุกเทิร์นที่มีบัฟนี้
 const OGURI_ULT_CHARGE_COST = 35;  // The Beat of Victory: Stamina ชาร์จ 35
 const OGURI_ULT_ATK_BONUS = 2;     // ชนะ: พลังโจมตีพื้นฐาน +2 (ซ้อนทับกับยุคทองได้)
-const OGURI_ULT_NOREGEN_TURNS = 2; // เป้าหมาย: เกินเยียวยา 2 เทิร์น
-const OGURI_ULT_STAGGER_TURNS = 2; // เป้าหมาย: ชะงัก 2 เทิร์น (ฟื้นฟูแต้มสกิลไม่ได้)
 const OGURI_ULT2_CHARGE_COST = 80; // Ashen Trail: Stamina ชาร์จ 80 (ต้องมียุคทองครบด้วย) — Rework: เดิม 75
-const OGURI_ASHEN_DRAWS = 2;     // Ashen Trail: บังคับทุกคนจั่วเพิ่ม 2 ใบ
-const OGURI_ASHEN_DMG = 2;       // Ashen Trail: โจมตีทุกคนที่ไพ่แตกหลังเปิดไพ่
-const OGURI_ASHEN_CARD_BONUS = 8; // Ashen Trail: คู่ต่อสู้ทุกคนบวกแต้มการ์ด +8
 const OGURI_ZONE_IMG = "/characters/oguri/zone_form.jpg";
 
 // ---------- ซาโตรุ อาเคฟุ (universal-wrapper — ตรรกะจริงอยู่ characters/satoru.js) ----------
@@ -315,16 +285,9 @@ module.exports = {
   BARD_CRIMSON_IMG, BARD_JADE_IMG, BARD_SONGS, SHIKI_DEATHLINE_MAX, SHIKI_WITHER_PASSIVE_CAP,
   SHIKI_WITHER_ATK_CAP, SHIKI_PROFILE_IMG, SHIKI_DEATH_IMG, SHIKI_WITHER_IMG, PSHIKI_ULT_IMG,
   BAT_SKILL3_IMG, TOHNO_DEATH_IMG, MIYAKO_KILL_REDUCE, SHIKI_CANCELABLE_ULTS, OGURI_ENERGY_START,
-  OGURI_ENERGY_MAX, OGURI_CHARGE_BASE_CAP, OGURI_CHARGE_CAP_MAX_BONUS, OGURI_CHARGE_GAIN_MIN,
-  OGURI_CHARGE_GAIN_MAX, OGURI_GOLD_MAX, OGURI_GOLD_TURNS, OGURI_GOLD_ATK_PER, OGURI_GOLD_ATK_CAP,
-  OGURI_GOLD_ARMOR_AT, OGURI_GRAYBEAST_SP_TURNS, OGURI_BURNOUT_TURNS, OGURI_BURNOUT_ENERGY_PENALTY,
-  OGURI_BURNOUT_DECAY_TURNS, OGURI_BREAKFAST_HEAL, OGURI_BREAKFAST_ENERGY, OGURI_TRAIN_ENERGY_COST,
-  OGURI_TRAIN_CAP_GAIN_MIN, OGURI_TRAIN_CAP_GAIN_MAX, OGURI_TRAIN_BASE, OGURI_TRAIN_BONUS_RATE,
-  OGURI_TRAIN_FAIL_DMG, OGURI_TRAIN_EXTRA_ROLL, OGURI_TRAIN_FLOW_W, OGURI_TRAIN_BONUS_W,
-  OGURI_TRAIN_SUNNY_W, OGURI_FLOW_TURNS, OGURI_FLOW_DODGE, OGURI_BONUS_TURNS, OGURI_SUNNY_TURNS,
-  OGURI_SUNNY_FORTUNE, OGURI_ULT_CHARGE_COST, OGURI_ULT_ATK_BONUS, OGURI_ULT_NOREGEN_TURNS,
-  OGURI_ULT_STAGGER_TURNS, OGURI_ULT2_CHARGE_COST, OGURI_ASHEN_DRAWS, OGURI_ASHEN_DMG,
-  OGURI_ASHEN_CARD_BONUS, OGURI_ZONE_IMG, SATORU_PROFILE_IMG, PHENEX_BAN_ULT_TURNS,
+  OGURI_ENERGY_MAX, OGURI_CHARGE_BASE_CAP, OGURI_CHARGE_CAP_MAX_BONUS, OGURI_GOLD_MAX,
+  OGURI_GOLD_ARMOR_AT, OGURI_TRAIN_ENERGY_COST, OGURI_ULT_CHARGE_COST, OGURI_ULT_ATK_BONUS,
+  OGURI_ULT2_CHARGE_COST, OGURI_ZONE_IMG, SATORU_PROFILE_IMG, PHENEX_BAN_ULT_TURNS,
   PHENEX_BASE_IMG, PHENEX_NTD_IMG, TRANSFORMS, ORT_ID, ORT_POSITION, MERCURY_ARRIVAL_SECONDS,
   MERCURY_SURRENDER_SECONDS, ORT_ATTACK_DELAY, JOURNEY_START_SECONDS, JOURNEY_ADVANCE_SECONDS,
   TEAM_IDS, YUNA_IMG, YUNA_COLOR, RESYNC_EVERY,

@@ -216,13 +216,6 @@ body {
 }
 .aura-beat { animation: auraBeat 0.5s steps(4, end) infinite; }
 
-/* ---------- เอฟเฟคสวมเกราะราชัน: โกลว์แดงรอบการ์ด ---------- */
-@keyframes auraRachan {
-  0%, 100% { box-shadow: 0 0 12px 3px rgba(192, 57, 43, 0.85), 0 0 26px 8px rgba(192, 57, 43, 0.4); }
-  50% { box-shadow: 0 0 22px 7px rgba(231, 76, 60, 1), 0 0 44px 14px rgba(192, 57, 43, 0.6); }
-}
-.aura-rachan { animation: auraRachan 1.1s ease-in-out infinite; }
-
 /* ---------- ยูนะ: ออร่าเป้าหมายเฉพาะ อลังการ (Longing ทอง / Delete ม่วง / Smile for You เขียว-ฟ้า) ----------
    ชั้นประกอบ: รังสีหมุนพื้นหลัง (aura-rays) + วงแหวนคู่หมุนสวนทาง (aura-ring x2) + กลอว์พัลส์ใหญ่ขึ้น-เล็กลงพร้อมซูม
    + ฝุ่นไซเบอร์ระเบิดฟุ้งรอบทิศทาง (aura-dust) + ป้ายไอคอนเด้ง (aura-badge) — ทุกชั้นอยู่นอก overflow-hidden ของรูป ฟุ้งเลยขอบได้เต็มที่ */
@@ -317,22 +310,6 @@ body {
   animation: fieldFxPulse 1.6s ease-in-out infinite;
 }
 
-/* ---------- ออร่าขอบจอของหลักสูตรการสอน (อาจารย์ ไบเลธ) ----------
-   ใช้กลไกเดียวกับ field-fx-beatbark ของยูนะ แต่แยกสีตามหลักสูตรที่เปิดอยู่
-   มาตราฐาน = เขียว · พิเศษ = แดงเข้ม · จบการศึกษา = ฟ้า */
-.field-fx-byleth-normal,
-.field-fx-byleth-ex,
-.field-fx-byleth-end {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  pointer-events: none;
-  animation: fieldFxPulse 2.4s ease-in-out infinite;
-}
-.field-fx-byleth-normal { background: radial-gradient(circle, transparent 58%, rgba(46, 158, 75, 0.42) 100%); }
-.field-fx-byleth-ex     { background: radial-gradient(circle, transparent 58%, rgba(192, 57, 43, 0.45) 100%); }
-.field-fx-byleth-end    { background: radial-gradient(circle, transparent 58%, rgba(59, 130, 196, 0.45) 100%); }
-
 /* ---------- ออร่าขอบจอระหว่างการไล่ล่า (คอนเนอร์ RK800 — สกิลติดตัว 2 จับกุมขั้นเด็ดขาด) ----------
    กลไกเดียวกับ field-fx-beatbark แต่แดงเข้มกว่าและเต้นเร็วกว่า เพื่อให้อ่านออกว่าเป็นโหมดกดดัน */
 .field-fx-connor-chase {
@@ -355,11 +332,9 @@ body {
   width: 70vmin; height: 70vmin; border-radius: 50%;
   animation: xfxBurst 0.9s ease-out forwards;
 }
-.xfx-burst-red { background: radial-gradient(circle, rgba(255,90,60,0.95) 0%, rgba(200,30,20,0.55) 42%, transparent 68%); }
 .xfx-burst-green { background: radial-gradient(circle, rgba(90,240,120,0.95) 0%, rgba(20,160,60,0.55) 42%, transparent 68%); }
 
 @keyframes xfxFlash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
-.xfx-flash-red { background: radial-gradient(circle, rgba(220,40,20,0.6), transparent 60%); animation: xfxFlash 0.6s ease-out forwards; }
 .xfx-flash-green { background: radial-gradient(circle, rgba(30,200,80,0.6), transparent 60%); animation: xfxFlash 0.6s ease-out forwards; }
 
 /* ---------- ฉากหลังกลางวัน/กลางคืน: วีดีโอราตรีกลืนกินเฟดเข้าช้าๆ ---------- */
@@ -805,11 +780,11 @@ body {
    ========================================================================= */
 
 /* กรอบภาพผู้เล่น: วงแหวนสีประจำตัว ใช้ outline (ไม่ใช่ box-shadow) โดยตั้งใจ —
-   เพื่อไม่ให้ชนกับ box-shadow ของ .aura-beat/.aura-rachan (เอฟเฟกต์ร่างแปลงที่ผูกอยู่กับการ์ดเดียวกัน) */
+   เพื่อไม่ให้ชนกับ box-shadow ของ .aura-beat (เอฟเฟกต์ร่างแปลงที่ผูกอยู่กับการ์ดเดียวกัน) */
 .p-player-frame {
   outline: 3px solid var(--p-frame-color, var(--color-p-accent));
   outline-offset: 1px;
-  /* ไม่ใส่ box-shadow ที่นี่โดยตั้งใจ — ปล่อยให้ .aura-beat/.aura-rachan (ถ้ามี) คุม box-shadow แต่ผู้เดียว */
+  /* ไม่ใส่ box-shadow ที่นี่โดยตั้งใจ — ปล่อยให้ .aura-beat (ถ้ามี) คุม box-shadow แต่ผู้เดียว */
 }
 .p-player-frame.p-player-frame-live {
   animation: pFrameBreathe 2.6s ease-in-out infinite;

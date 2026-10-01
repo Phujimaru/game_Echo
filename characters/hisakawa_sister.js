@@ -64,11 +64,6 @@ function ensure(p) {
   return p.hisakawa;
 }
 
-function twinOf(p, key) {
-  const h = ensure(p);
-  return h ? h.twins[key || h.active] : null;
-}
-
 function activeTwin(p) {
   const h = ensure(p);
   return h ? h.twins[h.active] : null;

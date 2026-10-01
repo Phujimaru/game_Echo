@@ -109,7 +109,7 @@ test('tryBustTrigger: first buster in seat order takes 3 dmg (through armor) + d
   const t = mkPlayer({ position: 1 });
   takumi.activateBlackout(engine, t);
   const p2 = mkPlayer({ characterId: 'tohno', position: 2, cards: [{ value: 25 }], hp: 10, armor: 1 });
-  const p3 = mkPlayer({ characterId: 'riddhe', position: 3, cards: [{ value: 25 }], hp: 10, armor: 1 });
+  const p3 = mkPlayer({ characterId: 'dummy', position: 3, cards: [{ value: 25 }], hp: 10, armor: 1 });
   takumi.tryBustTrigger(engine);
   assert.equal(p2.armor, 0, 'armor absorbed 1 of the 3 damage first');
   assert.equal(p2.hp, 8, 'remaining 2 damage spilled into hp');

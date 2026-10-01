@@ -287,7 +287,7 @@ module.exports = {
   //  เรียกจาก hit() / drawToScore() ของ server ก่อนตัดสิน p.busted
   cardBust(engine, p) {
     if (engine.overloadForceActive) return false;
-    if (p.statuses && (p.statuses.upg || p.statuses.fiber)) return false;
+    if (p.statuses && p.statuses.upg) return false;
     return engine.calculateScore(p.cards) + (p.cardBonus || 0) > 21;
   },
   onDrawCheck(engine, p) {

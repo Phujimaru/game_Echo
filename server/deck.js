@@ -158,7 +158,7 @@ function bustedOf(p) {
   // มุยมิ: ดาบสะบั้นหอคอยสวรรค์ / หัวใจนักสู้ สั่งให้ไพ่แตกโดยตรง ต้านสถานะป้องกันไม่ได้
   if (CHAR_HOOKS.muimi.forcedBust(engine, p)) return true;
   if (match.overloadForceActive) return false;
-  if (p.statuses && (p.statuses.upg || p.statuses.fiber)) return false;
+  if (p.statuses && p.statuses.upg) return false;
   return calculateScore(p.cards) + (p.cardBonus || 0) > 21;
 }
 

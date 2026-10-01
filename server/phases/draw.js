@@ -13,7 +13,7 @@ const YunaMod = require("../../characters/yuna");
 const Journey = require("../../characters/_journey");
 const Seraph = require("../../seraph");
 const { io } = require("../app");
-const { CYCLE_TURNS, SHOP_INTERVAL_TURNS } = require("../constants");
+const { SHOP_INTERVAL_TURNS } = require("../constants");
 const match = require("../match");
 const { engine } = require("../engine");
 const combat = require("../combat");
@@ -58,12 +58,7 @@ function dealRound() {
   //  SE.RA.PH: ยูนะปิดทั้งโหมด (SERAPH_MOONCELL.md §12)
   //  Type Mercury: ยูนะปิดทั้งโหมด (เหมือน SE.RA.PH)
   if (!Seraph.active() && !mercury.mercuryActive() && match.roundNumber >= 16 && (match.roundNumber - 16) % 5 === 0 && !timers.eijiUltFieldActive()) YunaMod.rollWindow(engine, match.roundNumber);
-  // รีเซ็ตเวลากลางคืน (Lie Like Vortigern): นับกลางคืนใหม่ — เทิร์นนี้เป็นคืนที่ 1 จาก 3
-  const prevNight = dayNight.isNightRound(match.roundNumber - 1); // เช็คด้วยวงจรเดิมก่อนเลื่อน (กันแบนเนอร์สลับเวลาเด้งผิด)
-  if (match.nightResetPending) {
-    match.nightResetPending = false;
-    match.cycleShift = match.roundNumber - (CYCLE_TURNS + 1); // ให้เทิร์นนี้ตรงกับคืนแรกของวงจร
-  }
+  const prevNight = dayNight.isNightRound(match.roundNumber - 1);
   // Type Mercury: คนที่เลือกตัวละครใหม่ไว้แล้วลงสนามตอนนี้ (ก่อนลูปแจกไพ่ใบแรก จึงได้ไพ่ทันทีในเทิร์นนี้)
   mercury.mercuryRespawnPicked();
   // ORT สกิลติดตัว 1: สกิลแรกของเทิร์นที่แล้ว "ข้อมูลสูญหาย" ในเทิร์นนี้ (อยู่หลังล้าง cutsceneQueue แล้ว)

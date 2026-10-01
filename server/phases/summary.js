@@ -256,7 +256,6 @@ function resolveRound() {
         match.lastLog.push(`🌈 ${l.name} ความฝันของฉันคือเธอ — ไม่รับความเสียหายจากการแพ้/ไพ่แตก`);
         continue;
       }
-      const armorBefore = l.armor;
       let lossDmg = 1;
       // เต็มอิ่ม (Breakfast โอกูริ patch 2.0.8.1): ดาเมจที่ได้รับ -1 (รวมดาเมจแพ้จั่ว/แตก)
       if ((l.statuses.fullbelly || 0) > 0 && lossDmg > 0) {
@@ -264,12 +263,6 @@ function resolveRound() {
         match.lastLog.push(`🥖 ${l.name} เต็มอิ่ม — ดาเมจจากการแพ้ลดลง 1`);
       }
       for (let i = 0; i < lossDmg; i++) combat.damageSoft(l);
-      // Absorb shield: ผู้แพ้เสียเกราะ -> แปลงเกราะที่เสียกลับเป็นพลังชีวิต
-      const armorLost = armorBefore - l.armor;
-      if ((l.statuses.absorb || 0) > 0 && armorLost > 0) {
-        const heal = combat.healHp(l, armorLost);
-        if (heal > 0) match.lastLog.push(`🛡️ ${l.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`);
-      }
       // Beat Mode กันตาย: ทำงานทันทีแม้ความเสียหายถึงตายมาจากการแพ้จั่ว/แตก
       combat.maybeBeatSave(l);
       combat.addSkill(l, 1); // โดนความเสียหายเพราะแต้มห่างจาก 21 มากที่สุด +1

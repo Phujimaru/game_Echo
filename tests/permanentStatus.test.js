@@ -23,7 +23,7 @@ test("client permanent-status list covers every server NO_TICK_STATUS key", () =
 test("client permanent-status list has no unknown keys", () => {
   const client = clientKeys();
   // อนุญาตเฉพาะคีย์ที่ฝั่ง client ดูแลเอง (สถานะที่ server ไม่ได้เก็บใน statuses ตรงๆ)
-  const clientOnly = new Set(["hakunoInvertReady", "hakunoNoRegenReady", "ippoDempsey"]);
+  const clientOnly = new Set(["ippoDempsey"]);
   const unknown = [...client].filter((k) => !NO_TICK_STATUS.has(k) && !clientOnly.has(k));
   assert.deepStrictEqual(unknown, [], `มีคีย์เกินในฝั่ง client: ${unknown.join(", ")}`);
 });

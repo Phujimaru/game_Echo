@@ -19,7 +19,7 @@ const {
   ATTACKFX_TIME, ATTACK_TIME, BARD_BLOOD_FRAGILE, BARD_DIM_EVADE, BARD_DIM_FORTUNE,
   BARD_DIM_NOTES_PER_TURN, BARD_DIM_RESIST_TURNS, BARD_DIM_TURNS, BARD_FORTUNE_MAX,
   BARD_SECTION_MAX, BARD_SONGS, BARD_SOUL_PERFORM_DMG, BARD_SOUL_TARGETS,
-  BLACK_SPARKLENCE_NURSE_COOLDOWN, CYCLE_TURNS, DOOM_BALLISTA_TARGET_DMG, DOOM_CHARGE_CHANCE,
+  BLACK_SPARKLENCE_NURSE_COOLDOWN, DOOM_BALLISTA_TARGET_DMG, DOOM_CHARGE_CHANCE,
   DOOM_CRUCIBLE_ATK, DOOM_CRUCIBLE_BUST_BONUS, DOOM_CRUCIBLE_BUST_DMG, DOOM_CRUCIBLE_BUST_DRAWS,
   DOOM_CRUCIBLE_CHARGE_NEED, DOOM_DRAIN_DMG, DOOM_DRAIN_TURNS, DOOM_EXPLODE_DMG,
   DOOM_EXPLODE_TARGETS, DOOM_FORTUNE_CHANCE, DOOM_HEAL_ON_ATK, DOOM_LOCKON_BONUS,
@@ -143,8 +143,6 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   get cutsceneInfo() { return match.cutsceneInfo; },
   get gameMode() { return match.gameMode; },
   setGameMode(v) { match.gameMode = v; },
-  setTeamCount(v) { match.teamCount = v; },
-  setTeamSize(v) { match.teamSize = v; },
   resetModeVotes: lobby.resetModeVotes,
   voteGameMode: lobby.voteGameMode,
   validGameMode: lobby.validGameMode,
@@ -162,17 +160,12 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   get roundNumber() { return match.roundNumber; },
   setRoundNumber(v) { match.roundNumber = v; },
   get cycleShift() { return match.cycleShift; },
-  setCycleShift(v) { match.cycleShift = Number(v) || 0; }, // เทสต์ตั้งช่วงเวลาเองได้ (extendNight ของโอเบรอนเลื่อนค่านี้ข้ามเทสต์)
+  setCycleShift(v) { match.cycleShift = Number(v) || 0; }, // เทสต์ตั้งช่วงเวลาเองได้
   get attackerId() { return match.attackerId; },
   setAttackerId(v) { match.attackerId = v; },
   get lastAttack() { return match.lastAttack; },
   setLastAttack(v) { match.lastAttack = v; },
   attackableTargets: attack.attackableTargets,
-  setNightResetPending(v) { match.nightResetPending = v; },
-  // โอเบรอน Lie Like Vortigern (rework 2): ให้เทิร์นปัจจุบันกลายเป็นจุดเริ่มคืนใหม่เต็มรอบ (CYCLE_TURNS เทิร์น นับจากนี้)
-  //  หมายเหตุ: เคยลองใช้ cycleShift += n (บวกคงที่) มาก่อน แต่สูตรนั้นพังถ้ากดกลางดึกที่ไม่ใช่เทิร์นแรกของคืน — ทำให้เกิดวันแทรกกลางคืนสั้นๆ แบบสุ่ม
-  //  ใช้สูตรเดียวกับ nightResetPending เดิม (คำนวณ cycleShift ใหม่ตรงๆ) ซึ่งพิสูจน์แล้วว่าไม่มีรอยต่อเพี้ยน
-  extendNight() { match.cycleShift = match.roundNumber - (CYCLE_TURNS + 1); },
   // ยูนะ ไอดอลประจำสนาม
   get yunaEffect() { return match.yunaEffect; },
   yunaBeatBarkActive: characterRules.yunaBeatBarkActive, // เกตจริงของ Break Beat Bark! (รวมกรณีที่ท่าไม้ตายเอจิบังคับเปิด) — เทสต์อ่านตรงนี้
@@ -197,13 +190,6 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   refreshShopForJourney: shop.refreshShopForJourney, // เทสต์: จำลองการขึ้นเทิร์นใหม่ของร้านค้า // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return lobby.colorOf(p); },
   nextTransformCounter() { return ++match.transformCounter; },
-  // มีการแช่ทั้งสนามจากตัวละครอื่นอยู่ไหม (การไล่ล่าของคอนเนอร์ / การแข่งของไบรอน)
-  //  ใช้กัน Clock Up เปิดซ้อนกับการแช่ของคนอื่น — ใครเปิดก่อนได้ก่อน
-  fieldFreezeByOther(p) {
-    return CHAR_HOOKS.conner.chaseActive(engine) || CHAR_HOOKS.brian.duelActive(engine)
-      //  clockUpHost (เอกพจน์) ไม่เคยมีอยู่จริง — แกน Zect มีแต่ clockUpHosts ที่คืนไรเดอร์ทุกคนที่เปิดอยู่
-      || CHAR_HOOKS.daisuke.clockUpHosts(engine).some((h) => h.id !== (p && p.id));
-  },
   startMatch: lobby.startMatch,
   endTurn: endTurnPhase.endTurn,
   doAttack: attack.doAttack,

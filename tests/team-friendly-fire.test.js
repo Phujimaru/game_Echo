@@ -13,7 +13,7 @@ function makePlayer(overrides = {}) {
     id,
     name: id,
     alive: true,
-    characterId: 'banagher',
+    characterId: 'dummy',
     teamId: null,
     modeVote: null,
     position: uid,

@@ -48,7 +48,7 @@ function setup() {
   engine.setRoundNumber(3);
   const m = mk('M', 'muimi', 1);
   const a = mk('A', 'temari', 2);
-  const b = mk('B', 'kuwagata', 3);
+  const b = mk('B', 'dummy', 3);
   engine.players.M = m;
   engine.players.A = a;
   engine.players.B = b;

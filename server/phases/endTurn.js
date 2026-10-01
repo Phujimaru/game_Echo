@@ -68,7 +68,6 @@ function endTurn() {
       if (k === "andInk") continue;  // แอนเดอร์เซน: ลดตัวนับเองหลังแจกแต้มสกิลใน andersen.onEndTurn
       if (k === "hbleed") continue;  // เลือดไหล (patch 2.5): ลดลงเองในตอนต้นเทิร์นหลังสร้างผล (tickBleed) ไม่ลดซ้ำที่นี่
       if (k === "hburn") continue;   // ลุกไหม้ (ฮิคารุ patch 2.1.3): ลดลงเองในตอนต้นเทิร์นหลังสร้างผล (ดูด้านล่าง) ไม่ลดซ้ำที่นี่
-      if (k === "melody") continue;  // ท่วงทำนอง (ชเรด เอลัน): สแตคถาวร สะสมจนครบ 5 เพื่อรวมร่าง
       if (k === "star") continue;    // ดวงดาว (สึงาชิ ทาคุโตะ): สแตคถาวร สะสมจนครบ 5 เพื่อฉันคว้ามันได้แล้ว
       if (k === "emeraude" || k === "saphir" || k === "lance") continue; // Star Sword / หอกผู้พิชิต (สึงาชิ ทาคุโตะ): คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
       if (k === "takutoThirdAtk") continue; // พิชิตแสงดาว (สึงาชิ ทาคุโตะ): คงอยู่จนกว่าจะได้ลุ้นโจมตีครั้งที่ 3 (ไม่ลดเทิร์น)
@@ -77,11 +76,7 @@ function endTurn() {
       if (k === "doomExplode" || k === "doomLockon") continue; // [ระเบิด]/[ล็อคเป้า] (ดูมกาย, Combat Shotgun/Heavy Cannon): ค้างอยู่จนกว่าจะโดนโจมตีใช้จริง ไม่ลดเทิร์นเอง
       if (k === "fortune") continue; // โชคลาภ (Bard): คงอยู่จนกว่าจะจั่วไพ่ครั้งถัดไป (หมดอายุเองถ้าไม่ใช้ 3 เทิร์น — ดูด้านบน)
       if (k === "linked") { CHAR_HOOKS.bard.tickLinks(p); continue; } // Resonance: นับอายุแยกตาม Bard เจ้าของบทเพลง
-      if (k === "rsHopper") continue; // RS-Hopper (เอวา 13): สแตคชาร์จ ไม่ใช่ตัวนับเทิร์น — ฟื้นเองทุก 3 เทิร์น (ดูด้านบน)
-      if (k === "cassius") continue; // หอกแห่งแคสเซียส (เอวา 13): คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
       if (k === "yaak") continue;    // ย๊ากก! (อาริมะ มิยาโกะ): คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
-      if (k === "spear") continue;   // หอกลองกินัส (เอวา 13 patch 2.2 alpha): คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
-      if (k === "ohger") continue;   // โอเจอร์ชาร์จ (คุวากาตะ patch 2.2 alpha): คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น)
       if (k === "evade") continue;   // หลบหลีก (สถานะ Universal): p.statuses.evade เป็นแค่ mirror ของ p.evadeStacks.length — ตัวจริงหมดอายุผ่าน tickEvadeStacks (ดูด้านบน)
       if (k === "empower") continue; // เสริมพลัง (Rejuvenation): คงอยู่จนกว่าจะได้โจมตี (ไม่ซ้อนทับ)
       if (k === "miyakoHeal" || k === "miyakoCombo" || k === "miyakoUlt") continue; // อาริมะ มิยาโกะ: คงอยู่จนกว่าจะได้โจมตี (ไม่ลดเทิร์น) — miyakoUlt เดิมหลุดหายไปเองหลัง 1 เทิร์นถ้ายังไม่ได้โจมตี (บัค)
@@ -115,9 +110,6 @@ function endTurn() {
       if (k === "graybeast") continue;  // ร่าง Zone: ถาวรจนกว่าจะเข้าร่างหมดแรง
       // burnout (ร่างหมดแรง): เดิมถูกยกเว้นไม่ลดเทิร์นตรงนี้ แต่ไม่มีจุดไหนในโค้ดเคลียร์ทิ้งเองเลย (ไม่มี delete p.statuses.burnout ที่ไหนทั้งไฟล์)
       //  ผลคือติดแล้วค้างถาวรทั้งแมตช์ ทั้งที่ตั้งใจให้เป็นดีบัฟ 2 เทิร์นตายตัว (ดู OGURI_BURNOUT_TURNS, characters/oguri.js) — เอาข้อยกเว้นออก ให้ลดเทิร์นตามปกติ
-      if (k === "grit") continue;       // เวลากัดฟันทน: สแตค หายเมื่อฝึกฝนสำเร็จ
-      if (k === "healthfull") continue; // Healthfull: สแตค ใช้ลบ Overweight เมื่อครบ 2
-      if (k === "overweight") continue; // Overweight: คงอยู่จนกว่าจะถูกลบด้วย Healthfull
       // หลับไหล: เทิร์นที่เพิ่งโดนกล่อม ยังไม่เริ่มนับ (เริ่มหลับจริงเทิร์นถัดไป ครบตามจำนวนยามฟ้าสาง)
       if (k === "sleep" && p.sleepFresh) { p.sleepFresh = false; continue; }
       p.statuses[k]--;

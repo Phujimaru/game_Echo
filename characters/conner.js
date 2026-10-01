@@ -47,7 +47,6 @@ const PREDICT_LABEL = { draw: "จั่วการ์ด", item: "ใช้ไ
 const PREDICT_HEAL_PER = 1;         // ถูก 1 ข้อ = ฟื้นพลังชีวิต 1
 const PREDICT_SKILL_PER = 1;        // ถูก 1 ข้อ = ฟื้นแต้มสกิล 1
 const PREDICT_PERFECT_STRESS = 3;   // ทายถูกทุกข้อ = ความเครียดเป้าหมาย +3 (balance 3.5.1: เดิม 5)
-const PREDICT_MUSIC = "conner_think"; // conner_think.m4a — เล่นตอนกดใช้งาน
 
 // ---------- สกิลรอง ข่มขวัญ/จับกุม ----------
 const INTIMIDATE_STRESS = 1;        // ความเครียดที่เพิ่มให้เป้าหมาย (ระดับผู้ต้องสงสัย)

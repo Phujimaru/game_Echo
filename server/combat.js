@@ -225,7 +225,7 @@ const TEMARI_ANATA_DRAWS = 3;    // ANATA WAAAAAAAA: บังคับจั่
 // สถานะผิดปกติที่ Song for you ล้างออกได้ทั้งหมด (patch 2.0.8: เพิ่มดีบัฟพื้นฐานใหม่
 //  และแยก ยามฟ้าสาง/เส้นชีวิต ออกไปลดทีละ 1 แทน — ดูใน st === "song")
 const DEBUFF_KEYS = ["discord", "sleep", "stun", "nodraw", "noskill",
-  "energy", "nohealing", "moonmark", "unplug", "weak", "fragile", "spellburden",
+  "energy", "nohealing", "weak", "fragile", "spellburden",
   "oblada", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal", "invert", "manaSeal", "manaRupture", "manaLeech", "mageslayerMark",
   "numb"]; // เหน็บชา (Bamboo-Hatted Kim)
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
@@ -662,7 +662,7 @@ function resetCombat(p) {
   Seraph.resetFields(p); // SE.RA.PH: ล้างฟิลด์ของโหมด (GAME_SYSTEM.md gotcha #11)
   p.ready = false; // ห้องรอ: ต้องกดพร้อมใหม่ทุกครั้งที่กลับมาห้องรอ/เริ่มแมตช์ใหม่
   p.skillPoints = 0; p.alive = true; p.shield = 0;
-  p.statuses = {}; p.seen = {}; p.transformAt = 0; p.beatAt = 0;
+  p.statuses = {}; p.seen = {}; p.transformAt = 0;
   p.statusAmt = {};      // จำนวน (amount) ของบัฟ/ดีบัฟพื้นฐาน (patch 2.0.8) — คู่กับ p.statuses
   p.armorLocked = false; // Beat Mode: กันตายแล้วเกราะจะไม่ฟื้นคืน
   p.beatSaved = false;   // Beat Mode: กันตายได้ครั้งเดียวต่อเกม (คล้าย Focus Sash)
@@ -696,7 +696,6 @@ function resetCombat(p) {
   p.songAtk = 0;          // Song for you: พลังขิงที่ล็อกไว้ตอนใช้สกิล (สูงสุด 2)
   p.noDrawNext = 0;       // จำนวนเทิร์นที่จั่วเพิ่มไม่ได้ เริ่มเทิร์นถัดไป (ทงคัสสึ / กำไรเท่าตัวโว้ย)
   p.noSkillNext = 0;      // จำนวนเทิร์นที่ใช้สกิลไม่ได้ เริ่มเทิร์นถัดไป (หอกลองกินัส เอวา 13)
-  p.profit = 0;           // แกมเบลอร์: บัฟกำไรเท่าตัวโว้ย (+โจมตี, ทะลุเกราะ) สะสมจนกว่าจะได้ตี
   p.tempHp = 0;           // แกมเบลอร์: เลือดชั่วคราวจากฮีลล้น
   p.tempHpTurns = 0;      // เลือดชั่วคราวหายเองเมื่อครบ 2 เทิร์น
   p.anataTargets = null;  // เป้าหมาย ANATA WAAAAAAAA (ลับจนกว่าจะเปิดไพ่)
@@ -741,8 +740,6 @@ function resetCombat(p) {
   CHAR_HOOKS.cayenne.resetCombat(p);
   CHAR_HOOKS.daichi.resetCombat(p); // ไดจิ: การ์ดไซเบอร์ / เกราะ / การ์ดที่ตัดเก็บไว้ / สตั้นค้างจากเกราะเอเลคิง (ติดที่ผู้เล่นทุกคน) // คาเยนน์: กระสุน / แรงใจ / ชุดกระสุนที่บรรจุไว้ / คิวความเสียหายที่เลื่อนไว้
   CHAR_HOOKS.muimi.resetCombat(p); // มุยมิ: โควตาเสบียง / สตรีคหัวใจนักสู้ / จำนวนครั้งท่าไม้ตาย
-  // ---------- ชเรด เอลัน (patch พิเศษ) ----------
-  // (patch พิเศษ: ราตรีของชเรดไม่ถาวรแล้ว — ใช้ nightResetPending รีเซ็ตกลางคืน 3 เทิร์นแทน)
   // ---------- Bard : คีตกวี (patch 2.2) ----------
   p.bardNotes = [];         // โน้ตในช่องประพันธ์เพลง (["R","J",...] สูงสุด 3 — ครบแล้วบรรเลงทันที)
   p.bardNotesUsed = 0;      // จำนวนโน้ตที่เติมในเทิร์นนี้ (จำกัด 2 — มิติโลหิตไม่จำกัด)
@@ -758,7 +755,6 @@ function resetCombat(p) {
   p.mageslayerMarkedId = null;      // ตราล่าเวท: id เป้าหมายที่มาร์กอยู่ (เคลื่อนย้ายได้)
   p.mageslayerMarks = {};
   p.kaiMarksBy = {};
-  p.moonMarksBy = {};
   p.mageslayerHasMarked = false;    // เคยใช้ Witch Mark หรือยัง (ถาวร — ขับเคลื่อนภาพโปรไฟล์ MS01→MS02)
   p.mageslayerWitchMarkReadyRound = 0; // Witch Mark: รอบที่กลับมาใช้ได้หลังคูลดาวน์ 2 เทิร์น
   p.mageslayerBurdenReadyRound = 0; // Mana Burden: รอบที่กลับมาใช้ได้หลังคูลดาวน์ 7 เทิร์น

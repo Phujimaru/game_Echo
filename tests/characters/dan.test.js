@@ -49,7 +49,7 @@ function setup() {
   onlyFor = {};
   const d = mk('D', 'dan', 1);
   const a = mk('A', 'temari', 2);
-  const b = mk('B', 'kuwagata', 3);
+  const b = mk('B', 'dummy', 3);
   engine.players.D = d;
   engine.players.A = a;
   engine.players.B = b;

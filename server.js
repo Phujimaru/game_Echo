@@ -7,12 +7,16 @@
 
 // ตาข่ายสำรองชั้นสุดท้าย — ทุก socket handler ควรมี try/catch ของตัวเองแล้ว (ดู safeOn/onPlayerEvent)
 //  นี่ป้องกันเผื่อโค้ดจุดอื่น (เช่น setTimeout/setInterval callback) โยน error ที่ไม่มีใครจับ ไม่ให้ process ทั้งตัว crash
-process.on("uncaughtException", (err) => {
-  console.error("[uncaughtException] เซิร์ฟเวอร์เจอข้อผิดพลาดที่ไม่ได้ถูกจับ — ทำงานต่อแทนที่จะปิดตัว:", err);
-});
-process.on("unhandledRejection", (err) => {
-  console.error("[unhandledRejection] Promise ถูกปฏิเสธโดยไม่มีใครจับ:", err);
-});
+//  ติดตั้งเฉพาะตอนรันเป็นเซิร์ฟเวอร์จริง — ตอนเทสต์ require ไฟล์นี้ ต้องปล่อยให้ error ระเบิดออกมา
+//  (เดิมติดตั้งเสมอ ทำให้ไฟล์เทสต์ที่ require โมดูลที่ไม่มีอยู่แล้วกลืน error เงียบ เทสต์ทั้งไฟล์ไม่เคยรันจริง)
+if (require.main === module) {
+  process.on("uncaughtException", (err) => {
+    console.error("[uncaughtException] เซิร์ฟเวอร์เจอข้อผิดพลาดที่ไม่ได้ถูกจับ — ทำงานต่อแทนที่จะปิดตัว:", err);
+  });
+  process.on("unhandledRejection", (err) => {
+    console.error("[unhandledRejection] Promise ถูกปฏิเสธโดยไม่มีใครจับ:", err);
+  });
+}
 
 // โค้ดเกมแยกอยู่ใน server/ — socket.js โหลดทุกระบบตามมาเอง (ลงทะเบียน io.on('connection') ตอน require)
 const { server } = require("./server/app");

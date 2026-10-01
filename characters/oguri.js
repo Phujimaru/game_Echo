@@ -26,7 +26,6 @@ const OGURI_TRAIN_FAIL_DMG = 1;    // ฝึกฝนล้มเหลว: ด�
 const OGURI_TRAIN_EXTRA_ROLL = 0.25; // ฝึกฝนสำเร็จ: โอกาส 25% ได้บัฟเสริมเพิ่มอีก 1 อัน
 const OGURI_TRAIN_FLOW_W = 0.40;   // บัฟเสริม 3 แบบ (สุ่มถ่วงน้ำหนัก): Flow 40%
 const OGURI_TRAIN_BONUS_W = 0.40;  // Bonus 40%
-const OGURI_TRAIN_SUNNY_W = 0.20;  // Sunny Day 20%
 const OGURI_FLOW_TURNS = 3;        // Flow: อยู่ 3 เทิร์น หรือจนกว่าจะถูกโจมตี
 const OGURI_FLOW_DODGE = 0.5;      // Flow: โอกาสหลบการโจมตี 50%
 const OGURI_BONUS_TURNS = 3;       // Bonus: อยู่ 3 เทิร์น

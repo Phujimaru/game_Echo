@@ -5,7 +5,6 @@ const mageslayer = require('../../characters/mageslayer.js');
 const kai = require('../../characters/kai.js');
 const bard = require('../../characters/bard.js');
 const shiki = require('../../characters/shiki.js');
-const shrade = require('../../characters/shrade_elan.js');
 const takumi = require('../../characters/takumi.js');
 const tepeu = require('../../characters/tepeu.js');
 
@@ -43,7 +42,7 @@ test('Witch Mark: moving one caster mark does not remove another caster mark', (
   const a = player('mageslayer');
   const b = player('mageslayer');
   const shared = player('tohno');
-  const next = player('riddhe');
+  const next = player('tohno');
   mageslayer.applyWitchMark(engine, a, shared);
   mageslayer.applyWitchMark(engine, b, shared);
   mageslayer.applyWitchMark(engine, a, next);
@@ -68,7 +67,7 @@ test('Bard Resonance: links from separate Bards coexist on the same player', () 
   const a = player('bard');
   const b = player('bard');
   const center = player('tohno');
-  const left = player('riddhe');
+  const left = player('tohno');
   const right = player('phenex');
   bard.applyBardSong(engine, a, 'JJR', [center.id, left.id]);
   bard.applyBardSong(engine, b, 'JJR', [center.id, right.id]);
@@ -86,17 +85,6 @@ test('Wither: each Shiki has an independent contribution and cleanup', () => {
   engine.clearWitherLines(a.id);
   assert.equal(target.statuses.deathline, 1);
   assert.equal(target.witherAddedBy[b.id], 1);
-});
-
-test('Shrade moon marks: one burst deals once per Spada caster', () => {
-  const a = player('shrade_elan', { shradeForm: true });
-  const b = player('shrade_elan', { shradeForm: true });
-  const target = player('tohno', { hp: 10, cards: [{ value: 22 }] });
-  shrade.applyMoonEffect(engine, a, target, 'แสงจันทร์ส่องวิญญาณ');
-  shrade.applyMoonEffect(engine, b, target, 'แสงจันทร์ส่องวิญญาณ');
-  shrade.maybeMoonBurst(engine, target);
-  assert.equal(target.hp, 8);
-  assert.equal(target.statuses.moonmark || 0, 0);
 });
 
 test('Takumi blackout: every active Takumi triggers on the first buster', () => {

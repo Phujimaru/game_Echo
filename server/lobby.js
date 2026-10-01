@@ -257,14 +257,12 @@ function startMatch() {
   for (const p of Object.values(match.players)) combat.resetCombat(p);
   match.roundNumber = 0;
   match.cycleShift = 0;
-  match.nightResetPending = false;
   match.dayForceUntil = 0;
   match.yunaLongingUsed = false; match.yunaWindowEnd = 0; match.yunaEffect = null; match.yunaTargetId = null; match.yunaMusicSeq = 0; match.yunaLongingPendingId = null; match.yunaPity = 0;
   match.overloadForceActive = false;
   match.overloadForceCount = 0;
   match.journeyScene = null;
   overload.clearTurnSnapshot();
-  match.allyWinFlag = false;
   match.shopItems = []; // ล้างสต็อกร้านค้าเก่าค้างจากแมตช์ก่อน (รอเปิดใหม่ตอนเทิร์นที่ 5)
   match.kaiOverhaulSlots = []; // ไค ชิซากิ: ล้าง tracker Overhaul ทุกครั้งที่เริ่มแมตช์ใหม่
   // อาริมะ มิยาโกะ (characters/miyako.js): เจอ โทโนะ ชิกิ หรือ นานายะ ชิกิ ในเกมเดียวกัน -> เล่นวีดีโอ arima_shiki.mp4 ก่อนเริ่มเทิร์นแรก
@@ -332,9 +330,7 @@ function backToLobby() {
   match.attackerId = null;
   match.roundWinnerId = null;
   match.roundNumber = 0;
-  match.allyWinFlag = false;
   match.cycleShift = 0;
-  match.nightResetPending = false;
   match.dayForceUntil = 0;
   match.yunaLongingUsed = false; match.yunaWindowEnd = 0; match.yunaEffect = null; match.yunaTargetId = null; match.yunaMusicSeq = 0; match.yunaLongingPendingId = null; match.yunaPity = 0;
   match.overloadForceActive = false;

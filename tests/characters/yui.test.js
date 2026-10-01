@@ -48,7 +48,7 @@ function setup() {
   queued = [];
   const y = mk('Y', 'yui', 1);
   const a = mk('A', 'temari', 2);
-  const b = mk('B', 'kuwagata', 3);
+  const b = mk('B', 'dummy', 3);
   engine.players.Y = y;
   engine.players.A = a;
   engine.players.B = b;

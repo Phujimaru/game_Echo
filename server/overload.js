@@ -29,7 +29,7 @@ function buildSnapshot() {
     shopItems: structuredClone(match.shopItems),
     kaiOverhaulSlots: structuredClone(match.kaiOverhaulSlots),
     g: {
-      cycleShift: match.cycleShift, nightResetPending: match.nightResetPending, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
+      cycleShift: match.cycleShift, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
       yunaLongingUsed: match.yunaLongingUsed, yunaWindowEnd: match.yunaWindowEnd, yunaEffect: match.yunaEffect, yunaTargetId: match.yunaTargetId, yunaLongingPendingId: match.yunaLongingPendingId, yunaPity: match.yunaPity,
     },
   };
@@ -55,7 +55,7 @@ function applySnapshot(snap, keepPerPlayer) {
   match.shopItems = snap.shopItems;
   match.kaiOverhaulSlots = snap.kaiOverhaulSlots;
   ({
-    cycleShift: match.cycleShift, nightResetPending: match.nightResetPending, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
+    cycleShift: match.cycleShift, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
     yunaLongingUsed: match.yunaLongingUsed, yunaWindowEnd: match.yunaWindowEnd, yunaEffect: match.yunaEffect, yunaTargetId: match.yunaTargetId, yunaLongingPendingId: match.yunaLongingPendingId, yunaPity: match.yunaPity,
   } = snap.g);
   // ORT ที่บุกเข้ามาหลังจุดที่ย้อนไป (เทิร์น 60 ของโหมดปกติ) ต้องหายไปด้วย — ย้อนทุกอย่าง แล้วค่อยบุกใหม่ตามเวลา
@@ -85,7 +85,7 @@ function captureTurnSnapshot() {
       shopItems: structuredClone(match.shopItems),
       kaiOverhaulSlots: structuredClone(match.kaiOverhaulSlots),
       g: {
-        cycleShift: match.cycleShift, nightResetPending: match.nightResetPending, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
+        cycleShift: match.cycleShift, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
         yunaLongingUsed: match.yunaLongingUsed, yunaWindowEnd: match.yunaWindowEnd, yunaEffect: match.yunaEffect, yunaTargetId: match.yunaTargetId, yunaLongingPendingId: match.yunaLongingPendingId, yunaPity: match.yunaPity,
       },
     };
@@ -121,7 +121,7 @@ function restoreTurnSnapshot(skipId, keepOncePerGame) {
   match.shopItems = snap.shopItems;
   match.kaiOverhaulSlots = snap.kaiOverhaulSlots;
   ({
-    cycleShift: match.cycleShift, nightResetPending: match.nightResetPending, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
+    cycleShift: match.cycleShift, dayForceUntil: match.dayForceUntil, transformCounter: match.transformCounter,
     yunaLongingUsed: match.yunaLongingUsed, yunaWindowEnd: match.yunaWindowEnd, yunaEffect: match.yunaEffect, yunaTargetId: match.yunaTargetId, yunaLongingPendingId: match.yunaLongingPendingId, yunaPity: match.yunaPity,
   } = snap.g);
   if (keepYuna) {

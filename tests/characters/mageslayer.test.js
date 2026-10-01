@@ -140,7 +140,7 @@ test('applyWitchMark: marks the target, records mageslayerMarkedId, sets magesla
 test('applyWitchMark: casting again moves the mark — clears it from the old target first', () => {
   const ms = mkPlayer();
   const t1 = mkPlayer({ characterId: 'tohno' });
-  const t2 = mkPlayer({ characterId: 'riddhe' });
+  const t2 = mkPlayer({ characterId: 'dummy' });
   mageslayer.applyWitchMark(engine, ms, t1);
   mageslayer.applyWitchMark(engine, ms, t2);
   assert.equal(t1.statuses.mageslayerMark || 0, 0, 'old target unmarked');
@@ -194,7 +194,7 @@ test('onDamageDealt: only fires for the mageslayer who owns the mark, and only o
   assert.equal(other.skillPoints, 0, 'another mageslayer without a mark on this target steals nothing');
   mageslayer.onDamageDealt(engine, ms, target, 0);
   assert.equal(ms.skillPoints, 0, 'zero damage steals nothing');
-  const unmarked = mkPlayer({ characterId: 'riddhe', skillPoints: 8 });
+  const unmarked = mkPlayer({ characterId: 'dummy', skillPoints: 8 });
   mageslayer.onDamageDealt(engine, ms, unmarked, 3);
   assert.equal(ms.skillPoints, 0, 'unmarked target is untouched');
 });
@@ -264,7 +264,7 @@ test('leechChanceFor / onEnergyAction: a ตราล่าเวท target is d
   assert.equal(unmarked.skillPoints, 3, '0.5 fails the base 35% roll');
   assert.equal(msA.skillPoints, 0);
 
-  const marked = mkPlayer({ characterId: 'riddhe', skillPoints: 3, statuses: { manaLeech: 5, mageslayerMark: 999 } });
+  const marked = mkPlayer({ characterId: 'dummy', skillPoints: 3, statuses: { manaLeech: 5, mageslayerMark: 999 } });
   withRandom(0.5, () => mageslayer.onEnergyAction(engine, marked));
   assert.equal(marked.skillPoints, 2, '0.5 passes the boosted 60% roll');
   assert.equal(msA.skillPoints, 1);
@@ -283,7 +283,7 @@ test('onEnergyAction: no manaLeech status = no drain, and a failed roll drains n
   const clean = mkPlayer({ characterId: 'tohno', skillPoints: 3 });
   withRandom(0, () => mageslayer.onEnergyAction(engine, clean));
   assert.equal(clean.skillPoints, 3);
-  const leeched = mkPlayer({ characterId: 'riddhe', skillPoints: 3, statuses: { manaLeech: 5 } });
+  const leeched = mkPlayer({ characterId: 'dummy', skillPoints: 3, statuses: { manaLeech: 5 } });
   withRandom(0.9, () => mageslayer.onEnergyAction(engine, leeched));
   assert.equal(leeched.skillPoints, 3);
   assert.equal(ms.skillPoints, 0);
@@ -370,7 +370,7 @@ test('resolveDueRuptures: only fires once the scheduled round arrives, then clea
 test('applyManaBurden: everyone EXCEPT the caster gets +1 ภาระเวท and 5 turns of ดูดซับเวท', () => {
   const caster = mkPlayer();
   const other = mkPlayer({ characterId: 'tohno' });
-  const resistant = mkPlayer({ characterId: 'riddhe', statuses: { resist: 1 } });
+  const resistant = mkPlayer({ characterId: 'dummy', statuses: { resist: 1 } });
   mageslayer.applyManaBurden(engine, caster);
   assert.equal(caster.statuses.spellburden || 0, 0, 'caster is excluded');
   assert.equal(caster.statuses.manaLeech || 0, 0, 'caster is excluded');

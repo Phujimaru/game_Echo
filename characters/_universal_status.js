@@ -46,17 +46,15 @@ const BUFF_KEYS = [
   "evade",     // หลบหลีก
   "spellflow", // กระแสเวท (ค่าสกิลถูกลง)
   "freecast",  // การ์ดราชินี
-  "absorb",    // Absorb
   "awaken",    // ตื่นขึ้น
-  "golden",    // 777 (เวลาทอง)
   "accurate",  // แม่นยำ (โทโนะ ชิกิ): เจาะการหลบหลีกทุกแบบ
-  "promo", "chill", "fiber", "tiger", // ของส่งมอบของ Apple guy
+  "promo", "chill", // ของส่งมอบของ Apple guy
 ];
 const BUFF_LABEL = {
   resist: "ต้านสถานะผิดปกติ", guard: "คุ้มครอง", fortune: "โชคลาภ", mend: "เยียวยา",
   might: "เสริมพลัง", empower: "เสริมพลัง", evade: "หลบหลีก", spellflow: "กระแสเวท",
-  freecast: "การ์ดราชินี", absorb: "Absorb",
-  awaken: "ตื่นขึ้น", golden: "777", accurate: "แม่นยำ", promo: "เปิดแต้ม", chill: "ชิวๆ", fiber: "เน็ตแรง", tiger: "เสือนอนกิน",
+  freecast: "การ์ดราชินี",
+  awaken: "ตื่นขึ้น", accurate: "แม่นยำ", promo: "เปิดแต้ม", chill: "ชิวๆ",
 };
 // ตัวนับลำดับ — เดินหน้าอย่างเดียวทั้งเกม จึงเทียบข้ามผู้เล่นได้
 let buffSeq = 0;
@@ -543,15 +541,15 @@ function tickEvadeStacks(engine, p) {
 //  ใช้ร่วมกับแฝดที่ "พักอยู่" ของฮิซาคาว่า (characters/hisakawa_sister.js) เพื่อให้กติกาการนับเวลา
 //  ของแฝดสองคนตรงกัน — เดิมฝั่งที่พักลดเทิร์นทุก key ทำให้มาร์กถาวรสลายไปเองระหว่างพัก
 const NO_TICK_STATUS = new Set([
-  "chill", "hburn", "hbleed", "melody", "star", "emeraude", "saphir", "lance", "takutoThirdAtk",
-  "doomCrucible", "doomDrain", "doomExplode", "doomLockon", "fortune", "linked", "rsHopper",
-  "cassius", "yaak", "spear", "ohger", "evade", "empower", "miyakoHeal", "miyakoCombo", "miyakoUlt",
+  "chill", "hburn", "hbleed", "star", "emeraude", "saphir", "lance", "takutoThirdAtk",
+  "doomCrucible", "doomDrain", "doomExplode", "doomLockon", "fortune", "linked",
+  "yaak", "evade", "empower", "miyakoHeal", "miyakoCombo", "miyakoUlt",
   "kotoneLove", "kotoneReady", "kready", "deathline", "tepeuCook", "tepeuPonder",
   "kaiCreation", "kaiPunishment", "mageslayerMark", "mageslayerFury", "triggerForm", "triggerMulti",
   "triggerZeperion", "triggerLight", "hisakawaTempo", "triggerDarkWail", "escanorMorning",
   "escanorNight", "escanorNoon", "escanorLastStand", "escanorSolar", "escanorFlare",
   "escanorFlareNoon", "escanorPunch", "escanorRhitta", "escanorRhittaNoon", "escanorSun",
-  "graybeast", "grit", "healthfull", "overweight",
+  "graybeast",
   // ผู้วิงวอน (patch 3.4): "เกราะศรัทธา" เป็นจำนวนหน่วย ไม่ใช่ตัวนับเทิร์น — หายเมื่อถูกทำลายจนหมดเท่านั้น
   "supFaith",
   // ไบรอัน (patch 3.5): ร่างรถเป็นธง ไม่ใช่ตัวนับเทิร์น — หายเมื่อน้ำมันหมดถังหรือกดดับเครื่องเอง

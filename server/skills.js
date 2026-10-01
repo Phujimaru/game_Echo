@@ -614,9 +614,6 @@ function useSkillCore(id, tier, targets, item) {
   const isMsBurden = p.characterId === "mageslayer" && tier === "secondary";
   if (isMsBurden && CHAR_HOOKS.mageslayer.burdenOnCooldown(engine, p)) return; // Mana Burden: คูลดาวน์ 7 เทิร์น
 
-  if (st === "beam" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum กระสุนหมด ใช้ไม่ได้
-  if (st === "beamplus" && (p.beamAmmo || 0) <= 0) return; // Beam Magnum Plus (ริดดี้) กระสุนหมด ใช้ไม่ได้
-
   // ANATA WAAAAAAAA (เทมาริ): ต้องเลือกเป้าหมาย 1 คนก่อนใช้ (characters/temari.js)
   let anataTargets = null;
   if (st === "anata") {

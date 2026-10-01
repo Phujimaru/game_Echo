@@ -624,7 +624,6 @@ function doAttack(byId, targetId) {
   }
   const attackerBeat = combat.beatActive(attacker); // Beat Mode: การโจมตีเป็นความเสียหายจริง ไม่สนเกราะ
   // คาซามะ ไดสุเกะ Rider Shooting (characters/daisuke.js): ล้างเกราะทิ้งก่อนหมัดจะลง
-  //  ต้องอยู่ก่อน armorBefore ด้านล่าง ไม่งั้นเกราะที่ล้างทิ้งจะถูกนับเป็น "เกราะที่เสียจากหมัด" (Absorb shield จะดูดกลับฟรี)
   //  ต้องจำไว้ก่อนว่าท่าอาร์มอยู่ไหม — สองตัวนี้จะล้างธงทิ้งตอนออกหมัด
   //  ใช้ตัดสินท้ายฟังก์ชันว่าจะเล่นวีดีโอก่อนหรือหลังการ์ดสรุปความเสียหาย
   const daisukeRiderFired = CHAR_HOOKS.daisuke.riderArmed(attacker);
@@ -640,7 +639,6 @@ function doAttack(byId, targetId) {
   // สไตรเกอร์ ยูเรก้า (หมัดเหล็ก): ผ่านด่านหลบแล้ว = ใช้ท่า — ปาดบัฟก่อนหมัดลง + คิววีดีโอ (เล่นก่อนฉากความเสียหาย)
   const strikerFistFx = CHAR_HOOKS.striker.prepareFistOnAttack(engine, attacker, target);
   const hpBefore = target.hp;
-  const armorBefore = target.armor;
   const shieldBefore = target.shield;
   const escanorFormBeforeHit = target.characterId === "escanor" ? CHAR_HOOKS.escanor.formOf(target) : null;
   // เชื่อมผล (patch 2.0.8): HP ที่เป้าหมายเสียจริงจะแชร์ให้คู่เชื่อมเท่ากันผ่าน loseHp — เก็บค่าก่อนตีไว้โชว์ผล
@@ -774,15 +772,8 @@ function doAttack(byId, targetId) {
   target.wasAttacked = true;
   target.phenexLastHitBy = attacker.id; // ริต้า เบอร์นัล: จำผู้โจมตีล่าสุด — ใช้เลือกเป้าปลดปล่อยความเจ็บปวดตอนตกรอบจริง
   // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป
-  // Absorb shield: เกราะที่เสียไปจากการถูกโจมตี แปลงกลับเป็นพลังชีวิต
-  const armorLost = armorBefore - target.armor;
-  if ((target.statuses.absorb || 0) > 0 && armorLost > 0) {
-    const heal = combat.healHp(target, armorLost);
-    if (heal > 0) match.lastLog.push(`🛡️ ${target.name} Absorb shield แปลงเกราะที่เสีย ${armorLost} → พลังชีวิต +${heal}`);
-  }
   // Beat Mode: ถ้าการโจมตีทำให้เลือดเหลือ < 3 -> เข้าประกายเขี้ยวปฏิปักษ์
   combat.maybeBeatMode(target);
-  // สกิลติดตัว 3 เอวา 13: ถ้าการโจมตีทำให้เลือดเหลือ <= 3
   // มีดพก (ชิกิ, characters/shiki.js): การโจมตีปกติฟื้นเลือดให้ตัวเอง (คงอยู่ 2 เทิร์น)
   const knifeAtk = attacker.characterId === "shiki" && (attacker.statuses.knife || 0) > 0;
   const knifeHeal = knifeAtk ? CHAR_HOOKS.shiki.applyKnifeHeal(engine, attacker) : 0;
@@ -847,7 +838,6 @@ function doAttack(byId, targetId) {
   if (appleAtk > 0) addFx({ name: `เอาไปสิ +${appleAtk} (บัฟมอบของ)`, img: "/characters/appleguy/appleguy_skill2.jpg", by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (kotoneLove) addFx({ name: `รัก รักที่สุดเลย +${kotoneLoveDmg} (กระปุกออมสิน)`, img: "/characters/kotone/rework/KotonePFP.png", by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (shieldBefore > target.shield) addFx({ name: "โล่ป้องกัน (กันความเสียหาย)", img: null, by: target.name, color: lobby.colorOf(target) }, "def");
-  if ((target.statuses.absorb || 0) > 0 && armorLost > 0) addFx(combat.skillByStatus(target, "absorb"), "def");
   // maybeBeatSave เหลือเจ้าของเดียวคือทาคุโตะ (ฉันยัง...มองเห็นอยู่!!!)
   if (beatSaveFired) addFx({ name: "ฉันยัง...มองเห็นอยู่!!! (กันตาย)", img: view.displayImg(target), by: target.name, color: lobby.colorOf(target) }, "def");
   // เรียวกิ ชิกิ

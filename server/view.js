@@ -275,7 +275,7 @@ function activeSkillMusic() {
 // สถานะที่ผู้เล่นคนอื่นเห็นได้ระหว่างช่วงจั่วการ์ด (patch 1.7.1): โชว์ให้ดูของกันและกันได้
 //  ยกเว้นสกิลหลังเปิดไพ่ที่เพิ่งกดรอไว้ในเทิร์นนี้ — เปิดเผยเมื่อทำงานแล้วเท่านั้น (กันสปอยล์)
 const HIDDEN_UNTIL_REVEAL = [
-  "absorb", "nightmare",
+  "nightmare",
   "escanorSpearBurst", "escanorFlare", "escanorFlareNoon", "escanorPunch", "escanorRhitta", "escanorRhittaNoon",
 ];
 function publicStatuses(p) {
@@ -375,7 +375,6 @@ function buildStateFor(viewerId) {
   // คอนเนอร์ RK800: มีคอนเนอร์อยู่ในแมตช์นี้ไหม (มิเตอร์ความเครียดโผล่บน UI เฉพาะตอนมี)
   const connorInMatch = !!CHAR_HOOKS.conner.connerSlot(engine);
   return {
-    allyWin: match.allyWinFlag,         // จบเกมแบบชนะทั้งคู่
     connorArrestAsk, // คอนเนอร์ RK800: คำขาด "ยอมจำนน / ขัดขืน" ที่รอเราตอบ (ไม่ตอบก่อนเปิดไพ่ = ขัดขืน)
     locaOffer,     // ข้อเสนอผลโลกากากาที่รอเราตอบ (ซาโตรุ)
     phenexReleaseAsk, // ริต้า เบอร์นัล: เลือกเป้าหมายปลดปล่อยความเจ็บปวด (ขอแค่ได้พบกันอีก)
@@ -696,7 +695,6 @@ function buildStateFor(viewerId) {
         doomWeaponHasEffect: p.characterId === "doomguy" ? !!(DOOM_WEAPONS[p.doomWeapon] || DOOM_WEAPONS.shotgun).effect : undefined, // DoomGuy: ปืนกระบอกนี้กดใช้ความสามารถพิเศษได้ไหม (Plasma Rifle/BFG 9000 ไม่มี)
         doomQuickSwapUsed: p.characterId === "doomguy" ? !!p.doomQuickSwapUsed : undefined, // DoomGuy: Quick Swap ใช้ไปแล้วในเทิร์นนี้หรือยัง (1 ครั้ง/เทิร์น)
         doomWeaponMarkPending: p.characterId === "doomguy" ? characterRules.doomWeaponMarkPending() : undefined, // DoomGuy: [ระเบิด]/[ล็อคเป้า] ค้างอยู่ — สุ่มปืนใหม่ (Quick Swap) ไม่ได้จนกว่าจะโดนใช้
-        profit: p.profit || 0,      // แกมเบลอร์: บัฟกำไรเท่าตัวโว้ยสะสม
         // คาซามะ ไดสุเกะ: โหมด/Clock Up/ไรเดอร์ชูต/นับเทิร์น PUT ON (ข้อมูลสนาม ทุกคนเห็นได้)
         daisuke: p.characterId === "daisuke" ? CHAR_HOOKS.daisuke.publicState(p) : undefined,
         yaguruma: p.characterId === "yaguruma" ? CHAR_HOOKS.yaguruma.publicState(p) : undefined,
