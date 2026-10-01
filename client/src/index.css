@@ -48,13 +48,9 @@ body {
   margin: 0;
   font-family: "Kanit", "Segoe UI", Tahoma, sans-serif;
   color: #eef2f8;
-  /* พื้นหลังภาพจริง + เคลือบสีแบรนด์จางๆ */
-  background:
-    radial-gradient(circle at 18% 12%, rgba(155, 79, 150, 0.18), transparent 45%),
-    radial-gradient(circle at 85% 88%, rgba(11, 45, 74, 0.35), transparent 45%),
-    url("/image/background.webp") center / cover no-repeat,
-    #3a3a3c;
-  background-attachment: fixed;
+  /* 5.1: พื้นขาวอมฟ้าเดียวกับธีม ORDEAL CALL — เห็นตอนหน้าเกมกำลังโหลดต่อจากฉากขาวของ launcher
+     (เดิมเป็นภาพพื้นเทา background.webp ซึ่งโผล่แวบตอนเข้าห้อง) */
+  background: radial-gradient(120% 90% at 50% 42%, #fff 0%, #f7fafd 46%, #e2ecf7 100%) fixed;
 }
 #root {
   position: relative;

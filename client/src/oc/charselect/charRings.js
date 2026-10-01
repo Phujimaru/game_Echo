@@ -1,14 +1,20 @@
 // ตัวละครเป็นการ์ดโคจรรอบลูกโลก หนึ่งวงต่อหนึ่งหมวด (หน้าเลือกตัวละคร)
-//  - วงสลับทิศ หมุนช้าๆ · ชี้การ์ด = วงนั้นหยุด + บอกชื่อ · กด = เลือก + หมุนการ์ดมาหน้าสุด (กรอบม่วง)
-//  - ลากการ์ดเพื่อหมุนวงนั้น · การ์ดด้านหลังจางลง (กดไม่ได้)
-//  - ชื่อหมวด (DOM ของ React) อยู่ปลายซ้ายของแต่ละวง — ตัวควบคุมนี้ตั้งตำแหน่งให้ทุกเฟรม
+//  ภาพรวม: ทุกวงเป็นวงกลมรอบจุดศูนย์กลางโลก (แบบวงโคจรอะตอม / ทรงกลมวงแหวน) แต่ละวงเอียงคนละระนาบ
+//          รัศมีต่างกันเล็กน้อย การ์ดเกาะวงแล้วโคจรช้าๆ สลับทิศ · ชี้การ์ด = วงนั้นหยุด + เด่นขึ้น + บอกชื่อ
+//  โฟกัส: setFocus(k) = วง k หมุนมาตั้งเป็นวงรีเอียงหน้าโลก (การ์ดใหญ่ขึ้น) วงอื่นจางหาย + กดไม่ได้
+//          ลาก / ล้อเมาส์ / rotate(±1) = หมุนวงทีละใบ · กดที่ว่าง (ไม่โดนการ์ดหรือโลก) = onEmpty()
+//  การ์ดทุกใบหันหน้าเข้ากล้องเสมอ — ตำแหน่งคำนวณจากท่าทางของวง (quaternion + รัศมี) ทุกเฟรม
 import { THREE } from "../../globe/globeCore";
 import { FALLBACK } from "../../data/avatars";
 
-const CR = 1.55, CARD_W = 0.2, CARD_H = 0.267;
+const CARD_W = 0.2, CARD_H = 0.267;
 const TW = 192, TH = 256;
-const FRONT_A = Math.PI / 2;
 const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ท่าทางของวงตอนโฟกัส: วงกลมใหญ่รอบโลก เอียงหน้าเข้ากล้อง ~47° → บนจอเป็นวงรีกว้าง ใบหน้าสุดอยู่ใต้โลก ใบหลังสุดอยู่เหนือโลก
+const FOCUS_TILT = 0.82, FOCUS_R = 1.75, FOCUS_Y = 0, FOCUS_CARD = 1.45;
+const Q_FOCUS = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), FOCUS_TILT);
+const UP = new THREE.Vector3(0, 1, 0);
 
 const imgCache = new Map(); // url → { img, ok, waiters }
 function loadImg(url, cb) {
@@ -67,29 +73,61 @@ function drawCard(ctx, c, status, entry) {
   }
 }
 
+// ระนาบวงที่ k จาก n วง: เส้นตั้งฉากกระจายรอบแกนสายตา → บนจอเป็นวงรีที่แกนยาวหมุนไปทีละ 180°/n (แบบสัญลักษณ์อะตอม)
+//  มุมเอียงจากแกนสายตาสลับกันไม่ให้ซ้อนกันพอดี (ไม่เกิน ~70° จึงไม่มีวงไหนกลายเป็นเส้นตรง)
+const OPEN = [1.02, 0.84, 1.18, 0.93];
+const RAD = [0, 3, 1, 4, 2];
+function overviewPose(k, n) {
+  const beta = (k / n) * Math.PI + 0.42;
+  const alpha = OPEN[k % OPEN.length];
+  const normal = new THREE.Vector3(Math.sin(alpha) * Math.cos(beta), Math.sin(alpha) * Math.sin(beta), Math.cos(alpha));
+  return { q: new THREE.Quaternion().setFromUnitVectors(UP, normal), R: 1.4 + 0.065 * RAD[k % RAD.length] };
+}
+
+// มุมในระนาบวง (ระบบ cos a·x + sin a·z ของวง) ที่อยู่ใกล้กล้องที่สุดเมื่อวงอยู่ในท่า q
+const ex = new THREE.Vector3(), ez = new THREE.Vector3();
+function frontAngle(q) {
+  ex.set(1, 0, 0).applyQuaternion(q);
+  ez.set(0, 0, 1).applyQuaternion(q);
+  return Math.atan2(ez.z, ex.z);
+}
+const nearAngle = (t, ref) => {
+  while (t - ref > Math.PI) t -= Math.PI * 2;
+  while (t - ref < -Math.PI) t += Math.PI * 2;
+  return t;
+};
+
 /**
  * @param groups [{ key, label, color, chars: [roster entry] }]
- * @param opts.onSelect(id)  กดการ์ด
+ * @param opts.onSelect(id)  กดการ์ด (ที่กดได้)
  * @param opts.onHover(card|null, ev)  card = { id, ring }
+ * @param opts.onEmpty()  ตอนโฟกัส: กดที่ว่างนอกการ์ดและนอกลูกโลก
  */
-export function createCharRings(core, groups, { onSelect, onHover }) {
+export function createCharRings(core, groups, { onSelect, onHover, onEmpty }) {
   const { world, canvas } = core;
   const root = new THREE.Group();
   world.add(root);
 
   const N = groups.length;
-  const gap = N > 1 ? Math.min(0.28, 2.3 / (N - 1)) : 0;
   const statusOf = new Map(); // id → status
   let selected = null;
-  let labels = [];
+  let focus = null; // index วงที่โฟกัส | null = ภาพรวม
+  let highlight = -1; // วงที่ชี้อยู่ที่รายชื่อหมวด
+
+  const torus = new THREE.TorusGeometry(1, 0.0042, 6, 192);
+  torus.rotateX(Math.PI / 2); // นอนในระนาบ xz ของวง
 
   const rings = groups.map((g, k) => {
-    const r = { g, y: ((N - 1) / 2) * gap - k * gap, base: k * 0.9, speed: (k % 2 ? -1 : 1) * 0.09, target: null, hover: false, cards: [] };
-    const pts = [];
-    for (let i = 0; i <= 96; i++) { const a = (i / 96) * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * CR, r.y, Math.sin(a) * CR)); }
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x7fb8e6, transparent: true, opacity: 0.4, depthWrite: false }));
+    const pose = overviewPose(k, N);
+    const line = new THREE.Mesh(torus, new THREE.MeshBasicMaterial({ color: new THREE.Color(g.color || "#7fb8e6"), transparent: true, opacity: 0.5, depthWrite: false }));
     line.renderOrder = -1;
     root.add(line);
+    const n = Math.max(1, g.chars.length);
+    const r = {
+      k, g, line, q0: pose.q, R0: pose.R, q: pose.q.clone(), R: pose.R, y: 0, step: (Math.PI * 2) / n,
+      base: k * 0.9, speed: (k % 2 ? -1 : 1) * (0.06 + 0.012 * (k % 3)), target: null,
+      hover: false, b: 0, vis: 1, hl: 0, cards: [],
+    };
     r.cards = g.chars.map((c, i) => {
       const cv = document.createElement("canvas");
       cv.width = TW; cv.height = TH;
@@ -99,7 +137,7 @@ export function createCharRings(core, groups, { onSelect, onHover }) {
       tex.anisotropy = 4;
       const m = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
       m.userData = { id: c.id, ring: k, idx: i };
-      const card = { m, c, ctx, tex, entry: null, drawn: undefined };
+      const card = { m, c, ctx, tex, entry: null, drawn: undefined, idx: i };
       card.redraw = () => {
         const st = statusOf.get(c.id) || null;
         drawCard(ctx, c, st, card.entry);
@@ -113,18 +151,38 @@ export function createCharRings(core, groups, { onSelect, onHover }) {
     });
     return r;
   });
-  const meshes = rings.flatMap((r) => r.cards.map((cd) => cd.m));
   const byId = new Map(rings.flatMap((r) => r.cards.map((cd) => [cd.c.id, { r, cd }])));
 
   const selFrame = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W + 0.04, CARD_H + 0.04), new THREE.MeshBasicMaterial({ color: 0x9b4f96, transparent: true }));
   selFrame.visible = false;
+  selFrame.renderOrder = -0.5;
   root.add(selFrame);
 
-  const cardAngle = (r, i) => r.base + (i * Math.PI * 2) / r.cards.length;
+  // การ์ด i อยู่ที่มุม base − i·step (ใบถัดไปอยู่ทางขวาของใบหน้าสุดตอนโฟกัส)
+  const cardAngle = (r, i) => r.base - i * r.step;
+  const poseOf = (r) => (focus === r.k ? Q_FOCUS : r.q0);
+  const bringToFront = (r, idx, instant) => {
+    const t = nearAngle(frontAngle(poseOf(r)) + idx * r.step, r.base);
+    if (instant || REDUCED) { r.base = t; r.target = null; } else r.target = t;
+  };
+  const snap = (r) => {
+    const fa = frontAngle(poseOf(r)), from = r.target ?? r.base;
+    r.target = fa + Math.round((from - fa) / r.step) * r.step;
+  };
+
+  // การ์ดที่กดได้ตอนนี้ (วงที่มองเห็น + ไม่จางเกิน)
+  const interactive = () => {
+    const out = [];
+    rings.forEach((r) => {
+      if (focus != null ? r.k !== focus : r.vis < 0.5) return;
+      const min = focus != null ? 0.3 : 0.35;
+      r.cards.forEach((cd) => { if (cd.m.visible && cd.m.material.opacity >= min) out.push(cd.m); });
+    });
+    return out;
+  };
   const cardAt = (ev) => {
-    const h = core.pick(ev, meshes);
-    if (!h || h.object.material.opacity < 0.5) return null;
-    return h.object.userData;
+    const h = core.pick(ev, interactive());
+    return h ? h.object.userData : null;
   };
 
   let hoverRing = -1;
@@ -141,59 +199,100 @@ export function createCharRings(core, groups, { onSelect, onHover }) {
   core.setDrag(false);
   core.setDragHandler((phase, info) => {
     if (phase === "down") {
+      if (focus != null) { const r = rings[focus]; drag = { ring: focus, base: r.target ?? r.base }; return true; }
       const h = cardAt(info.ev);
       drag = h ? { ring: h.ring, base: rings[h.ring].base } : { ring: -1 };
       return true;
     }
     if (phase === "move") {
-      if (drag && drag.ring >= 0) { const r = rings[drag.ring]; r.target = null; r.base = drag.base - info.dx * 0.006; }
+      if (drag && drag.ring >= 0) {
+        const r = rings[drag.ring];
+        r.target = null;
+        r.base = drag.base - info.dx * (focus != null ? 0.0045 : 0.006);
+        drag.moved = true;
+      }
       setHover(null);
       return true;
     }
-    if (phase === "up") drag = null;
+    if (phase === "up") {
+      if (drag && drag.moved && focus != null && drag.ring === focus) snap(rings[focus]);
+      drag = null;
+    }
     return true;
   });
-  const offClick = core.onClick((ev) => { const h = cardAt(ev); if (h) onSelect?.(h.id); });
+  const offClick = core.onClick((ev) => {
+    const h = cardAt(ev);    if (h) { onSelect?.(h.id); return; }
+    if (focus != null && !core.hitGlobe(ev)) onEmpty?.();
+  });
   const offHover = core.onHover((ev) => setHover(ev ? cardAt(ev) : null, ev));
 
+  // ล้อเมาส์ตอนโฟกัส = หมุนทีละใบ (หน่วงไว้ไม่ให้ทัชแพดหมุนรัว)
+  let wheelAt = 0;
+  const onWheel = (ev) => {
+    if (focus == null) return;
+    ev.preventDefault();
+    const now = performance.now();
+    if (now - wheelAt < 140 || Math.abs(ev.deltaY) + Math.abs(ev.deltaX) < 2) return;
+    wheelAt = now;
+    api.rotate((Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX) > 0 ? 1 : -1);
+  };
+  canvas.addEventListener("wheel", onWheel, { passive: false });
+
   // ---------- ลูป ----------
-  const v = new THREE.Vector3();
+  const pos = new THREE.Vector3();
   const offFrame = core.onFrame((dt) => {
     const k = REDUCED ? 1 : 1 - Math.pow(0.015, dt);
+    const kb = REDUCED ? 1 : 1 - Math.pow(0.012, dt);
+    const hlRing = highlight >= 0 ? highlight : hoverRing;
+    selFrame.visible = false;
     rings.forEach((r, ri) => {
-      if (r.target != null) { r.base += (r.target - r.base) * k; if (Math.abs(r.target - r.base) < 0.0005) r.target = null; }
-      else if (!r.hover && !(drag && drag.ring === ri) && !REDUCED) r.base += r.speed * dt;
+      // ท่าทางของวง: ภาพรวม ↔ โฟกัส
+      r.b += ((focus === ri ? 1 : 0) - r.b) * kb;
+      r.vis += ((focus == null || focus === ri ? 1 : 0) - r.vis) * kb;
+      r.hl += ((focus == null && hlRing >= 0 ? (hlRing === ri ? 1 : -1) : 0) - r.hl) * k;
+      if (Math.abs(r.b - (focus === ri ? 1 : 0)) < 0.0005) r.b = focus === ri ? 1 : 0;
+      const e = r.b;
+      r.q.slerpQuaternions(r.q0, Q_FOCUS, e);
+      r.R = r.R0 + (FOCUS_R - r.R0) * e;
+      r.y = FOCUS_Y * e;
+      r.line.quaternion.copy(r.q);
+      r.line.position.set(0, r.y, 0);
+      r.line.scale.setScalar(r.R);
+      const dimOthers = r.hl < 0 ? 1 + 0.55 * r.hl : 1; // วงอื่นจางลงตอนชี้วงหนึ่ง
+      r.line.material.opacity = (0.42 + 0.4 * Math.max(0, r.hl) + 0.18 * e) * r.vis * dimOthers;
+      r.line.visible = r.line.material.opacity > 0.005;
+
+      // หมุนวง
+      if (r.target != null) { r.base += (r.target - r.base) * k; if (Math.abs(r.target - r.base) < 0.0005) { r.base = r.target; r.target = null; } }
+      else if (focus == null && !r.hover && !(drag && drag.ring === ri) && !REDUCED) r.base += r.speed * dt;
+
+      ex.set(1, 0, 0).applyQuaternion(r.q);
+      ez.set(0, 0, 1).applyQuaternion(r.q);
+      const depthSpan = Math.max(0.5, Math.hypot(ex.z, ez.z));
+      const grow = 1 + (FOCUS_CARD - 1) * e;
       r.cards.forEach((cd, i) => {
-        const a = cardAngle(r, i), x = Math.cos(a) * CR, z = Math.sin(a) * CR, f = (Math.sin(a) + 1) / 2;
-        cd.m.position.set(x, r.y, z);
-        cd.m.scale.setScalar(0.68 + 0.3 * f);
-        cd.m.material.opacity = 0.14 + 0.86 * Math.pow(f, 1.4);
-        if (cd.c.id === selected) {
+        const a = cardAngle(r, i), ca = Math.cos(a), sa = Math.sin(a);
+        pos.set(ex.x * ca + ez.x * sa, ex.y * ca + ez.y * sa, ex.z * ca + ez.z * sa);
+        const f = Math.max(0, Math.min(1, ((pos.z / depthSpan) + 1) / 2)); // 1 = หน้าสุด
+        pos.multiplyScalar(r.R);
+        pos.y += r.y;
+        cd.m.position.copy(pos);
+        cd.m.scale.setScalar((0.8 + 0.4 * f) * grow);
+        const op = (0.2 + 0.14 * e + (0.8 - 0.14 * e) * Math.pow(f, 1.3)) * r.vis * dimOthers;
+        cd.m.material.opacity = op;
+        cd.m.visible = op > 0.01;
+        if (cd.c.id === selected && cd.m.visible) {
           selFrame.visible = true;
-          selFrame.position.set(x, r.y, z - 0.003);
+          selFrame.position.set(pos.x, pos.y, pos.z - 0.004);
           selFrame.scale.copy(cd.m.scale);
-          selFrame.material.opacity = cd.m.material.opacity;
+          selFrame.material.opacity = op;
         }
       });
     });
-    root.updateMatrixWorld(true);
-    const W = core.size.w;
-    rings.forEach((r, i) => {
-      const el = labels[i];
-      if (!el) return;
-      v.set(-CR - 0.26, r.y, 0);
-      root.localToWorld(v);
-      const p = core.project(v);
-      const lw = el.offsetWidth || 0;
-      const x = Math.max(12 + lw, Math.min(W - 12, p.x)); // ชื่อหมวดยาวๆ ไม่ให้ล้นขอบซ้ายจอ
-      el.style.transform = `translate(${x}px, ${p.y}px) translate(-100%, -50%)`;
-      el.dataset.placed = "1";
-    });
   });
 
-  return {
-    setLabels(els) { labels = els; },
-    /** สถานะการ์ด: Map/obj id → { label, tone } | null — วาดใหม่เฉพาะใบที่เปลี่ยน */
+  const api = {
+    /** สถานะการ์ด: obj id → { label, tone } | null — วาดใหม่เฉพาะใบที่เปลี่ยน */
     setStatus(map) {
       statusOf.clear();
       Object.entries(map || {}).forEach(([id, s]) => { if (s) statusOf.set(id, s); });
@@ -203,22 +302,44 @@ export function createCharRings(core, groups, { onSelect, onHover }) {
         if ((prev?.label || null) !== (st?.label || null) || (prev?.tone || null) !== (st?.tone || null)) cd.redraw();
       });
     },
-    /** เลือกการ์ด + หมุนวงให้การ์ดนั้นมาอยู่หน้าสุด */
+    /** เลือกการ์ด (null = ไม่เลือก) + หมุนวงให้การ์ดนั้นมาอยู่หน้าสุด */
     select(id, instant) {
-      selected = id;
-      const hit = byId.get(id);
-      if (!hit) { selFrame.visible = false; return; }
-      const { r, cd } = hit;
-      let t = FRONT_A - (cd.m.userData.idx * Math.PI * 2) / r.cards.length;
-      while (t - r.base > Math.PI) t -= Math.PI * 2;
-      while (t - r.base < -Math.PI) t += Math.PI * 2;
-      if (instant || REDUCED) { r.base = t; r.target = null; } else r.target = t;
+      selected = id || null;
+      const hit = id ? byId.get(id) : null;
+      if (hit) bringToFront(hit.r, hit.cd.idx, instant);
     },
+    /** โฟกัสวง k (null = กลับภาพรวม) — ถ้าตัวที่เลือกอยู่ในวงนั้น หมุนมาหน้าสุด ไม่งั้นจัดให้มีใบหนึ่งอยู่หน้าพอดี */
+    setFocus(k, instant) {
+      const next = k == null || !rings[k] ? null : k;
+      if (next === focus) return;
+      focus = next;
+      setHover(null);
+      if (focus == null) return;
+      const r = rings[focus];
+      r.hover = false;
+      const hit = selected ? byId.get(selected) : null;
+      if (hit && hit.r === r) bringToFront(r, hit.cd.idx); else snap(r);
+      if (instant || REDUCED) {
+        rings.forEach((x) => { x.b = x.k === focus ? 1 : 0; x.vis = x.k === focus ? 1 : 0; });
+        if (r.target != null) { r.base = r.target; r.target = null; }
+      }
+    },
+    /** หมุนวงที่โฟกัสทีละใบ: +1 = ใบทางขวามาหน้า · −1 = ใบทางซ้าย */
+    rotate(dir) {
+      if (focus == null) return;
+      const r = rings[focus];
+      snap(r);
+      r.target += dir * r.step;
+    },
+    /** ชี้ชื่อหมวด = วงนั้นเด่นขึ้น (−1 = เลิก) */
+    setHighlight(k) { highlight = k == null ? -1 : k; },
     dispose() {
       offClick(); offHover(); offFrame();
+      canvas.removeEventListener("wheel", onWheel);
       core.setDragHandler(null);
       delete canvas.dataset.pointing;
       byId.forEach(({ cd }) => { if (cd.entry) cd.entry.waiters.delete(cd.redraw); });
     },
   };
+  return api;
 }

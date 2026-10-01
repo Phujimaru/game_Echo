@@ -1,5 +1,6 @@
 /* หน้าเลือกตัวละคร (ORDEAL CALL) — วงการ์ดตามหมวดรอบลูกโลก + แผงข้อมูลเล็กๆ ด้านขวา */
-.cs-screen .oc-globe { cursor: grab; }
+.cs-screen .oc-globe { cursor: default; }
+.cs-screen .oc-globe.is-focus { cursor: grab; }
 .cs-screen .oc-globe[data-pointing] { cursor: pointer; }
 .cs-screen .oc-globe[data-dragging] { cursor: grabbing; }
 
@@ -8,13 +9,38 @@
 .cs-me .p { font: 400 11px/1 var(--oc-f-logo); color: var(--oc-azure); }
 .cs-me b { font-weight: 600; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.cs-grps { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
-.cs-grp {
-  position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; max-width: 15em;
-  font: 600 12px/1.2 var(--oc-f-ui); color: var(--oc-ink-2); text-shadow: 0 0 4px #fff, 0 0 3px #fff;
+/* รายชื่อหมวด (ภาพรวม) / แถบของวงที่ซูมอยู่ — คอลัมน์ซ้าย กึ่งกลางแนวตั้ง */
+.cs-nav {
+  position: absolute; z-index: 5; left: max(16px, 3vw); top: 0; bottom: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 4px; max-width: 220px; animation: oc-rise 0.25s ease-out both;
 }
-.cs-grp:not([data-placed]) { opacity: 0; }
-.cs-grp span { overflow: hidden; text-overflow: ellipsis; }
+.cs-nav > * { pointer-events: auto; }
+.cs-cat {
+  appearance: none; display: inline-flex; align-items: center; gap: 9px; max-width: 100%; padding: 8px 12px 8px 10px; cursor: pointer;
+  font: 600 13px/1.2 var(--oc-f-ui); color: var(--oc-ink-2); text-align: left;
+  background: rgba(255, 255, 255, 0.72); border: 1px solid transparent; transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.cs-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-cat:hover, .cs-cat:focus-visible { color: var(--oc-ink); background: #fff; border-color: var(--oc-line); outline: none; }
+.cs-cat.has-sel { color: var(--oc-ink); border-left: 2px solid var(--oc-echo); }
+
+.cs-focus { gap: 12px; }
+.cs-back {
+  appearance: none; display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer;
+  font: 600 13px/1 var(--oc-f-ui); color: var(--oc-ink-2); background: rgba(255, 255, 255, 0.86); border: 1px solid var(--oc-line);
+  clip-path: var(--oc-cut); transition: color 0.2s, background 0.2s;
+}
+.cs-back:hover { color: var(--oc-ink); background: #fff; }
+.cs-back:focus-visible, .cs-spin-btn:focus-visible { outline: 2px solid var(--oc-azure); outline-offset: 2px; }
+.cs-focus-name { margin: 0; display: inline-flex; align-items: center; gap: 10px; font: 600 22px/1.25 var(--oc-f-ui); color: var(--oc-ink); text-shadow: 0 0 6px #fff; }
+.cs-focus-name .oc-diamond { width: 10px; height: 10px; }
+.cs-spin { display: flex; gap: 6px; }
+.cs-spin-btn {
+  appearance: none; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer;
+  font: 400 24px/1 var(--oc-f-ui); color: var(--oc-ink); background: rgba(255, 255, 255, 0.86); border: 1px solid var(--oc-line);
+  transition: background 0.2s, border-color 0.2s;
+}
+.cs-spin-btn:hover { background: #fff; border-color: var(--oc-azure); }
 
 .cs-tip { position: absolute; z-index: 7; left: 0; top: 0; pointer-events: none; background: var(--oc-ink); color: #fff; font: 500 13px/1 var(--oc-f-body); padding: 7px 10px; white-space: nowrap; }
 

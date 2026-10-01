@@ -293,7 +293,7 @@ export default function App() {
     //  แต่ "เสียงเอฟเฟกต์" ด้านล่างต้องทำงานทุกโหมด (เดิม early-return ตรงนี้ทำให้เสียงหายไปทั้งโหมด)
     if (!seraphMode) {
       // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
-      // 5.1: เพลง main5 เล่นทันทีตั้งแต่หน้าแรก (ต่อจาก launcher) · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็นเพลงห้องรอ (intro)
+      // 5.1: เข้าห้องแล้ว (ตั้งแต่หน้าเลือกลำดับ) เปลี่ยนเป็นเพลงห้องรอ lobby5 ทันที — main5 อยู่แค่ใน launcher · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็น lobby5 (intro)
       const track = musicForState(stage === "connected" ? state : null, {
         lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: showIntro || journeyMap?.mode === "start",
       });

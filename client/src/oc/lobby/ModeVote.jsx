@@ -1,4 +1,4 @@
-// เลือกโหมด (gameState TEAM_MODE) — หมุดโหมดบนลูกโลก กดหมุดหรือป้ายเพื่อโหวต (selectGameMode)
+// เลือกโหมด (gameState TEAM_MODE) — หมุดโหมดบนลูกโลก กดหมุดหรือป้าย = ดูรายละเอียด · โหวตจริงที่ปุ่ม "โหวต" ในแผง (selectGameMode)
 //  โหมดที่มีการเดินทาง (อิสระ/คู่หู/สหายทั้ง 3 เอ๋ย) แสดงเส้นทางภูมิภาค I→VII บนโลก (ดูอย่างเดียว)
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { socket } from "../../socket";
@@ -50,8 +50,10 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
     clickSound();
     socket.emit("selectGameMode", { mode });
   };
-  const voteRef = useRef(vote);
-  useLayoutEffect(() => { voteRef.current = vote; });
+  // กดหมุด/ป้าย = เลือกดูอย่างเดียว ยังไม่โหวต (ผู้ใช้สั่ง: ต้องกดยืนยันก่อน)
+  const preview = (mode) => { if (mode !== focus) clickSound(); setFocus(mode); };
+  const previewRef = useRef(preview);
+  useLayoutEffect(() => { previewRef.current = preview; });
 
   // ---------- ของ 3D: หมุด + เส้นทาง ----------
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
     interceptRef.current = (ev) => {
       const mode = pickMode(ev);
       if (!mode) return false;
-      voteRef.current(mode);
+      previewRef.current(mode);
       return true;
     };
     const offHover = core.onHover((ev) => {
@@ -199,7 +201,7 @@ export default function ModeVote({ state, core, interceptRef, armed, onArm, onBa
               className={`oc-tag ocl-modetag back${myVote === o.mode ? " on" : ""}${focus === o.mode ? " focus" : ""}`}
               data-blocked={blocked(o) ? "true" : "false"}
               aria-disabled={blocked(o)}
-              onClick={() => voteRef.current(o.mode)}
+              onClick={() => previewRef.current(o.mode)}
             >
               <span>{modeTitle(o.mode)}</span>
               {o.suspended ? <small>พักใช้งาน</small> : !o.enabled ? <small>{MODE_NEED[o.mode]}</small> : null}

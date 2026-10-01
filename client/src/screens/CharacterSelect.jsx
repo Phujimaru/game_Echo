@@ -8,14 +8,15 @@ import { createCharRings } from "../oc/charselect/charRings";
 import "../oc/charselect/charselect.css";
 
 // หน้าเลือกตัวละคร (ORDEAL CALL): การ์ดตัวละครโคจรรอบลูกโลก หนึ่งวงต่อหนึ่งหมวด + แผงข้อมูลด้านขวา
-const LAYOUT = { x: -0.62, y: -0.02, s: 0.9 };
+//  ภาพรวม: ทุกวงโคจรรอบโลกคนละระนาบ · กดชื่อหมวด/การ์ด = ซูมเข้าวงนั้นวงเดียว · กดที่ว่าง/ปุ่ม "หมวดทั้งหมด"/Esc = ถอยกลับภาพรวม
+const LAYOUT = { x: -0.4, y: -0.02, s: 0.86 };
+const FOCUS_LAYOUT = { x: -0.45, y: 0.15, s: 0.9 };
 
 const DIFFICULTY_GROUPS = [
-  { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["hikaru", "mageslayer", "ignis", "daichi", "artoria_caster"] },
+  { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["hikaru", "mageslayer", "ignis", "daichi", "artoria_caster", "satoru"] },
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines"] },
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["appleguy", "dan", "usagi"] },
-  { key: "extreme", label: "ยากสุดขีด", color: "#111827", order: ["satoru"] },
   { key: "impossible", label: "ทักษิณ จะโปรหาบิดาท่านหรือ?", color: "#450a0a", order: ["nanaya", "princess_shiki"] },
   { key: "special", label: "พิเศษ", color: "#0e7490", order: ["ultraman_trigger", "yui", "shido", "brian", "producer_lumi", "kim", "striker"] },
   // หมวดตามสังกัด ไม่ใช่ระดับความยาก — ไรเดอร์ทุกคนที่มี Clock Up (แกนร่วม characters/_zect.js)
@@ -119,10 +120,8 @@ export default function CharacterSelect({ roster, position, color: myColor, name
     return c.locked ? { label: "ยังไม่ปลดล็อก", tone: "block" } : null;
   };
 
-  const [picked, setPicked] = useState(() => {
-    const ok = orderedRoster.find((c) => !c.locked && !blockReason(c));
-    return (ok || orderedRoster[0])?.id || null;
-  });
+  const [picked, setPicked] = useState(null); // เปิดหน้ามายังไม่เลือกใคร
+  const [focus, setFocus] = useState(null); // key หมวดที่ซูมอยู่ | null = ภาพรวม
   const [shikiUlt, setShikiUlt] = useState("deatheye");
   const [pairRole, setPairRole] = useState("pilot"); // ตัวละครคู่: บทบาทที่คนแรกเลือก
   const [desc, setDesc] = useState(null); // คำอธิบายที่ลอยข้างแผง { key, title, text, top|bottom, right }
@@ -133,20 +132,44 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   const canConfirm = !!sel && !sel.locked && !reason;
 
   const ringsRef = useRef(null);
-  const grpRefs = useRef([]);
   const tipRef = useRef(null);
   const panelRef = useRef(null);
+
+  const focusIdx = focus ? grouped.findIndex((g) => g.key === focus) : -1;
+  const focusGroup = focusIdx >= 0 ? grouped[focusIdx] : null;
 
   const statusMap = {};
   orderedRoster.forEach((c) => { const s = cardStatus(c); if (s) statusMap[c.id] = s; });
   const statusKey = JSON.stringify(statusMap);
   useEffect(() => { ringsRef.current?.setStatus(JSON.parse(statusKey)); }, [statusKey]);
+  // ลำดับสำคัญ: โฟกัสก่อน แล้วค่อยเลือก (select หมุนการ์ดมาหน้าสุดตามท่าทางของวงที่กำลังจะเป็น)
+  useEffect(() => { ringsRef.current?.setFocus(focusIdx >= 0 ? focusIdx : null); }, [focusIdx]);
   useEffect(() => { ringsRef.current?.select(picked); }, [picked]);
+
+  // Esc = ถอยกลับภาพรวม
+  useEffect(() => {
+    if (!focus) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); setFocus(null); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus]);
 
   const choose = (id) => {
     clickSound();
     setDesc(null);
     setPicked(id);
+    if (id === picked) ringsRef.current?.select(id); // กดตัวเดิมซ้ำ (ที่หมุนออกไปแล้ว) = หมุนกลับมาหน้าสุด
+    const g = grouped.find((x) => x.chars.some((c) => c.id === id));
+    if (g) setFocus(g.key); // กดการ์ดจากภาพรวม = ซูมเข้าวงของการ์ดนั้นด้วย
+  };
+  const openGroup = (key) => {
+    clickSound();
+    ringsRef.current?.setHighlight(-1);
+    setFocus(key);
+  };
+  const closeGroup = () => {
+    clickSound();
+    setFocus(null);
   };
   const onCardHover = (h, ev) => {
     const tip = tipRef.current;
@@ -162,17 +185,19 @@ export default function CharacterSelect({ roster, position, color: myColor, name
   // ฉาก 3 มิติเรียก callback ผ่าน ref เสมอ (ได้ค่าล่าสุดของหน้าจอ)
   const cbRef = useRef(null);
   useLayoutEffect(() => {
-    cbRef.current = { choose, onCardHover, statusMap, byId: new Map(roster.map((c) => [c.id, c])) };
+    cbRef.current = { choose, closeGroup, onCardHover, statusMap, focusIdx, picked, byId: new Map(roster.map((c) => [c.id, c])) };
   });
 
   const onReady = (core) => {
     const rings = createCharRings(core, grouped, {
       onSelect: (id) => cbRef.current.choose(id),
       onHover: (h, ev) => cbRef.current.onCardHover(h, ev),
+      onEmpty: () => cbRef.current.closeGroup(),
     });
-    rings.setLabels(grpRefs.current);
-    rings.setStatus(statusMap);
-    if (picked) rings.select(picked, true);
+    const cb = cbRef.current;
+    rings.setStatus(cb.statusMap);
+    if (cb.focusIdx >= 0) rings.setFocus(cb.focusIdx, true);
+    if (cb.picked) rings.select(cb.picked, true);
     ringsRef.current = rings;
     return () => { rings.dispose(); ringsRef.current = null; };
   };
@@ -207,16 +232,42 @@ export default function CharacterSelect({ roster, position, color: myColor, name
 
   return (
     <OcScreen className="cs-screen">
-      <GlobeCanvas key={ringsKey} layout={LAYOUT} drag={false} onReady={onReady} />
+      <GlobeCanvas key={ringsKey} className={focusGroup ? "is-focus" : ""} layout={focusGroup ? FOCUS_LAYOUT : LAYOUT} drag={false} onReady={onReady} />
 
-      <div className="cs-grps" aria-hidden="true">
-        {grouped.map((g, i) => (
-          <span key={g.key} className="cs-grp" ref={(el) => { grpRefs.current[i] = el; }}>
-            <i className="oc-diamond" style={{ background: g.color }} />
-            <span>{g.label}</span>
-          </span>
-        ))}
-      </div>
+      {focusGroup ? (
+        <div className="cs-nav cs-focus" key="focus">
+          <button type="button" className="cs-back" onClick={closeGroup}>
+            <span aria-hidden="true">←</span> หมวดทั้งหมด
+          </button>
+          <h2 className="cs-focus-name">
+            <i className="oc-diamond" style={{ background: focusGroup.color }} />
+            {focusGroup.label}
+          </h2>
+          {focusGroup.chars.length > 1 && (
+            <div className="cs-spin" role="group" aria-label="หมุนวง">
+              <button type="button" className="cs-spin-btn" aria-label="ก่อนหน้า" onClick={() => { clickSound(); ringsRef.current?.rotate(-1); }}>‹</button>
+              <button type="button" className="cs-spin-btn" aria-label="ถัดไป" onClick={() => { clickSound(); ringsRef.current?.rotate(1); }}>›</button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <nav className="cs-nav cs-cats" key="cats" aria-label="หมวด" onMouseLeave={() => ringsRef.current?.setHighlight(-1)}>
+          {grouped.map((g, i) => (
+            <button
+              key={g.key}
+              type="button"
+              className={`cs-cat${selGroup?.key === g.key ? " has-sel" : ""}`}
+              onClick={() => openGroup(g.key)}
+              onMouseEnter={() => ringsRef.current?.setHighlight(i)}
+              onFocus={() => ringsRef.current?.setHighlight(i)}
+              onBlur={() => ringsRef.current?.setHighlight(-1)}
+            >
+              <i className="oc-diamond" style={{ background: g.color }} />
+              <span>{g.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
       <div className="cs-top oc-enter">
         {title && <h1 className="oc-h2">{title}</h1>}

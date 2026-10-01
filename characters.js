@@ -28,7 +28,7 @@ const CHARACTERS = [
     id: "hikaru",
     name: "ไรโด ฮิคารุ",
     avatar: 0,
-    difficulty: "easy", // หมวดในหน้าเลือกตัวละคร: easy | medium | hard | fun | extreme | impossible | special | zect
+    difficulty: "easy", // หมวดในหน้าเลือกตัวละคร: easy | medium | hard | fun | impossible | special | zect | calamity
     //  (คีย์ต้องตรงกับ DIFFICULTY_GROUPS ใน client/src/screens/CharacterSelect.jsx — คีย์ที่ไม่ตรงจะตกไปท้ายสุดในแท็บ "ทั้งหมด")
     img: "/characters/hikaru/hikaru_ginga.jpg",
     transformImg: "/characters/hikaru/ginga.jpg", // สลับรูปเป็นร่าง Ginga ระหว่างสกิลรอง 1 ทำงาน
@@ -515,7 +515,7 @@ const CHARACTERS = [
     id: "satoru",
     name: "ซาโตรุ อาเคฟุ",
     avatar: 18,
-    difficulty: "extreme",
+    difficulty: "easy",
     img: "/characters/satoru/satoru.jpg",
     passive: {
       name: "หัวหน้าผู้ไม่ถูกไล่ตาม",

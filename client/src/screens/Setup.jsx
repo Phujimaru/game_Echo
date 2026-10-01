@@ -8,7 +8,9 @@ import { OcScreen, OcPanel, OcButton } from "../oc/ui";
 import { createSeatRing } from "../oc/seat/seatRing";
 import "../oc/seat/seat.css";
 
-// หน้าเลือกลำดับผู้เล่น (ORDEAL CALL): ลูกโลก + วงแหวนที่นั่ง P1–P7 · ชื่อและสีอยู่ในแผงด้านขวาบนหน้าเดียวกัน
+// หน้าเลือกลำดับผู้เล่น (ORDEAL CALL): ลูกโลก + วงแหวนที่นั่ง P1–P7
+//  ยังไม่เลือกที่นั่ง = โลกใหญ่กลางจอ ไม่มีแผง · เลือกแล้ว = โลกย่อเลื่อนไปซ้าย แผงชื่อ/สีเลื่อนเข้ามาทางขวา
+const LAYOUT_BIG = { x: 0, y: -0.08, s: 1.22 };
 const LAYOUT = { x: -0.55, y: -0.05, s: 0.92 };
 const NAME_MAX = 12;
 const SWATCHES = [...POSITIONS.map((n) => POSITION_COLORS[n]), "#6E2C7A", "#3D8BD9", "#1C3F6E"].map((c) => c.toUpperCase());
@@ -75,7 +77,7 @@ export default function Setup({ taken, initialName = "", initialPos = null, init
 
   return (
     <OcScreen className="seat-screen">
-      <GlobeCanvas layout={LAYOUT} drag={false} onReady={onReady} />
+      <GlobeCanvas layout={pos ? LAYOUT : LAYOUT_BIG} drag={false} onReady={onReady} />
 
       <div className="seat-title oc-enter">
         <h1 className="oc-h2">เลือกลำดับผู้เล่นที่ต้องการ</h1>
@@ -108,8 +110,8 @@ export default function Setup({ taken, initialName = "", initialPos = null, init
         <button type="button" aria-label="หมุนขวา" onClick={() => ringRef.current?.turn(1)}>›</button>
       </div>
 
-      <div className="seat-side">
-        <OcPanel as="form" className="oc-enter d1" onSubmit={(e) => { e.preventDefault(); if (ready) submit(); }}>
+      <div className={`seat-side${pos ? " open" : ""}`} aria-hidden={!pos}>
+        <OcPanel as="form" onSubmit={(e) => { e.preventDefault(); if (ready) submit(); }}>
           <div className="seat-pick">
             <span className={`big${pos ? "" : " none"}`}>{pos ? `P${pos}` : "P–"}</span>
             {pos && <span className="oc-muted">ลำดับที่ {pos}</span>}
