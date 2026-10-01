@@ -7,7 +7,8 @@ const os = require("os");
 const path = require("path");
 const room = require("./room");
 const { MediaCache, createHttpHandler } = require("./media");
-const { R2_PUBLIC_URL, MEDIA_MANIFEST_URL } = require("./config");
+const { checkForUpdate } = require("./updater");
+const { R2_PUBLIC_URL, UPDATES_URL, MEDIA_MANIFEST_URL } = require("./config");
 
 const VERSION = app.getVersion();
 // exe (ขั้นถัดไป) จะพกโค้ดเกมไว้ใน resources/game · ตอน dev ใช้ repo ตรงๆ
@@ -17,6 +18,8 @@ const MEDIA_DIRS = require(path.join(GAME_ROOT, "server", "mediaDirs.js"));
 const ASSET_BASE_URL = process.env.ECHO_ASSET_BASE_URL || R2_PUBLIC_URL;
 // รายการไฟล์สื่อ: exe ใช้ของ R2 เสมอ · ตอน dev ข้ามการโหลด (ใช้ client/public ตรงๆ) เว้นแต่ตั้ง ECHO_MEDIA_MANIFEST (path หรือ URL)
 const MEDIA_MANIFEST = process.env.ECHO_MEDIA_MANIFEST || (app.isPackaged ? MEDIA_MANIFEST_URL : null);
+// ที่ตรวจอัปเดต: exe ใช้ R2 เสมอ · ตอน dev ข้าม (ECHO_UPDATE_URL ใช้ทดสอบกับ exe ที่ build แล้ว)
+const UPDATE_FEED = process.env.ECHO_UPDATE_URL || (app.isPackaged ? UPDATES_URL : null);
 
 // ห้องที่ exe เปิดรับเฉพาะ user agent ที่มี token นี้ (ดู server/app.js) — ต้องตั้งก่อนสร้างหน้าต่าง
 const UA_TOKEN = `ECHO-Desktop/${VERSION}`;
@@ -27,6 +30,7 @@ let inGame = false;
 let media = null; // MediaCache — สร้างหลัง app ready (ต้องรู้ path userData)
 let mediaPrep = null; // Promise ของการเตรียมไฟล์สื่อรอบปัจจุบัน
 let mediaReady = false;
+let updateChecked = false; // ด่านที่ 1 ผ่านแล้ว (ตรวจครั้งเดียวต่อการเปิดโปรแกรม)
 
 // ---------- ค่าที่จำไว้ (IP ล่าสุด) ----------
 const settingsFile = () => path.join(app.getPath("userData"), "settings.json");
@@ -156,9 +160,26 @@ ipcMain.handle("echo:copy", (_e, text) => {
   return true;
 });
 
+// ด่านที่ 1: เวอร์ชันต้องตรงกับ R2 — มีใหม่ = โหลด ติดตั้ง แล้วเปิดใหม่เอง
+ipcMain.handle("echo:checkUpdate", async (event) => {
+  if (updateChecked || !UPDATE_FEED) {
+    updateChecked = true;
+    return { ok: true };
+  }
+  const result = await checkForUpdate({
+    feedUrl: UPDATE_FEED,
+    onStatus: (status) => {
+      if (!event.sender.isDestroyed()) event.sender.send("echo:updateStatus", status);
+    },
+  });
+  if (result.ok) updateChecked = true;
+  return result;
+});
+
 // ด่านที่ 2: เตรียมไฟล์สื่อให้ครบก่อนเข้าห้อง — ล้มเหลว = เข้าห้องไม่ได้ (หน้าแรกมีปุ่มลองใหม่)
 ipcMain.handle("echo:prepareMedia", (event) => {
   if (mediaReady) return { ok: true };
+  if (!updateChecked) return { ok: false, error: "ยังไม่ได้ตรวจเวอร์ชัน" };
   if (!MEDIA_MANIFEST) {
     mediaReady = true;
     return { ok: true, skipped: true };

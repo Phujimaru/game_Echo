@@ -81,7 +81,14 @@
    - ตอบไฟล์สื่อด้วย `protocol.handle("http")` ที่ **origin เดิมของหน้าเกม** (ไม่ redirect) เพราะโหมด ORT ใช้ `getImageData` กับรูป `/characters/ort/*` — ข้าม origin แล้ว canvas โดน taint (**บนเว็บที่ redirect ไป R2 น่าจะพังอยู่แล้ว ยังไม่ได้ยืนยัน**) · header `X-Echo-Media: cache|local` · ไม่มีในแคช → (dev: `client/public`) → R2
    - dev: ไม่ตั้ง `ECHO_MEDIA_MANIFEST` = ข้ามการโหลด ใช้ `client/public` ตรงๆ · exe ใช้ manifest บน R2 เสมอ โหลด manifest ไม่ได้ = เข้าหน้าแรกไม่ได้ (มีปุ่มลองใหม่)
    - ทดสอบในแอปจริงด้วย manifest ย่อย 7 ไฟล์จาก R2 จริง: โหลดครบ, ชื่อไฟล์ไทย+เว้นวรรค, Range 206, กรอวิดีโอ (readyState 4), canvas อ่านพิกเซลได้, socket.io ผ่าน, เปิดรอบสองไม่โหลดซ้ำ · เทสต์ `tests/desktop-media.test.js` · **ยังไม่ได้ลองโหลดเต็ม 1.1GB**
-4. electron-updater + ด่านที่ 1 + สคริปต์ปล่อยเวอร์ชัน
+4. ✅ electron-updater + ด่านที่ 1 + build exe + สคริปต์ปล่อยเวอร์ชัน — คู่มือเต็มอยู่ [desktop/README.md](../desktop/README.md) (มีข้อความส่งให้เพื่อนด้วย)
+   - `updater.js`: generic provider `R2/updates/` · `allowDowngrade` = เวอร์ชันบน R2 เป็นตัวตัดสิน (ถอยเวอร์ชันได้) · ตรวจไม่ได้ = ไม่ให้เข้า · มีใหม่ = โหลด → "กำลังเปิดโปรแกรมใหม่" 1.5 วิ → `quitAndInstall(silent)`
+   - `npm run dist` = `scripts/stage-game.js` (โค้ดเกม 10MB → `desktop/build/game`, `npm ci --omit=dev`, build client ไม่ copy สื่อ) + electron-builder NSIS oneClick ต่อผู้ใช้ → `desktop/dist/ECHO-Setup-<ver>.exe` (~109MB)
+   - **กับดัก:** electron-builder ข้าม `node_modules` ใน extraResources → ต้องมีรายการแยก `build/game/node_modules` (มีแล้วใน package.json) · build แบบ `--dir` ไม่สร้าง `resources/app-update.yml` (อัปเดตจะพัง ENOENT) — ทดสอบอัปเดตต้องใช้ build เต็ม
+   - ทดสอบ exe ที่ build แล้วผ่าน CDP: ตรวจเวอร์ชันไม่ได้ → ค้างที่ด่าน 1, เวอร์ชันตรง → ผ่านทุกด่าน สร้างห้อง เข้าเกม (สื่อนอกแคช → R2), มี 5.0.1 → โหลดครบถึง "กำลังเปิดโปรแกรมใหม่" (ฆ่าแอปก่อนติดตั้งจริง)
+   - `npm run release` (`scripts/release.js`): กุญแจ R2 อ่านจาก `.env` ราก repo (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`) · ห้ามปล่อยเลขเวอร์ชันซ้ำ · `--dry-run` / `--skip-build` / `--prune` · dry-run ล่าสุด: สื่อบน R2 ครบ ไม่ต้องอัปเพิ่ม
+   - **r2.dev จำกัดความถี่ (HTTP 429)** — ตัวโหลดสื่อ (ขนาน 4, ลองซ้ำ 5 ครั้งพร้อมรอ) และสคริปต์ release รอแล้วลองใหม่ให้แล้ว · ถ้าเพื่อนหลายคนโหลดพร้อมกันแล้วช้า/ล้ม ทางแก้จริงคือผูก custom domain กับ bucket (เสนอผู้ใช้แล้ว)
+   - ยังไม่มีไอคอนโปรแกรม (ใช้ไอคอน Electron) — รอผู้ใช้ส่งรูป · **ยังไม่ได้ปล่อยจริง** (รอผู้ใช้สร้างกุญแจ R2 ใหม่ใส่ `.env` แล้วรัน `npm run release`)
 5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin
 
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)

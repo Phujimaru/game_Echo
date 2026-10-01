@@ -4,5 +4,6 @@ const R2_PUBLIC_URL = "https://pub-246229b6130d42e19ea95765c029663e.r2.dev";
 
 module.exports = {
   R2_PUBLIC_URL,
+  UPDATES_URL: `${R2_PUBLIC_URL}/updates/`, // latest.yml + ECHO-Setup-<เวอร์ชัน>.exe (+ .blockmap)
   MEDIA_MANIFEST_URL: `${R2_PUBLIC_URL}/updates/media-manifest.json`,
 };

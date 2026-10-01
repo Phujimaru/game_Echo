@@ -87,20 +87,44 @@ function renderProgress({ doneBytes, totalBytes, doneFiles, totalFiles }) {
   $("prepare-status").textContent = `กำลังโหลด ${mb(doneBytes)} / ${mb(totalBytes)} MB (${pct.toFixed(0)}%) · ${doneFiles}/${totalFiles} ไฟล์`;
 }
 
-// ด่านที่ 2 — ไฟล์สื่อต้องครบก่อนถึงจะเข้าหน้าแรก (สร้างห้อง/เข้าร่วม) ได้
-async function prepareMedia() {
+function renderUpdate({ phase, version, percent }) {
+  if (phase === "checking") {
+    $("prepare-status").textContent = "กำลังเชื่อมต่อ…";
+  } else if (phase === "downloading") {
+    $("prepare-title").textContent = `กำลังอัปเดตเป็นเวอร์ชัน ${version}`;
+    $("prepare-bar").style.width = `${percent || 0}%`;
+    $("prepare-status").textContent = `กำลังโหลด ${(percent || 0).toFixed(0)}%`;
+  } else if (phase === "restarting") {
+    $("prepare-bar").style.width = "100%";
+    $("prepare-status").textContent = "อัปเดตเสร็จแล้ว กำลังเปิดโปรแกรมใหม่…";
+  }
+}
+
+function showGateError(error) {
+  $("prepare-error").textContent = error;
+  $("prepare-error").hidden = false;
+  $("prepare-retry").hidden = false;
+}
+
+// ด่านตอนเปิดโปรแกรม — (1) เวอร์ชันตรงกับ R2 (2) ไฟล์สื่อครบ · ผ่านทั้งคู่ถึงเข้าหน้าแรก (สร้างห้อง/เข้าร่วม) ได้
+async function runGates() {
   show("prepare");
   $("prepare-error").hidden = true;
   $("prepare-retry").hidden = true;
+  $("prepare-detail").hidden = true;
+  $("prepare-bar").style.width = "0";
+  $("prepare-title").textContent = "กำลังตรวจเวอร์ชัน";
+  $("prepare-status").textContent = "กำลังเชื่อมต่อ…";
+  const update = await window.echo.checkUpdate();
+  if (!update.ok) return showGateError(update.error);
+
+  $("prepare-title").textContent = "กำลังเตรียมไฟล์เกม";
   $("prepare-status").textContent = "กำลังตรวจรายการไฟล์…";
-  const result = await window.echo.prepareMedia();
-  if (result.ok) {
-    show("home");
-    return;
-  }
-  $("prepare-error").textContent = result.error;
-  $("prepare-error").hidden = false;
-  $("prepare-retry").hidden = false;
+  $("prepare-bar").style.width = "0";
+  $("prepare-detail").hidden = false;
+  const media = await window.echo.prepareMedia();
+  if (!media.ok) return showGateError(media.error);
+  show("home");
 }
 
 async function init() {
@@ -109,8 +133,9 @@ async function init() {
   $("join-ip").value = info.lastHost;
   setMessage(new URLSearchParams(location.search).get("message"));
 
+  window.echo.onUpdateStatus(renderUpdate);
   window.echo.onMediaProgress(renderProgress);
-  $("prepare-retry").addEventListener("click", prepareMedia);
+  $("prepare-retry").addEventListener("click", runGates);
   $("go-host").addEventListener("click", startHosting);
   $("go-join").addEventListener("click", () => {
     setMessage("");
@@ -126,7 +151,7 @@ async function init() {
   });
   $("join-form").addEventListener("submit", join);
   $("join-back").addEventListener("click", () => show("home"));
-  await prepareMedia();
+  await runGates();
 }
 
 init();

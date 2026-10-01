@@ -7,9 +7,68 @@
   "main": "main.js",
   "scripts": {
     "start": "node start.js",
-    "media-manifest": "node scripts/build-media-manifest.js"
+    "media-manifest": "node scripts/build-media-manifest.js",
+    "stage": "node scripts/stage-game.js",
+    "dist": "npm run stage && electron-builder --win --publish never",
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
-    "electron": "^44.5.1"
+    "@aws-sdk/client-s3": "^3.1144.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "author": "Phujimaru",
+  "build": {
+    "appId": "com.phujimaru.echo",
+    "productName": "ECHO",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "room.js",
+      "media.js",
+      "updater.js",
+      "config.js",
+      "preload.js",
+      "launcher/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/game",
+        "to": "game",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "build/game/node_modules",
+        "to": "game/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "ECHO-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "ECHO"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://pub-246229b6130d42e19ea95765c029663e.r2.dev/updates/"
+      }
+    ]
   }
 }

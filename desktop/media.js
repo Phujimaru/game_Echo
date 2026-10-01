@@ -18,8 +18,16 @@ const MIME = {
   ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm", ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
   ".wav": "audio/wav", ".ogg": "audio/ogg", ".json": "application/json",
 };
-const PARALLEL = 6;
-const RETRIES = 3;
+const PARALLEL = 4;
+const RETRIES = 5;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// รอก่อนลองซ้ำ — r2.dev จำกัดความถี่ (ตอบ 429) ถ้ามี Retry-After ใช้ค่านั้น ไม่งั้นรอนานขึ้นเรื่อย ๆ
+function retryDelay(attempt, res) {
+  const after = Number(res && res.headers.get("retry-after"));
+  if (after > 0) return Math.min(after, 30) * 1000;
+  return Math.min(1000 * 2 ** (attempt - 1), 15000);
+}
 
 // "/characters/kim/สกิลรอง/Card Overthrow.webp" -> ส่วนของ URL ที่ encode แล้ว
 const encodePath = (rel) => rel.split("/").map(encodeURIComponent).join("/");
@@ -151,8 +159,9 @@ class MediaCache {
     let lastError;
     for (let attempt = 1; attempt <= RETRIES; attempt++) {
       let received = 0;
+      let res = null;
       try {
-        const res = await fetch(this.remoteBase + encodePath(rel), { signal: AbortSignal.timeout(120000) });
+        res = await fetch(this.remoteBase + encodePath(rel), { signal: AbortSignal.timeout(120000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const hash = crypto.createHash("sha256");
         const meter = new Transform({
@@ -173,6 +182,9 @@ class MediaCache {
         onBytes(-received); // นับใหม่ตอนลองซ้ำ
         await fsp.rm(part, { force: true });
         lastError = err;
+        if (res && res.status === 404) break; // ไม่มีไฟล์บน R2 — ลองซ้ำไปก็ไม่มี
+        // รอเฉพาะตอน R2 ตอบ error / เน็ตหลุด — ไฟล์เสียระหว่างทาง (hash ไม่ตรง) ลองใหม่ทันที
+        if (attempt < RETRIES && !(res && res.ok)) await sleep(retryDelay(attempt, res));
       }
     }
     throw new Error(`โหลดไฟล์ไม่สำเร็จ: ${rel} (${lastError.message})`);

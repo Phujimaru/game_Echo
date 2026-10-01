@@ -134,7 +134,7 @@ body {
 .hint { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
 .hint b { color: var(--text); font-weight: 600; }
 .warn { margin: 0; font-size: 15px; color: var(--danger); line-height: 1.5; }
-.warn[hidden], #host-ready[hidden], .notice[hidden] { display: none; }
+.warn[hidden], .hint[hidden], #host-ready[hidden], .notice[hidden] { display: none; }
 #host-ready { display: flex; flex-direction: column; gap: 12px; }
 
 .notice {

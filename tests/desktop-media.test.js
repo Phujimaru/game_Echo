@@ -24,11 +24,12 @@ function writeFiles(root, files) {
 }
 
 // R2 จำลอง: เสิร์ฟไฟล์จาก root ตาม path ที่ decode แล้ว + นับจำนวนคำขอ
-async function fakeR2(root) {
+async function fakeR2(root, { throttleFirst = 0 } = {}) {
   const hits = [];
   const server = http.createServer((req, res) => {
     const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     hits.push(rel);
+    if (hits.length <= throttleFirst) { res.writeHead(429, { 'Retry-After': '1' }); res.end(); return; }
     const file = path.join(root, ...rel.split('/').filter(Boolean));
     if (!fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'Content-Length': fs.statSync(file).size });
@@ -103,6 +104,23 @@ test('sync rejects a file whose content does not match the manifest', { timeout:
     assert.equal(cache.localFile('/image/background.webp'), null);
     assert.equal(fs.existsSync(path.join(cacheDir, 'image', 'background.webp')), false);
     assert.equal(fs.existsSync(path.join(cacheDir, 'image', 'background.webp.part')), false);
+  } finally {
+    await r2.close();
+  }
+});
+
+test('sync waits and retries when R2 rate-limits (HTTP 429)', { timeout: 15000 }, async () => {
+  const remote = tmpDir();
+  writeFiles(remote, { '/image/background.webp': 'bg' });
+  const r2 = await fakeR2(remote, { throttleFirst: 2 });
+  const manifestFile = path.join(tmpDir(), 'manifest.json');
+  try {
+    fs.writeFileSync(manifestFile, JSON.stringify(await buildManifest(remote, DIRS)));
+    const cache = new MediaCache({ cacheDir: tmpDir(), remoteBase: r2.base, dirs: DIRS });
+    const result = await cache.sync(manifestFile);
+    assert.equal(result.doneFiles, 1);
+    assert.equal(r2.hits.length, 3, 'two throttled attempts, then success');
+    assert.equal(fs.readFileSync(cache.localFile('/image/background.webp'), 'utf8'), 'bg');
   } finally {
     await r2.close();
   }
