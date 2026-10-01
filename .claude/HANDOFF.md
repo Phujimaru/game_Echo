@@ -91,7 +91,17 @@
    - ยังไม่มีไอคอนโปรแกรม (ใช้ไอคอน Electron) — รอผู้ใช้ส่งรูป
    - ✅ **ปล่อย 5.0.0 ขึ้น R2 แล้ว** (2026-10-01) bucket `echo-characters` · กุญแจอยู่ใน `.env` (ผู้ใช้เลือกใช้ชุดเดิม) · ลิงก์ตัวติดตั้ง `https://pub-246229b6130d42e19ea95765c029663e.r2.dev/updates/ECHO-Setup-5.0.0.exe`
    - ✅ ลบไฟล์สื่อเก่าบน R2 แล้ว 154 ไฟล์ (620MB: ตัวละครที่ถูกถอดรวม musashi + ไฟล์ไม่ได้ใช้) ด้วย `npm run release -- --prune-only` · โฟลเดอร์ `_backup_audio/` `_backup_video/` ใน bucket ไม่ได้แตะ
-5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin
+5. build 5.0.0 แล้วลองเล่นจริง 2 เครื่องผ่าน Radmin — **ยังไม่ได้ทำ** (ผู้ใช้จะลองเอง)
+
+### 🚧 งานค้าง (session 2026-10-01 หยุดกลางทาง): ถอนการติดตั้งแล้วลบไฟล์เกมด้วย
+ผู้ใช้สั่ง: ถอนการติดตั้ง = ลบไฟล์เกมที่โหลดมาด้วย **แต่ห้ามลบอะไรนอกโฟลเดอร์ของเกมเด็ดขาด** (กลัวแบบข่าว uninstaller ลบทั้งไดรฟ์)
+- สถานะ: **ยังไม่ commit** — `desktop/installer.nsh` (ใหม่) + `desktop/package.json` (`nsis.deleteAppDataOnUninstall: true`, `nsis.include: "installer.nsh"`) · **ห้าม `npm run release` จนกว่าจะแก้เสร็จและทดสอบผ่าน** (ต้องปล่อยเป็น 5.0.1)
+- `installer.nsh` มี macro `customUnInstall`: ด่านกันพลาด (ยกเลิกถ้า `$INSTDIR` ไม่ลงท้าย `\echo-desktop` หรือไม่มี `ECHO.exe`) + ลบ `%LOCALAPPDATA%\echo-desktop-updater` เมื่อไม่ใช่การอัปเดต
+- ข้อเท็จจริงที่เจอ: ติดตั้งจริงอยู่ที่ `%LOCALAPPDATA%\Programs\echo-desktop` (ตาม "name" ไม่ใช่ productName) · ตัวติดตั้งเปิดแอปเองหลังติดตั้ง (แม้ `/S`) · ไฟล์เกมอยู่ `%APPDATA%\ECHO\media`
+- **ปัญหาที่ยังไม่รู้สาเหตุ:** ทดสอบ build ที่ด่านยังเช็ค `\ECHO` (ผิด) แล้วสั่ง `Uninstall ECHO.exe /S` → โฟลเดอร์โปรแกรม/ทางลัด/registry ถูกลบหมด (ด่านไม่หยุด) แต่ `%APPDATA%\ECHO` กับ updater **ไม่ถูกลบ** → สงสัยว่า macro `customUnInstall` ไม่ได้ทำงานใน uninstaller เลย และ/หรือ `DELETE_APP_DATA_ON_UNINSTALL` ไม่ถูก define (builder-debug.yml ยืนยันแค่ว่า `!include installer.nsh` ถูกใส่)
+- ขั้นต่อไป: build รุ่น debug ที่ `FileWrite` ค่า `$INSTDIR`, `${isUpdated}`, `!ifdef DELETE_APP_DATA_ON_UNINSTALL` ลง `$TEMP\echo-uninst-debug.txt` แล้วติดตั้ง/ถอนแบบ `/S` (ปิด `ECHO.exe` ที่เปิดเองหลังติดตั้งด้วย `taskkill //F //IM ECHO.exe //T`) · **เขียน .nsh ด้วยเครื่องมือ Write เท่านั้น** — ผ่าน Bash/Python heredoc แล้ว `$\r$\n` / backslash เพี้ยนจน makensis error "unterminated string"
+- ทดสอบให้ครบ: ไฟล์ใน `%APPDATA%\ECHO` + updater หาย · โฟลเดอร์ข้างเคียง (`%APPDATA%\ECHO-neighbor-test`, `%LOCALAPPDATA%\Programs\neighbor-test`) ยังอยู่ · ก๊อป uninstaller ไปโฟลเดอร์อื่นแล้วรันด้วย `_?=<โฟลเดอร์นั้น>` ต้องถูกด่านยกเลิก ไฟล์ในนั้นต้องไม่หาย · อัปเดตอัตโนมัติ (`--updated`) ต้องไม่ลบไฟล์เกม
+- เครื่องผู้ใช้ตอนนี้: ถอน ECHO ที่ติดตั้งทดสอบออกแล้ว · `desktop/dist/ECHO-Setup-5.0.0.exe` ในเครื่องเป็น build ทดสอบ (มีด่าน `\ECHO` ผิด) — **ตัวที่ถูกต้องคือตัวบน R2** (build ตอน release ไม่มี installer.nsh) ห้ามส่งไฟล์ใน dist ให้เพื่อน ให้ส่งลิงก์ R2
 
 ## ปัญหาที่มีมาก่อน (ไม่ใช่จากงานนี้)
 - eslint 2 errors: `tests/characters/escanor.test.js` บรรทัด ~722 (`no-control-regex` จาก `\x08`)
