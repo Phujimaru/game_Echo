@@ -810,29 +810,32 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   ภูมิภาค 7 "จุดสิ้นสุดของโลก" ที่วนอยู่ถาวรเป็นตัวบีบให้เกมจบแทน · `normalGameOver()`/`checkOrtEarlyWin()` ยังนับเฉพาะผู้เล่นจริงเหมือนเดิม
 - เทสต์: [tests/characters/ort.test.js](tests/characters/ort.test.js) · [tests/mercury.integration.test.js](tests/mercury.integration.test.js)
 
-### 11.2 โหมด Purge (หนี ORT ในอุโมงค์ท่อ)
+### 11.2 โหมด Purge (หนี ORT ในอุโมงค์ท่อ · ทอยเต๋า)
 
-- `gameMode = "purge"` (กลุ่ม special) · เล่นได้ 1-7 คน (1 คน = ทดสอบ จบเมื่อโดนกิน) · โมดูล [server/modes/purge.js](server/modes/purge.js)
-  สถานะอยู่ `match.purge` = `{ steps: {id: ช่อง}, ort, lost, turnFrom, scene, seq, result }` (รีเซ็ตใน `startMatch`/`backToLobby`)
-- กติกา (ค่าคงที่ `PURGE_*` ใน constants): ท่อ 50 ช่อง · ผู้ชนะรอบที่ **ไม่เสมอ** เดิน 1 ช่อง — `awardWinSteps()`
-  ถัดจาก `Seraph.onRoundWinner` ใน `resolveRound()` · คนแพ้ไม่เดิน · ORT โผล่ช่อง 0 ตอนจบเทิร์น 10 แล้วเดิน 1 ช่องทุก 2 เทิร์น (ถึงช่อง 50 เทิร์น 110 · ไม่ถอยหลัง)
-  ทุกเทิร์นหลังโผล่ยังจับคนที่ช่อง ≤ ORT แม้เทิร์นนั้น ORT ไม่เดิน
-  · ช่อง ≤ ORT = LOST DATA (`lose()` ตั้ง `alive=false` ตรงๆ **ไม่ผ่าน `instantDeath`** — ไม่ปลุกระบบกันตาย/ยูนะ) · เทิร์นที่ ORT เพิ่งโผล่ยังไม่กินใคร
-- **เลือดหมด = ล้มลง ไม่ตาย**: `tryKnockBack()` ดักใน `instantDeath()` ก่อนบรรทัด `p.alive = false` (หลังระบบกันตาย/เกิดใหม่ของตัวละคร และมีผลแม้ `force`)
-  ถอยหลัง 2 ช่อง เลือด/เกราะเต็ม — ถอยไปอยู่ ≤ ORT จะโดนกินตอนจบเทิร์น
-- ไม่มี Overload Force (การย้อนเทิร์นไม่ย้อนตำแหน่งในท่อ)
-- `purgeAdvance()` ใน callback ท้าย `endTurn()` (ก่อน `normalGameOver`): ORT เดิน → จับคน → ฉากจบเทิร์น `scene = { kind: "turn", moves:[{id,from,to}], ortFrom, ortTo, caught }`
-  พักเฟส CUTSCENE (ไม่มีคลิป) `ceil(turnSceneSeconds(scene) + 0.6)` → `nextPhaseOrEnd()`: เหลือคนเดียว (เกม 2 คนขึ้นไป) = `result "survivor"` · ไม่เหลือใคร/ORT ถึงปลายท่อ = `"allLost"`
-  ไม่มีการเดินและ ORT ไม่ขยับ = ข้ามฉาก · **สูตรเวลา `turnSceneSeconds()` ต้องตรงกับ client** (เทสต์เทียบให้แล้ว)
-- ฉากเปิด: `startMatch()` พัก `gameIntroHoldSeconds() + PURGE_INTRO_SECONDS` (11) ด้วย `scene.kind = "intro"`
-- client: [client/src/purge/purgeScene.js](client/src/purge/purgeScene.js) (three.js ไม่ผูก React) + [PurgeStage.jsx](client/src/purge/PurgeStage.jsx) แทน `GameBackground` ใน `Game.jsx`
-  ระหว่าง `purge.scene.active` ราก `Game` ติดคลาส `purge-scene-on` ซ่อน UI กระดาน (เหลือแค่ลูกที่มีคลาส `purge-keep`)
-  · ท่อ = ทรงกระบอกผิวในเป็นภูมิประเทศ ตัดครึ่งบนด้วย clipping plane (`CUT`) → รางครึ่งท่อมองมุมสูงเลนส์แคบ · ครึ่งบนมีเฉพาะฉากเปิดแล้วซ่อน
-  · วาดเฉพาะตอนมีอนิเมชัน (นิ่ง ~12 เฟรม/วิ) · อนิเมชันเดินตามเวลาจริง (dt เพดาน 0.25 วิ) ให้จบทันเวลาที่ server พักแม้เฟรมตก
+- `gameMode = "purge"` (กลุ่ม special) · เล่นได้ 1-7 คน · โมดูล [server/modes/purge.js](server/modes/purge.js)
+  สถานะอยู่ `match.purge` = `{ steps, ort, lost, scene, seq, result, winnerId, turn, fights, fightIdx, fight }` (รีเซ็ตใน `startMatch`/`backToLobby`)
+- **เทิร์นเต๋า** (`match.purge.turn` ไม่ใช่ `roundNumber`): `diceTurn()` = ORT เดินของเทิร์นที่แล้ว → จับคน → ทุกคนที่รอดทอย 1-6 เดินตามแต้ม
+  → หาช่องที่มี 2 คนขึ้นไป = จุดปะทะ (เรียงจากท้ายท่อ) · ฉากเต๋าพัก CUTSCENE `ceil(diceSceneSeconds(scene) + 0.6)` (**สูตรต้องตรงกับ client — มีเทสต์เทียบ**)
+- **จุดปะทะ** = 1 รอบการ์ดของ engine: `startFight()` ฉากซูมเข้า 3 วิ → ตั้ง `roundNumber = turn - 1` → `dealRound()` (กลางวัน/คืน ร้านค้า เดินตามเทิร์นเต๋า)
+  คนที่ไม่อยู่ในจุดนั้นเป็น**ผู้ชม** `benched(p)`: ไม่ได้ไพ่ (`dealRound`) · ไม่นับใน `resolveRound`/`attackableTargets` (`combatants()`)
+  · กดสกิล/ใช้ไอเทม/โจมตีไม่ได้ และเล็งไม่ได้ (`useSkillCore`/`useInventoryItemCore`/`doAttack`) — ผลหมู่ของสกิลที่ไม่ได้เล็งยังอาจโดนผู้ชม
+  ผู้ชนะไม่เสมอ → คนอื่นในจุดถอย 2 (`onFightResult()` ถัดจาก `Seraph.onRoundWinner`) · จบรอบ `purgeAdvance()` ท้าย `endTurn()` → จุดถัดไป/เทิร์นเต๋าใหม่
+  · ไม่มีใครตกช่องเดียวกัน = ไม่มีรอบการ์ดเลย (การเดินสถานะ/แต้มสกิลท้ายเทิร์นเกิดเฉพาะรอบที่มีการปะทะ)
+- ORT: โผล่ช่อง 0 ตอนจบเทิร์นเต๋า 5 (`PURGE_ORT_TURN`) แล้วเดิน 4 ช่อง/เทิร์น (`PURGE_ORT_SPEED`) · ช่อง ≤ ORT = LOST DATA (`lose()` ไม่ผ่าน `instantDeath`)
+- เลือดหมด = ล้มลง ถอย 2 เลือด/เกราะเต็ม (`tryKnockBack()` ใน `instantDeath()` ก่อน `p.alive = false`) · ไม่มี Overload Force
+- จบเกม: ถึงประตูผนึก (ช่อง 80) คนเดียว = ชนะ (`result "gate"`) · ถึงพร้อมกันหลายคน = จุดปะทะที่ประตู ผู้ชนะคือผู้ชนะเกม
+  · รอดคนสุดท้าย (เกม 2 คนขึ้นไป) `"survivor"` · ไม่เหลือใคร/ORT ถึงปลายท่อ `"allLost"` · `winnerId` ส่งให้หน้าผล
+- env สำหรับทดสอบ: `PURGE_INTRO_SECONDS` · `PURGE_ORT_TURN` · `PURGE_FIGHT_INTRO_SECONDS` · `PURGE_FIXED_DICE` (ทุกลูกออกแต้มเดียวกัน = บังคับปะทะ)
+- client: [client/src/purge/purgeScene.js](client/src/purge/purgeScene.js) (three.js) + [PurgeStage.jsx](client/src/purge/PurgeStage.jsx) แทน `GameBackground`
+  · ฉาก `intro`: ปลายฉากลูกโลก (`MatchIntro` โหมด `warp` — App คืน `{ warp }` จาก `onOutro`) เส้นพุ่งออกจากโลก → ทางช้างเผือก ([milkyway.js](client/src/purge/milkyway.js) ภาพเดียวกันสองฝั่ง)
+    → ละลายเข้าท่อ: กล้องเริ่มที่ปลายท่อ ไถลมาจุดเกิด ORT แล้วหันกลับมองผู้เล่น → ครึ่งบนท่อเปิด (clipping) เป็นภาพรวม
+  · ฉาก `dice`: ซูมออก (จากช่องที่เพิ่งปะทะ) → โคจรภาพรวม → ORT เดิน/ผุดจากรอยแยก → ระเบิดกระจุยคนที่ถูกกิน → ลูกเต๋า sprite → เดินพร้อมกัน → ปักดาบไขว้ที่จุดปะทะ
+  · ฉาก `fight`: บินลงช่องปะทะ แล้วแฟลชขาว → ระหว่าง `state.purge.fight` Game วาดสนามประลองของภูมิภาค (`ArenaScene` ภูมิภาค = ช่อง/16 + 1, กลางคืนตาม `state.cycle`)
+    ที่นั่งมีเฉพาะคู่ปะทะ · ท่อหยุดวาด (`hidden`) · ผู้ชมเห็นป้าย "ชมการปะทะ"
+  · จุดเกิด ORT ก่อนโผล่ = รอยแยกแดง + ประกายลอย · กลางคืน = แสงสลัว/ฟ้าน้ำเงินเข้ม/ละอองแสง · วาดเฉพาะตอนมีอนิเมชัน (นิ่ง ~12 เฟรม/วิ)
 - เพลง (`purgeMusic()` ใน `client/src/audioPolicy.js`, ไฟล์ใน `/purge/` บน R2): เหลือ 2 คนสุดท้าย (เกม 3+ คน) `playerjust2` → ORT ห่างผู้รอดคนใดไม่เกิน 3 ช่อง
-  `playermore3butless` → ORT โผล่แล้ว `ort_came` → ก่อน ORT โผล่ `normal_map` · ระหว่างฉากซูมออก (CUTSCENE ของโหมด) เพลงท่าไม้ตาย/ช่วงโจมตีถูกปิด เล่นแต่เพลงด่าน
+  `playermore3butless` → ORT โผล่แล้ว `ort_came` → ก่อน ORT โผล่ `normal_map` · ระหว่างฉากซูมออก (CUTSCENE ของโหมด) เพลงท่าไม้ตาย/ช่วงโจมตีถูกปิด
 - เทสต์: [tests/purge.test.js](tests/purge.test.js) · เพลง: [tests/audio-policy.test.js](tests/audio-policy.test.js)
-
 
 ## 12. โหมดทีม
 

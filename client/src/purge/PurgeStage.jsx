@@ -1,7 +1,10 @@
 // โหมด Purge: ฉากอุโมงค์ท่อ (three.js อยู่หลังกระดาน) + แถบท่อ/ป้ายภูมิภาค/LOST DATA (อยู่หน้ากระดาน)
-//  ฉากเปิด/ฉากจบเทิร์นเล่นตาม state.purge.scene (server พักเฟส CUTSCENE ไว้ตามเวลาของฉาก)
+//  ฉากเล่นตาม state.purge.scene (server พักเฟส CUTSCENE ไว้ตามเวลาของฉาก):
+//   intro = ทางช้างเผือกละลายเข้าอุโมงค์ แล้วกล้องไถลจากปลายท่อมาที่จุดเกิด ORT · dice = ภาพรวม/ORT/ทอยเต๋า/เดิน
+//   fight = ซูมลงช่องปะทะ แล้วแฟลชขาว — ระหว่างสู้ (state.purge.fight) Game วาดสนามประลองของภูมิภาคแทน ท่อหยุดวาด (hidden)
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPurgeScene, REGIONS, regionOfStep } from "./purgeScene";
+import { createPurgeScene, REGIONS, REGION_STEPS, regionOfStep, FIGHT_ZOOM_SECONDS } from "./purgeScene";
+import { milkyWayUrl } from "./milkyway";
 import "./purge.css";
 
 function sceneState(purge, players) {
@@ -18,33 +21,40 @@ function sceneState(purge, players) {
   };
 }
 
-export default function PurgeStage({ purge, players, youId }) {
+export default function PurgeStage({ purge, players, youId, night, hidden }) {
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
   const seqRef = useRef(null);
+  const fightTileRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [lost, setLost] = useState(null);
-  const toastTimer = useRef(0);
-  const lostTimer = useRef(0);
+  const [flash, setFlash] = useState(0);
+  const [milky, setMilky] = useState(0);
+  const timers = useRef([]);
 
   const st = useMemo(() => sceneState(purge, players), [purge, players]);
 
   useEffect(() => {
+    const list = timers.current;
+    const later = (ms, fn) => { list.push(setTimeout(fn, ms)); };
     const sc = createPurgeScene(canvasRef.current, {
       onRegion: (i, name) => {
-        clearTimeout(toastTimer.current);
-        setToast({ i, name, k: Date.now() });
-        toastTimer.current = setTimeout(() => setToast(null), 2800);
+        const k = Date.now();
+        setToast({ i, name, k });
+        later(2800, () => setToast((t) => (t && t.k === k ? null : t)));
       },
       onLost: (names) => {
-        clearTimeout(lostTimer.current);
-        setLost({ names, k: Date.now() });
-        lostTimer.current = setTimeout(() => setLost(null), 2600);
+        const k = Date.now();
+        setLost({ names, k });
+        later(2600, () => setLost((l) => (l && l.k === k ? null : l)));
       },
     });
     sceneRef.current = sc;
-    return () => { clearTimeout(toastTimer.current); clearTimeout(lostTimer.current); sc.dispose(); sceneRef.current = null; };
+    return () => { list.forEach(clearTimeout); sc.dispose(); sceneRef.current = null; };
   }, []);
+
+  useEffect(() => { sceneRef.current?.setPaused(!!hidden); }, [hidden]);
+  useEffect(() => { sceneRef.current?.setNight(!!night); }, [night]);
 
   useEffect(() => {
     const sc = sceneRef.current;
@@ -54,8 +64,22 @@ export default function PurgeStage({ purge, players, youId }) {
       const first = seqRef.current === null;
       seqRef.current = scene.seq;
       if (scene.active) {
-        if (scene.kind === "intro") { sc.playIntro(st); return; }
-        if (scene.kind === "turn") { sc.playTurn(st, scene); return; }
+        if (scene.kind === "intro") {
+          setMilky(Date.now());
+          sc.playIntro(st);
+          return;
+        }
+        if (scene.kind === "dice") {
+          sc.playDice(st, scene, fightTileRef.current);
+          fightTileRef.current = null;
+          return;
+        }
+        if (scene.kind === "fight") {
+          sc.playFight(st, scene, fightTileRef.current);
+          fightTileRef.current = scene.tile;
+          timers.current.push(setTimeout(() => setFlash(Date.now()), FIGHT_ZOOM_SECONDS * 1000 - 150));
+          return;
+        }
       }
       if (first) { sc.forceState(st); return; }
     }
@@ -63,14 +87,18 @@ export default function PurgeStage({ purge, players, youId }) {
   }, [purge, st]);
 
   const ort = purge.ort;
-  const total = purge.totalSteps || 50;
+  const total = purge.totalSteps || 80;
   const sx = (s) => `${(s / total) * 100}%`;
   const myStep = purge.steps[youId] ?? 0;
   const myReg = REGIONS[regionOfStep(myStep)];
+  const watching = !!purge.fight && !purge.fight.ids.includes(youId);
+  const milkyUrl = useMemo(() => (milky ? milkyWayUrl() : null), [milky]);
 
   return (
     <>
-      <div className="pg-stage purge-keep"><canvas ref={canvasRef} /></div>
+      <div className={`pg-stage purge-keep${hidden ? " is-hidden" : ""}`}><canvas ref={canvasRef} /></div>
+      {milky > 0 && <div key={milky} className="pg-milky purge-keep" style={{ backgroundImage: `url(${milkyUrl})` }} />}
+      {flash > 0 && <div key={flash} className="pg-flash purge-keep" />}
       <div className="pg-hud purge-keep">
         <div className="pg-top">
           <div className="pg-chip">
@@ -80,7 +108,7 @@ export default function PurgeStage({ purge, players, youId }) {
           </div>
           <div className="pg-track">
             {REGIONS.map((r, i) => (
-              <span key={r.n} className="pg-seg" style={{ left: sx(i * 10), width: `calc(${sx(10)} - 2px)`, background: r.color }} />
+              <span key={r.n} className="pg-seg" style={{ left: sx(i * REGION_STEPS), width: `calc(${sx(REGION_STEPS)} - 2px)`, background: r.color }} />
             ))}
             {ort != null && <span className="pg-crystal" style={{ width: sx(ort) }} />}
             {ort != null && <span className="pg-ort" style={{ left: sx(ort) }} />}
@@ -96,6 +124,8 @@ export default function PurgeStage({ purge, players, youId }) {
             {ort == null ? `ORT ตื่นเทิร์น ${purge.ortTurn}` : `ORT · ช่อง ${ort}`}
           </div>
         </div>
+        {purge.turn > 0 && <div className="pg-turn">เทิร์น {purge.turn}</div>}
+        {watching && <div className="pg-watch">ชมการปะทะ</div>}
         {toast && (
           <div key={toast.k} className="pg-toast">
             <div className="pg-toast-n" style={{ color: REGIONS[toast.i].color }}>{REGIONS[toast.i].n}</div>

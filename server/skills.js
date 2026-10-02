@@ -28,6 +28,7 @@ const cardDeck = require("./deck");
 const draw = require("./phases/draw");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const timers = require("./timers");
 const view = require("./view");
 
@@ -103,6 +104,8 @@ function useSkillCore(id, tier, targets, item) {
   if (!p || !p.alive) return;
   if (match.gameState !== "PLAYING") return;
   if (!["basic", "secondary", "ultimate"].includes(tier)) return;
+  // Purge: ผู้ชมกดสกิลไม่ได้ และเล็งผู้ชมไม่ได้
+  if (purge.benched(p) || (Array.isArray(targets) && targets.some((t) => purge.benched(match.players[t])))) return;
   // ORT สกิลติดตัว 1: ช่องสกิลนี้ "ข้อมูลสูญหาย" ในเทิร์นนี้ — กดไม่ได้
   if (CHAR_HOOKS.ort.skillErased(engine, p, tier)) return;
   // ---------- SE.RA.PH (SERAPH_MOONCELL.md §5 + §3) ----------

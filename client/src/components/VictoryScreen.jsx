@@ -39,6 +39,8 @@ export default function VictoryScreen({ state, onBackToLobby }) {
     []
   );
 
+  const purgeResult = state.purge?.result;
+  const purgeWinner = state.purge?.winnerId;
   const { heading, winners } = useMemo(() => {
     // Type Mercury: ผลของ Raid — ชนะ = ผู้เล่นทุกคน · แพ้/ยอมแพ้ = ORT
     const raid = state.mercury?.result;
@@ -51,14 +53,19 @@ export default function VictoryScreen({ state, onBackToLobby }) {
       return { heading: raid === "surrender" ? "ยอมแพ้ต่อ ORT" : "ORT ลบข้อมูลทั้งหมด", winners: boss };
     }
     // Purge: ORT กลืนทุกคนในท่อ = ไม่มีผู้ชนะ
-    if (state.purge?.result === "allLost") return { heading: "ORT กลืนทั้งท่อ", winners: [] };
+    if (purgeResult === "allLost") return { heading: "ORT กลืนทั้งท่อ", winners: [] };
+    // Purge: ถึงประตูผนึกก่อน / รอดคนสุดท้าย — ผู้ชนะระบุโดย server (ถึงประตูแล้วคนอื่นอาจยังรอดอยู่)
+    if (purgeWinner) {
+      const w = state.players.find((p) => p.id === purgeWinner);
+      if (w) return { heading: w.name, winners: [w] };
+    }
     if (state.gameMode !== "ffa" && state.winningTeamId) {
       const ws = state.players.filter((p) => p.alive && p.teamId === state.winningTeamId);
       return { heading: `ทีม ${state.winningTeamId}`, winners: ws };
     }
     const c = state.players.find((p) => p.alive && !p.isBoss); // ORT (บุกเทิร์น 60) ไม่ใช่ผู้ชิงชัย
     return { heading: c ? c.name : "จบเกม", winners: c ? [c] : [] };
-  }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result, state.purge?.result]);
+  }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result, purgeResult, purgeWinner]);
 
   const names = winners.map((w) => w.name).join(" และ ");
 

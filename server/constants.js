@@ -256,14 +256,16 @@ const ORT_ATTACK_DELAY = 2; // ORT ชนะรอบ: ค้างเฟสโ�
 const JOURNEY_START_SECONDS = Math.max(0, Number(process.env.JOURNEY_START_SECONDS ?? 6));
 const JOURNEY_ADVANCE_SECONDS = Math.max(0, Number(process.env.JOURNEY_ADVANCE_SECONDS ?? 7));
 // ---------- โหมด Purge (server/modes/purge.js) ----------
-//  ท่อยาว 50 ช่อง · ชนะรอบเดิน 1 ช่อง · ล้มลงถอย 2 · ORT โผล่จบเทิร์น 10 แล้วเดิน 1 ช่องทุก 2 เทิร์น (ถึงปลายท่อเทิร์น 110)
-//  ฉากเปิดฝั่ง client (ท่อเต็มวง → ลอยลงจุดเริ่ม → มุมสูง → เข้าสนาม) ยาว 10.5 วิ — พัก 11 วิ · เทสต์ย่อได้ผ่าน env
-const PURGE_STEPS = 50;
-const PURGE_WIN_STEPS = 1;
+//  ท่อยาว 80 ช่อง (ภูมิภาคละ 16) · ทอยเต๋า 1-6 ทุกเทิร์น · ตกช่องเดียวกัน = ปะทะ ผู้แพ้ถอย 2 · เลือดหมดล้มลงถอย 2
+//  ORT โผล่ช่อง 0 ตอนจบเทิร์นเต๋า 5 แล้วเดินเทิร์นละ 4 ช่อง · ฉากเปิด client ~13 วิ (พัก 14) · ฉากซูมเข้าจุดปะทะ 3 วิ
+//  เทสต์ย่อได้ผ่าน env
+const PURGE_STEPS = 80;
+const PURGE_FIGHT_KNOCKBACK = 2;
 const PURGE_KNOCKBACK = 2;
-const PURGE_ORT_TURN = Math.max(1, Number(process.env.PURGE_ORT_TURN) || 10); // env ไว้ย่อในการทดสอบ
-const PURGE_ORT_EVERY = 2;
-const PURGE_INTRO_SECONDS = Math.max(0, Number(process.env.PURGE_INTRO_SECONDS ?? 11));
+const PURGE_ORT_TURN = Math.max(1, Number(process.env.PURGE_ORT_TURN) || 5);
+const PURGE_ORT_SPEED = 4;
+const PURGE_INTRO_SECONDS = Math.max(0, Number(process.env.PURGE_INTRO_SECONDS ?? 14));
+const PURGE_FIGHT_INTRO_SECONDS = Math.max(1, Number(process.env.PURGE_FIGHT_INTRO_SECONDS) || 3);
 const TEAM_IDS = ["A", "B", "C"];
 
 // ---------- ยูนะ ไอดอลประจำสนาม (characters/yuna.js — ไม่ใช่ตัวละครที่เล่นได้ ไม่มี p เป็นของตัวเอง) ----------
@@ -299,6 +301,7 @@ module.exports = {
   OGURI_ULT2_CHARGE_COST, OGURI_ZONE_IMG, SATORU_PROFILE_IMG, PHENEX_BAN_ULT_TURNS,
   PHENEX_BASE_IMG, PHENEX_NTD_IMG, TRANSFORMS, ORT_ID, ORT_POSITION, MERCURY_ARRIVAL_SECONDS,
   MERCURY_SURRENDER_SECONDS, ORT_ATTACK_DELAY, JOURNEY_START_SECONDS, JOURNEY_ADVANCE_SECONDS,
-  PURGE_STEPS, PURGE_WIN_STEPS, PURGE_KNOCKBACK, PURGE_ORT_TURN, PURGE_ORT_EVERY, PURGE_INTRO_SECONDS,
+  PURGE_STEPS, PURGE_FIGHT_KNOCKBACK, PURGE_KNOCKBACK, PURGE_ORT_TURN, PURGE_ORT_SPEED, PURGE_INTRO_SECONDS,
+  PURGE_FIGHT_INTRO_SECONDS,
   TEAM_IDS, YUNA_IMG, YUNA_COLOR, RESYNC_EVERY,
 };

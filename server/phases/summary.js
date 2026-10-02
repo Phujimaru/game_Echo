@@ -140,7 +140,8 @@ function resolveRound() {
   { const boss = CHAR_HOOKS.ort.finalDraw(engine); if (boss) cardDeck.applyLockColorTriggers(boss); }
 
   // SE.RA.PH: วันที่ 1-6 = ทุกคน · วันที่ 7 = เฉพาะคู่ที่กำลังดวล (คนอื่นเป็นผู้ชม)
-  const combatants = Seraph.active() ? Seraph.combatants(engine) : combat.alivePlayers();
+  // Purge: เฉพาะคนในจุดปะทะ (คนอื่นเป็นผู้ชม)
+  const combatants = Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers();
   match.roundWinnerId = null;
 
   if (combatants.length < 2) {
@@ -189,8 +190,8 @@ function resolveRound() {
     shop.addGold(w, GOLD_WIN_BONUS);
     // SE.RA.PH วันที่ 1-6: รางวัลผู้ชนะคือ Matrix +1 (มาแทนเฟสโจมตีของเกมปกติ)
     Seraph.onRoundWinner(engine, w);
-    // Purge: ผู้ชนะ (ไม่เสมอ) เดินหน้าในท่อ
-    purge.awardWinSteps(w);
+    // Purge: ผู้ชนะการปะทะ (ไม่เสมอ) — คนอื่นในจุดนั้นถอยหลัง
+    purge.onFightResult(w);
     // patch 2.1.3.5: ชนะจั่วการ์ดไม่ได้แต้มสกิลอีกต่อไป
     combat.firePassive(w, "win");
     if (tied.length > 1) {

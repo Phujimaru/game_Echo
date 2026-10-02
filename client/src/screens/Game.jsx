@@ -3803,13 +3803,18 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const boss = raid ? state.players.find((p) => p.isBoss) : null;
   // โหมดปกติหลัง ORT บุกเทิร์น 60: ORT นั่งกลางด้านบนเสมอ (ORT_SEAT) — ผู้เล่นคนอื่นใช้ผังที่เว้นกลางด้านบนไว้
   const invader = !raid ? others.find((p) => p.isBoss) : null;
-  const seatOthers = (raid || invader) ? others.filter((p) => !p.isBoss) : others;
+  // Purge: ระหว่างปะทะ (สนามประลองของภูมิภาคที่ช่องนั้น) ที่นั่งมีเฉพาะคู่ปะทะ — คนอื่นเป็นผู้ชม
+  const purgeFight = state.purge?.fight && !state.purge.scene?.active ? state.purge.fight : null;
+  const purgeArena = purgeFight ? { area: Math.min(5, Math.floor(purgeFight.tile / 16) + 1), night: state.cycle === "night" } : null;
+  const arenaJourney = state.journey || purgeArena;
+  const seatOthers = purgeFight ? others.filter((p) => purgeFight.ids.includes(p.id))
+    : (raid || invader) ? others.filter((p) => !p.isBoss) : others;
   const slots = raid ? raidSlots(seatOthers.length)
     : invader ? (ORT_SIDE_SLOTS[Math.min(seatOthers.length, 6)] || [])
-    : (SLOTS[Math.min(others.length, 6)] || []);
+    : (SLOTS[Math.min(seatOthers.length, 6)] || []);
   // สนามประลอง 2.5D (ภูมิภาค I–III, จอคอม): คนอื่นนั่งครึ่งวงด้านไกลของสนาม เราอยู่ฝั่งใกล้กล้อง
   //  ตำแหน่งที่นั่งคำนวณจากสูตรเดียวกับฉากหลัง (arenaLayout) → การ์ดวาง "ขอบล่าง" ตรงปลายเส้นแสงเหนือฐานที่นั่งพอดี
-  const arenaArea = !raid && !invader && state.journey && vp.w >= 768 && hasArena(state.journey.area) ? state.journey.area : 0;
+  const arenaArea = !raid && !invader && arenaJourney && vp.w >= 768 && hasArena(arenaJourney.area) ? arenaJourney.area : 0;
   const arenaSeatN = seatOthers.length;
   const vpW = vp.w, vpH = vp.h;
   const arenaLay = arenaArea ? arenaLayout(vpW, vpH, arenaArea, arenaSeatN) : null; // คำนวณเบา ไม่ต้อง memo
@@ -5050,9 +5055,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   return (
     <div className={`fixed inset-0 overflow-hidden${purgeOn ? " purge-board" : ""}${purgeSceneOn ? " purge-scene-on" : ""}`}>
       {/* Purge: ฉากอุโมงค์ท่อแทนฉากหลังทั้งหมด (ระหว่างฉากเปิด/จบเทิร์น ซ่อน UI กระดานไว้ — purge-scene-on) */}
-      {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} />}
+      {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} night={state.cycle === "night"} hidden={!!purgeFight} />}
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && !purgeOn && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} arena={arenaBg} />}
+      {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={arenaJourney} arena={arenaBg} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}

@@ -25,6 +25,7 @@ const cutscene = require("./cutscene");
 const cardDeck = require("./deck");
 const draw = require("./phases/draw");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const view = require("./view");
 
 // เพดานเหรียญรายบุคคล — กระปุกออมสินน้องหมูน้อย (ฟุจิตะ โคโตเนะ) ขยายเพดานของเจ้าตัวเป็น 45
@@ -229,6 +230,7 @@ function useInventoryItem(id, uid, opts = {}) {
 function useInventoryItemCore(id, uid, opts = {}) {
   const p = match.players[id];
   if (!p || !p.alive) return;
+  if (purge.benched(p) || (opts && opts.targetId && purge.benched(match.players[opts.targetId]))) return; // Purge: ผู้ชมใช้ไอเทมไม่ได้ และใช้ใส่ผู้ชมไม่ได้
   if (asleep(p)) return; // หลับไหล: ใช้ไอเทมไม่ได้เลย (ยาโชคลาภ/ต้านสถานะ/แต้มสกิล/เกราะ เดิมไม่เช็ค p.locked จึงรั่ว)
   if (CHAR_HOOKS.conner.skillBlocked(engine, p)) return; // คอนเนอร์: ระหว่างการไล่ล่า ทุกคนใช้ไอเทมไม่ได้ (รวมคอนเนอร์กับเป้าหมาย)
   if (CHAR_HOOKS.brian.itemBlocked(engine)) return;      // ไบรอัน: ระหว่างการแข่ง ทุกคนใช้ไอเทมไม่ได้

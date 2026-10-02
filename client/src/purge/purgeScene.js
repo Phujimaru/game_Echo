@@ -12,14 +12,15 @@ import * as THREE from "three";
 const T = THREE;
 
 // ---------- โครงท่อ ----------
-export const STEPS = 50;
+export const STEPS = 80;
 const ORT_IMG = "/characters/ort/ort_body.jpg";
 const R = 46;
 const L = 610;
 const CUT = -4;                                  // ระนาบตัดครึ่งบน (เก็บเฉพาะ y <= CUT)
 const SHELL = R + 8;
-export function zOf(step) { return 20 + step * 11.2; }
-const BOUNDS = [10, 20, 30, 40].map(zOf);
+export const REGION_STEPS = 16;
+export function zOf(step) { return 20 + step * 7.2; }
+const BOUNDS = [16, 32, 48, 64].map((s) => zOf(s) - 3.6);
 const FLOOR = -Math.PI / 2;
 const TH_R = Math.asin(CUT / R);
 const TH_L = -Math.PI - TH_R;
@@ -32,23 +33,24 @@ export const REGIONS = [
   { n: "IV", name: "คอขวด", color: "#f0a25a" },
   { n: "V", name: "แก่นกลาง", color: "#f6d77e" },
 ];
-export function regionOfStep(s) { return Math.min(4, Math.max(0, Math.floor(s / 10))); }
+export function regionOfStep(s) { return Math.min(4, Math.max(0, Math.floor(s / REGION_STEPS))); }
 
-// ---------- เวลาของฉาก (ต้องตรงกับ server) ----------
-export const INTRO_SECONDS = 10.5;
-const T_ZOOM_OUT = 1.5, T_PAUSE = 0.3, T_STEP = 0.34, T_AFTER_MOVE = 0.25, T_KNOCK = 0.9;
-const T_ORT_STEP = 0.75, T_ORT_ARRIVE = 1.4, T_AFTER_ORT = 0.4, T_LOST = 1.3, T_NO_LOST = 0.5, T_ZOOM_IN = 1.8;
-// scene = { moves: [{ from, to }], ortFrom, ortTo, caught: [...] }
-export function turnSceneSeconds(scene) {
-  let t = T_ZOOM_OUT + T_PAUSE;
-  for (const m of scene.moves || []) {
-    t += m.to > m.from ? (m.to - m.from) * T_STEP + T_AFTER_MOVE : T_KNOCK + T_AFTER_MOVE;
-  }
+// ---------- เวลาของฉาก (ต้องตรงกับ server/modes/purge.js — มีเทสต์เทียบ) ----------
+export const INTRO_SECONDS = 11.4;
+const T_OUT = 1.6, T_ORBIT = 2.2, T_ORT_ARRIVE = 2.4, T_ORT_STEP = 0.35, T_AFTER_ORT = 0.4, T_BOOM = 1.9;
+const T_DICE = 1.9, T_WALK_STEP = 0.3, T_AFTER_WALK = 0.6, T_FIGHT_MARK = 1.4, T_END = 0.4;
+export const FIGHT_ZOOM_SECONDS = 2.4; // ซูมเข้าช่องปะทะ (server พัก 3 วิ — แฟลชขาวตอนท้าย แล้วสนามประลองของภูมิภาคขึ้นแทน)
+// scene = { moves: [{ from, to }], ortFrom, ortTo, caught: [...], fights: [...] }
+export function diceSceneSeconds(scene) {
+  let t = T_OUT + T_ORBIT;
   if (scene.ortTo != null && scene.ortTo !== scene.ortFrom) {
-    t += scene.ortFrom == null ? T_ORT_ARRIVE + T_AFTER_ORT : (scene.ortTo - scene.ortFrom) * T_ORT_STEP + T_AFTER_ORT;
+    t += scene.ortFrom == null ? T_ORT_ARRIVE : (scene.ortTo - scene.ortFrom) * T_ORT_STEP + T_AFTER_ORT;
   }
-  t += (scene.caught || []).length ? T_LOST : T_NO_LOST;
-  return t + T_ZOOM_IN;
+  if ((scene.caught || []).length) t += T_BOOM;
+  const walks = (scene.moves || []).map((m) => m.to - m.from);
+  if (walks.length) t += T_DICE + Math.max(...walks) * T_WALK_STEP + T_AFTER_WALK;
+  if ((scene.fights || []).length) t += T_FIGHT_MARK;
+  return t + T_END;
 }
 
 // ---------- noise ----------
@@ -432,10 +434,10 @@ export function createPurgeScene(canvas, opts = {}) {
   }
   const pinePick = (reg) => [0.8, 0.45, 0.3, 0.6, 0.05][reg];
   const broadPick = (reg) => [0.6, 0.9, 1, 0.15, 0.9][reg];
-  forest(scene, pineG, 1800, pinePick, TH_L, TH_R);
-  forest(scene, broadG, 2200, broadPick, TH_L, TH_R);
-  forest(upper, pineG, 600, pinePick, TH_R, Math.PI - TH_R);
-  forest(upper, broadG, 700, broadPick, TH_R, Math.PI - TH_R);
+  forest(scene, pineG, 1400, pinePick, TH_L, TH_R);
+  forest(scene, broadG, 1700, broadPick, TH_L, TH_R);
+  forest(upper, pineG, 450, pinePick, TH_R, Math.PI - TH_R);
+  forest(upper, broadG, 550, broadPick, TH_R, Math.PI - TH_R);
 
   // ---------- โบราณสถาน ----------
   const stoneMat = crystalize(new T.MeshStandardMaterial({ color: 0x9a9182, roughness: 0.92, flatShading: true }));
@@ -503,7 +505,7 @@ export function createPurgeScene(canvas, opts = {}) {
 
   // ---------- ประตูภูมิภาค ----------
   ["#2fc4b2", "#8a6cf0", "#e08a3c", "#f0cf6e"].forEach((col, k) => {
-    const bz = BOUNDS[k] - 5.6;
+    const bz = BOUNDS[k];
     const g = new T.Group();
     const gm = crystalize(new T.MeshStandardMaterial({ color: 0x8c8678, roughness: 0.85, flatShading: true }));
     const lm = keep(new T.MeshBasicMaterial({ color: new T.Color(col) }));
@@ -587,7 +589,7 @@ export function createPurgeScene(canvas, opts = {}) {
   {
     const sg = keep(new T.OctahedronGeometry(1, 0)); sg.scale(0.55, 2.6, 0.55); sg.translate(0, 1.6, 0);
     const mat = crystalize(new T.MeshStandardMaterial({ color: 0xd8f1ff, emissive: 0x4256b0, emissiveIntensity: 0.55, roughness: 0.12, metalness: 0.25, flatShading: true, transparent: true, opacity: 0.92 }), true);
-    const SH = 1400, inst = new T.InstancedMesh(sg, mat, SH), o = new T.Object3D();
+    const SH = 1100, inst = new T.InstancedMesh(sg, mat, SH), o = new T.Object3D();
     let k = 0, guard = 0;
     while (k < SH && guard++ < SH * 4) {
       const z = rnd() * L, near = rnd() < 0.5;
@@ -709,7 +711,8 @@ export function createPurgeScene(canvas, opts = {}) {
     P.lostShown = lost;
     P.data = { ...P.data, lost };
     redrawToken(P);
-    P.encase.visible = lost; P.ring.visible = !lost;
+    // LOST DATA: ตัวหมากแตกกระจาย (ฉากระเบิด) เหลือแต่กองผลึก
+    P.encase.visible = lost; P.ring.visible = !lost; P.body.visible = !lost;
   }
   function removeMissing(list) {
     const ids = new Set(list.map((p) => p.id));
@@ -727,7 +730,7 @@ export function createPurgeScene(canvas, opts = {}) {
     const lanes = {};
     for (const p of list) {
       const P = players[p.id] || (players[p.id] = makePlayer(p));
-      const k = lanes[p.step] || 0; lanes[p.step] = k + 1; P.lane = k;
+      const k = p.lost ? 0 : lanes[p.step] || 0; if (!p.lost) lanes[p.step] = k + 1; P.lane = k;
       const prev = P.data;
       P.data = { ...p, lost: prev.lost && P.lostShown ? prev.lost : p.lost };
       if (prev.img !== p.img || prev.color !== p.color) redrawToken(P);
@@ -739,10 +742,219 @@ export function createPurgeScene(canvas, opts = {}) {
     removeMissing(s.players);
     applyLanes(s.players);
     for (const p of s.players) { const P = players[p.id]; P.cur = p.step; P.hop = 0; setLost(P, !!p.lost); }
-    ort.visible = s.ort != null; crystalCut.visible = s.ort != null;
+    ort.visible = s.ort != null; crystalCut.visible = s.ort != null; rift.visible = s.ort == null;
     ortCur = s.ort == null ? -3 : s.ort; ortHop = 0;
     crystalZ = s.ort == null ? -80 : zOf(s.ort) + 4;
     dirty = true;
+  }
+
+
+  // ======================================================
+  //  เอฟเฟกต์ 2D (sprite) — ลูกเต๋า · ระเบิด · จุดเกิด ORT · เครื่องหมายจุดปะทะ · ฉากหลังอวกาศของฉากเปิด
+  // ======================================================
+  const fx = []; // { t, dur, fn(u, dt), end() }
+  function addFx(dur, fn, end) { fx.push({ t: 0, dur, fn, end }); }
+
+  // ---------- ลูกเต๋า ----------
+  const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+  const diceTex = [null, 1, 2, 3, 4, 5, 6].map((n) => (n == null ? null : keep(canvasTex(128, 128, (g) => {
+    g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 8;
+    g.fillStyle = "#ffffff";
+    g.beginPath(); if (g.roundRect) g.roundRect(10, 10, 108, 108, 22); else g.rect(10, 10, 108, 108); g.fill();
+    g.shadowBlur = 0;
+    const gr = g.createLinearGradient(10, 10, 118, 118);
+    gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(120,150,200,.25)");
+    g.fillStyle = gr; g.fill();
+    g.fillStyle = n === 1 ? "#d92b4b" : "#14213b";
+    for (const [x, y] of PIPS[n]) { g.beginPath(); g.arc(64 + x * 28, 64 + y * 28, n === 1 ? 14 : 10, 0, Math.PI * 2); g.fill(); }
+  }))));
+  function showDice(P, roll, dur) {
+    const spr = new T.Sprite(new T.SpriteMaterial({ map: diceTex[1 + ((Math.random() * 6) | 0)], depthWrite: false, depthTest: false, transparent: true }));
+    spr.renderOrder = 10;
+    P.body.add(spr);
+    spr.position.y = 8.6;
+    let flip = 0;
+    addFx(dur, (u, dt) => {
+      const land = 0.72;
+      if (u < land) {
+        flip += dt;
+        if (flip > 0.07) { flip = 0; spr.material.map = diceTex[1 + ((Math.random() * 6) | 0)]; }
+        const k = u / land;
+        spr.position.y = 8.6 + Math.sin(k * Math.PI * 3) * (1 - k) * 2.4;
+        spr.material.rotation = (1 - k) * 9;
+        spr.scale.setScalar(2.6 + Math.sin(k * Math.PI) * 0.8);
+      } else {
+        spr.material.map = diceTex[roll];
+        const k = (u - land) / (1 - land);
+        spr.material.rotation = 0;
+        spr.scale.setScalar(3.4 + Math.sin(Math.min(1, k * 2.5) * Math.PI) * 1.1);
+        spr.position.y = 8.6;
+      }
+    }, () => { P.diceSpr = spr; });
+  }
+  function clearDice() {
+    for (const P of Object.values(players)) if (P.diceSpr) { P.body.remove(P.diceSpr); P.diceSpr.material.dispose(); P.diceSpr = null; }
+  }
+
+  // ---------- ระเบิดกระจุย (ORT กลืนผู้เล่น) ----------
+  const shardTex = keep(canvasTex(64, 64, (g) => {
+    g.beginPath(); g.moveTo(32, 2); g.lineTo(58, 40); g.lineTo(30, 62); g.lineTo(8, 34); g.closePath();
+    const gr = g.createLinearGradient(8, 2, 58, 62);
+    gr.addColorStop(0, "#ffffff"); gr.addColorStop(0.45, "#a9dcff"); gr.addColorStop(1, "#8c78e8");
+    g.fillStyle = gr; g.fill();
+    g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 2; g.stroke();
+  }));
+  const sparkTex = keep(glowTex("rgba(255,255,255,1)", "rgba(255,120,150,.6)"));
+  const flashTex = keep(glowTex("rgba(255,255,255,1)", "rgba(255,70,110,.55)"));
+  const ringTex = keep(canvasTex(256, 256, (g) => {
+    const gr = g.createRadialGradient(128, 128, 80, 128, 128, 126);
+    gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.7, "rgba(170,225,255,.9)"); gr.addColorStop(0.85, "rgba(255,80,120,.7)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  }));
+  function explode(P) {
+    const origin = new T.Vector3();
+    P.spr.getWorldPosition(origin);
+    const up = new T.Vector3(0, 1, 0);
+    const group = new T.Group(); scene.add(group);
+    const parts = [];
+    const N = 70;
+    for (let i = 0; i < N; i++) {
+      const spark = i % 3 === 0;
+      const m = new T.SpriteMaterial({ map: spark ? sparkTex : shardTex, transparent: true, depthWrite: false, blending: spark ? T.AdditiveBlending : T.NormalBlending });
+      const s = new T.Sprite(m);
+      s.position.copy(origin);
+      const a = Math.random() * Math.PI * 2, e = 0.25 + Math.random() * 1.1, sp = 9 + Math.random() * 16;
+      const v = new T.Vector3(Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e)).multiplyScalar(sp).addScaledVector(up, 4);
+      const size = spark ? 0.8 + Math.random() * 1.4 : 0.6 + Math.random() * 1.6;
+      s.scale.setScalar(size);
+      group.add(s);
+      parts.push({ s, v, spin: (Math.random() - 0.5) * 14, size });
+    }
+    const flash = new T.Sprite(new T.SpriteMaterial({ map: flashTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    flash.position.copy(origin); group.add(flash);
+    const ring = new T.Mesh(keep(new T.PlaneGeometry(1, 1)), new T.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
+    ring.position.copy(P.g.position); ring.quaternion.copy(P.g.quaternion); ring.rotateX(-Math.PI / 2); ring.translateZ(0.6);
+    group.add(ring);
+    addFx(1.7, (u, dt) => {
+      for (const q of parts) {
+        q.v.y -= 22 * dt; q.v.multiplyScalar(1 - 0.9 * dt);
+        q.s.position.addScaledVector(q.v, dt);
+        q.s.material.rotation += q.spin * dt;
+        q.s.material.opacity = 1 - Math.pow(u, 1.6);
+        q.s.scale.setScalar(q.size * (1 - u * 0.4));
+      }
+      const f = Math.min(1, u / 0.22);
+      flash.scale.setScalar(4 + f * 26);
+      flash.material.opacity = (1 - f) * 0.95 + (u < 0.22 ? 0.05 : 0);
+      const r = Math.min(1, u / 0.55);
+      ring.scale.setScalar(2 + r * 26);
+      ring.material.opacity = 1 - r;
+    }, () => {
+      for (const q of parts) q.s.material.dispose();
+      flash.material.dispose(); ring.material.dispose();
+      scene.remove(group);
+    });
+  }
+
+  // ---------- จุดเกิด ORT (ก่อน ORT โผล่): รอยแยกแดงเรืองแสง + ประกายลอยขึ้น ----------
+  const rift = new T.Group(); scene.add(rift);
+  const riftParts = {};
+  {
+    const crackTex = keep(canvasTex(128, 512, (g) => {
+      const r = makeRnd(77);
+      g.lineCap = "round";
+      for (const [w, col] of [[26, "rgba(255,40,80,.18)"], [12, "rgba(255,60,100,.55)"], [4, "rgba(255,230,240,1)"]]) {
+        g.strokeStyle = col; g.lineWidth = w; g.beginPath();
+        let x = 64; g.moveTo(x, 10);
+        for (let y = 10; y <= 502; y += 18) { x = 64 + (r() - 0.5) * 34 * Math.sin((y / 512) * Math.PI); g.lineTo(x, y); }
+        g.stroke();
+      }
+    }));
+    const zf = Z0 + 0.4;
+    const crack = new T.Mesh(keep(new T.PlaneGeometry(9, 34)), new T.MeshBasicMaterial({ map: crackTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    crack.position.set(0, -R + 17, zf); rift.add(crack);
+    const halo = new T.Sprite(new T.SpriteMaterial({ map: keep(glowTex("rgba(255,70,110,.9)", "rgba(160,20,60,.35)")), transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    halo.position.set(0, -R + 15, zf + 2); halo.scale.set(40, 46, 1); rift.add(halo);
+    const pool = new T.Mesh(keep(new T.CircleGeometry(9, 32)), new T.MeshBasicMaterial({ map: keep(glowTex("rgba(255,60,100,.8)", "rgba(120,10,40,.3)")), transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    pool.rotation.x = -Math.PI / 2; pool.position.set(0, floorY(zf + 4) + 0.5, zf + 5); rift.add(pool);
+    const EM = 160, ep = new Float32Array(EM * 3), seeds = new Float32Array(EM);
+    for (let k = 0; k < EM; k++) { seeds[k] = Math.random(); ep[k * 3] = (Math.random() - 0.5) * 18; ep[k * 3 + 1] = -R + 2 + Math.random() * 30; ep[k * 3 + 2] = zf + 1 + Math.random() * 10; }
+    const eg = keep(new T.BufferGeometry()); eg.setAttribute("position", new T.BufferAttribute(ep, 3));
+    const embers = new T.Points(eg, new T.PointsMaterial({ map: keep(glowTex("rgba(255,255,255,1)", "rgba(255,80,120,.7)")), size: 1.3, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    rift.add(embers);
+    const light = new T.PointLight(0xff2d55, 14, 32, 2); light.position.set(0, -R + 14, zf + 3); rift.add(light);
+    Object.assign(riftParts, { crack, halo, pool, embers, ep, seeds, light });
+  }
+  function updateRift(dt) {
+    if (!rift.visible) return;
+    const { crack, halo, pool, embers, ep, seeds, light } = riftParts;
+    const pulse = 0.75 + 0.25 * Math.sin(time * 3.1) + 0.08 * Math.sin(time * 11.7);
+    crack.material.opacity = pulse;
+    halo.material.opacity = 0.55 + 0.3 * pulse;
+    pool.material.opacity = 0.5 + 0.3 * pulse;
+    light.intensity = 9 + 7 * pulse;
+    for (let k = 0; k < seeds.length; k++) {
+      ep[k * 3 + 1] += dt * (2 + seeds[k] * 5);
+      ep[k * 3] += Math.sin(time * 1.3 + seeds[k] * 20) * dt * 0.8;
+      if (ep[k * 3 + 1] > -R + 34) { ep[k * 3 + 1] = -R + 2; ep[k * 3] = (Math.random() - 0.5) * 18; }
+    }
+    embers.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // ---------- เครื่องหมายจุดปะทะ ----------
+  const swordTex = keep(canvasTex(128, 128, (g) => {
+    g.translate(64, 64);
+    for (const a of [-0.78, 0.78]) {
+      g.save(); g.rotate(a);
+      g.fillStyle = "#ffffff"; g.strokeStyle = "rgba(255,45,85,.95)"; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(-5, -52); g.lineTo(5, -52); g.lineTo(5, 26); g.lineTo(0, 34); g.lineTo(-5, 26); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "#ff2d55"; g.fillRect(-14, 24, 28, 7); g.fillRect(-4, 31, 8, 18);
+      g.restore();
+    }
+  }));
+  const fightMarks = new T.Group(); scene.add(fightMarks);
+  const markRingGeo = keep(new T.RingGeometry(3.4, 4.3, 6)); markRingGeo.rotateX(-Math.PI / 2);
+  function setFightMarks(fights) {
+    for (const c of [...fightMarks.children]) { fightMarks.remove(c); c.traverse((o) => o.material?.dispose?.()); }
+    for (const f of fights || []) {
+      const g = new T.Group();
+      const z = zOf(f.tile);
+      placeOn(g, pathCenter(z), z, 0, Math.PI / 6);
+      const ring = new T.Mesh(markRingGeo, new T.MeshBasicMaterial({ color: 0xff2d55, transparent: true, depthWrite: false }));
+      ring.position.y = 0.5; g.add(ring);
+      const sw = new T.Sprite(new T.SpriteMaterial({ map: swordTex, transparent: true, depthWrite: false, depthTest: false }));
+      sw.renderOrder = 9; sw.position.y = 11; sw.scale.setScalar(4.2); g.add(sw);
+      g.userData = { ring, sw };
+      fightMarks.add(g);
+    }
+  }
+  function updateFightMarks() {
+    const k = Math.min(2.4, Math.max(1, camDist / 110));
+    for (const g of fightMarks.children) {
+      const { ring, sw } = g.userData;
+      ring.material.opacity = 0.55 + 0.45 * Math.sin(time * 6);
+      ring.scale.setScalar(1 + 0.08 * Math.sin(time * 6));
+      sw.scale.setScalar(4.2 * k * (1 + 0.06 * Math.sin(time * 5)));
+      sw.position.y = 11 * k;
+    }
+  }
+
+  // ---------- กลางวัน / กลางคืน ----------
+  const hemi = scene.children.find((o) => o.isHemisphereLight);
+  let nightK = 0, nightTarget = 0;
+  const skyNight = new T.Color("#141b33");
+  const nightMotes = motes(Z0 + 10, L, 700, "rgba(200,220,255,.85)", 1.2);
+  nightMotes.material.opacity = 0;
+  function setNight(on) { nightTarget = on ? 1 : 0; dirty = true; }
+  function updateNight(dt) {
+    nightK += (nightTarget - nightK) * (1 - Math.exp(-dt * 1.5));
+    hemi.intensity = lerp(1.35, 0.42, nightK);
+    hemi.color.setRGB(lerp(0.95, 0.55, nightK), lerp(0.97, 0.62, nightK), 1);
+    sun.intensity = lerp(2.0, 0.55, nightK);
+    sun.color.setRGB(lerp(1, 0.62, nightK), lerp(0.95, 0.72, nightK), 1);
+    under.intensity = lerp(0.6, 0.25, nightK);
+    nightMotes.material.opacity = nightK * (0.55 + 0.35 * Math.sin(time * 2.3));
+    renderer.toneMappingExposure = lerp(1.0, 1.15, nightK);
   }
 
   // ---------- อนิเมชันแบบลำดับ ----------
@@ -753,8 +965,9 @@ export function createPurgeScene(canvas, opts = {}) {
   function cancelAll() { token++; for (const a of anims.splice(0)) a.res(); }
 
   // ---------- กล้อง ----------
-  // ท่าของกล้อง = { pos, look } · มุมมองมาตรฐานคำนวณจาก จุดมอง z + มุมเงย el + มุมรอบ az + ระยะ dist (+ ty = ยกจุดมอง)
+  //  ท่า = { pos, look, dist } · มุมมองมาตรฐานคำนวณจาก จุดมอง z + มุมเงย el + มุมรอบ az + ระยะ dist (+ ty = ยกจุดมอง)
   const cam = { pos: new T.Vector3(0, -R + 20, -40), look: new T.Vector3(0, -R + 3, 40) };
+  let camDist = 120;
   function poseFrom(p) {
     const fy = floorY(p.z);
     const look = new T.Vector3(0, lerp(fy + 3, CUT, p.ty || 0), p.z);
@@ -762,28 +975,17 @@ export function createPurgeScene(canvas, opts = {}) {
     const off = new T.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)).multiplyScalar(p.dist);
     return { pos: look.clone().add(off), look, dist: p.dist };
   }
-  let camDist = 120;
-  function groupSpan() {
-    const a = state.players.filter((p) => !p.lost).map((p) => zOf(p.step));
-    if (!a.length) a.push(zOf(0));
+  function span(list, extra = []) {
+    const a = list.filter((p) => !p.lost).map((p) => p.step).concat(extra.filter((v) => v != null));
+    if (!a.length) a.push(0);
     return { min: Math.min(...a), max: Math.max(...a) };
   }
-  function viewParams(name, arg) {
-    const g = groupSpan(), mid = (g.min + g.max) / 2;
-    if (name === "top") return { z: arg != null ? arg : zOf(0) + 40, el: 88, az: 180, dist: 175, ty: 0.05 };
-    if (name === "high") return { z: mid + 4, el: 58, az: 180, dist: Math.max(235, (g.max - g.min) * 1.25 + 60), ty: 0.45 };
-    if (name === "field") {
-      // ช่วงต้นท่อ: ยกกล้องสูงขึ้นแทนการถอยหลัง (ถอยไปจะชนผนังปากท่อ)
-      const near = 1 - smooth(40, 130, g.min);
-      return { z: g.min + lerp(12, 6, near), el: lerp(30, 62, near), az: 252, dist: lerp(115, 100, near), ty: 0.05 };
-    }
-    if (name === "overview") {
-      const lo = Math.min(g.min, state.ort == null ? g.min : zOf(state.ort)) - 18, hi = Math.max(g.max, arg != null ? arg : g.max) + 24;
-      return { z: (lo + hi) / 2, el: 58, az: 180, dist: Math.max(235, (hi - lo) * 1.25), ty: 0.45 };
-    }
-    if (name === "region") return { z: zOf((arg || 0) * 10 + 5), el: 56, az: 180, dist: 245, ty: 0.45 };
-    return { z: mid, el: 58, az: 180, dist: 235, ty: 0.45 };
+  // ภาพรวม: เห็น ORT (ถ้ามี) จนถึงคนหน้าสุด
+  function overview(lo, hi) {
+    const zl = zOf(Math.max(0, lo)) - 22, zh = zOf(hi) + 26;
+    return { z: (zl + zh) / 2, el: 58, az: 180, dist: Math.max(225, (zh - zl) * 1.3), ty: 0.45 };
   }
+  function tileView(tile) { return { z: zOf(tile), el: 62, az: 214, dist: 46, ty: 0.02 }; }
   function camTo(target, dur, lift = 0) {
     const from = { pos: cam.pos.clone(), look: cam.look.clone(), dist: camDist };
     const to = target.pos ? target : poseFrom(target);
@@ -796,115 +998,183 @@ export function createPurgeScene(canvas, opts = {}) {
     });
   }
   function snapTo(target) { const p = target.pos ? target : poseFrom(target); cam.pos.copy(p.pos); cam.look.copy(p.look); camDist = p.dist || camDist; dirty = true; }
-  let busy = false, viewName = "field";
-  function setView(name, arg) {
-    viewName = name;
-    if (busy) return Promise.resolve();
-    return camTo(viewParams(name, arg), 1.6);
-  }
+  let busy = false;
 
-  // ฉากเปิด: เห็นท่อเต็มวงจากปากท่อ → กล้องลอยขึ้นพร้อมเปิดครึ่งบนของท่อออก จนมองลงตรงจุดเริ่ม
-  //          → มุมสูงเห็นรางครึ่งท่อ → ซูมเข้าสนาม  (รวม INTRO_SECONDS)
+  // ======================================================
+  //  ฉากเปิด: เริ่มที่ปลายท่อ (ประตูผนึก) มองย้อนเข้าหาปากท่อ → ไถลผ่านผู้เล่นไปจนถึงจุดเกิด ORT
+  //           → หันกลับมามองผู้เล่น → ครึ่งบนของท่อเปิดออก กล้องลอยขึ้นเป็นภาพรวม (ฉากทางช้างเผือกละลายเข้ามาฝั่ง PurgeStage)
+  // ======================================================
   function playIntro(s) {
     cancelAll(); const my = token;
     busy = true;
     setState(s);
+    setFightMarks([]);
     upper.visible = true; cutParts.visible = false;
     clip.constant = R + 30;
-    snapTo({ pos: new T.Vector3(0, -R * 0.42, Z0 + 4), look: new T.Vector3(0, -R * 0.46, Z0 + 240), dist: 120 });
-    const top = poseFrom(viewParams("top"));
-    return animate(1.6, (u) => { cam.pos.z = lerp(Z0 + 4, Z0 + 24, u); })
-      .then(() => {
-        if (my !== token) return null;
-        const from = { pos: cam.pos.clone(), look: cam.look.clone() };
-        return animate(3.0, (u) => {
+    const axisY = -R * 0.38;
+    const startZ = Z1 - 22, endZ = Z0 + 14;
+    snapTo({ pos: new T.Vector3(0, axisY, startZ), look: new T.Vector3(0, axisY - 4, startZ - 200), dist: 120 });
+    const go = (fn) => () => (my === token ? fn() : null);
+    return animate(5.4, (u) => {
+      // ไถลจากปลายท่อเข้าหาปากท่อ (เร่ง-ผ่อน) ลดระดับลงเล็กน้อยตอนผ่านผู้เล่น
+      const e = ease(u);
+      const z = lerp(startZ, endZ, e);
+      cam.pos.set(Math.sin(u * Math.PI) * 6, axisY - Math.sin(u * Math.PI) * 6, z);
+      cam.look.set(0, axisY - 8, z - 160);
+    })
+      .then(go(() => {
+        // หันกลับไปมองผู้เล่น (จุดเริ่มอยู่หน้าเรา)
+        const from = cam.look.clone();
+        const to = new T.Vector3(0, floorY(zOf(0)) + 3, zOf(0) + 6);
+        const pos0 = cam.pos.clone(), pos1 = new T.Vector3(0, -R + 18, Z0 + 2);
+        return animate(1.8, (u) => {
           const e = ease(u);
-          cam.pos.lerpVectors(from.pos, top.pos, e);
-          cam.look.lerpVectors(from.look, top.look, e);
-          camDist = lerp(120, top.dist, e);
-          clip.constant = lerp(R + 30, CUT, smooth(0.15, 0.85, u));
+          // หมุนทิศมองครึ่งรอบรอบแกนตั้ง (ไม่ผ่าด้วยเส้นตรง — เห็นการหันจริง)
+          const dirFrom = from.clone().sub(pos0).normalize(), dirTo = to.clone().sub(pos1).normalize();
+          const yawFrom = Math.atan2(dirFrom.x, dirFrom.z), yawTo = yawFrom + Math.PI;
+          const yaw = lerp(yawFrom, yawTo, e);
+          const pitch = lerp(Math.asin(dirFrom.y), Math.asin(dirTo.y), e);
+          cam.pos.lerpVectors(pos0, pos1, e);
+          cam.look.set(cam.pos.x + Math.sin(yaw) * Math.cos(pitch) * 60, cam.pos.y + Math.sin(pitch) * 60, cam.pos.z + Math.cos(yaw) * Math.cos(pitch) * 60);
+        });
+      }))
+      .then(go(() => wait(0.6)))
+      .then(go(() => {
+        // ครึ่งบนของท่อเปิดออก กล้องลอยขึ้นเป็นภาพรวมของจุดเริ่ม
+        const from = { pos: cam.pos.clone(), look: cam.look.clone() };
+        const to = poseFrom(overview(0, 6));
+        return animate(3.2, (u) => {
+          const e = ease(u);
+          cam.pos.lerpVectors(from.pos, to.pos, e);
+          cam.look.lerpVectors(from.look, to.look, e);
+          camDist = lerp(120, to.dist, e);
+          clip.constant = lerp(R + 30, CUT, smooth(0.1, 0.8, u));
           if (u >= 1) { upper.visible = false; cutParts.visible = true; clip.constant = CUT; }
         });
-      })
-      .then(() => (my === token ? wait(1.0) : null))
-      .then(() => (my === token ? camTo(viewParams("high"), 2.2) : null))
-      .then(() => (my === token ? wait(0.9) : null))
-      .then(() => (my === token ? camTo(viewParams("field"), 1.8) : null))
-      .then(() => { if (my === token) { busy = false; viewName = "field"; } upper.visible = false; cutParts.visible = true; clip.constant = CUT; });
+      }))
+      .then(() => { upper.visible = false; cutParts.visible = true; clip.constant = CUT; if (my === token) busy = false; });
   }
 
-  // จบเทิร์น: ซูมออก → คนเดินทีละช่อง → ORT เดิน (ผลึกลาม) → LOST DATA → ซูมกลับสนาม
-  //  next = สถานะหลังเทิร์น · moves/ortFrom ได้จาก server (from = ช่องตอนต้นเทิร์น)
-  function playTurn(next, scene) {
+  // ======================================================
+  //  ฉากเต๋า: ซูมออก (จากช่องที่เพิ่งปะทะ) → หมุนดูภาพรวม → ORT เดิน/โผล่ → ระเบิดคนที่ถูกกิน
+  //           → ทอยเต๋า → ทุกคนเดินพร้อมกันทีละช่อง → ปักเครื่องหมายจุดปะทะ   (รวม diceSceneSeconds)
+  // ======================================================
+  function playDice(next, scene, fromTile) {
     cancelAll(); const my = token;
     busy = true;
-    const moves = (scene && scene.moves) || [];
-    // เริ่มจากช่องตอนต้นเทิร์น
-    const startPlayers = next.players.map((p) => {
+    clearDice();
+    setFightMarks([]);
+    const moves = scene.moves || [];
+    const caught = scene.caught || [];
+    const start = next.players.map((p) => {
       const mv = moves.find((m) => m.id === p.id);
-      return { ...p, step: mv ? mv.from : p.step, lost: p.lost && !(scene.caught || []).includes(p.id) };
+      return { ...p, step: mv ? mv.from : p.step, lost: p.lost && !caught.includes(p.id) };
     });
-    setState({ players: startPlayers, ort: scene.ortFrom ?? null });
-    const ordered = [...moves].sort((a, b) => (b.to > b.from) - (a.to > a.from));
-    const leadTo = Math.max(...next.players.map((p) => zOf(p.step)));
-    let chain = camTo(viewParams("overview", leadTo), T_ZOOM_OUT).then(() => wait(T_PAUSE));
-    for (const mv of ordered) {
-      chain = chain.then(() => {
-        if (my !== token) return null;
-        const P = players[mv.id]; if (!P) return null;
-        P.data = { ...P.data, step: mv.to };
-        const n = Math.abs(mv.to - mv.from);
-        if (mv.to > mv.from) {
-          let lastReg = regionOfStep(mv.from);
-          return animate(n * T_STEP, (u) => {
-            const x = u * n, k = Math.min(n - 1, Math.floor(x)), f = x - k;
-            P.cur = mv.from + k + ease(f);
-            P.hop = Math.sin(f * Math.PI) * 1.8;
-            const rg = regionOfStep(Math.round(P.cur));
-            if (rg !== lastReg && f > 0.5) { lastReg = rg; opts.onRegion?.(rg, P.data.name); }
-            if (u >= 1) { P.cur = mv.to; P.hop = 0; }
-          }).then(() => wait(T_AFTER_MOVE));
-        }
-        return animate(T_KNOCK, (u) => {
-          P.cur = lerp(mv.from, mv.to, 1 - Math.pow(1 - u, 3)); P.hop = Math.sin(u * Math.PI) * 3.2 * (1 - u);
-          if (u >= 1) { P.cur = mv.to; P.hop = 0; }
-        }).then(() => wait(T_AFTER_MOVE));
-      });
-    }
-    chain = chain.then(() => {
-      if (my !== token) return null;
-      state = { players: next.players.map((p) => ({ ...p, lost: players[p.id]?.lostShown || false })), ort: scene.ortFrom ?? null };
-      applyLanes(state.players);
-      const a = scene.ortFrom, b = scene.ortTo;
-      if (b == null || b === a) return null;
-      if (a == null) {
-        ort.visible = true; crystalCut.visible = true; ortCur = b;
-        return animate(T_ORT_ARRIVE, (u) => { ortHop = (1 - ease(u)) * -12; crystalZ = lerp(-80, zOf(b) + 4, ease(u)); })
-          .then(() => { ortHop = 0; return wait(T_AFTER_ORT); });
+    setState({ players: start, ort: scene.ortFrom ?? null });
+    if (fromTile != null) snapTo(tileView(fromTile));
+    const sp = span(start, [scene.ortFrom, scene.ortTo]);
+    const hi = Math.max(sp.max, ...moves.map((m) => m.to));
+    const ov = overview(Math.min(sp.min, scene.ortTo ?? sp.min), hi);
+    const go = (fn) => () => (my === token ? fn() : null);
+    let chain = camTo(ov, T_OUT, 10)
+      // หมุนโลกทีหนึ่ง (โคจรรอบภาพรวม) ให้เห็นทั้งท่อ
+      .then(go(() => animate(T_ORBIT, (u) => {
+        const p = poseFrom({ ...ov, az: 180 + 48 * Math.sin(u * Math.PI), el: ov.el - 10 * Math.sin(u * Math.PI) });
+        cam.pos.copy(p.pos); cam.look.copy(p.look); camDist = p.dist;
+      })));
+    // ORT
+    if (scene.ortTo != null && scene.ortTo !== scene.ortFrom) {
+      if (scene.ortFrom == null) {
+        chain = chain.then(go(() => {
+          ortCur = scene.ortTo; ortHop = -14;
+          let shown = false;
+          return animate(T_ORT_ARRIVE, (u) => {
+            // รอยแยกปะทุ → ORT ผุดขึ้น → ผลึกงอกจากปากท่อ
+            if (!shown && u > 0.25) { shown = true; ort.visible = true; crystalCut.visible = true; rift.visible = false; explodeAt(new T.Vector3(0, -R + 14, Z0 + 4)); }
+            const k = smooth(0.25, 0.75, u);
+            ortHop = (1 - ease(k)) * -14;
+            crystalZ = lerp(-80, zOf(scene.ortTo) + 4, smooth(0.35, 1, u));
+          });
+        }));
+      } else {
+        const a = scene.ortFrom, b = scene.ortTo, n = b - a;
+        chain = chain.then(go(() => animate(n * T_ORT_STEP, (u) => {
+          const x = u * n, k = Math.min(n - 1, Math.floor(x)), f = x - k;
+          ortCur = a + k + ease(f); ortHop = Math.sin(f * Math.PI) * 1.4;
+          crystalZ = zOf(ortCur) + 4;
+          if (u >= 1) { ortCur = b; ortHop = 0; }
+        }).then(() => wait(T_AFTER_ORT))));
       }
-      const n = b - a;
-      return animate(n * T_ORT_STEP, (u) => {
-        const x = u * n, k = Math.min(n - 1, Math.floor(x)), f = x - k;
-        ortCur = a + k + ease(f); ortHop = Math.sin(f * Math.PI) * 1.1;
-        crystalZ = zOf(ortCur) + 4;
-        if (u >= 1) { ortCur = b; ortHop = 0; }
-      }).then(() => wait(T_AFTER_ORT));
-    });
-    chain = chain.then(() => {
-      if (my !== token) return null;
-      state = next;
-      applyLanes(next.players);
-      for (const id of scene.caught || []) if (players[id]) setLost(players[id], true);
-      const names = (scene.caught || []).map((id) => players[id]?.data.name).filter(Boolean);
-      if (names.length) opts.onLost?.(names);
-      return wait((scene.caught || []).length ? T_LOST : T_NO_LOST);
-    });
-    return chain.then(() => (my === token ? camTo(viewParams("field"), T_ZOOM_IN) : null))
-      .then(() => { if (my === token) { busy = false; viewName = "field"; setState(next); } });
+    }
+    // LOST DATA: ระเบิดกระจุย
+    if (caught.length) {
+      chain = chain.then(go(() => {
+        state = { ...state, ort: scene.ortTo };
+        for (const id of caught) {
+          const P = players[id]; if (!P) continue;
+          explode(P);
+          setLost(P, true);
+        }
+        const names = caught.map((id) => players[id]?.data.name).filter(Boolean);
+        if (names.length) opts.onLost?.(names);
+        return wait(T_BOOM);
+      }));
+    }
+    // ทอยเต๋า + เดินพร้อมกัน
+    if (moves.length) {
+      chain = chain.then(go(() => {
+        state = { ...state, ort: scene.ortTo };
+        for (const m of moves) { const P = players[m.id]; if (P) showDice(P, m.roll || (m.to - m.from), T_DICE); }
+        return wait(T_DICE);
+      })).then(go(() => {
+        const maxN = Math.max(...moves.map((m) => m.to - m.from));
+        const lastReg = {};
+        for (const m of moves) lastReg[m.id] = regionOfStep(m.from);
+        return animate(Math.max(0.01, maxN * T_WALK_STEP), (u) => {
+          const x = u * maxN;
+          for (const m of moves) {
+            const P = players[m.id]; if (!P) continue;
+            const n = m.to - m.from;
+            if (x >= n) { P.cur = m.to; P.hop = 0; continue; }
+            const k = Math.floor(x), f = x - k;
+            P.cur = m.from + k + ease(f); P.hop = Math.sin(f * Math.PI) * 1.8;
+            const rg = regionOfStep(Math.round(P.cur));
+            if (rg !== lastReg[m.id] && f > 0.5) { lastReg[m.id] = rg; opts.onRegion?.(rg, P.data.name); }
+          }
+          if (u >= 1) for (const m of moves) { const P = players[m.id]; if (P) { P.cur = m.to; P.hop = 0; } }
+        });
+      })).then(go(() => {
+        state = next;
+        applyLanes(next.players);
+        return wait(T_AFTER_WALK);
+      }));
+    }
+    if ((scene.fights || []).length) {
+      chain = chain.then(go(() => { setFightMarks(scene.fights); return wait(T_FIGHT_MARK); }));
+    }
+    return chain.then(go(() => wait(T_END)))
+      .then(() => { clearDice(); if (my === token) { busy = false; setState(next); setFightMarks(scene.fights || []); } });
+  }
+  // ระเบิดเล็กไม่ผูกกับตัวหมาก (ORT ผุดจากรอยแยก)
+  function explodeAt(pos) {
+    explode({ spr: { getWorldPosition: (v) => v.copy(pos) }, g: { position: pos.clone(), quaternion: new T.Quaternion() } });
+  }
+
+  // ======================================================
+  //  ซูมเข้าช่องปะทะ (server พัก 3 วิ): จากภาพรวม/จุดก่อนหน้า บินลงไปที่ช่อง → แฟลชขาว (PurgeStage) → สนามของภูมิภาคขึ้นแทน
+  // ======================================================
+  function playFight(st, scene, fromTile) {
+    cancelAll(); const my = token;
+    busy = true;
+    setState(st);
+    setFightMarks([{ tile: scene.tile }]);
+    if (fromTile != null) snapTo(tileView(fromTile));
+    return camTo(tileView(scene.tile), FIGHT_ZOOM_SECONDS, 18)
+      .then(() => { if (my === token) busy = false; });
   }
 
   // ---------- loop (วาดเมื่อจำเป็น) ----------
-  let dirty = true, dead = false, raf = 0, last = performance.now(), idleAcc = 0, time = 0;
+  let dirty = true, dead = false, paused = false, raf = 0, last = performance.now(), idleAcc = 0, time = 0;
   const skyTarget = new T.Color();
   function resize() {
     const w = canvas.clientWidth || canvas.width, h = canvas.clientHeight || canvas.height;
@@ -919,8 +1189,13 @@ export function createPurgeScene(canvas, opts = {}) {
       const u = Math.min(1, an.t / an.dur); an.fn(u);
       if (u >= 1) { anims.splice(a, 1); an.res(); }
     }
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const f = fx[i]; f.t += dt;
+      const u = Math.min(1, f.t / f.dur); f.fn(u, dt);
+      if (u >= 1) { fx.splice(i, 1); f.end?.(); }
+    }
     if (ort.visible) {
-      const oz = zOf(ortCur) - 4; // ยืนหลังแผ่นหินของช่องตัวเองเล็กน้อย ไม่ทับผู้เล่นช่องเดียวกัน
+      const oz = zOf(ortCur) - 3; // ยืนหลังแผ่นหินของช่องตัวเองเล็กน้อย ไม่ทับผู้เล่นช่องเดียวกัน
       placeOn(ort, pathCenter(oz), oz, 0);
       ort.position.y += ortHop;
       const ko = Math.min(1.9, Math.max(0.55, camDist / 150));
@@ -929,59 +1204,67 @@ export function createPurgeScene(canvas, opts = {}) {
       ortRing.scale.setScalar(1 + 0.06 * Math.sin(time * 4));
     }
     U.uCrystal.value = crystalZ;
+    updateRift(dt);
+    updateFightMarks();
+    updateNight(dt);
     const ks = Math.min(2.6, Math.max(0.75, camDist / 120));
     for (const id of Object.keys(players)) {
       const P = players[id], p = P.data;
       const z = zOf(P.cur);
-      const la = P.lane ? (P.lane - 1) * Math.PI * 2 / 6 + Math.PI / 6 : 0, lr = P.lane ? 4.6 : 0;
+      const la = P.lane ? (P.lane - 1) * Math.PI * 2 / 6 + Math.PI / 6 : 0, lr = P.lane ? 3.4 : 0;
       const lz = z + Math.sin(la) * lr;
       placeOn(P.g, pathCenter(lz) + Math.cos(la) * lr / R, lz, 0);
       P.body.position.y = P.hop * ks; P.body.scale.setScalar(ks);
-      const danger = !p.lost && state.ort != null && p.step - state.ort <= 1;
+      const danger = !p.lost && state.ort != null && p.step - state.ort <= PURGE_DANGER;
       P.ring.material.color.set(danger ? "#ff2d55" : (p.color || "#ffffff"));
       P.ring.material.opacity = danger ? 0.55 + 0.45 * Math.sin(time * 7) : 0.9;
       P.spr.position.y = 2.9 + Math.sin(time * 2 + P.lane) * 0.1;
     }
-    fireflies.material.opacity = 0.6 + 0.4 * Math.sin(time * 3);
+    fireflies.material.opacity = (0.6 + 0.4 * Math.sin(time * 3)) * (0.5 + nightK * 0.5);
     for (const m of waterMats) m.map.offset.y -= dt * 1.4;
+    // กันพลาด: ค่ากล้อง/สีฟ้าเพี้ยน (NaN) → กลับภาพรวม ไม่ปล่อยจอว่าง
+    if (!Number.isFinite(cam.pos.x + cam.pos.y + cam.pos.z + cam.look.x + cam.look.y + cam.look.z + camDist)) { camDist = 225; const p = poseFrom(overview(0, 6)); cam.pos.copy(p.pos); cam.look.copy(p.look); }
+    if (!Number.isFinite(skyCol.r + skyCol.g + skyCol.b)) skyCol.copy(REG[0].sky);
     camera.position.copy(cam.pos);
     camera.lookAt(cam.look);
     scene.fog.near = camDist * 0.85; scene.fog.far = camDist * 2.8;
     const m = regMix(cam.look.z); mixC(skyTarget, REG[m.a].sky, REG[m.b].sky, m.t);
+    skyTarget.lerp(skyNight, nightK * 0.9);
     skyCol.lerp(skyTarget, 1 - Math.exp(-dt * 2)); scene.fog.color.copy(skyCol);
   }
   function frame(now) {
     if (dead) return;
     raf = requestAnimationFrame(frame);
-    if (document.hidden) { last = now; return; }
+    if (document.hidden || paused) { last = now; return; }
     // เวลาจริง (เพดาน 0.25 วิ) — เครื่องที่เฟรมตกยังจบอนิเมชันทันเวลาที่ server พักเกมไว้
     const dt = Math.min(0.25, (now - last) / 1000); last = now;
     if (canvas.clientWidth && Math.abs(canvas.clientWidth / canvas.clientHeight - camera.aspect) > 0.01) resize();
-    // นิ่ง (ไม่มีอนิเมชัน) = วาดแค่ ~12 เฟรม/วิ พอให้น้ำตก/วงแดงขยับ
+    // นิ่ง (ไม่มีอนิเมชัน) = วาดแค่ ~12 เฟรม/วิ พอให้น้ำตก/วงแดง/รอยแยกขยับ
     idleAcc += dt;
-    if (!anims.length && !dirty && idleAcc < 1 / 12) return;
-    update(anims.length || dirty ? dt : idleAcc);
+    const active = anims.length || fx.length || dirty || Math.abs(nightTarget - nightK) > 0.01;
+    if (!active && idleAcc < 1 / 12) return;
+    update(active ? dt : idleAcc);
     idleAcc = 0; dirty = false;
     renderer.render(scene, camera);
   }
   resize();
-  snapTo(viewParams("field"));
+  snapTo(overview(0, 6));
   raf = requestAnimationFrame(frame);
 
   return {
-    setState(s) { if (!busy) setState(s); else state = s; },
-    forceState(s) { cancelAll(); busy = false; setState(s); snapTo(viewParams(viewName)); },
-    playIntro, playTurn, setView, resize,
-    snap(name) { snapTo(viewParams(name || viewName)); },
+    setState(s) { if (!busy) { setState(s); } else state = s; },
+    forceState(s, view) { cancelAll(); clearDice(); busy = false; setState(s); snapTo(view === "tile" && s.fightTile != null ? tileView(s.fightTile) : overview(span(s.players, [s.ort]).min, span(s.players).max)); },
+    playIntro, playDice, playFight, setNight, resize,
+    setPaused(v) { paused = !!v; if (!paused) { dirty = true; last = performance.now(); } },
     isBusy: () => busy,
     dispose() {
       dead = true; cancelAnimationFrame(raf); cancelAll();
       removeMissing([]);
-      scene.traverse((o) => {
-        if (o.isInstancedMesh) o.dispose();
-      });
+      clearDice();
+      scene.traverse((o) => { if (o.isInstancedMesh) o.dispose(); });
       for (const d of disposables) d.dispose?.();
       renderer.dispose();
     },
   };
 }
+const PURGE_DANGER = 4; // ORT เดินเทิร์นละ 4 ช่อง — ใครอยู่ในระยะนี้ วงใต้เท้าเต้นแดง

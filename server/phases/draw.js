@@ -22,6 +22,7 @@ const dayNight = require("../dayNight");
 const cardDeck = require("../deck");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
+const purge = require("../modes/purge");
 const overload = require("../overload");
 const qteSystem = require("../qte");
 const shop = require("../shop");
@@ -104,6 +105,8 @@ function dealRound() {
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; p.overloadDrawReady = false; continue; }
     // SE.RA.PH วันที่ 7: คนที่ไม่ใช่คู่ที่กำลังลงสนาม = ผู้ชม ไม่ได้รับไพ่และไม่ถ่วงการเปิดไพ่
     if (Seraph.active() && !Seraph.inCurrentDuel(p)) { p.cards = []; p.locked = true; p.busted = false; p.overloadDrawReady = false; continue; }
+    // Purge: คนที่ไม่ได้อยู่ในจุดปะทะนี้ = ผู้ชม
+    if (purge.benched(p)) { p.cards = []; p.locked = true; p.busted = false; p.overloadDrawReady = false; continue; }
 
     // กลางคืน (patch 2.1.7): สุ่มใหม่ทุกเทิร์นว่าสกิลพื้นฐานหรือสกิลรอง (อย่างใดอย่างหนึ่ง) จะใช้แต้มมากขึ้น — ไม่มีผลกับท่าไม้ตาย
     // SE.RA.PH: ปิดข้อเสียของกลางคืนทั้งโหมด (SERAPH_MOONCELL.md §12)

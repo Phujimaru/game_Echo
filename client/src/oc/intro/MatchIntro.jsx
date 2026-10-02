@@ -26,6 +26,7 @@ import {
 import { DiveStreaks, DiveReticle, RegionTag, DiveImpact, Chrome } from "./DiveFx";
 import "./dive.css";
 import "./intro.css";
+import { milkyWayUrl } from "../../purge/milkyway";
 
 const FINALE_MS = 2900;
 const FIRST_MS = 120;
@@ -119,6 +120,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   const [dive, setDive] = useState(null);         // { area, D }
   const [dphase, setDphase] = useState(0);        // ช่วงดิ่ง: 0 หมุนเข้า · 1 หัวข้อ · 2 ล็อก · 3 ดิ่ง · 4 ชน/เผย
   const [handed, setHanded] = useState(false);    // ส่งต่อแล้ว — ลูกโลกร่วมปิด ห้าม render GlobeCanvas อีก
+  const [warp, setWarp] = useState(null);         // Purge: ปลายฉากพุ่งออกสู่ทางช้างเผือก { D, url }
 
   const cbRef = useRef({ onOutro, onHandoff, onDone });
   useLayoutEffect(() => { cbRef.current = { onOutro, onHandoff, onDone }; });
@@ -149,7 +151,15 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
     at(L, () => setLineup(true));
     at(X, () => {
       const spec = cbRef.current.onOutro?.() || null;
-      if (spec && spec.durationMs > 0) {
+      if (spec && spec.warp) {
+        // Purge: เส้นพุ่งออกจากโลก → กล้องตามเส้น (โลกถอยลับ) → ทางช้างเผือก → ส่งต่อให้ฉากท่อ (ภาพทางช้างเผือกเดียวกัน)
+        const D = Math.max(1800, Number(spec.durationMs) || 2800);
+        tlRef.current.out = true;
+        setWarp({ D, url: milkyWayUrl() });
+        setMode("warp");
+        at(D - 350, handoff);
+        at(D, done);
+      } else if (spec && spec.durationMs > 0) {
         const D = Math.max(3000, Number(spec.durationMs) || 7000);
         const a = clampJourneyArea(spec.area);
         tlRef.current.dive = { at: performance.now(), D, area: a };
@@ -309,6 +319,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
     "ocd ocx",
     leaving ? "is-leaving" : "",
     mode === "out" ? "is-out" : "",
+    mode === "warp" ? "is-warp" : "",
     diving ? `ocd-p${dphase}` : "",
     crash ? "is-crash" : "",
     lineup ? "is-lineup" : "",
@@ -319,7 +330,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   return (
     <div
       className={rootCls}
-      style={{ "--rev": `${Math.round((1 - T.crash) * D)}ms`, "--hex": n > 4 ? "clamp(60px, 8.5vh, 84px)" : "clamp(68px, 10vh, 96px)" }}
+      style={{ "--warp": `${warp ? warp.D : 2800}ms`, "--rev": `${Math.round((1 - T.crash) * D)}ms`, "--hex": n > 4 ? "clamp(60px, 8.5vh, 84px)" : "clamp(68px, 10vh, 96px)" }}
     >
       <div className="ocd-bg" aria-hidden="true" />
       {!handed && (
@@ -362,6 +373,13 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
       </Chrome>
 
       {mode === "out" && <div className="ocx-veil" aria-hidden="true" />}
+      {warp && (
+        <>
+          <div className="ocx-warp-line" aria-hidden="true" />
+          <DiveStreaks show seed={7} lowQ={lowQ} />
+          <div className="ocx-warp-sky" aria-hidden="true" style={{ backgroundImage: `url(${warp.url})` }} />
+        </>
+      )}
       {diving && <DiveImpact area={A} lowQ={lowQ} />}
     </div>
   );

@@ -29,6 +29,7 @@ const cutscene = require("../cutscene");
 const endTurnPhase = require("./endTurn");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
+const purge = require("../modes/purge");
 const seraphMode = require("../modes/seraph");
 const timers = require("../timers");
 const view = require("../view");
@@ -48,7 +49,7 @@ function attackableTargets(atkId) {
   const attacker = match.players[atkId];
   // ผู้วิงวอน (patch 3.4): คนที่ติด "ลูกแกะน้อยรู้แจ้ง" เล็งผู้วิงวอนไม่ได้เลย — กรองออกจากรายชื่อเป้าหมายตั้งแต่ต้นทาง
   // SE.RA.PH วันที่ 7: ดวลตัวต่อตัว — เล็งได้เฉพาะคู่ของตัวเองเท่านั้น ผู้ชมแตะไม่ได้
-  const pool = Seraph.active() ? Seraph.combatants(engine) : combat.alivePlayers();
+  const pool = Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers();
   return pool.filter((p) => p.id !== atkId && !combat.sameTeam(attacker, p) && !combat.sealActive(p)
     && !CHAR_HOOKS.the_supplicant.targetBlocked(attacker, p));
 }
@@ -281,6 +282,7 @@ function doAttack(byId, targetId) {
   // SE.RA.PH วันที่ 7: ดวลตัวต่อตัว — เล็งได้เฉพาะคู่ของตัวเองเท่านั้น
   //  ต้องกันที่นี่ด้วย ไม่ใช่แค่กรองรายชื่อใน attackableTargets() เพราะ targetId มาจาก client ตรง ๆ
   if (Seraph.active() && !Seraph.inCurrentDuel(target)) return;
+  if (purge.benched(target) || purge.benched(attacker)) return; // Purge: ผู้ชมโจมตี/ถูกโจมตีไม่ได้
   if (CHAR_HOOKS.princess_shiki.cannotAttack(attacker)) return;       // เจ้าหญิงราก (patch 2.2.7): โจมตีไม่ได้ เว้นแต่ติดชักดาบ
   if (CHAR_HOOKS.producer_lumi.cannotAttack(attacker)) return;                            // โปรดิวเซอร์: ระหว่าง "เตรียมซ้อม" โจมตีปกติไม่ได้
   // ไค ชิซากิ: โทสะระงับด้วยโทสะ — มีคู่ปรับ (kaiRival1/kaiRival2 ยังไม่หมด) บังคับเป้าหมายมีแค่คู่ปรับเท่านั้น

@@ -69,3 +69,25 @@
 /* ระหว่างฉากเปิด/ฉากจบเทิร์น: ซ่อน UI กระดานทั้งหมด เหลือแค่ฉากท่อ + HUD ของโหมด */
 .purge-scene-on > :not(.purge-keep) { opacity: 0 !important; pointer-events: none !important; transition: opacity .45s ease; }
 .purge-board > :not(.purge-keep) { transition: opacity .45s ease; }
+
+/* ระหว่างสู้ในสนามประลองของภูมิภาค: ท่อหยุดวาดและซ่อน */
+.pg-stage.is-hidden { visibility: hidden; }
+.pg-turn {
+  position: absolute; left: 50%; top: 52px; transform: translateX(-50%);
+  padding: 3px 12px; border-radius: 999px; background: rgba(8, 16, 30, .6); font-size: 13px; font-weight: 600; color: #cfe0f6;
+}
+.pg-watch {
+  position: absolute; left: 50%; top: 84px; transform: translateX(-50%);
+  padding: 5px 16px; border-radius: 999px; background: rgba(70, 6, 22, .7); border: 1px solid rgba(255, 80, 110, .55);
+  font-size: 15px; font-weight: 600; color: #ffd0d8;
+}
+/* ซูมเข้าช่องปะทะ → แฟลชขาวบังรอยต่อกับสนามประลอง */
+@keyframes pgFlash { 0% { opacity: 0; } 25% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0; } }
+.pg-flash { position: absolute; inset: 0; z-index: 60; pointer-events: none; background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f2f7ff 60%, #dfe9f7 100%); animation: pgFlash 1.1s ease-out both; }
+/* ฉากเปิด: ทางช้างเผือก (ภาพเดียวกับปลายฉากลูกโลก) ซูมผ่านแล้วละลายเผยอุโมงค์ */
+@keyframes pgMilky {
+  0% { opacity: 1; transform: scale(1); filter: blur(0); }
+  45% { opacity: 1; transform: scale(1.35); filter: blur(1px); }
+  100% { opacity: 0; transform: scale(2.6); filter: blur(10px); }
+}
+.pg-milky { position: absolute; inset: 0; z-index: 59; pointer-events: none; background-size: cover; background-position: center; animation: pgMilky 2.2s cubic-bezier(.55, 0, .35, 1) both; }

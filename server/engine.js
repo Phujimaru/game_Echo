@@ -60,6 +60,7 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   // Purge (server/modes/purge.js) — เปิดให้เทสต์อ่าน/สั่งได้
   purgeActive: purge.purgeActive,
   purgeAdvance: purge.purgeAdvance,
+  purgeDiceTurn: purge.diceTurn,
   purgeStateFor: purge.purgeStateFor,
   get purge() { return match.purge; },
   isOrt: mercury.isOrt,

@@ -62,6 +62,7 @@ export default function App() {
   const journeySeqRef = useRef(null);      // ฉากที่เล่น/จองไว้แล้ว (กันเล่นซ้ำจากบรอดแคสต์ถัดๆ ไป)
   const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอช่วงเปิดตัวผู้เล่นจบก่อน
   const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (startPendingJourney อ่านว่าช่วงพักยังไม่หมด)
+  const purgeSceneRef = useRef(null);      // Purge: ฉากเปิดของโหมดยังพักเกมรออยู่ไหม (ปลายฉากลูกโลกเป็นเส้นพุ่งออกสู่ทางช้างเผือก)
   const prevGameStateRef = useRef(null);
   const screenKeyRef = useRef("setup"); // หน้าปัจจุบัน (navigate ใช้ตัดสินว่าต้องมีม่านไหม)
   const [roster, setRoster] = useState([]);
@@ -130,6 +131,7 @@ export default function App() {
       }
       // การเดินทาง: ช่วงพักรอฉากลูกโลกเริ่มใหม่ -> start รอช่วงเปิดตัวผู้เล่นจบก่อน · advance เล่นทันที
       journeyStateRef.current = s.journey || null;
+      purgeSceneRef.current = s.purge?.scene || null;
       const jScene = s.journey?.scene;
       if (jScene?.active && jScene.seq !== journeySeqRef.current) {
         journeySeqRef.current = jScene.seq;
@@ -381,6 +383,9 @@ export default function App() {
   // การเดินทาง: MatchIntro ถามตอนช่วงเปิดตัวผู้เล่นจบ (onOutro) ว่าต้องดิ่งลงภูมิภาคเริ่มต้นต่อไหม
   //  คืน { area, durationMs } ถ้า server ยังพักเกมรอฉากนี้อยู่ (รีคอนเนกต์หลังช่วงพัก / โหมดไม่มีการเดินทาง = null -> ฉากจางจบ)
   const startPendingJourney = () => {
+    // Purge: ปลายฉากเปิดตัว = เส้นพุ่งออกจากโลก กล้องตามไปสู่ทางช้างเผือก แล้วฉากท่อรับช่วงต่อ
+    const pg = purgeSceneRef.current;
+    if (pg?.active && pg.kind === "intro") return { warp: true, durationMs: 2800 };
     const pending = pendingJourneyRef.current;
     pendingJourneyRef.current = null;
     const live = journeyStateRef.current?.scene;
