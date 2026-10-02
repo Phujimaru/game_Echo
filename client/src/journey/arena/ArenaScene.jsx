@@ -27,8 +27,9 @@ const CLOUD_WAVE = [
   [50, 50, 72, 0], [22, 30, 46, 0.05], [78, 28, 50, 0.1], [18, 74, 52, 0.12], [82, 72, 48, 0.16],
   [50, 16, 44, 0.22], [50, 86, 46, 0.25], [6, 48, 40, 0.3], [94, 50, 40, 0.32],
 ];
-const DIVE_CLOUDS = [0.05, 0.75, 1.45].flatMap((t0, w) =>
-  CLOUD_WAVE.map(([x, y, s, d]) => [w % 2 ? 100 - x : x, y, s * (1 - w * 0.12), t0 + d]));
+// 5.1.12: เหลือ 2 ระลอก ก้อนเล็กลง (เมฆ radial-gradient ใหญ่ 27 ก้อนพร้อมกันหนัก GPU)
+const DIVE_CLOUDS = [0.05, 0.9].flatMap((t0, w) =>
+  CLOUD_WAVE.filter((_, i) => i % 2 === w % 2 || i === 0).map(([x, y, s, d]) => [w % 2 ? 100 - x : x, y, s * 0.8, t0 + d]));
 
 /** ชั้นฉากพุ่งลง (เล่นครั้งเดียวตอนเข้าภูมิภาค ~5 วิ) — ฟ้าทึบ+แสงแดด → เมฆ 3 ระลอก + เส้นความเร็ว → เห็นภูมิภาคหมุนเป็นเกลียวอยู่ไกลลงไป */
 function DiveSky({ night }) {
@@ -95,7 +96,14 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
     return () => { alive = false; };
   }, [bakeKey, sc, baked]);
   const u = H / 900;
-  const cls = `ar-scene${land ? " ar-land" : ""}${fadeIn ? " ar-fadein" : ""}`;
+  // ฉากพุ่งลงจบแล้ว (~5.6 วิ) → ถอดม่านฟ้า/เมฆ/ฝุ่น/คลื่นกระแทกออกจาก DOM และเลิกใช้คลาส ar-land (เดิมค้างทั้งภูมิภาค)
+  const [landing, setLanding] = useState(land);
+  useEffect(() => {
+    if (!land) return undefined;
+    const t = setTimeout(() => setLanding(false), 5600);
+    return () => clearTimeout(t);
+  }, [land]);
+  const cls = `ar-scene${landing ? " ar-land" : ""}${fadeIn ? " ar-fadein" : ""}`;
   return (
     <div className={cls} style={{ background: sc.sky }}>
       <div className="ar-stage" style={{ perspective: `${sc.plane.perspective}px`, perspectiveOrigin: `50% ${sc.plane.originY}px` }}>
@@ -106,7 +114,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           <div ref={bakeHost} className="ar-plane-bakehost" />
           {/* ระหว่างรออบครั้งแรก (ไม่กี่ร้อยมิลลิวินาที ใต้ม่านฟ้าของฉากพุ่งลง) เห็นแค่สีพื้น — ไม่วางชิ้น DOM หลายร้อยชิ้นให้ GPU หนัก */}
           {bakeReady && live.map((f) => <div key={f.key} className="ar-flat" style={f.style} />)}
-          {land && !lowQ && <div className="ar-shock" style={{ left: sc.plane.size / 2, top: sc.plane.size / 2 + sc.centerLift, width: sc.plane.size * 0.34, height: sc.plane.size * 0.34 }} />}
+          {landing && !lowQ && <div className="ar-shock" style={{ left: sc.plane.size / 2, top: sc.plane.size / 2 + sc.centerLift, width: sc.plane.size * 0.34, height: sc.plane.size * 0.34 }} />}
         </div>
       </div>
       <div className="ar-layer ar-par-b">
@@ -154,12 +162,12 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           </div>
         ))}
       </div>
-      {land && !lowQ && (
+      {landing && !lowQ && (
         <div className="ar-layer ar-dust" style={{ "--cx": `${sc.center.x}px`, "--cy": `${sc.center.y}px`, "--u": u }}>
           {DUST.map((p, i) => <span key={i} style={{ "--dx": `${p.dx * 360 * u}px`, "--dy": `${p.dy * 360 * u}px`, animationDelay: `${3.55 + p.d}s` }} />)}
         </div>
       )}
-      {land && !lowQ && <DiveSky night={night} />}
+      {landing && !lowQ && <DiveSky night={night} />}
     </div>
   );
 }

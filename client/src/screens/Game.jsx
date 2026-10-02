@@ -759,6 +759,33 @@ function Laurel({ size = 250 }) {
   );
 }
 
+// ม่านมืดของสรุปผล (.sum-veil) / ฉากโจมตี (.fx-veil) หายวับตอนเปลี่ยนเฟส แล้วม่านของฉากถัดไปค่อยเฟดเข้าจาก 0
+//  บนสนามสีขาว (5.1) = จอกะพริบ มืด→สว่างทั้งจอ→มืด ทุกเทิร์น · VeilTail วางม่านสีเดียวกันทับช่วงรอยต่อแล้วจางออกเอง
+//  เปลี่ยน key ระหว่าง render (ไม่รอ effect) — ม่านหางขึ้นในเฟรมเดียวกับที่ม่านเดิมหาย จึงไม่มีเฟรมสว่างโผล่
+const VEIL_TAIL_MS = 480;
+function VeilTail({ veilKey }) {
+  const [s, setS] = useState({ key: veilKey, n: 0, on: false });
+  if (s.key !== veilKey) setS({ key: veilKey, n: s.key ? s.n + 1 : s.n, on: s.on || !!s.key });
+  useEffect(() => {
+    if (!s.on) return undefined;
+    const t = setTimeout(() => setS((cur) => (cur.n === s.n ? { ...cur, on: false } : cur)), VEIL_TAIL_MS + 60);
+    return () => clearTimeout(t);
+  }, [s.on, s.n]);
+  if (!s.on) return null;
+  return (
+    <div
+      key={s.n}
+      aria-hidden="true"
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        zIndex: 30,
+        background: "radial-gradient(ellipse 66% 60% at 50% 48%, rgba(14, 31, 60, 0.71), rgba(3, 10, 22, 0.9) 76%)",
+        animation: `fxVeil ${VEIL_TAIL_MS}ms ease-in reverse both`,
+      }}
+    />
+  );
+}
+
 function SummaryTiers({ winners, losers, compact }) {
   if (!winners.length && !losers.length) return null;
   const winAvatar = compact ? 54 : 72;
@@ -3684,6 +3711,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   //  อ่านผ่าน store เพราะสนาม (ลูก) ประกาศตอน mount ก่อน effect ของกระดานจะได้สมัครฟัง
   //  กระดาน mount ใหม่หลังคัตซีน: seq เดิม + arenaLandDelay = null → การ์ดไม่หล่นซ้ำ (เคยทำให้จอกระพริบ)
   const arenaLandSeq = useSyncExternalStore(onArenaLand, getArenaLandSeq);
+  //  ค่าหน่วงให้การ์ดหล่นลงที่นั่ง: คิดครั้งเดียวต่อการพุ่งลงแต่ละรอบ (ถ้าคิดใหม่ทุก render ค่าลดลงเรื่อยๆ ตาม state ที่เข้ามา → การ์ดหล่นเร็ว/กระตุก)
+  const arenaSeatDelay0 = useMemo(() => arenaLandDelay(ARENA_SEAT_IN_S), [arenaLandSeq]); // eslint-disable-line react-hooks/exhaustive-deps
   const [notice, setNotice] = useState(null); // แปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป) เด้งแจ้งเตือนทันที ไม่หยุดเกม
   const [anataSel, setAnataSel] = useState(null); // เทมาริ: โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (null = ไม่ได้เลือกอยู่)
   const [appleOpen, setAppleOpen] = useState(false); // Apple guy: เมนูเลือกของส่งมอบ (สกิลพื้นฐาน)
@@ -4537,9 +4566,13 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const csOverload = phase === "CUTSCENE" && state.cutscene && state.cutscene.kind === "overloadForce" ? state.cutscene : null;
   const csAnnounce = phase === "CUTSCENE" && state.cutscene && state.cutscene.announce ? state.cutscene : null;
   const csSkipped = lowQ && phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !csOverload ? state.cutscene : null;
-  if (csOverload) return <OverloadForceCutscene key={state.cutscene.id} cs={state.cutscene} />;
-  if (phase === "CUTSCENE" && state.cutscene && csYuna && !lowQ) return <YunaCutscene key={state.cutscene.id} cs={state.cutscene} />;
-  if (phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !lowQ) return <Cutscene key={state.cutscene.id} cs={state.cutscene} />;
+  const cutsceneEl = csOverload ? <OverloadForceCutscene key={state.cutscene.id} cs={state.cutscene} />
+    : phase === "CUTSCENE" && state.cutscene && csYuna && !lowQ ? <YunaCutscene key={state.cutscene.id} cs={state.cutscene} />
+    : phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !lowQ ? <Cutscene key={state.cutscene.id} cs={state.cutscene} />
+    : null;
+  // จอคอม: คัตซีนลอยทับกระดาน (ท้าย return ด้านล่าง) — เดิมคืนคัตซีนแทนกระดานทั้งจอ ทำให้กระดาน+สนาม 2.5D+HUD
+  //  ถูกถอดแล้ว mount ใหม่ทุกครั้งที่จบคัตซีน (สร้างฉากใหม่ทั้งหมด = จอกระตุก/กะพริบตอนกลับมา) · มือถือคงแบบเดิม
+  if (cutsceneEl && vp.w < 768) return cutsceneEl;
 
   // สถานะ+handler ของทุกโหมดเลือกเป้าหมาย มัดรวมไว้ที่เดียว ใช้ร่วมกันทั้ง layout มือถือและจอใหญ่ (ดู isTargetable/resolveAttackPick)
   const targetChain = {
@@ -5034,7 +5067,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         <div
           className={`absolute inset-x-0 ${arenaLay ? "" : "top-[40%]"} flex justify-center pointer-events-none`}
           // สนาม 2.5D: กองการ์ดตั้งอยู่บนแท่นกลางสนาม (ขอบล่างกองตรงหน้าบนของแท่น)
-          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)", ...(lowQ || arenaLandDelay(ARENA_SEAT_IN_S - 0.2) == null ? null : { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${arenaLandDelay(ARENA_SEAT_IN_S - 0.2)}s both` }) } : undefined}
+          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)", ...(lowQ || arenaSeatDelay0 == null ? null : { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${Math.max(0, arenaSeatDelay0 - 0.2)}s both` }) } : undefined}
           key={arenaLay ? `deck-l${arenaLandSeq}` : "deck"}
         >
           <div className="bd-deck relative grid place-items-center">
@@ -5105,7 +5138,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
           // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
           key={arenaSlots ? `${p.id}-l${arenaLandSeq}` : p.id}
-          enterDelay={arenaSlots && !lowQ ? arenaLandDelay(ARENA_SEAT_IN_S + i * 0.09) : null}
+          enterDelay={arenaSlots && !lowQ && arenaSeatDelay0 != null ? arenaSeatDelay0 + i * 0.09 : null}
           p={p}
           phase={phase}
           slot={(arenaSlots || slots)[i] || [50, 50]}
@@ -5466,6 +5499,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         />
       )}
 
+      {/* ม่านมืดสรุปผล/ฉากโจมตีหายแล้ว → จางออกแทนการตัดเป็นจอขาว (ดู VeilTail) */}
+      <VeilTail
+        veilKey={phase === "SUMMARY" && (summaryWinners.length || summaryLosers.length) ? `sum-${state.roundNumber}`
+          : phase === "ATTACKING" && state.attack ? `atk-${state.attack.id}` : null}
+      />
       {/* ---------- เฟสสรุปผล: ลีดเดอร์บอร์ด (กลางจอ) ---------- */}
       {phase === "SUMMARY" && (
         <SummaryTiers winners={summaryWinners} losers={summaryLosers} />
@@ -5517,6 +5555,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {yuiSongOpen && me && <YuiSongModal me={me} onPick={pickYuiSong} onClose={() => setYuiSongOpen(false)} />}
         {andersenColorOpen && <AndersenColorModal onPick={pickAndersenColor} onClose={() => { clickSound(); setAndersenColorOpen(false); }} />}
       </div>
+      {/* คัตซีนวีดีโอ: ทับกระดานทั้งจอ (กระดานยัง mount อยู่ข้างใต้ — จบคัตซีนแล้วไม่ต้องสร้างฉากใหม่) */}
+      {cutsceneEl && <div style={{ position: "fixed", inset: 0, zIndex: 150 }}>{cutsceneEl}</div>}
     </div>
   );
 }

@@ -260,7 +260,9 @@ export default function RegionTravel({ from, to, durationMs, lowQ = false, onDon
       className={`ocd ort ocd-p${phase}${crash ? " is-crash" : ""}${lowQ ? " is-lowq" : ""}`}
       style={{ "--rev": `${Math.round((1 - T.crash) * D)}ms`, "--in": `${Math.round(Math.min(700, T.back * D * 0.5))}ms` }}
     >
-      {!lowQ && <div className="ort-veil" aria-hidden="true" />}
+      {/* ม่านพร่าสนามใช้แค่ช่วงถอยออก (เฟส 0) — หลังจากนั้นพื้นขาว .ocd-bg ทึบบังสนามแล้ว
+          ถ้าค้างไว้ backdrop-filter ต้องเบลอสนามที่ยังขยับอยู่ข้างใต้ใหม่ทุกเฟรมทั้งฉาก (กินเครื่อง/เฟรมตก) */}
+      {!lowQ && phase === 0 && <div className="ort-veil" aria-hidden="true" />}
       <div className="ocd-bg" aria-hidden="true" />
       <div className="ocd-globe" ref={globeWrapRef}>
         <GlobeCanvas shared={false} layout={{ x: 0, y: 0, s: 1 }} drag={false} sand={!lowQ} autoSpin={0} onReady={onReady} />
