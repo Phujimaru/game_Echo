@@ -96,7 +96,8 @@ function Cells({ n, on, color, h, solidOver = 16 }) {
 
 // ---------- ซ้ายล่าง: แผงตัวละคร (ดีไซน์ E1 ปรับ) ----------
 //  รูปหกเหลี่ยมด้านแบน (ขอบทอง→ฟ้า) เกยซ้ายของแผงเฉียง · ชื่อ+ทีม+ป้ายตัวละคร · เลือด/เกราะเป็นช่องเฉียงนับได้
-//  ใต้แผง: แผงแต้มสกิลแยก (ม่วง) + แถบทรัพยากรตัวละคร ต่อลงมา — เลื่อนไปพร้อมกันทั้งชุด
+//  ใต้แผง: แผงแต้มสกิล (ม่วง) + แถบทรัพยากรตัวละคร ต่อชิดใต้แผงตัวละครเป็นแท่งเดียวกัน (ไม่มีช่องว่าง ขอบซ้าย/ขวาตรงกัน)
+//   แต่ละกล่องยังมีสี/ขอบของตัวเอง — ผู้ใช้: "ติดกันแต่ไม่รวมกัน" · รูปหกเหลี่ยมเกยทับทั้งแท่ง
 //  รายการสถานะอยู่ในลิ้นชักซ้าย (HudStatusDrawer)
 export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, teamColor, chips, vitals, sp = 0, spMax = 0, statuses = [], rawStatuses }) {
   const [openKey, setOpenKey] = useState(null);
@@ -115,25 +116,27 @@ export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, t
             <div className="hud-portrait-twins">{portrait}</div>
           )}
         </div>
-        <section className="hud-prof-card" aria-label="ตัวละครของเรา">
-          <div className="hud-name-row">
-            <button type="button" className="hud-name" onClick={onName} title="รายละเอียดตัวละคร">{name}</button>
-            {teamId && <span className="hud-team" style={{ background: teamColor }}>ทีม {teamId}</span>}
-            <span className="hud-chips">{chips}</span>
-          </div>
-          {vitals}
-        </section>
+        <div className="hud-prof-stack">
+          <section className="hud-prof-card" aria-label="ตัวละครของเรา">
+            <div className="hud-name-row">
+              <button type="button" className="hud-name" onClick={onName} title="รายละเอียดตัวละคร">{name}</button>
+              {teamId && <span className="hud-team" style={{ background: teamColor }}>ทีม {teamId}</span>}
+              <span className="hud-chips">{chips}</span>
+            </div>
+            {vitals}
+          </section>
+          <section className="hud-sp-strip" aria-label="แต้มสกิล" title={`แต้มสกิล ${sp}/${spMax}`}>
+            <span className="hud-sp-label">แต้มสกิล</span>
+            <span className="hud-pips">
+              {Array.from({ length: spMax }, (_, i) => <span key={i} data-on={i < sp ? "true" : "false"} />)}
+            </span>
+            <span className="hud-sp-num">{sp}<span>/{spMax}</span></span>
+          </section>
+          {res.map((it) => (
+            <ResourceRow key={it.key} it={it} open={openKey === it.key} onToggle={() => toggle(it.key)} />
+          ))}
+        </div>
       </div>
-      <section className="hud-sp-strip" aria-label="แต้มสกิล" title={`แต้มสกิล ${sp}/${spMax}`}>
-        <span className="hud-sp-label">แต้มสกิล</span>
-        <span className="hud-pips">
-          {Array.from({ length: spMax }, (_, i) => <span key={i} data-on={i < sp ? "true" : "false"} />)}
-        </span>
-        <span className="hud-sp-num">{sp}<span>/{spMax}</span></span>
-      </section>
-      {res.map((it) => (
-        <ResourceRow key={it.key} it={it} open={openKey === it.key} onToggle={() => toggle(it.key)} />
-      ))}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { EXTRA_AREAS } from "./areas";
 /** ความสูงเส้นแสงจากฐานที่นั่งถึงขอบล่างการ์ด (px ที่ความสูงจอ 900) — Game.jsx ใช้ค่าเดียวกันวางการ์ด */
 export const ARENA_STEM = 38;
 /** ย่อการ์ดผู้เล่นบนสนาม (คูณกับสเกลความลึก) ให้การ์ดใบติดกันไม่ทับกัน */
-export const ARENA_CARD_SCALE = 0.92;
+export const ARENA_CARD_SCALE = 0.9;
 
 export const ARENA_AREA_MAX = 7;
 /** ภูมิภาคนี้มีสนาม 2.5D แล้วหรือยัง (ภูมิภาคที่ยังไม่ทำ = ใช้ฉากหลัง JourneyBackdrop เดิม) */
@@ -39,9 +39,11 @@ export function arenaCamera(W, H) {
   return { W, H, e: 30, p: 1300 * u, oy: H, cy: H * 0.606, R: 590 * ur };
 }
 
-/** จอสูงเกิน 1080 (เช่น 1440p): ขยายการ์ดผู้เล่นบนสนามตาม (กระดานทั้งใบหยุดขยายที่ 1 แต่แผงของเราขยายตามจอ) */
-export function arenaCardZoom(H) {
-  return Math.min(1.5, Math.max(1, H / 1080));
+/** ขยายการ์ดผู้เล่นบนสนามตามจอเท่ากับแผงของเรา (ผู้ใช้: การ์ดคู่แข่งเล็กเกิน) — คิดเป็นตัวคูณ "ภายในกระดาน"
+    แผงเราใช้ z = clamp(min(h/810, w/1376), 0.6, 1.6) บนจอ · กระดานถูกย่อด้วย min(1, h/920) อยู่แล้ว จึงหารออก */
+export function arenaCardZoom(W, H) {
+  const z = Math.min(1.6, Math.max(0.6, Math.min(H / 810, W / 1376)));
+  return z / Math.min(1, H / 920);
 }
 
 /* ความสูง (หน่วยสนาม) ของแท่นที่ใช้ทั้งตอนวาดและตอนหาตำแหน่งที่นั่ง — แก้ที่เดียว ไม่หลุดกัน
@@ -109,7 +111,7 @@ function stackCards(W, H, seats, center) {
   const out = seats.map((st) => ({ ...st }));
   for (const i of order) {
     const st = out[i];
-    const sc = st.s * ARENA_CARD_SCALE * bs * arenaCardZoom(H);
+    const sc = st.s * ARENA_CARD_SCALE * bs * arenaCardZoom(W, H);
     const w = CARD_W * sc, h = CARD_H * sc;
     // ไม่ให้การ์ดล้นขอบจอ (ที่นั่งริมสุดบนจอแคบ) — เส้นแสงยังตั้งตรงที่ฐานที่นั่ง
     st.cardX = r1(Math.min(W - w / 2 - 6, Math.max(w / 2 + 6, st.x)));

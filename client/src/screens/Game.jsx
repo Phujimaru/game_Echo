@@ -1113,8 +1113,29 @@ function Shield({ on, size = 16, tone }) {
   );
 }
 
-// ---------- ตัวล็อกเป้าหมาย: กรอบมุมเรืองแสง + วงแหวนหมุน — ครอบทับการ์ดผู้เล่นที่ตีได้ ----------
+// ---------- ตัวล็อกเป้าหมาย (5.1.11 ธีม ORDEAL CALL): มุมกรอบสีแดงปะการังหุบเข้าล็อก + เส้นสแกนวิ่งผ่านการ์ด ----------
+//  วางนอกการ์ด (การ์ดมี clip-path ตัดลูกหลานทิ้ง — วงรีหมุนแบบเดิมเลยถูกตัดจนรูปทรงเพี้ยน) · รูปหกเหลี่ยมมีเรติเคิลของตัวเอง (HexLock)
 function TargetLock() {
+  return (
+    <span className="tl-lock" aria-hidden="true">
+      <span className="tl-corner tl" />
+      <span className="tl-corner tr" />
+      <span className="tl-corner bl" />
+      <span className="tl-corner br" />
+      <span className="tl-scan" />
+    </span>
+  );
+}
+// เรติเคิลหกเหลี่ยมครอบรูปตัวละครบนการ์ดที่ตีได้ (เส้นประหมุนช้า + หกเหลี่ยมในเต้น)
+function HexLock() {
+  return (
+    <svg className="tl-hex" viewBox="0 0 120 104" aria-hidden="true">
+      <polygon className="tl-hex-spin" points="30,2 90,2 118,52 90,102 30,102 2,52" />
+      <polygon className="tl-hex-in" points="36,12 84,12 107,52 84,92 36,92 13,52" />
+    </svg>
+  );
+}
+function TargetLockLegacy() {
   return (
     <>
       <span className="p-target-ring" aria-hidden="true" />
@@ -2259,9 +2280,10 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[260px]"}`}
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null), ...(enterDelay != null ? { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${enterDelay}s both` } : null) }}
     >
+      <div className={`relative ${twin ? "" : "w-full"}`}>
       <div
         onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
-        className={`p-target-wrap relative ${twin ? "w-44 h-28 sm:w-52 sm:h-32" : "pc-card w-full"} ${p.alive && !twin ? "pc-card-live" : ""} ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair" : "cursor-pointer"}`}
+        className={`p-target-wrap relative ${twin ? "w-44 h-28 sm:w-52 sm:h-32" : `pc-card w-full${targetable ? " pc-targetable" : ""}`} ${p.alive && !twin ? "pc-card-live" : ""} ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair" : "cursor-pointer"}`}
         title={targetable ? undefined : "แตะเพื่อดูสถานะ"}
         style={{ "--p-frame-color": p.color }}
       >
@@ -2274,11 +2296,14 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
             <div className="pc-inner">
               <div className="pc-main">
                 {/* รูปหกเหลี่ยมด้านแบนบน (ชุดเดียวกับแผงตัวเรา) — ขอบไล่จากสีประจำที่นั่งไปฟ้า */}
-                <div className="pc-hex">
-                  <span className="pc-hex-dark" aria-hidden="true" />
-                  <span className="pc-hex-in">
-                    <Portrait p={p} className="w-full h-full" rounded="" />
-                  </span>
+                <div className="pc-hex-wrap">
+                  <div className="pc-hex">
+                    <span className="pc-hex-dark" aria-hidden="true" />
+                    <span className="pc-hex-in">
+                      <Portrait p={p} className="w-full h-full" rounded="" />
+                    </span>
+                  </div>
+                  {targetable && <HexLock />}
                 </div>
                 <div className="pc-info">
                   <div className="pc-name-text">
@@ -2297,8 +2322,9 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
             </div>
           </>
         )}
-        {targetable && <TargetLock />}
         {!p.alive && <span className="absolute inset-0 grid place-items-center text-3xl z-10">💀</span>}
+      </div>
+      {targetable && <TargetLock />}
       </div>
       {/* ป้ายที่ลอยพ้นขอบการ์ดต้องอยู่ "นอก" .pc-card — clip-path ของการ์ดตัดลูกหลานทุกตัวทิ้ง
           ไม่สนใจ z-index หรือ overflow ถ้าวางไว้ข้างในจะหายทั้งใบ เหลือแต่เงาที่เล็ดลอดออกมา
@@ -2312,7 +2338,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       )}
       {targetable && (
         <span className="p-target-badge absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0.5 rounded-full text-white whitespace-nowrap z-10">
-          🎯 เป้าหมาย
+          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" className="inline-block -mt-px mr-1 align-middle"><circle cx="12" cy="12" r="7" fill="none" stroke="#fff" strokeWidth="2" /><path d="M12 1v5M12 18v5M1 12h5M18 12h5" stroke="#fff" strokeWidth="2" strokeLinecap="round" /><circle cx="12" cy="12" r="2" fill="#fff" /></svg>เป้าหมาย
         </span>
       )}
       {picked && <span className="absolute -top-2 -left-2 text-2xl z-10">🎤</span>}
@@ -2353,7 +2379,7 @@ function MobileOpponent({ p, phase, targetable, onAttack, picked, onInspect, hos
       <div className="relative shrink-0">
         {p.hisakawa ? <TwinPortraitCards p={p} size="sm" /> : <Portrait p={p} className="w-14 h-14 p-player-frame" rounded="rounded-xl" />}
         <TeamBadge teamId={p.teamId} className="absolute -top-3 -right-3 z-20" />
-        {targetable && <TargetLock />}
+        {targetable && <TargetLockLegacy />}
         {!p.alive && <span className="absolute inset-0 grid place-items-center text-2xl">💀</span>}
         {p.isWinner && summary && <span className="absolute -top-2 -right-1 text-lg">👑</span>}
       </div>
@@ -3761,7 +3787,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // ฉากหลังได้แค่ค่าพื้นฐาน (ภูมิภาค/จำนวน/สี/ขนาดจอ) — ArenaBackground memo เองแล้วค่อยสร้างฉาก (หนัก) เมื่อค่าเปลี่ยน
   const arenaBg = arenaArea ? `${arenaSeatN}~${vpW}~${vpH}~${arenaColorKey}` : null;
   const arenaSlots = arenaLay
-    ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.cardX / vp.w) * 100, o.s * ARENA_CARD_SCALE * arenaCardZoom(vp.h), "bottom"])
+    ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.cardX / vp.w) * 100, o.s * ARENA_CARD_SCALE * arenaCardZoom(vp.w, vp.h), "bottom"])
     : null;
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): เครื่องนี้บังคับส่วนไหน — นักบิน (จั่ว/เปิดการ์ด/โจมตี/ซ่อม) · พลปืน (สกิล/ร้านค้า/ไอเทม)
   const meRec = state.players.find((pl) => pl.id === state.youId);
