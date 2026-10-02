@@ -12,7 +12,7 @@ import { EXTRA_AREAS } from "./areas";
 /** ความสูงเส้นแสงจากฐานที่นั่งถึงขอบล่างการ์ด (px ที่ความสูงจอ 900) — Game.jsx ใช้ค่าเดียวกันวางการ์ด */
 export const ARENA_STEM = 38;
 /** ย่อการ์ดผู้เล่นบนสนาม (คูณกับสเกลความลึก) ให้การ์ดใบติดกันไม่ทับกัน */
-export const ARENA_CARD_SCALE = 0.86;
+export const ARENA_CARD_SCALE = 0.92;
 
 export const ARENA_AREA_MAX = 7;
 /** ภูมิภาคนี้มีสนาม 2.5D แล้วหรือยัง (ภูมิภาคที่ยังไม่ทำ = ใช้ฉากหลัง JourneyBackdrop เดิม) */
@@ -34,7 +34,14 @@ export function seatAngles(n) {
    วงที่นั่งกว้างขึ้น (R 590) เพราะมุมต่ำบีบวงในแนวตั้ง การ์ดใบติดกันจะได้ไม่ทับกัน */
 export function arenaCamera(W, H) {
   const u = H / 900;
-  return { W, H, e: 30, p: 1300 * u, oy: H, cy: H * 0.606, R: 590 * u };
+  // วงที่นั่งไม่กว้างเกินจอแคบ (4:3 / 5:4): รัศมีคิดจากด้านที่แคบกว่าเมื่อเทียบ 16:9 — 16:9 เท่าเดิม
+  const ur = Math.min(u, W / 1600);
+  return { W, H, e: 30, p: 1300 * u, oy: H, cy: H * 0.606, R: 590 * ur };
+}
+
+/** จอสูงเกิน 1080 (เช่น 1440p): ขยายการ์ดผู้เล่นบนสนามตาม (กระดานทั้งใบหยุดขยายที่ 1 แต่แผงของเราขยายตามจอ) */
+export function arenaCardZoom(H) {
+  return Math.min(1.5, Math.max(1, H / 1080));
 }
 
 /* ความสูง (หน่วยสนาม) ของแท่นที่ใช้ทั้งตอนวาดและตอนหาตำแหน่งที่นั่ง — แก้ที่เดียว ไม่หลุดกัน
@@ -89,8 +96,8 @@ export function arenaLayout(W, H, area, nOthers) {
 /* การ์ดผู้เล่นยืนบนเส้นแสงเหนือฐานที่นั่ง — มุมกล้องต่ำบีบวงที่นั่งในแนวตั้ง การ์ดใบใกล้จะบังใบไกล
    จึงไล่จากที่นั่งใกล้กล้องไปไกล: ถ้าการ์ดใบไกลซ้อนแนวนอนกับใบที่วางแล้ว ยืดเส้นแสงให้การ์ดลอยขึ้นพ้นขอบบนของใบนั้น
    ขนาดการ์ดประมาณจากการ์ดจริง (236×165 ที่สเกลกระดาน min(1, H/920)) · bottom/stem = px บนจอ */
-const CARD_W = 236;
-const CARD_H = 165;
+const CARD_W = 260;
+const CARD_H = 170;
 const DECK_W = 110;
 const DECK_H = 140;
 function stackCards(W, H, seats, center) {
@@ -102,13 +109,15 @@ function stackCards(W, H, seats, center) {
   const out = seats.map((st) => ({ ...st }));
   for (const i of order) {
     const st = out[i];
-    const sc = st.s * ARENA_CARD_SCALE * bs;
+    const sc = st.s * ARENA_CARD_SCALE * bs * arenaCardZoom(H);
     const w = CARD_W * sc, h = CARD_H * sc;
+    // ไม่ให้การ์ดล้นขอบจอ (ที่นั่งริมสุดบนจอแคบ) — เส้นแสงยังตั้งตรงที่ฐานที่นั่ง
+    st.cardX = r1(Math.min(W - w / 2 - 6, Math.max(w / 2 + 6, st.x)));
     let bottom = st.y - ARENA_STEM * u * st.s;
-    for (const q of placed) if (Math.abs(q.x - st.x) < (q.w + w) / 2 + 6) bottom = Math.min(bottom, q.top - 8 * u);
+    for (const q of placed) if (Math.abs(q.x - st.cardX) < (q.w + w) / 2 + 6) bottom = Math.min(bottom, q.top - 8 * u);
     st.bottom = r1(bottom);
     st.stem = r1(st.y - bottom);
-    placed.push({ x: st.x, w, top: bottom - h });
+    placed.push({ x: st.cardX, w, top: bottom - h });
   }
   return out;
 }

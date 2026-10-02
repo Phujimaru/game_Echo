@@ -10,6 +10,7 @@ import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } fr
 import { SkillSlot } from "./SkillSlot";
 import { StatRow, VitalExtras } from "./StatRow";
 import { OrtLostTierContext } from "./ortLost";
+import { measureHud } from "./hudMeasure";
 
 const COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
 const MOCK_STATUS = [
@@ -70,6 +71,12 @@ export default function HudPreview() {
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
   }, []);
+  // ?measure=1 = วัดกล่องหลังสนามลงจอเสร็จ
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has("measure")) return undefined;
+    const t = setTimeout(measureHud, 7000);
+    return () => clearTimeout(t);
+  }, []);
   const lay = useMemo(() => arenaLayout(vp.w, vp.h, area, nOthers), [vp.w, vp.h, area, nOthers]);
   const seats = useMemo(() => [{ phi: 90, col: COLS[0], me: true }, ...lay.others.map((o, i) => ({ phi: o.phi, stem: o.stem, col: COLS[(i + 1) % 7] }))], [lay]);
 
@@ -77,6 +84,7 @@ export default function HudPreview() {
   const scale = Math.min(vp.w / Math.max(900, vp.w), Math.min(1, vp.h / 920));
   const DESIGN_W = vp.w / scale;
   const designH = vp.h / scale;
+  const hudK = Math.min(1.6, Math.max(0.6, Math.min(vp.h / 810, vp.w / 1376))) / scale;
 
   const statuses = [...(withRes ? MOCK_RES : []), ...MOCK_STATUS.slice(0, stN)];
   const raw = Object.fromEntries(MOCK_STATUS.filter((s) => s.key !== "tonkatsu").map((s) => [s.key, s.v]));
@@ -91,6 +99,7 @@ export default function HudPreview() {
         {lay.others.map((o, i) => (
           <div
             key={i}
+            className="p-target-wrap"
             style={{
               position: "absolute", left: o.x, top: o.bottom, width: 236, height: 150,
               transform: `translate(-50%, -100%) scale(${o.s * ARENA_CARD_SCALE})`, transformOrigin: "bottom center",
@@ -105,6 +114,7 @@ export default function HudPreview() {
         <div style={{ position: "absolute", left: lay.center.x, top: lay.center.y, width: 90, height: 124, transform: "translate(-50%, -92%)", background: "#12264a", border: "2px solid #f0c868" }} />
         <div className="relative overflow-hidden" style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           <HudTopBar
+            zoom={hudK}
             night={night}
             round={3}
             timer={<MockTimer />}
@@ -120,7 +130,7 @@ export default function HudPreview() {
           <SelfHud
             hidden={target}
             lowQ={lowQ}
-            compact={DESIGN_W < 1240}
+            zoom={hudK}
             panel={
               <HudPanel
                 portrait={<img src="/characters/artoria_caster/artoria_caster.webp" alt="" style={{ objectFit: "cover" }} />}
@@ -130,14 +140,16 @@ export default function HudPreview() {
                 teamColor="#22d3ee"
                 vitals={
                   <div className="hud-vitals">
-                    <StatRow kind="hp" value={4} max={7} extra={1} extraLabel="เลือดชั่วคราว" />
-                    <StatRow kind="ar" value={2} max={3} />
+                    <StatRow big kind="hp" value={4} max={7} extra={1} extraLabel="เลือดชั่วคราว" />
+                    <StatRow big kind="ar" value={2} max={3} />
                     <VitalExtras p={{ shield: 2 }} className="pc-extra-inline" />
                   </div>
                 }
                 chips={withRes ? <span className="text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap bg-black/55">⚙️ เกียร์ 3/6 (+1)</span> : null}
                 statuses={statuses}
                 rawStatuses={raw}
+                sp={5}
+                spMax={num("spmax", 8)}
               />
             }
             drawer={
@@ -175,8 +187,6 @@ export default function HudPreview() {
             }
             right={
               <HudRight
-                sp={5}
-                spMax={8}
                 extras={q.get("extras") === "1" ? <span className="text-[11px] font-bold rounded-lg px-2 py-1 border border-white/25 bg-black/30">🃏 คุณคือนักบิน</span> : null}
                 bagCount={2}
                 onBag={() => {}}

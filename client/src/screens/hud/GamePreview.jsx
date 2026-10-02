@@ -1,9 +1,10 @@
 // หน้าดูกระดานจริง (Game.jsx) ด้วย state จำลอง — เฉพาะ dev: ?hud=1&game=1
 //  ไว้ตรวจว่าแผงตัวเราต่อกับ GameBoard ถูก (เงื่อนไขปุ่ม/สถานะ/การ์ด) โดยไม่ต้องเปิดห้องจริง
 //  phase=PLAYING|ATTACK (ATTACK = เราเป็นฝ่ายโจมตี → แผงเลื่อนลง) · arena=1..3 · n=1..6 · ch=<id ตัวละครเรา>
-//  ch=oguri / escanor / kim = มีแถวทรัพยากร · st=many = สถานะเยอะ · drawer=1 = กดเปิดลิ้นชักสถานะให้หลังโหลด
+//  journey=0 = โต๊ะแบบเดิม · ch=oguri / escanor / kim / bard / kai = มีแถวทรัพยากร/ช่องพิเศษ · st=many = สถานะเยอะ · drawer=1 = กดเปิดลิ้นชักสถานะให้หลังโหลด
 import { useEffect } from "react";
 import Game from "../Game";
+import { measureHud } from "./hudMeasure";
 
 const COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
 const skill = (id, n, name, cost) => ({ name, cost, desc: `ก่อนเปิดไพ่: ผลของ ${name}`, img: `/characters/${id}/${id}_skill${n}.jpg` });
@@ -56,13 +57,20 @@ export default function GamePreview() {
     const t = setTimeout(() => document.querySelector(".hud-drawer-tab")?.click(), 600);
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // ?measure=1 = วัดกล่องหลังการ์ดผู้เล่นหล่นลงที่นั่งเสร็จ
+  useEffect(() => {
+    if (q.get("measure") !== "1") return undefined;
+    const t = setTimeout(measureHud, 8000);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const state = {
     gameState: phase,
     youId: "p0",
     players,
     roundNumber: 3,
     cycle: q.get("night") === "1" ? "night" : "day",
-    journey: { area, name: "อาณาจักรแห่งจุดเริ่มต้น", turnsLeft: 7, night: q.get("night") === "1", day: "กลางวัน", nightDesc: "กลางคืน" },
+    // journey=0 = โต๊ะแบบเดิม (ไม่มีสนาม 2.5D) ไว้ตรวจการ์ดคู่แข่งนอกสนาม
+    journey: q.get("journey") === "0" ? null : { area, name: "อาณาจักรแห่งจุดเริ่มต้น", turnsLeft: 7, night: q.get("night") === "1", day: "กลางวัน", nightDesc: "กลางคืน" },
     gameMode: "ffa",
     attackerId: phase === "ATTACK" ? "p0" : null,
     shop: [],

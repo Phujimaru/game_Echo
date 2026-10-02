@@ -1506,23 +1506,35 @@ body {
   filter: drop-shadow(0 0 4px rgba(127, 184, 230, 0.9));
 }
 
-.pc-main { display: flex; gap: 9px; align-items: stretch; }
-.pc-por {
+.pc-main { display: flex; gap: 10px; align-items: stretch; }
+/* การ์ดคู่แข่ง: ช่องนับเฉียงแบบเดียวกับแผงตัวเรา ตัวเลขใหญ่ขึ้นอ่านง่าย */
+.pc-info .sr { gap: 6px; }
+.pc-info .sr-ico { width: 16px; height: 16px; }
+.pc-info .sr-track { gap: 3px; }
+.pc-info .sr-cell { height: 12px; clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+.pc-info .sr[data-kind="ar"] .sr-cell { height: 10px; }
+.pc-info .sr[data-kind="sp"] .sr-cell { height: 9px; }
+.pc-info .sr-solid { height: 12px; }
+.pc-info .sr-num { font-size: 0.86rem; min-width: 38px; }
+.pc-info .sr-sp-label { width: auto; font-family: var(--font-av-thai); font-size: 0.68rem; font-weight: 600; }
+/* รูปหกเหลี่ยมด้านแบนบน (ชุดเดียวกับแผงตัวเรา): วงไล่สีประจำที่นั่ง→ฟ้า · เส้นมืด · รูป */
+.pc-hex {
+  --pc-hexf: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   position: relative;
   flex: 0 0 auto;
-  width: 76px;
-  height: 94px;
-  overflow: hidden;
-  /* รูปตัดมุมแบบเดียวกับกรอบ */
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  background: linear-gradient(135deg, #3d8bd9, #12264a);
-  box-shadow: inset 0 0 0 1px rgba(127, 184, 230, 0.4);
+  width: 100px;
+  height: 88px;
+  align-self: center;
+  clip-path: var(--pc-hexf);
+  background: linear-gradient(160deg, var(--p-frame-color, #3d8bd9) 0%, #7fb8e6 60%, #3d8bd9 100%);
 }
+.pc-hex-dark { position: absolute; inset: 3px; clip-path: var(--pc-hexf); background: #0b1630; }
+.pc-hex-in { position: absolute; inset: 6px; display: block; overflow: hidden; clip-path: var(--pc-hexf); background: linear-gradient(135deg, #3d8bd9, #12264a); }
 .pc-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
 .pc-name-text {
   font-family: var(--font-av-thai);
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   line-height: 1.34;
   color: #ffffff;
   white-space: nowrap;

@@ -11,14 +11,14 @@ import { RaidRespawn, RaidSurrender, RaidDeckDrawer } from "../raid/RaidOverlays
 import ArenaBackdrop from "../components/ArenaBackdrop";
 import JourneyBackdrop from "../journey/JourneyBackdrop";
 import ArenaScene from "../journey/arena/ArenaScene";
-import { arenaLayout, hasArena, ARENA_CARD_SCALE } from "../journey/arena/arenaData";
+import { arenaLayout, hasArena, ARENA_CARD_SCALE, arenaCardZoom } from "../journey/arena/arenaData";
 import { onArenaLand, getArenaLandSeq, arenaLandDelay } from "../journey/arena/arenaLandBus";
 import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
 import { socket } from "../socket";
 import { StatRow, SpRow, VitalExtras } from "./hud/StatRow";
-import { SkillSlot } from "./hud/SkillSlot";
+import { SkillSlot, HexFrame } from "./hud/SkillSlot";
 import { OrtLostTierContext } from "./hud/ortLost";
 import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
 import { clickSound, playSfx, stopSfx, sfxPlayId, startLoopSfx, stopLoopSfx, playCutsceneVideo, suspendMusic, DOOM_WEAPON_SOUNDS } from "../audio";
@@ -917,27 +917,28 @@ function rankTiers(players) {
 //  (การ์ดกว้าง w-28 = กว้าง +-6.2% ที่ความกว้างออกแบบต่ำสุด 900px)
 const SLOTS = {
   0: [],
-  1: [[8, 50]],
-  2: [[9, 22], [9, 78]],
-  3: [[9, 17], [6, 50], [9, 83]],
-  4: [[9, 18], [9, 82], [44, 13], [44, 87]],
-  5: [[9, 17], [6, 50], [9, 83], [50, 13], [50, 87]],
+  1: [[12, 50]],
+  2: [[12, 22], [12, 78]],
+  3: [[12, 17], [11, 50], [12, 83]],
+  4: [[12, 18], [12, 82], [36, 13], [36, 87]],
+  5: [[12, 17], [11, 50], [12, 83], [38, 13], [38, 87]],
   // patch 2.8 (ช่องผู้เล่นที่ 7): 6 คนอื่น — แถวบน 4 ใบ + ข้างละ 1 ใบ
   //  แถวบนคู่กลางวางที่ 38/62% (ขอบในสุด 44.2/55.8%) จึงเว้นช่องกองการ์ดกลางไว้ทั้งแนวนอน
-  //  และ top 4% ทำให้ปลายล่างของการ์ดยังอยู่เหนือกองการ์ดที่เริ่มต้นที่ 40% อีกชั้นหนึ่ง
-  6: [[7, 15], [4, 38], [4, 62], [7, 85], [50, 12], [50, 88]],
+  //  และปลายล่างของการ์ดยังอยู่เหนือกองการ์ดที่เริ่มต้นที่ 40% อีกชั้นหนึ่ง
+  // 5.1 (แผงตัวเราใหม่ ใหญ่ขึ้นตามจอ): แถวบนเลื่อนลงพ้นแถบรอบ/ภูมิภาคซ้ายบน (~10%) · ใบข้างยกขึ้นพ้นแผงล่าง (เดิม 44-50%)
+  6: [[11, 15], [11, 38], [11, 62], [11, 85], [38, 12], [38, 88]],
 };
 
 // โหมดปกติหลัง ORT บุกเทิร์น 60: ORT นั่งกลางด้านบน ผู้เล่นคนอื่นใช้ผังที่เว้นช่องกลางไว้ให้
 const ORT_SEAT = [3, 50];
 const ORT_SIDE_SLOTS = {
   0: [],
-  1: [[9, 20]],
-  2: [[9, 20], [9, 80]],
-  3: [[9, 18], [9, 82], [48, 12]],
-  4: [[9, 18], [9, 82], [44, 13], [44, 87]],
-  5: [[7, 15], [7, 85], [44, 12], [44, 88], [4, 31]],
-  6: [[7, 13], [7, 87], [4, 31], [4, 69], [50, 12], [50, 88]],
+  1: [[12, 20]],
+  2: [[12, 20], [12, 80]],
+  3: [[12, 18], [12, 82], [38, 12]],
+  4: [[12, 18], [12, 82], [36, 13], [36, 87]],
+  5: [[11, 15], [11, 85], [36, 12], [36, 88], [11, 31]],
+  6: [[11, 13], [11, 87], [11, 31], [11, 69], [38, 12], [38, 88]],
 };
 
 // Type Mercury: เพื่อนร่วมทีมเรียงแถวเดียวกลางจอ ใต้ตัว ORT (ฝั่งเดียวกับเรา) — [top%, left%, scale]
@@ -2238,13 +2239,6 @@ function PlaqueCrest() {
     </svg>
   );
 }
-function PlaqueRule() {
-  return (
-    <span className="pc-rule" aria-hidden="true">
-      <svg viewBox="0 0 8 8" className="pc-rule-gem"><path d="M4 0 8 4 4 8 0 4Z" fill="#bee3f8" /></svg>
-    </span>
-  );
-}
 
 // ผู้เล่นคนอื่นรอบโต๊ะ — picked = ถูกเลือกเป้าหมาย ANATA WAAAAAAAA แล้ว
 //  คลิกตอนไม่ได้เลือกเป้า = เปิดหน้าต่างดูสถานะของคนนั้น (onInspect)
@@ -2262,7 +2256,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       ref={hostRef}
       // Tailwind v4: -translate-x-1/2 ใช้ property `translate` แยกจาก `transform` — ใส่ทั้งคู่ = เลื่อนซ้ำ 2 เท่า
       //  ที่นั่งแบบย่อ (โหมด Raid) จึงเลื่อนกึ่งกลางใน transform เองแทนคลาส
-      className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[236px]"}`}
+      className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[260px]"}`}
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null), ...(enterDelay != null ? { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${enterDelay}s both` } : null) }}
     >
       <div
@@ -2279,10 +2273,13 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
             <PlaqueCrest />
             <div className="pc-inner">
               <div className="pc-main">
-                <div className="pc-por">
-                  <Portrait p={p} className="w-full h-full" rounded="" />
+                {/* รูปหกเหลี่ยมด้านแบนบน (ชุดเดียวกับแผงตัวเรา) — ขอบไล่จากสีประจำที่นั่งไปฟ้า */}
+                <div className="pc-hex">
+                  <span className="pc-hex-dark" aria-hidden="true" />
+                  <span className="pc-hex-in">
+                    <Portrait p={p} className="w-full h-full" rounded="" />
+                  </span>
                 </div>
-                <PlaqueRule />
                 <div className="pc-info">
                   <div className="pc-name-text">
                     {p.name}{!p.connected && <span className="ml-1 text-[10px] text-echo-hp">•offline</span>}
@@ -3330,9 +3327,29 @@ function YuiSongModal({ me, onPick, onClose }) {
 // ---------- Bard : คีตกวี — ช่องประพันธ์เพลง (แทนที่ช่องท่าไม้ตาย) ----------
 //  แสดงโน้ต ❤️/💚 ที่เติมไว้ 3 ช่อง — ครบ 3 บรรเลงทำนองเองแล้วล้างช่องเพื่อเริ่มบทเพลงใหม่
 //  patch 2.1.2: จำกัด 2 โน้ตต่อเทิร์น — ระหว่างมิติมายาบรรเลง (โลหิต/วิญญาณ) กดได้สูงสุด 6 ครั้งต่อเทิร์น
-function BardComposeSlot({ me }) {
+function BardComposeSlot({ me, hud = false }) {
   const notes = me.bardNotes || [];
   const dimOn = (me.statuses?.soulDim || 0) > 0 || (me.statuses?.bloodDim || 0) > 0;
+  // แผงล่างจอคอม: โน้ต 3 ช่องอยู่ในตราหกเหลี่ยมทอง (เข้าชุดกับการ์ดสกิล S2)
+  if (hud) {
+    return (
+      <div className="hud-skill hud-skill-alt" data-tier="ultimate" data-state="wait">
+        <HexFrame gold className="hud-skill-hex">
+          <span className="hud-bard-notes">
+            {[0, 1, 2].map((i) => (
+              <span key={i} data-on={notes[i] ? "true" : "false"}>
+                {notes[i] === "R" ? "❤️" : notes[i] === "J" ? "💚" : "♪"}
+              </span>
+            ))}
+          </span>
+        </HexFrame>
+        <span className="hud-skill-label">
+          <span className="hud-skill-tier">ประพันธ์เพลง</span>
+          <span className="hud-skill-name">{dimOn ? `มิติมายาบรรเลง · โน้ต ${me.bardNotesUsed || 0}/6` : `โน้ต ${me.bardNotesUsed || 0}/2 เทิร์นนี้`}</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative w-full h-20 sm:h-24 rounded-2xl overflow-hidden bg-black/40 border-2 border-echo-ice/70 shadow-lg grid grid-cols-3 gap-1.5 p-2">
@@ -3362,12 +3379,51 @@ const KAI_COMBO_IMG = {
   cp: "/characters/kai/kai_passive2.jpg", // รังสรรค์+ลงทัณฑ์ = ตาชั่งแห่งความเท่าเทียม
   pp: "/characters/kai/kai_passive3.jpg", // ลงทัณฑ์+ลงทัณฑ์ = โทสะระงับด้วยโทสะ
 };
-function KaiOverhaulSlot({ me, frozen }) {
+function KaiOverhaulSlot({ me, frozen, hud = false }) {
   const slots = me.kaiOverhaulSlots || [];
   const ready = slots.length >= 2 && !frozen;
   // คำนวณคอมโบฝั่ง client ล้วนๆ จากเนื้อหา kaiOverhaulSlots เอง (ไม่ต้องมี field เพิ่มจาก server)
   const comboKey = ready ? (slots[0].status === "kaiCreation" ? (slots[1].status === "kaiCreation" ? "cc" : "cp") : (slots[1].status === "kaiPunishment" ? "pp" : "cp")) : null;
   const comboLabel = { cc: "สวรรค์ประทานพร", cp: "ตาชั่งแห่งความเท่าเทียม", pp: "โทสะระงับด้วยโทสะ" }[comboKey] || "";
+  // แผงล่างจอคอม: ช่อง Overhaul ในตราหกเหลี่ยมทอง (กดได้เมื่อครบ 2 ช่อง — เงื่อนไขเดิม)
+  if (hud) {
+    return (
+      <button
+        type="button"
+        onClick={() => { if (ready) { clickSound(); socket.emit("kaiOverhaul"); } }}
+        disabled={!ready}
+        className="hud-skill hud-skill-alt"
+        data-tier="ultimate"
+        data-state={ready ? "ready" : "wait"}
+      >
+        <HexFrame gold className="hud-skill-hex">
+          {ready ? (
+            <img src={KAI_COMBO_IMG[comboKey]} alt={comboLabel} />
+          ) : (
+            <span className="hud-kai-slots">
+              {[0, 1].map((i) => {
+                const slot = slots[i];
+                return (
+                  <span key={i} data-on={slot ? "true" : "false"}>
+                    {slot ? (
+                      <>
+                        {slot.img && <img src={slot.img} alt={slot.name} />}
+                        <span className="hud-kai-mark">{slot.status === "kaiCreation" ? "🎨" : "⚔️"}</span>
+                      </>
+                    ) : "♦"}
+                  </span>
+                );
+              })}
+            </span>
+          )}
+        </HexFrame>
+        <span className="hud-skill-label">
+          <span className="hud-skill-tier">Overhaul</span>
+          <span className="hud-skill-name">{ready ? comboLabel : `${slots.length}/2`}</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-1">
       <button
@@ -3705,7 +3761,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // ฉากหลังได้แค่ค่าพื้นฐาน (ภูมิภาค/จำนวน/สี/ขนาดจอ) — ArenaBackground memo เองแล้วค่อยสร้างฉาก (หนัก) เมื่อค่าเปลี่ยน
   const arenaBg = arenaArea ? `${arenaSeatN}~${vpW}~${vpH}~${arenaColorKey}` : null;
   const arenaSlots = arenaLay
-    ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.x / vp.w) * 100, o.s * ARENA_CARD_SCALE, "bottom"])
+    ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.cardX / vp.w) * 100, o.s * ARENA_CARD_SCALE * arenaCardZoom(vp.h), "bottom"])
     : null;
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): เครื่องนี้บังคับส่วนไหน — นักบิน (จั่ว/เปิดการ์ด/โจมตี/ซ่อม) · พลปืน (สกิล/ร้านค้า/ไอเทม)
   const meRec = state.players.find((pl) => pl.id === state.youId);
@@ -4922,6 +4978,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   //  ATTACKING ของฝ่ายเราเองยังซ่อนต่อ — โจมตีซ้ำ (ATTACK → ATTACKING → ATTACK) แผงจะได้ไม่เด้งขึ้นลง
   const attackingSelf = phase === "ATTACKING" && state.attackerId === state.youId && pairPilot;
   const hudAway = !!me && (pickingTarget || iAmAttacker || attackingSelf);
+  // ขนาด UI แผงตัวเรา: ออกแบบที่หน่วยฐาน 1440×810 แล้วขยายตามจอ (1080p = ×1.333)
+  //  ความกว้างฐานขั้นต่ำ 1376 = ซ้าย+กลาง+ขวาเรียงได้ไม่ชนกัน (จอแคบ/4:3 จึงย่อตามความกว้าง)
+  //  กระดานทั้งหมดถูกย่อด้วย scale อยู่แล้ว → ตัวคูณภายในกระดาน = hudZ / scale
+  const hudZ = Math.min(1.6, Math.max(0.6, Math.min(vp.h / 810, vp.w / 1376)));
+  const hudK = hudZ / scale;
 
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -4980,6 +5041,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           ? { ...journeyArea(state.journey.area), name: state.journey.name, turnsLeft: state.journey.turnsLeft }
           : null}
         onJourney={() => { clickSound(); setJourneyInfoOpen(true); }}
+        zoom={hudK}
       />
       {/* ORT ชั้นที่กดได้ (แถบข้อมูล + พื้นที่คลิกโจมตี) — ต้องอยู่ในกรอบกระดานนี้ ไม่งั้นกรอบกินคลิกไปหมด */}
       {boss && (
@@ -5215,7 +5277,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         <SelfHud
           hidden={hudAway}
           lowQ={lowQ}
-          compact={DESIGN_W < 1240}
+          zoom={hudK}
           panel={
             <HudPanel
               portrait={me.hisakawa ? (
@@ -5231,17 +5293,18 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               onName={() => { clickSound(); setShowChar(true); }}
               teamId={me.teamId}
               teamColor={teamAccent(me.teamId)}
-              vitals={me.hisakawa ? null : (
+              sp={me.skillPoints}
+              spMax={me.maxSkill}
+              vitals={me.hisakawa ? <TwinVitals p={me} compact /> : (
                 // แถวไอคอน+ช่อง+ตัวเลขชุดเดียวกับการ์ดคู่ต่อสู้ — เลือดกับเกราะแยกกันด้วยไอคอน ตัวเลข และรูปทรงช่อง
                 <div className="hud-vitals">
-                  <StatRow kind="hp" value={me.hp} max={me.maxHp} extra={me.tempHp || 0} extraLabel="เลือดชั่วคราว" />
-                  <StatRow kind="ar" value={me.armor} max={me.maxArmor} extra={me.supFaith || 0} extraLabel="เกราะศรัทธา" tone={armorToneOf(me)} crack={me.tohnoCrack || 0} />
+                  <StatRow big kind="hp" value={me.hp} max={me.maxHp} extra={me.tempHp || 0} extraLabel="เลือดชั่วคราว" />
+                  <StatRow big kind="ar" value={me.armor} max={me.maxArmor} extra={me.supFaith || 0} extraLabel="เกราะศรัทธา" tone={armorToneOf(me)} crack={me.tohnoCrack || 0} />
                   <VitalExtras p={me} className="pc-extra-inline" />
                 </div>
               )}
               chips={
                 <>
-                  {me.hisakawa && <TwinVitals p={me} compact />}
                   <DoomChargeBadge me={me} ch={ch} />
                   <TakutoStarBadge me={me} ch={ch} />
                   <TakumiGearBadge me={me} ch={ch} />
@@ -5320,8 +5383,6 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           }
           right={
             <HudRight
-              sp={me.skillPoints}
-              spMax={me.maxSkill}
               extras={
                 <>
                   {ch?.id === "nanaya" && phase === "PLAYING" && me.alive && !done && (
@@ -5371,7 +5432,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <>
                   <SkillSlot variant="hud" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
                   <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
-                  {isBard ? <div className="hud-skill-alt"><BardComposeSlot me={me} /></div> : isKai ? <div className="hud-skill-alt"><KaiOverhaulSlot me={me} frozen={frozenByClockUp} /></div> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
+                  {isBard ? <BardComposeSlot me={me} hud /> : isKai ? <KaiOverhaulSlot me={me} frozen={frozenByClockUp} hud /> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
                 </>
               }
             />

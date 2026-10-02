@@ -1,5 +1,5 @@
 // แผงตัวเรา (จอคอม/แท็บเล็ต) — กระจกน้ำเงินตัดมุม ตามดีไซน์ HudMain ที่ผู้ใช้อนุมัติ
-//  ซ้ายล่าง = แผงผู้เล่น · กลางล่าง = แต้ม/มือไพ่/จั่ว-เปิดไพ่ · ขวาล่าง = SP/กระเป๋า/ร้านค้า/สกิล · ซ้ายบน = รอบ/เวลา/ภูมิภาค
+//  ซ้ายล่าง = แผงตัวละคร+แต้มสกิล · กลางล่าง = แต้ม/มือไพ่/จั่ว-เปิดไพ่ · ขวาล่าง = กระเป๋า/ร้านค้า/สกิล · ซ้ายบน = รอบ/เวลา/ภูมิภาค
 //  คอมโพเนนต์ในไฟล์นี้วาดอย่างเดียว — เงื่อนไขกดได้/ไม่ได้ทั้งหมดส่งมาจาก GameBoard (Game.jsx) ผ่าน props
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PERMANENT_STATUS_KEYS } from "../../data/permanentStatus";
@@ -94,39 +94,47 @@ function Cells({ n, on, color, h, solidOver = 16 }) {
   );
 }
 
-// ---------- ซ้ายล่าง: แผงผู้เล่น ----------
-//  รูป/ชื่อ/ทีม · เลือด/เกราะ · ป้ายตัวละคร · แถวทรัพยากร — รายการสถานะย้ายไปลิ้นชักซ้าย (HudStatusDrawer) แผงจึงเตี้ยพอไม่ทับที่นั่งคู่แข่ง
-export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, teamColor, chips, vitals, statuses = [], rawStatuses }) {
+// ---------- ซ้ายล่าง: แผงตัวละคร (ดีไซน์ E1 ปรับ) ----------
+//  รูปหกเหลี่ยมด้านแบน (ขอบทอง→ฟ้า) เกยซ้ายของแผงเฉียง · ชื่อ+ทีม+ป้ายตัวละคร · เลือด/เกราะเป็นช่องเฉียงนับได้
+//  ใต้แผง: แผงแต้มสกิลแยก (ม่วง) + แถบทรัพยากรตัวละคร ต่อลงมา — เลื่อนไปพร้อมกันทั้งชุด
+//  รายการสถานะอยู่ในลิ้นชักซ้าย (HudStatusDrawer)
+export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, teamColor, chips, vitals, sp = 0, spMax = 0, statuses = [], rawStatuses }) {
   const [openKey, setOpenKey] = useState(null);
   const { res } = splitEntries(statuses, rawStatuses);
   const toggle = (k) => setOpenKey((o) => (o === k ? null : k));
   return (
-    <section className="hud-panel hud-glass" aria-label="ผู้เล่น">
-      <div className="hud-head">
-        {hexPortrait ? (
-          <button type="button" className="hud-hex" onClick={onName} aria-label="รายละเอียดตัวละคร">
-            {portrait}
-          </button>
-        ) : (
-          portrait
-        )}
-        <div className="hud-head-main">
+    <div className="hud-prof">
+      <div className="hud-prof-top">
+        <div className="hud-prof-portrait">
+          {hexPortrait ? (
+            <button type="button" className="hud-portrait-hex" onClick={onName} aria-label="รายละเอียดตัวละคร">
+              <span className="hud-hexframe-dark" aria-hidden="true" />
+              <span className="hud-hexframe-in">{portrait}</span>
+            </button>
+          ) : (
+            <div className="hud-portrait-twins">{portrait}</div>
+          )}
+        </div>
+        <section className="hud-prof-card" aria-label="ตัวละครของเรา">
           <div className="hud-name-row">
             <button type="button" className="hud-name" onClick={onName} title="รายละเอียดตัวละคร">{name}</button>
             {teamId && <span className="hud-team" style={{ background: teamColor }}>ทีม {teamId}</span>}
+            <span className="hud-chips">{chips}</span>
           </div>
           {vitals}
-        </div>
+        </section>
       </div>
-      <div className="hud-chips">{chips}</div>
-      {res.length > 0 && (
-        <div className="hud-res">
-          {res.map((it) => (
-            <ResourceRow key={it.key} it={it} open={openKey === it.key} onToggle={() => toggle(it.key)} />
-          ))}
-        </div>
-      )}
-    </section>
+      <section className="hud-sp-strip" aria-label="แต้มสกิล" title={`แต้มสกิล ${sp}/${spMax}`}>
+        <span className="hud-sp-label">แต้มสกิล</span>
+        <span className="hud-pips">
+          {Array.from({ length: spMax }, (_, i) => <span key={i} data-on={i < sp ? "true" : "false"} />)}
+        </span>
+        <span className="hud-sp-num">{sp}<span>/{spMax}</span></span>
+      </section>
+      {res.map((it) => (
+        <ResourceRow key={it.key} it={it} open={openKey === it.key} onToggle={() => toggle(it.key)} />
+      ))}
+    </div>
   );
 }
 
@@ -187,28 +195,28 @@ export function HudStatusDrawer({ statuses = [], rawStatuses, statusAlt, onOpenA
         aria-expanded={open}
         aria-controls="hud-status-drawer"
         aria-label={open ? "ปิดสถานะ" : `สถานะ ${list.length}`}
+        title="สถานะ"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
         <span className="hud-drawer-count">{list.length}</span>
-        <span className="hud-drawer-word">สถานะ</span>
-        <svg className="hud-drawer-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
     </div>
   );
 }
 
+// แถบทรัพยากรตัวละคร: ทรงเฉียงแบบเดียวกับแผงแต้มสกิล ต่อลงมาใต้แผง (แตะเพื่อกางรายละเอียด)
 function ResourceRow({ it, open, onToggle }) {
   const tone = toneOf(it.cls);
   const id = `hud-rs-${it.key}`;
   return (
-    <div className="hud-row hud-row-res" data-open={open ? "true" : "false"} style={{ background: hexA(tone, open ? 0.16 : 0.08) }}>
-      <button type="button" className="hud-row-btn" onClick={it.desc ? onToggle : undefined} aria-expanded={it.desc ? open : undefined} aria-controls={it.desc ? id : undefined}>
-        <IconTile icon={it.icon} tone={tone} />
+    <div className="hud-res-strip" data-open={open ? "true" : "false"} style={{ "--tone": tone, "--tone-bg": hexA(tone, 0.14) }}>
+      <button type="button" className="hud-res-btn" onClick={it.desc ? onToggle : undefined} aria-expanded={it.desc ? open : undefined} aria-controls={it.desc ? id : undefined}>
+        <IconTile icon={it.icon} tone={tone} size={26} />
         <span className="hud-res-label">{it.short}</span>
-        <Cells n={it.max} on={it.cur} color={tone} h={8} />
-        <span className="hud-res-num" style={{ color: tone }}>{it.cur}/{it.max}</span>
+        <Cells n={it.max} on={it.cur} color={tone} h={10} />
+        <span className="hud-res-num">{it.cur}/{it.max}</span>
       </button>
-      {open && it.desc && <div id={id} className="hud-row-desc">{it.desc}</div>}
+      {open && it.desc && <div id={id} className="hud-res-desc">{it.desc}</div>}
     </div>
   );
 }
@@ -279,29 +287,41 @@ export function HudCenter({ score, busted, handRef, hand, draw, reveal }) {
   );
 }
 
-// ---------- ขวาล่าง: แต้มสกิล · กระเป๋า · ร้านค้า · สกิล 3 ช่อง ----------
-export function HudRight({ sp, spMax, extras, bagCount = 0, onBag, gold = 0, showShop = true, onShop, skills }) {
+// ---------- ขวาล่าง: กระเป๋า · ร้านค้า · ตราสกิล 3 ช่อง ----------
+function BagIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="48" height="48" aria-hidden="true">
+      <path d="M11 10V8a5 5 0 0 1 10 0v2" fill="none" stroke="#bee3f8" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M6 11h20l-1.5 16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" fill="#3d8bd9" stroke="#bee3f8" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M11 16h10" stroke="#e6f2fb" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="14" y="14.5" width="4" height="4" rx="1" fill="#f0c868" />
+    </svg>
+  );
+}
+function ShopIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
+      <path d="M5 12 7 5h18l2 7Z" fill="#f0c868" />
+      <path d="M5 12q3 3 6 0q3 3 5 0q2 3 5 0q3 3 6 0" fill="#c4902a" />
+      <rect x="7" y="13" width="18" height="14" fill="none" stroke="#f0c868" strokeWidth="2" />
+      <rect x="13" y="19" width="6" height="8" fill="#f0c868" />
+    </svg>
+  );
+}
+export function HudRight({ extras, bagCount = 0, onBag, gold = 0, showShop = true, onShop, skills }) {
   return (
     <section className="hud-right-in" aria-label="สกิล">
       <div className="hud-extras">{extras}</div>
-      <div className="hud-sp-row">
-        <div className="hud-sp hud-glass" title={`แต้มสกิล ${sp}/${spMax}`}>
-          <span className="hud-sp-label">แต้มสกิล</span>
-          {spMax > 16 ? (
-            <span className="hud-cells hud-cells-solid" style={{ height: 14 }}><span style={{ width: `${(Math.max(0, sp) / spMax) * 100}%`, background: "#c99ad6" }} /></span>
-          ) : (
-            <span className="hud-sp-cells">
-              {Array.from({ length: spMax }, (_, i) => <span key={i} data-on={i < sp ? "true" : "false"} />)}
-            </span>
-          )}
-          <span className="hud-sp-num">{sp}/{spMax}</span>
-        </div>
-        <button type="button" className="hud-tab" onClick={onBag}>
-          กระเป๋า{bagCount > 0 && <span className="hud-tab-badge">{bagCount}</span>}
+      <div className="hud-bag-row">
+        <button type="button" className="hud-bag" onClick={onBag} aria-label="กระเป๋า" title="กระเป๋า">
+          <BagIcon />
+          {bagCount > 0 && <span className="hud-bag-badge">{bagCount}</span>}
         </button>
         {showShop && (
-          <button type="button" className="hud-tab hud-tab-shop" onClick={onShop}>
-            ร้านค้า · <span className="hud-num">{gold}</span>
+          <button type="button" className="hud-shop" onClick={onShop}>
+            <ShopIcon />
+            <span>ร้านค้า</span>
+            <span className="hud-shop-gold"><span className="hud-coin" aria-hidden="true">฿</span>{gold}</span>
           </button>
         )}
       </div>
@@ -312,16 +332,30 @@ export function HudRight({ sp, spMax, extras, bagCount = 0, onBag, gold = 0, sho
 
 // ---------- กล่องรวมทั้งสามกลุ่ม + เลื่อนลงซ่อนตอนเลือกเป้าหมาย ----------
 //  hidden = กำลังเลือกเป้าหมาย/เป็นฝ่ายโจมตี — แผงทั้งหมด (รวมลิ้นชักสถานะ) หลบพ้นจอ เหลือแค่ปุ่มลูกศรไว้เรียกกลับมาดูชั่วคราว
-export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, center, right, drawer }) {
+//  zoom = ตัวคูณขนาด (หน่วยฐานดีไซน์ 1440×810 → px ของกระดาน) แต่ละกลุ่มขยายจากมุมที่ยึดไว้
+//  กลุ่มกลางวางในช่องว่างจริงระหว่างซ้ายกับขวา (วัดจริง) — ความกว้างไม่พอ = ย่อทั้งชุดลงจนเรียงได้ ห้ามทับกันเด็ดขาด
+const EDGE_L = 18; // ระยะขอบ (หน่วยฐาน)
+const EDGE_R = 20;
+const GAP = 16;
+export function SelfHud({ hidden = false, lowQ = false, zoom = 1, panel, center, right, drawer }) {
   const dockRef = useRef(null);
   const leftRef = useRef(null);
-  const [panelH, setPanelH] = useState(240);
-  // ความสูงแผงผู้เล่น → ลิ้นชักสถานะวางเหนือแผงพอดี ไม่ทับกัน
+  const centerRef = useRef(null);
+  const rightRef = useRef(null);
+  const [m, setM] = useState({ dockW: 0, leftW: 520, leftH: 240, centerW: 344, rightW: 442 });
+  // วัดขนาดจริงของแต่ละกลุ่ม (ก่อนขยาย) + ความกว้างกระดาน
   useLayoutEffect(() => {
-    const el = leftRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(() => setPanelH(el.offsetHeight));
-    ro.observe(el);
+    const els = [dockRef.current, leftRef.current, centerRef.current, rightRef.current];
+    if (els.some((e) => !e) || typeof ResizeObserver === "undefined") return undefined;
+    const read = () => setM({
+      dockW: els[0].clientWidth,
+      leftW: els[1].offsetWidth,
+      leftH: els[1].offsetHeight,
+      centerW: els[2].offsetWidth,
+      rightW: els[3].offsetWidth,
+    });
+    const ro = new ResizeObserver(read);
+    els.forEach((e) => ro.observe(e));
     return () => ro.disconnect();
   }, []);
   const [peek, setPeek] = useState(false);
@@ -340,25 +374,32 @@ export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, 
       el.setAttribute("inert", "");
     } else el.removeAttribute("inert");
   }, [away]);
+
+  // ความกว้างรวมที่ต้องใช้ (หน่วยฐาน) → ถ้ากระดานแคบกว่า ย่อตัวคูณลงจนสามกลุ่มเรียงแถวเดียวได้พอดี
+  const need = EDGE_L + m.leftW + GAP + m.centerW + GAP + m.rightW + EDGE_R;
+  const k = m.dockW ? Math.min(zoom, m.dockW / need) : zoom;
+  // ช่องว่างระหว่างกลุ่มซ้ายกับขวา (px ของกระดาน) — กลุ่มกลางอยู่กลางจอถ้าได้ ไม่งั้นเลื่อนเข้าช่องว่าง
+  const gapL = (EDGE_L + m.leftW + GAP) * k;
+  const gapR = m.dockW - (EDGE_R + m.rightW + GAP) * k;
+  const cw = m.centerW * k;
+  const cx = m.dockW ? Math.min(Math.max(m.dockW / 2, gapL + cw / 2), Math.max(gapL + cw / 2, gapR - cw / 2)) : null;
   return (
     <>
-      <div ref={dockRef} className="hud-dock" data-away={away ? "true" : "false"} data-instant={lowQ ? "true" : "false"} aria-hidden={away ? "true" : undefined} style={{ "--hud-panel-h": `${panelH}px` }}>
+      <div
+        ref={dockRef}
+        className="hud-dock"
+        data-away={away ? "true" : "false"}
+        data-instant={lowQ ? "true" : "false"}
+        aria-hidden={away ? "true" : undefined}
+        style={{ "--hud-k": k, "--hud-panel-h": `${m.leftH}px` }}
+      >
         {drawer && <div className="hud-drawer-zone">{drawer}</div>}
         <div ref={leftRef} className="hud-grp hud-left">{panel}</div>
-        {compact ? (
-          <div className="hud-grp hud-rcol">
-            {center}
-            {right}
-          </div>
-        ) : (
-          <>
-            <div className="hud-grp hud-center">{center}</div>
-            <div className="hud-grp hud-right">{right}</div>
-          </>
-        )}
+        <div ref={centerRef} className="hud-grp hud-center" style={cx != null ? { left: cx } : undefined}>{center}</div>
+        <div ref={rightRef} className="hud-grp hud-right">{right}</div>
       </div>
       {hidden && (
-        <button type="button" className="hud-peek" data-peek={peek ? "true" : "false"} onClick={() => setPeek((v) => !v)} aria-expanded={peek} aria-label={peek ? "ซ่อนแผงผู้เล่น" : "แสดงแผงผู้เล่น"}>
+        <button type="button" className="hud-peek" style={{ "--hud-k": k }} data-peek={peek ? "true" : "false"} onClick={() => setPeek((v) => !v)} aria-expanded={peek} aria-label={peek ? "ซ่อนแผงผู้เล่น" : "แสดงแผงผู้เล่น"}>
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
       )}
@@ -382,10 +423,10 @@ function MoonIcon() {
     </svg>
   );
 }
-export function HudTopBar({ night, round, timer, journey, onJourney }) {
+export function HudTopBar({ night, round, timer, journey, onJourney, zoom = 1 }) {
   if (round == null && !journey) return null;
   return (
-    <div className="hud-top hud-glass">
+    <div className="hud-top hud-glass" style={{ "--hud-k": zoom }}>
       <span className="hud-top-cycle" title={night ? "กลางคืน" : "กลางวัน"}>{night ? <MoonIcon /> : <SunIcon />}</span>
       {round != null && (
         <>

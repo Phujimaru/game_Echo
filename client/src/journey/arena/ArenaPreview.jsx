@@ -28,7 +28,7 @@ export default function ArenaPreview() {
         <div
           key={i}
           style={{
-            position: "absolute", left: o.x, top: o.bottom, width: 236, height: 150,
+            position: "absolute", left: o.cardX ?? o.x, top: o.bottom, width: 236, height: 150,
             transform: `translate(-50%, -100%) scale(${o.s * ARENA_CARD_SCALE})`, transformOrigin: "bottom center",
             background: "rgba(18,38,74,0.88)", border: `2px solid ${COLS[(i + 1) % 7]}`, color: "#eaf3fc",
             font: "500 15px Kanit, sans-serif", display: "grid", placeItems: "center",

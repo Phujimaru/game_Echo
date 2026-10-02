@@ -22,10 +22,11 @@
   color: #eaf3fc;
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, visibility 0s linear 0s;
 }
-.hud-left { left: 20px; }
-.hud-center { left: 50%; bottom: 22px; translate: -50% 0; }
-.hud-right { right: 20px; }
-.hud-rcol { right: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+/* ทุกกลุ่มออกแบบที่หน่วยฐาน 1440×810 แล้วขยายด้วย --hud-k (scale แยกจาก transform ที่ใช้เลื่อนซ่อน) */
+.hud-left { left: calc(18px * var(--hud-k, 1)); bottom: calc(18px * var(--hud-k, 1)); scale: var(--hud-k, 1); transform-origin: 0 100%; }
+.hud-center { left: 50%; bottom: calc(22px * var(--hud-k, 1)); translate: -50% 0; scale: var(--hud-k, 1); transform-origin: 50% 100%; }
+.hud-right { right: calc(20px * var(--hud-k, 1)); bottom: calc(20px * var(--hud-k, 1)); scale: var(--hud-k, 1); transform-origin: 100% 100%; }
+
 .hud-dock[data-away="true"] .hud-grp {
   transform: translateY(calc(100% + 48px));
   opacity: 0;
@@ -54,6 +55,8 @@
   background: rgba(12, 28, 58, 0.9);
   color: #c8dbf2;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+  scale: var(--hud-k, 1);
+  transform-origin: 50% 100%;
   cursor: pointer;
 }
 .hud-peek:hover { color: #ffffff; }
@@ -63,83 +66,7 @@
 
 .hud-dock button:focus-visible, .hud-top button:focus-visible { outline: 2px solid #bee3f8; outline-offset: 2px; }
 
-/* ---------- แผงผู้เล่น (ซ้ายล่าง) ---------- */
-.hud-panel {
-  width: 344px;
-  box-sizing: border-box;
-  padding: 14px 12px 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.hud-head { display: flex; align-items: center; gap: 12px; }
-.hud-hex {
-  position: relative;
-  flex: none;
-  width: 60px;
-  height: 68px;
-  padding: 0;
-  border: 0;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: linear-gradient(160deg, #3d8bd9 0%, #12264a 110%);
-  cursor: pointer;
-  overflow: hidden;
-}
-.hud-hex > * { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
-.hud-head-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.hud-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.hud-name {
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #eaf3fc;
-  font: 600 20px/1.15 Kanit, sans-serif;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-.hud-name:hover { color: #bee3f8; }
-.hud-team {
-  flex: none;
-  padding: 1px 8px;
-  color: #0b1d3a;
-  font: 600 12px/1.5 Kanit, "Chakra Petch", sans-serif;
-}
-
-/* เลือด/เกราะ: ใช้ StatRow เดิม (ไอคอน · ช่อง · ตัวเลข) ปรับขนาดตามดีไซน์ */
-.hud-panel .hud-vitals { display: flex; flex-direction: column; gap: 6px; }
-.hud-panel .hud-vitals .sr { gap: 6px; }
-.hud-panel .hud-vitals .sr .sr-ico { width: 15px; height: 15px; }
-.hud-panel .hud-vitals .sr .sr-track { gap: 2px; }
-.hud-panel .hud-vitals .sr[data-kind="hp"] .sr-cell,
-.hud-panel .hud-vitals .sr[data-kind="hp"] .sr-solid { height: 9px; }
-.hud-panel .hud-vitals .sr[data-kind="ar"] .sr-cell,
-.hud-panel .hud-vitals .sr[data-kind="ar"] .sr-solid { height: 9px; }
-.hud-panel .hud-vitals .sr .sr-num {
-  min-width: 36px;
-  font: 600 13px/1 "Chakra Petch", sans-serif;
-  text-shadow: none;
-}
-.hud-panel .hud-vitals .sr .sr-max { color: #eaf3fc; font-size: 1em; }
-.hud-panel .hud-vitals .pc-extra { margin-top: 1px; }
-
-/* ป้ายเฉพาะตัวละคร (ชาร์จ/เกียร์/หลบหลีก/ความเครียด …) — ทรงเหลี่ยมตัดมุมเข้าชุดกับแผง */
-.hud-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.hud-chips:empty { display: none; }
-.hud-chips > span {
-  border-radius: 0 !important;
-  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  font-family: Kanit, "Chakra Petch", sans-serif;
-  font-weight: 500 !important;
-  font-size: 13px !important;
-  padding: 3px 9px !important;
-}
-
 /* แถว (ทรัพยากร + สถานะ) */
-.hud-res { display: flex; flex-direction: column; gap: 4px; }
 .hud-row { flex: none; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.04); }
 .hud-row[data-open="true"] { background: rgba(127, 184, 230, 0.14); }
 .hud-row-btn {
@@ -181,22 +108,6 @@
   white-space: nowrap;
 }
 .hud-row-desc { padding: 0 12px 10px 44px; font: 300 13px/1.45 Kanit, sans-serif; color: #b9cde6; }
-.hud-res-label {
-  flex: 0 1 auto;
-  max-width: 46%;
-  min-width: 0;
-  font: 500 15px/1.2 Kanit, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hud-res-num {
-  flex: none;
-  min-width: 34px;
-  text-align: right;
-  font: 600 13px/1 "Chakra Petch", sans-serif;
-  font-variant-numeric: tabular-nums;
-}
 .hud-cells { flex: 1; min-width: 40px; display: flex; gap: 3px; }
 .hud-cells > span { flex: 1; min-width: 2px; }
 .hud-cells-solid { position: relative; display: block; background: rgba(255, 255, 255, 0.12); }
@@ -267,7 +178,7 @@
 
 /* ---------- กลางล่าง ---------- */
 .hud-center-in { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.hud-hand-row { display: flex; align-items: flex-end; gap: 16px; }
+.hud-hand-row { display: flex; align-items: flex-end; gap: 14px; }
 .hud-score { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .hud-score-label {
   padding: 3px 10px;
@@ -278,8 +189,8 @@
   clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
 }
 .hud-medal {
-  width: 74px;
-  height: 74px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -287,10 +198,10 @@
   border: 2px solid #f0c868;
   box-shadow: 0 6px 18px rgba(3, 10, 24, 0.5);
   color: #f0c868;
-  font: 700 32px/1 "Chakra Petch", sans-serif;
+  font: 700 30px/1 "Chakra Petch", sans-serif;
 }
 .hud-medal[data-busted="true"] { border-color: #ff6b81; color: #ff8a94; font: 600 15px/1.1 Kanit, sans-serif; text-align: center; }
-.hud-hand { display: flex; align-items: center; justify-content: center; width: 290px; height: 140px; }
+.hud-hand { display: flex; align-items: center; justify-content: center; width: 260px; height: 132px; }
 .hud-hand-note {
   padding: 8px 16px;
   background: rgba(12, 28, 58, 0.8);
@@ -302,8 +213,8 @@
 .hud-hand-note[data-tone="bad"] { color: #ff8a94; font-weight: 600; }
 .hud-actions { display: flex; gap: 10px; }
 .hud-btn {
-  width: 168px;
-  height: 58px;
+  width: 164px;
+  height: 56px;
   border: 0;
   color: #ffffff;
   font: 600 21px/1 Kanit, sans-serif;
@@ -319,7 +230,7 @@
 .hud-btn:disabled { opacity: 0.38; cursor: not-allowed; filter: saturate(0.5); }
 
 /* ---------- ขวาล่าง ---------- */
-.hud-right-in { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.hud-right-in { display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
 .hud-extras { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .hud-extras:empty { display: none; }
 .hud-extras > * {
@@ -333,139 +244,14 @@
   font-size: 13px !important;
   padding: 5px 10px !important;
 }
-.hud-sp-row { display: flex; align-items: center; gap: 10px; }
-.hud-sp { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.hud-sp-label { flex: none; font: 500 14px/1 Kanit, sans-serif; color: #7fb8e6; white-space: nowrap; }
-.hud-sp-cells { flex: 1; display: flex; gap: 3px; }
-.hud-sp-cells > span {
-  flex: 1;
-  height: 14px;
-  background: rgba(255, 255, 255, 0.12);
-  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
-}
-.hud-sp-cells > span[data-on="true"] { background: linear-gradient(180deg, #a9d3f5, #7fb8e6); }
-.hud-sp-num { font: 600 14px/1 "Chakra Petch", sans-serif; font-variant-numeric: tabular-nums; }
-.hud-tab {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 42px;
-  padding: 0 14px;
-  border: 1px solid rgba(127, 184, 230, 0.45);
-  background: rgba(12, 28, 58, 0.9);
-  color: #eaf3fc;
-  font: 500 15px/1 Kanit, sans-serif;
-  white-space: nowrap;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-  cursor: pointer;
-}
-.hud-tab:hover { filter: brightness(1.2); }
-.hud-tab-shop { border-color: rgba(240, 200, 104, 0.55); color: #f0c868; gap: 4px; }
-.hud-tab-badge { margin-left: 6px; padding: 0 6px; background: #8a4386; color: #ffffff; font: 600 12px/1.5 "Chakra Petch", sans-serif; }
-.hud-skills { display: flex; gap: 10px; justify-content: flex-end; }
-
-/* การ์ดสกิล 122×156 */
-.hud-skill {
-  position: relative;
-  flex: none;
-  width: 122px;
-  height: 156px;
-  padding: 0;
-  border: 1.5px solid rgba(127, 184, 230, 0.45);
-  background: rgba(12, 28, 58, 0.92);
-  color: #eaf3fc;
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, opacity 0.18s ease;
-}
-.hud-skill[data-tier="ultimate"] { border-color: #f0c868; }
-.hud-skill[data-state="ready"] { border-color: #bee3f8; }
-.hud-skill[data-tier="ultimate"][data-state="ready"] { border-color: #ffd98a; }
-.hud-skill[data-state="ready"]:hover { transform: translateY(-4px); filter: brightness(1.1); }
-.hud-skill:disabled { cursor: not-allowed; }
-.hud-skill[data-state="nosp"], .hud-skill[data-state="off"] { opacity: 0.5; }
-.hud-skill[data-state="off"] .hud-skill-art img { filter: grayscale(0.7); }
-.hud-skill-art { position: relative; display: block; flex: none; height: 92px; overflow: hidden; background: linear-gradient(160deg, #3d8bd9, #12264a); }
-.hud-skill[data-tier="secondary"] .hud-skill-art { background: linear-gradient(160deg, #9b4f96, #12264a); }
-.hud-skill[data-tier="ultimate"] .hud-skill-art { background: linear-gradient(160deg, #f0c868, #6e4a12); }
-.hud-skill-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.hud-skill-blank { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: rgba(255, 255, 255, 0.5); }
-.hud-skill-cd {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(5, 12, 28, 0.62);
-  font: 700 34px/1 "Chakra Petch", sans-serif;
-}
-.hud-skill-lost {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  background: rgba(60, 10, 20, 0.72);
-  color: #ff9aa8;
-  font: 600 14px/1.2 Kanit, sans-serif;
-  text-align: center;
-}
-.hud-skill-lost-sub { font-weight: 400; font-size: 12px; color: #ffd0d6; }
-.hud-skill-ammo {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 4px;
-  display: flex;
-  justify-content: center;
-  gap: 2px;
-  padding: 2px 4px;
-  background: rgba(5, 12, 28, 0.6);
-}
-.hud-skill-ammo > span { width: 7px; height: 9px; background: rgba(255, 255, 255, 0.25); }
-.hud-skill-ammo > span[data-on="true"] { background: #7fe0d0; }
-.hud-skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px 8px; }
-.hud-skill-tier { font: 600 15px/1.2 Kanit, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hud-skill[data-tier="ultimate"] .hud-skill-tier { color: #f0c868; }
-.hud-skill-ammo-n { color: #7fe0d0; font-family: "Chakra Petch", sans-serif; font-size: 13px; }
-.hud-skill-name { font: 400 12px/1.2 Kanit, sans-serif; color: #b9cde6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hud-skill-cost {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  padding: 1px 7px;
-  background: #12264a;
-  border: 1px solid #f0c868;
-  color: #f0c868;
-  font: 700 13px/1.4 "Chakra Petch", sans-serif;
-}
-.hud-skill-cost[data-cheap="true"] { background: #f0c868; color: #12264a; }
-
-/* ช่องท่าไม้ตายแบบพิเศษ (Bard ประพันธ์เพลง / Kai Overhaul) — กรอบเท่าการ์ดสกิล */
-.hud-skill-alt {
-  flex: none;
-  width: 122px;
-  height: 156px;
-  box-sizing: border-box;
-  padding: 6px;
-  border: 1.5px solid #f0c868;
-  background: rgba(12, 28, 58, 0.92);
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  font-family: Kanit, sans-serif;
-}
-.hud-skill-alt > div { height: 100%; justify-content: space-between; }
-.hud-skill-alt > div > :first-child { height: 104px !important; border-radius: 0 !important; }
-.hud-skill-alt > div > :last-child { font-size: 12px !important; line-height: 1.25 !important; font-weight: 500 !important; }
 
 /* ---------- ซ้ายบน: รอบ · เวลา · ภูมิภาค ---------- */
 .hud-top {
   position: absolute;
-  left: 20px;
-  top: 18px;
+  left: calc(20px * var(--hud-k, 1));
+  top: calc(18px * var(--hud-k, 1));
+  scale: var(--hud-k, 1);
+  transform-origin: 0 0;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -513,8 +299,8 @@
 .hud-drawer-zone {
   position: absolute;
   left: 0;
-  top: 96px;
-  bottom: calc(var(--hud-panel-h, 240px) + 20px + 12px);
+  top: calc(96px * var(--hud-k, 1));
+  bottom: calc((var(--hud-panel-h, 240px) + 18px + 14px) * var(--hud-k, 1));
   display: flex;
   align-items: flex-end;
   pointer-events: none;
@@ -532,8 +318,10 @@
   --drawer-gap: 20px;
   display: flex;
   align-items: flex-end;
-  height: 100%;
+  height: calc(100% / var(--hud-k, 1));
   pointer-events: none;
+  scale: var(--hud-k, 1);
+  transform-origin: 0 100%;
   transform: translateX(calc(-1 * (var(--drawer-w) + var(--drawer-gap))));
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -558,16 +346,16 @@
 .hud-drawer-panel .hud-st-head { border-top: 0; padding-top: 0; border-bottom: 1px solid rgba(127, 184, 230, 0.25); padding-bottom: 4px; }
 .hud-drawer-panel .hud-st-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .hud-drawer-panel .hud-st-list { flex: 1 1 auto; min-height: 0; }
+/* แท็บเล็กแนวนอน (ไอคอนรายการ · จำนวน) — แคบ/เตี้ยพอจะไม่ชนการ์ดคู่แข่งที่นั่งมุมซ้าย */
 .hud-drawer-tab {
   pointer-events: auto;
   flex: none;
   align-self: flex-end;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 52px;
-  padding: 10px 0 8px;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 12px;
   margin-left: 6px;
   border: 1px solid rgba(127, 184, 230, 0.45);
   border-left: 0;
@@ -576,6 +364,7 @@
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
   cursor: pointer;
 }
 .hud-drawer[data-open="false"] .hud-drawer-tab { margin-left: 0; }
@@ -587,11 +376,319 @@
   text-align: center;
   background: rgba(127, 184, 230, 0.22);
   color: #ffffff;
-  font: 600 14px/1.5 "Chakra Petch", sans-serif;
+  font: 600 15px/1.5 "Chakra Petch", sans-serif;
 }
-.hud-drawer-word { font: 500 12px/1.1 Kanit, sans-serif; }
+.hud-drawer-word { font: 500 15px/1 Kanit, sans-serif; }
 .hud-drawer-chev { transition: transform 0.2s ease; }
 .hud-drawer[data-open="true"] .hud-drawer-chev { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) {
   .hud-drawer, .hud-drawer-panel, .hud-drawer-zone, .hud-dock[data-away="true"] .hud-drawer-zone { transition: none !important; }
 }
+
+/* ===== แผงตัวละคร (ดีไซน์ E1 ปรับ · หน่วยฐาน) ===== */
+.hud-prof { width: 520px; display: flex; flex-direction: column; gap: 6px; font-family: Kanit, "Chakra Petch", sans-serif; }
+.hud-prof-top { position: relative; min-height: 166px; }
+.hud-prof-portrait { position: absolute; left: 0; top: 0; z-index: 2; filter: drop-shadow(0 10px 18px rgba(3, 10, 24, 0.6)); }
+.hud-portrait-hex,
+.hud-hexframe {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: linear-gradient(160deg, #a9d4f5, #3d8bd9);
+}
+.hud-portrait-hex { width: 190px; height: 166px; background: linear-gradient(160deg, #f0c868 0%, #7fb8e6 55%, #3d8bd9 100%); cursor: pointer; }
+.hud-hexframe[data-gold="true"] { background: linear-gradient(160deg, #ffe08a, #c4902a); }
+.hud-hexframe-dark { position: absolute; inset: 5px; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: #0b1630; }
+.hud-hexframe-in { position: absolute; inset: 9px; display: block; overflow: hidden; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(160deg, #1c3f6e, #0b1630); }
+.hud-portrait-hex .hud-hexframe-in > * { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+.hud-portrait-hex img { object-fit: cover; object-position: 50% 15%; }
+.hud-portrait-hex:hover { filter: brightness(1.08); }
+.hud-portrait-twins { width: 190px; height: 166px; display: grid; place-items: center; }
+
+.hud-prof-card {
+  margin: 12px 0 0 92px;
+  min-height: 124px;
+  box-sizing: border-box;
+  padding: 12px 40px 12px 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  background: rgba(12, 28, 58, 0.9);
+  border: 1px solid rgba(127, 184, 230, 0.4);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #eaf3fc;
+}
+.hud-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.hud-name {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eaf3fc;
+  font: 600 25px/1.15 Kanit, sans-serif;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.hud-name:hover { color: #bee3f8; }
+.hud-team { flex: none; padding: 1px 9px; color: #0b1d3a; font: 600 12px/1.6 Kanit, "Chakra Petch", sans-serif; }
+/* ป้ายเฉพาะตัวละคร (ชาร์จ/เกียร์/หลบหลีก/ความเครียด …) + ปุ่มเร่งของเอจิ */
+.hud-chips { display: contents; }
+.hud-chips > span {
+  border-radius: 0 !important;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 3px 9px !important;
+}
+
+/* เลือด/เกราะ: StatRow เดิม (logic ครบ) → ช่องเฉียงนับได้ + ตัวเลข x/y */
+.hud-prof-card .hud-vitals { display: flex; flex-direction: column; gap: 8px; }
+.hud-prof-card .sr.sr-big { gap: 10px; }
+.hud-prof-card .sr.sr-big .sr-ico { width: 22px; height: 22px; }
+.hud-prof-card .sr.sr-big .sr-track { flex: 1 1 auto; gap: 4px; }
+.hud-prof-card .sr.sr-big .sr-cell {
+  min-width: 4px;
+  height: 22px;
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+.hud-prof-card .sr.sr-big[data-kind="ar"] .sr-cell { height: 16px; }
+.hud-prof-card .sr.sr-big .sr-solid { height: 22px; border-radius: 0; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.hud-prof-card .sr.sr-big[data-kind="ar"] .sr-solid { height: 16px; }
+.hud-prof-card .sr.sr-big .sr-off { background: rgba(255, 255, 255, 0.13); }
+.hud-prof-card .sr.sr-big .sr-hp { background: linear-gradient(180deg, #ff9aa9, #e0465f); }
+.hud-prof-card .sr.sr-big .sr-ar { background: linear-gradient(180deg, #b9ddf8, #5b9fe0); }
+.hud-prof-card .sr.sr-big[data-tone="orange"] .sr-ar { background: linear-gradient(180deg, #fed7aa, #f97316); }
+.hud-prof-card .sr.sr-big .sr-num { min-width: 46px; font: 700 19px/1 "Chakra Petch", sans-serif; text-shadow: none; }
+.hud-prof-card .sr.sr-big[data-kind="ar"] .sr-num { font-size: 17px; }
+.hud-prof-card .sr.sr-big .sr-max { color: #eaf3fc; font-size: 1em; }
+.hud-prof-card .pc-extra { margin-top: -2px; }
+
+/* แผงแต้มสกิล: แยกจากแผงตัวละคร (ขอบ/พื้นม่วงของตัวเอง) วางชิดใต้แผง */
+.hud-sp-strip,
+.hud-res-strip { margin: 0 14px 0 150px; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
+.hud-sp-strip {
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 32px 0 26px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(90deg, rgba(58, 22, 82, 0.95), rgba(40, 16, 58, 0.92));
+  border: 1px solid rgba(201, 154, 214, 0.55);
+  color: #ecd0f7;
+}
+.hud-sp-label { flex: none; font: 500 16px/1 Kanit, sans-serif; color: #d7b4ea; white-space: nowrap; }
+.hud-pips { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
+.hud-pips > span {
+  flex: 0 1 17px;
+  min-width: 8px;
+  aspect-ratio: 1 / 1.15;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: rgba(255, 255, 255, 0.14);
+}
+.hud-pips > span[data-on="true"] { background: linear-gradient(180deg, #ecd0f7, #b07fd0); }
+.hud-sp-num { flex: none; font: 700 22px/1 "Chakra Petch", sans-serif; color: #ecd0f7; font-variant-numeric: tabular-nums; }
+.hud-sp-num > span { font-size: 15px; color: #b9a3c8; }
+
+/* แถบทรัพยากรตัวละคร: ทรงเดียวกับแผงแต้มสกิล สีตามหมวด */
+.hud-res-strip {
+  box-sizing: border-box;
+  background: linear-gradient(90deg, var(--tone-bg), rgba(12, 28, 58, 0.9) 60%);
+  border: 1px solid rgba(127, 184, 230, 0.35);
+  border-left: 3px solid var(--tone);
+  color: #eaf3fc;
+}
+.hud-res-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 30px 4px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hud-res-label { flex: 0 1 auto; max-width: 44%; min-width: 0; font: 500 15px/1.2 Kanit, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-res-num { flex: none; min-width: 40px; text-align: right; font: 700 15px/1 "Chakra Petch", sans-serif; color: var(--tone); font-variant-numeric: tabular-nums; }
+.hud-res-strip .hud-cells > span { clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+.hud-res-desc { padding: 0 30px 10px 44px; font: 300 13px/1.45 Kanit, sans-serif; color: #b9cde6; }
+
+/* ===== ขวาล่าง: กระเป๋า (ไอคอนล้วน ใหญ่) · ร้านค้า ===== */
+.hud-bag-row { display: flex; gap: 10px; align-items: stretch; }
+.hud-bag,
+.hud-shop {
+  position: relative;
+  height: 64px;
+  border: 1px solid rgba(127, 184, 230, 0.5);
+  background: rgba(12, 28, 58, 0.92);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.hud-bag { width: 80px; padding: 0; display: grid; place-items: center; }
+.hud-bag-badge {
+  position: absolute;
+  right: 5px;
+  top: 4px;
+  min-width: 20px;
+  padding: 0 5px;
+  background: #8a4386;
+  color: #ffffff;
+  font: 700 13px/1.5 "Chakra Petch", sans-serif;
+  text-align: center;
+}
+.hud-shop {
+  padding: 0 18px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-color: rgba(240, 200, 104, 0.6);
+  color: #f0c868;
+  font: 500 17px/1 Kanit, sans-serif;
+  white-space: nowrap;
+}
+.hud-shop-gold { display: flex; align-items: center; gap: 6px; margin-left: 4px; font: 700 17px/1 "Chakra Petch", sans-serif; }
+.hud-coin {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #d9a93f);
+  border: 1px solid #a8781f;
+  color: #6e4a12;
+  font: 700 11px/1 "Chakra Petch", sans-serif;
+}
+.hud-bag:hover, .hud-shop:hover { filter: brightness(1.2); }
+
+/* ===== ตราสกิล S2: หกเหลี่ยมด้านแบน ===== */
+.hud-skills { display: flex; gap: 14px; align-items: flex-end; justify-content: flex-end; }
+.hud-skill {
+  position: relative;
+  flex: none;
+  width: 132px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eaf3fc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, opacity 0.18s ease;
+}
+.hud-skill[data-tier="ultimate"] { width: 150px; }
+.hud-skill-hex { width: 132px; height: 114px; filter: drop-shadow(0 8px 14px rgba(3, 10, 24, 0.55)); }
+.hud-skill[data-tier="ultimate"] .hud-skill-hex { width: 150px; height: 130px; }
+.hud-skill-hex img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hud-skill[data-state="ready"] .hud-skill-hex { background: linear-gradient(160deg, #e6f4ff, #7fb8e6); }
+.hud-skill[data-tier="ultimate"][data-state="ready"] .hud-skill-hex { background: linear-gradient(160deg, #fff1b8, #f0c868); }
+.hud-skill[data-state="ready"]:hover { transform: translateY(-4px); filter: brightness(1.1); }
+.hud-skill:focus-visible { outline: 2px solid #bee3f8; outline-offset: 3px; }
+.hud-skill:disabled { cursor: not-allowed; }
+/* แต้มไม่พอ/ใช้ไม่ได้: จางเฉพาะตรา ป้ายชื่อยังอ่านออก */
+.hud-skill[data-state="nosp"] .hud-skill-hex, .hud-skill[data-state="off"] .hud-skill-hex { opacity: 0.5; }
+.hud-skill[data-state="nosp"] .hud-skill-label, .hud-skill[data-state="off"] .hud-skill-label { opacity: 0.75; }
+.hud-skill[data-state="nosp"] .hud-skill-hex img, .hud-skill[data-state="off"] .hud-skill-hex img { filter: grayscale(0.65); }
+.hud-skill-label {
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 10px 4px;
+  background: rgba(12, 28, 58, 0.86);
+  border: 1px solid rgba(127, 184, 230, 0.3);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.hud-skill[data-tier="ultimate"] .hud-skill-label { border-color: rgba(240, 200, 104, 0.45); }
+.hud-skill-blank { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: rgba(255, 255, 255, 0.5); }
+.hud-skill-cd {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 12, 28, 0.62);
+  font: 700 36px/1 "Chakra Petch", sans-serif;
+}
+.hud-skill-lost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(60, 10, 20, 0.74);
+  color: #ff9aa8;
+  font: 600 14px/1.2 Kanit, sans-serif;
+  text-align: center;
+}
+.hud-skill-lost-sub { font-weight: 400; font-size: 12px; color: #ffd0d6; }
+.hud-skill-ammo { position: relative; z-index: 1; display: flex; justify-content: center; gap: 2px; margin-top: -14px; padding: 2px 5px; background: rgba(5, 12, 28, 0.85); }
+.hud-skill-ammo > span { width: 7px; height: 9px; background: rgba(255, 255, 255, 0.25); }
+.hud-skill-ammo > span[data-on="true"] { background: #7fe0d0; }
+.hud-skill-tier { max-width: 100%; font: 600 16px/1.15 Kanit, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-skill[data-tier="ultimate"] .hud-skill-tier { color: #f0c868; }
+.hud-skill-ammo-n { color: #7fe0d0; font-family: "Chakra Petch", sans-serif; font-size: 13px; }
+.hud-skill-name { max-width: 100%; font: 400 13px/1.2 Kanit, sans-serif; color: #c8dbf2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-skill-cost {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  z-index: 2;
+  padding: 2px 8px;
+  background: rgba(12, 28, 58, 0.94);
+  border: 1px solid #f0c868;
+  color: #f0c868;
+  font: 600 13px/1.35 Kanit, sans-serif;
+}
+.hud-skill-cost[data-cheap="true"] { background: #f0c868; color: #12264a; }
+/* ช่องพิเศษแทนท่าไม้ตาย (Bard ประพันธ์เพลง / Kai Overhaul) */
+.hud-skill-alt { cursor: default; }
+button.hud-skill-alt { cursor: pointer; }
+.hud-bard-notes { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 18px; }
+.hud-bard-notes > span {
+  flex: 1;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.3);
+}
+.hud-bard-notes > span[data-on="true"] { background: rgba(240, 200, 104, 0.16); border-color: rgba(240, 200, 104, 0.7); color: inherit; }
+.hud-kai-slots { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 22px; }
+.hud-kai-slots > span {
+  position: relative;
+  flex: 1;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.3);
+}
+.hud-kai-slots > span[data-on="true"] { border-color: rgba(240, 200, 104, 0.7); }
+.hud-kai-slots img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hud-kai-mark { position: absolute; right: 2px; bottom: 1px; font-size: 15px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9)); }

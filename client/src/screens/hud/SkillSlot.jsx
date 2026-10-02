@@ -6,6 +6,16 @@ const P_DISPLAY = "var(--font-p-display)";
 // ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่) — cost = แต้มที่ใช้จริง (เวลาทองแกมเบลอร์ลดครึ่ง)
 //  เฟรมตัดมุมเฉียง + แถบสีบอกระดับสกิล (พื้นฐาน/รอง/ท่าไม้ตาย) แทนกรอบมนธรรมดา
 const SKILL_TIER_ACCENT = { basic: "var(--oc-sky)", secondary: "var(--oc-ice)", ultimate: "var(--oc-echo-glow)" };
+// กรอบหกเหลี่ยมด้านแบนบน: วงฟ้า (ทอง = gold) → เส้นมืด → เนื้อใน — ใช้กับตราสกิลและช่องพิเศษ (Bard/Kai)
+export function HexFrame({ gold = false, className = "", children }) {
+  return (
+    <span className={`hud-hexframe ${className}`} data-gold={gold ? "true" : "false"}>
+      <span className="hud-hexframe-dark" aria-hidden="true" />
+      <span className="hud-hexframe-in">{children}</span>
+    </span>
+  );
+}
+
 export function SkillSlot({ label, tier, skill, points, disabled: disabledProp, onUse, ammo, cost, size, cooldown, variant }) {
   const [broken, setBroken] = useState(false);
   const lost = useContext(OrtLostTierContext);
@@ -19,7 +29,7 @@ export function SkillSlot({ label, tier, skill, points, disabled: disabledProp, 
   const usable = skill && !disabled && afford && !outOfAmmo;
   const accent = SKILL_TIER_ACCENT[tier] || "var(--color-echo-ice)";
   const heightCls = size === "lg" ? "h-24 sm:h-28" : "h-20 sm:h-24";
-  // แผงล่างจอคอม: การ์ดสกิล 122×156 (รูปบน · ระดับ/ชื่อล่าง · ป้ายแต้มมุมขวาบน)
+  // แผงล่างจอคอม: ตราหกเหลี่ยม (ดีไซน์ S2) — รูปสกิลในหกเหลี่ยมด้านแบน · ระดับ/ชื่อใต้รูป · ป้ายราคามุมขวาบน
   if (variant === "hud") {
     const cd = cooldown || 0;
     const state = dataLost ? "lost" : cd > 0 ? "cd" : usable ? "ready" : skill && !afford ? "nosp" : "off";
@@ -34,7 +44,7 @@ export function SkillSlot({ label, tier, skill, points, disabled: disabledProp, 
         data-state={state}
         className="hud-skill"
       >
-        <span className="hud-skill-art">
+        <HexFrame gold={tier === "ultimate"} className="hud-skill-hex">
           {skill && skill.img && !broken ? (
             <img src={skill.img} alt="" onError={() => setBroken(true)} />
           ) : (
@@ -47,13 +57,13 @@ export function SkillSlot({ label, tier, skill, points, disabled: disabledProp, 
               <span className="hud-skill-lost-sub">อีก {lost.turns} เทิร์น</span>
             </span>
           )}
-          {hasAmmo && (
-            <span className="hud-skill-ammo">
-              {Array.from({ length: skill.ammo }, (_, i) => <span key={i} data-on={i < ammoLeft ? "true" : "false"} />)}
-            </span>
-          )}
-        </span>
-        <span className="hud-skill-text">
+        </HexFrame>
+        {hasAmmo && (
+          <span className="hud-skill-ammo">
+            {Array.from({ length: skill.ammo }, (_, i) => <span key={i} data-on={i < ammoLeft ? "true" : "false"} />)}
+          </span>
+        )}
+        <span className="hud-skill-label">
           <span className="hud-skill-tier">{label}{hasAmmo && <span className="hud-skill-ammo-n"> · {ammoLeft}/{skill.ammo}</span>}</span>
           <span className="hud-skill-name">{skill?.name || "—"}</span>
         </span>
