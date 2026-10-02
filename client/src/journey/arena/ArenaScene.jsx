@@ -13,6 +13,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { buildArena, ARENA_STEM } from "./arenaData";
+import { bakePlane } from "./bakePlane";
 import { onArenaLandRequest, announceArenaLand, shouldLandOnMount, noteArenaShown } from "./arenaLandBus";
 import { StandArt, FxArt, ForeArt } from "./ArenaArt";
 import "./arena.css";
@@ -53,8 +54,46 @@ const DUST = Array.from({ length: 14 }, (_, i) => {
   return { dx: Math.cos(a), dy: Math.sin(a) * 0.45, d: (i % 3) * 0.04 };
 });
 
+/* พื้นที่อบแล้วเก็บไว้ระดับโมดูล — กระดาน mount ใหม่หลังคัตซีนได้ภาพพื้นทันที ไม่ต้องอบซ้ำ (canvas ใช้ซ้ำได้ทีละที่ จึงวาดสำเนา) */
+const BAKE_CACHE = new Map();
+const BIG_LIVE = 1400; // ชิ้นที่ขยับแต่ใหญ่เกินนี้ (เช่นเกลียวน้ำวน) อบนิ่งไปด้วย — เลเยอร์ใหญ่ที่หมุนอยู่ในแผ่น 3D กิน GPU มาก
+function copyCanvas(src) {
+  const cv = document.createElement("canvas");
+  cv.width = src.width;
+  cv.height = src.height;
+  cv.getContext("2d")?.drawImage(src, 0, 0);
+  return cv;
+}
+
 function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
   const sc = useMemo(() => buildArena({ W, H, area, night, seats, lowQ }), [W, H, area, night, seats, lowQ]);
+  // พื้น: ชิ้นนิ่ง → อบเป็น canvas ก้อนเดียว · ชิ้นที่ขยับ (เล็ก) → ยังเป็น DOM ซ้อนบนภาพ
+  const { baked, live } = useMemo(() => {
+    const isLive = (f) => f.style.animation && Math.max(f.style.width || 0, f.style.height || 0) < BIG_LIVE;
+    return { baked: sc.flats.filter((f) => !isLive(f)), live: sc.flats.filter(isLive) };
+  }, [sc]);
+  const bakeKey = `${area}|${night ? 1 : 0}|${W}|${H}|${lowQ ? 1 : 0}|${(seats || []).map((st) => `${st.phi}${st.col}`).join(",")}`;
+  const bakeHost = useRef(null);
+  const [bakeReady, setBakeReady] = useState(() => BAKE_CACHE.has(bakeKey));
+  useEffect(() => {
+    let alive = true;
+    const put = (src) => {
+      const host = bakeHost.current;
+      if (!alive || !host || !src) return;
+      const cv = copyCanvas(src);
+      cv.className = "ar-plane-bake";
+      host.replaceChildren(cv);
+      setBakeReady(true);
+    };
+    if (BAKE_CACHE.has(bakeKey)) put(BAKE_CACHE.get(bakeKey));
+    else bakePlane(sc.plane.size, sc.ground, baked).then((cv) => {
+      if (!cv) return;
+      if (BAKE_CACHE.size > 24) BAKE_CACHE.delete(BAKE_CACHE.keys().next().value);
+      BAKE_CACHE.set(bakeKey, cv);
+      put(cv);
+    });
+    return () => { alive = false; };
+  }, [bakeKey, sc, baked]);
   const u = H / 900;
   const cls = `ar-scene${land ? " ar-land" : ""}${fadeIn ? " ar-fadein" : ""}`;
   return (
@@ -64,7 +103,9 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           className="ar-plane"
           style={{ left: sc.plane.left, top: sc.plane.top, width: sc.plane.size, height: sc.plane.size, background: sc.ground, "--ar-rx": `${sc.plane.rx}deg` }}
         >
-          {sc.flats.map((f) => <div key={f.key} className="ar-flat" style={f.style} />)}
+          <div ref={bakeHost} className="ar-plane-bakehost" />
+          {/* ระหว่างรออบครั้งแรก (ไม่กี่ร้อยมิลลิวินาที ใต้ม่านฟ้าของฉากพุ่งลง) เห็นแค่สีพื้น — ไม่วางชิ้น DOM หลายร้อยชิ้นให้ GPU หนัก */}
+          {bakeReady && live.map((f) => <div key={f.key} className="ar-flat" style={f.style} />)}
           {land && !lowQ && <div className="ar-shock" style={{ left: sc.plane.size / 2, top: sc.plane.size / 2 + sc.centerLift, width: sc.plane.size * 0.34, height: sc.plane.size * 0.34 }} />}
         </div>
       </div>
@@ -106,8 +147,8 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           <div
             key={f.key}
             className="ar-fore"
-            // แกว่งที่ชิ้นเดียวกับ filter: GPU เลื่อนภาพเบลอที่วาดไว้แล้วได้เลย (แกว่งชั้นในของ blur = วาดเบลอใหม่ทุกเฟรม)
-            style={{ left: f.x, top: f.y, width: f.w, height: f.h, marginLeft: -f.w / 2, marginTop: -f.h / 2, opacity: f.op, filter: `blur(${f.blur}px)`, transformOrigin: "50% 100%", animation: f.anim && f.anim !== "none" ? f.anim : undefined }}
+            // ชั้นหน้ากล้องเบลอแบบนิ่ง (5.1.12: เลิกแกว่ง — ภาพเบลอที่ขยับต้องคำนวณเบลอใหม่บน GPU ทุกเฟรม)
+            style={{ left: f.x, top: f.y, width: f.w, height: f.h, marginLeft: -f.w / 2, marginTop: -f.h / 2, opacity: f.op, filter: `blur(${f.blur}px)` }}
           >
             <ForeArt f={f} />
           </div>

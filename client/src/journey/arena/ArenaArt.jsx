@@ -320,8 +320,10 @@ function FxArtBase({ f }) {
           style={{
             ...FULL,
             transform: `rotate(${f.rot}deg)`,
+            // ขอบนุ่มด้วย mask แทน filter: blur (5.1.12 ลดงาน GPU)
             background: `linear-gradient(180deg, ${c} 0%, rgba(255,255,255,0) 100%)`,
-            filter: "blur(10px)",
+            WebkitMaskImage: "linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent)",
+            maskImage: "linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent)",
           }}
         />
       );

@@ -8,6 +8,7 @@
 .ar-stage { position: absolute; inset: 0; perspective-origin: 50% 50%; }
 .ar-plane { position: absolute; transform: rotateX(var(--ar-rx)); transform-origin: 50% 50%; }
 .ar-flat { position: absolute; box-sizing: border-box; }
+.ar-plane-bakehost, .ar-plane-bake { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .ar-stand { position: absolute; transform-origin: 50% 100%; }
 .ar-pop, .ar-sway { width: 100%; height: 100%; transform-origin: 50% 100%; }
 .ar-fx, .ar-fore { position: absolute; }
@@ -17,8 +18,8 @@
   background: linear-gradient(0deg, var(--c), rgba(255, 255, 255, 0.85) 60%, rgba(255, 255, 255, 0));
   box-shadow: 0 0 8px 1px var(--c); opacity: 0.85;
 }
-.ar-par-b { animation: arParB 16s ease-in-out infinite; }
-.ar-par-c { animation: arParC 16s ease-in-out infinite; }
+/* 5.1.12: เลิกแกว่งพารัลแลกซ์ทั้งชั้น (ชั้นเต็มจอที่ขยับตลอดเวลา + ลูกที่มี filter = GPU ทำงานทุกเฟรม → จอกระพริบในบางเครื่อง) */
+.ar-par-b, .ar-par-c { animation: none; }
 
 /* ---------- พุ่งลงจากฟ้า (~5 วิ นับจาก mount/สัญญาณ ซึ่งเกิดใต้แฟลชขาวของฉากลูกโลก) ----------
    0.0–2.3  ฟ้าทึบ+แสงแดด → เมฆ 3 ระลอกแตกออก + เส้นความเร็ว · กล้องสั่นเบาๆ ตลอดช่วงดิ่ง
@@ -29,8 +30,8 @@
 .ar-land .ar-stage { animation: arDiveShake 2.4s linear 0s both, arImpactShake 0.5s linear 3.5s both; }
 .ar-land .ar-pop { animation: arPop 0.6s cubic-bezier(0.3, 1.5, 0.55, 1) both; animation-delay: calc(3.6s + var(--i, 0) * 10ms); }
 .ar-land .ar-haze { animation: arFadeIn 1.4s ease 2.6s both; }
-.ar-land .ar-fxl { animation: arFadeIn 1s ease 4.2s both, arParB 16s ease-in-out infinite; }
-.ar-land .ar-forel { animation: arFadeIn 1s ease 4s both, arParC 16s ease-in-out infinite; }
+.ar-land .ar-fxl { animation: arFadeIn 1s ease 4.2s both; }
+.ar-land .ar-forel { animation: arFadeIn 1s ease 4s both; }
 .ar-land .ar-stems { animation: arFadeIn 0.6s ease 4.5s both; }
 
 @keyframes arLandPlane {

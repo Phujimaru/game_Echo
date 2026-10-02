@@ -19,9 +19,9 @@
   --oc-echo-glow: #c99ad6;
   --oc-hp: #d2455b;
   --oc-warn: #e8590c;
-  --oc-glass: rgba(255, 255, 255, 0.74);
+  --oc-glass: rgba(255, 255, 255, 0.9); /* 5.1.12: เลิก backdrop-filter (ทำจอกระพริบบน GPU บางรุ่น) จึงทึบขึ้นแทน */
   --oc-line: rgba(61, 139, 217, 0.28);
-  --oc-navy: rgba(18, 38, 72, 0.84);
+  --oc-navy: rgba(18, 38, 72, 0.92);
   --oc-navy-solid: #12264a;
   --oc-navy-line: rgba(127, 184, 230, 0.35);
   --oc-navy-text: #eaf3fc;
@@ -80,7 +80,6 @@
 /* ---------- แผงกระจกขาว (มีขีดมุม) ---------- */
 .oc-panel {
   position: relative; background: var(--oc-glass);
-  backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border: 1px solid var(--oc-line); box-shadow: 0 24px 60px -30px rgba(28, 63, 110, 0.35);
   padding: 24px; display: flex; flex-direction: column; gap: 16px;
 }
@@ -91,7 +90,7 @@
 /* แผงกระจกน้ำเงินเข้ม (ในเกม) */
 .oc-navy {
   background: var(--oc-navy); border: 1px solid var(--oc-navy-line); color: var(--oc-navy-text);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); clip-path: var(--oc-cut);
+  clip-path: var(--oc-cut);
 }
 
 /* ---------- ปุ่ม ---------- */
