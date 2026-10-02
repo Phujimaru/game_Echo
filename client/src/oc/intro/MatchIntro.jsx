@@ -26,7 +26,7 @@ import {
 import { DiveStreaks, DiveReticle, RegionTag, DiveImpact, Chrome } from "./DiveFx";
 import "./dive.css";
 import "./intro.css";
-import { milkyWayUrl } from "../../purge/milkyway";
+import WarpGalaxy from "../../purge/GalaxyWarp";
 
 const FINALE_MS = 2900;
 const FIRST_MS = 120;
@@ -120,7 +120,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   const [dive, setDive] = useState(null);         // { area, D }
   const [dphase, setDphase] = useState(0);        // ช่วงดิ่ง: 0 หมุนเข้า · 1 หัวข้อ · 2 ล็อก · 3 ดิ่ง · 4 ชน/เผย
   const [handed, setHanded] = useState(false);    // ส่งต่อแล้ว — ลูกโลกร่วมปิด ห้าม render GlobeCanvas อีก
-  const [warp, setWarp] = useState(null);         // Purge: ปลายฉากพุ่งออกสู่ทางช้างเผือก { D, url }
+  const [warp, setWarp] = useState(null);         // Purge: ปลายฉากพุ่งออกสู่ทางช้างเผือก { D }
 
   const cbRef = useRef({ onOutro, onHandoff, onDone });
   useLayoutEffect(() => { cbRef.current = { onOutro, onHandoff, onDone }; });
@@ -152,10 +152,10 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
     at(X, () => {
       const spec = cbRef.current.onOutro?.() || null;
       if (spec && spec.warp) {
-        // Purge: เส้นพุ่งออกจากโลก → กล้องตามเส้น (โลกถอยลับ) → ทางช้างเผือก → ส่งต่อให้ฉากท่อ (ภาพทางช้างเผือกเดียวกัน)
-        const D = Math.max(1800, Number(spec.durationMs) || 2800);
+        // Purge: เส้นพุ่งออกจากโลก → ซูมเข้าเส้น → หันตามทิศเส้น → พุ่งเข้าทางช้างเผือก (3D) → แฟลชส่งต่อฉากท่อ
+        const D = Math.max(1800, Number(spec.durationMs) || 4600);
         tlRef.current.out = true;
-        setWarp({ D, url: milkyWayUrl() });
+        setWarp({ D });
         setMode("warp");
         at(D - 350, handoff);
         at(D, done);
@@ -375,9 +375,9 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
       {mode === "out" && <div className="ocx-veil" aria-hidden="true" />}
       {warp && (
         <>
-          <div className="ocx-warp-line" aria-hidden="true" />
-          <DiveStreaks show seed={7} lowQ={lowQ} />
-          <div className="ocx-warp-sky" aria-hidden="true" style={{ backgroundImage: `url(${warp.url})` }} />
+          <div className="ocx-warp-zoom" aria-hidden="true"><div className="ocx-warp-line" /></div>
+          <WarpGalaxy D={warp.D} lowQ={lowQ} />
+          <div className="ocx-warp-flash" aria-hidden="true" />
         </>
       )}
       {diving && <DiveImpact area={A} lowQ={lowQ} />}

@@ -299,5 +299,6 @@ test('เวลาฉาก ORT ของ server ตรงกับ client', asy
     { ortFrom: 10, ortTo: 16, caught: ['x'], fights: [] },
   ];
   for (const c of cases) assert.equal(purgeMod.ortSceneSeconds(c), client.ortSceneSeconds(c));
-  assert.ok(client.INTRO_SECONDS <= 14, 'ฉากเปิดฝั่ง client ต้องไม่ยาวกว่าเวลาที่ server พักไว้ (PURGE_INTRO_SECONDS ค่าเริ่มต้น 14)');
+  const { WARP_MS } = await import('../client/src/purge/warpGalaxy.js');
+  assert.ok(client.INTRO_SECONDS + WARP_MS / 1000 <= 16, 'ฉากพุ่งเข้าทางช้างเผือก + ฉากเปิดในท่อ ต้องไม่ยาวกว่าเวลาที่ server พักไว้ (PURGE_INTRO_SECONDS ค่าเริ่มต้น 16)');
 });

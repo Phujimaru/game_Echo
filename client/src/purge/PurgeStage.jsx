@@ -1,12 +1,11 @@
 // โหมด Purge: ฉากอุโมงค์ท่อ (three.js อยู่หลังกระดาน) + HUD ของโหมด (อยู่หน้ากระดาน)
 //  ฉากเล่นตาม state.purge.scene (server พักเกมไว้ตามเวลาของฉาก):
-//   intro = ทางช้างเผือกละลายเข้าอุโมงค์ แล้วกล้องไถลจากปลายท่อมาที่หมากของเรา
+//   intro = แฟลชแกนดาราจักร (ต่อจากฉากพุ่งเข้าทางช้างเผือก) จางเข้าอุโมงค์ แล้วกล้องไถลจากปลายท่อมาที่หมากของเรา
 //   roll  = เฟสทอยเต๋า (PURGE_ROLL) — ทุกคนกดทอยพร้อมกัน ต่างคนต่างเดิน · ทางแยก = เลือกทาง · ใช้ไอเทมกระดานก่อนทอย
 //   ort   = กล้องลงระดับพื้นมอง ORT จากมุมหมาก → ORT ทอยเต๋า (ทุกคนเห็นแต้ม) → เดิน/กลืน → กลับขึ้นกระดาน
 //   fight = ซูมลงช่องปะทะ แล้วแฟลชขาว — ระหว่างสู้ (state.purge.fight) Game วาดสนามประลองของภูมิภาคแทน ท่อหยุดวาด (hidden)
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPurgeScene, REGIONS, REGION_STEPS, regionOfStep, FIGHT_ZOOM_SECONDS } from "./purgeScene";
-import { milkyWayUrl } from "./milkyway";
 import { socket } from "../socket";
 import { clickSound } from "../audio";
 import { TickSeconds } from "../tickStore";
@@ -161,7 +160,6 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
   const myProg = progOf(youId);
   const myReg = REGIONS[regionOfStep(myProg)];
   const watching = !!purge.fight && !purge.fight.ids.includes(youId);
-  const milkyUrl = useMemo(() => (milky ? milkyWayUrl() : null), [milky]);
   const humans = players.filter((p) => !p.isBoss && purge.pl?.[p.id]);
   const nameOf = (id) => players.find((p) => p.id === id)?.name || "?";
   const canAct = rolling && me && !me.finished && !purge.lost.includes(youId);
@@ -173,7 +171,7 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
   return (
     <>
       <div className={`pg-stage purge-keep${hidden ? " is-hidden" : ""}`}><canvas ref={canvasRef} /></div>
-      {milky > 0 && <div key={milky} className="pg-milky purge-keep" style={{ backgroundImage: `url(${milkyUrl})` }} />}
+      {milky > 0 && <div key={milky} className="pg-milky purge-keep" />}
       {flash > 0 && <div key={flash} className="pg-flash purge-keep" />}
       <div className={`pg-hud purge-keep${gameState === "GAMEOVER" ? " is-over" : ""}`}>
         <div className="pg-top">

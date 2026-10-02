@@ -3,6 +3,7 @@ import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker, purgeMusic } from "./audioPolicy";
+import { WARP_MS } from "./purge/warpGalaxy";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
@@ -385,7 +386,7 @@ export default function App() {
   const startPendingJourney = () => {
     // Purge: ปลายฉากเปิดตัว = เส้นพุ่งออกจากโลก กล้องตามไปสู่ทางช้างเผือก แล้วฉากท่อรับช่วงต่อ
     const pg = purgeSceneRef.current;
-    if (pg?.active && pg.kind === "intro") return { warp: true, durationMs: 2800 };
+    if (pg?.active && pg.kind === "intro") return { warp: true, durationMs: WARP_MS };
     const pending = pendingJourneyRef.current;
     pendingJourneyRef.current = null;
     const live = journeyStateRef.current?.scene;
