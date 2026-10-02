@@ -60,6 +60,11 @@ const FILES = {
   full_force: "/theme_song/FULL FORCE.mp3",
   // ORT บอสมหันตภัย (โหมด Type Mercury) — ตอนนี้เล่นในหน้าตัวอย่างอนิเมชัน
   ort_theme: "/characters/ort/ort_theme.mp3",
+  // โหมด Purge: ก่อน ORT โผล่ / ORT โผล่แล้ว / ORT ห่างผู้เล่นคนใดคนหนึ่งไม่เกิน 3 ช่อง / เหลือ 2 คนสุดท้าย
+  purge_normal: "/purge/normal_map.mp3",
+  purge_ort: "/purge/ort_came.mp3",
+  purge_close: "/purge/playermore3butless.mp3",
+  purge_final: "/purge/playerjust2.mp3",
   // อุซากิ: เพลงตลอดช่วงท่าไม้ตาย (โจทย์คณิต 3 เทิร์น)
   usagi_theme: "/characters/usagi/usagi_theme.mp3",
   // Bamboo-Hatted Kim: เสียงกดสกิล / เสียงสวนกลับ / เพลงร่าง Awake (เล่นค้างถาวรหลังเข้าร่าง)

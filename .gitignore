@@ -20,6 +20,7 @@ client/public/mooncell/
 
 # เพลงการเดินทาง 7 ภูมิภาค (~140 MB) — เก็บบน R2 เหมือนสื่ออื่น
 client/public/journey/
+client/public/purge/
 
 # ผลลัพธ์ตอน build/ออกเวอร์ชันโปรแกรม ECHO (exe, manifest)
 desktop/dist/

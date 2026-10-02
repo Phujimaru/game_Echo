@@ -810,6 +810,28 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   ภูมิภาค 7 "จุดสิ้นสุดของโลก" ที่วนอยู่ถาวรเป็นตัวบีบให้เกมจบแทน · `normalGameOver()`/`checkOrtEarlyWin()` ยังนับเฉพาะผู้เล่นจริงเหมือนเดิม
 - เทสต์: [tests/characters/ort.test.js](tests/characters/ort.test.js) · [tests/mercury.integration.test.js](tests/mercury.integration.test.js)
 
+### 11.2 โหมด Purge (หนี ORT ในอุโมงค์ท่อ)
+
+- `gameMode = "purge"` (กลุ่ม special) · เล่นได้ 1-7 คน (1 คน = ทดสอบ จบเมื่อโดนกิน) · โมดูล [server/modes/purge.js](server/modes/purge.js)
+  สถานะอยู่ `match.purge` = `{ steps: {id: ช่อง}, ort, lost, turnFrom, scene, seq, result }` (รีเซ็ตใน `startMatch`/`backToLobby`)
+- กติกา (ค่าคงที่ `PURGE_*` ใน constants): ท่อ 50 ช่อง · ผู้ชนะรอบที่ **ไม่เสมอ** เดิน 3 ช่อง (+1 ถ้า 21 พอดี) — `awardWinSteps()`
+  ถัดจาก `Seraph.onRoundWinner` ใน `resolveRound()` · คนแพ้ไม่เดิน · ORT โผล่ช่อง 0 ตอนจบเทิร์น 5 แล้วเดินเทิร์นละ 1 ช่อง (ถึงช่อง 50 เทิร์น 55)
+  · ช่อง ≤ ORT = LOST DATA (`lose()` ตั้ง `alive=false` ตรงๆ **ไม่ผ่าน `instantDeath`** — ไม่ปลุกระบบกันตาย/ยูนะ) · เทิร์นที่ ORT เพิ่งโผล่ยังไม่กินใคร
+- **เลือดหมด = ล้มลง ไม่ตาย**: `tryKnockBack()` ดักใน `instantDeath()` ก่อนบรรทัด `p.alive = false` (หลังระบบกันตาย/เกิดใหม่ของตัวละคร และมีผลแม้ `force`)
+  ถอยหลัง 5 ช่อง เลือด/เกราะเต็ม — ถอยไปอยู่ ≤ ORT จะโดนกินตอนจบเทิร์น
+- ไม่มี Overload Force (การย้อนเทิร์นไม่ย้อนตำแหน่งในท่อ)
+- `purgeAdvance()` ใน callback ท้าย `endTurn()` (ก่อน `normalGameOver`): ORT เดิน → จับคน → ฉากจบเทิร์น `scene = { kind: "turn", moves:[{id,from,to}], ortFrom, ortTo, caught }`
+  พักเฟส CUTSCENE (ไม่มีคลิป) `ceil(turnSceneSeconds(scene) + 0.6)` → `nextPhaseOrEnd()`: เหลือคนเดียว (เกม 2 คนขึ้นไป) = `result "survivor"` · ไม่เหลือใคร/ORT ถึงปลายท่อ = `"allLost"`
+  ไม่มีการเดินและ ORT ไม่ขยับ = ข้ามฉาก · **สูตรเวลา `turnSceneSeconds()` ต้องตรงกับ client** (เทสต์เทียบให้แล้ว)
+- ฉากเปิด: `startMatch()` พัก `gameIntroHoldSeconds() + PURGE_INTRO_SECONDS` (11) ด้วย `scene.kind = "intro"`
+- client: [client/src/purge/purgeScene.js](client/src/purge/purgeScene.js) (three.js ไม่ผูก React) + [PurgeStage.jsx](client/src/purge/PurgeStage.jsx) แทน `GameBackground` ใน `Game.jsx`
+  ระหว่าง `purge.scene.active` ราก `Game` ติดคลาส `purge-scene-on` ซ่อน UI กระดาน (เหลือแค่ลูกที่มีคลาส `purge-keep`)
+  · ท่อ = ทรงกระบอกผิวในเป็นภูมิประเทศ ตัดครึ่งบนด้วย clipping plane (`CUT`) → รางครึ่งท่อมองมุมสูงเลนส์แคบ · ครึ่งบนมีเฉพาะฉากเปิดแล้วซ่อน
+  · วาดเฉพาะตอนมีอนิเมชัน (นิ่ง ~12 เฟรม/วิ) · อนิเมชันเดินตามเวลาจริง (dt เพดาน 0.25 วิ) ให้จบทันเวลาที่ server พักแม้เฟรมตก
+- เพลง (`purgeMusic()` ใน `client/src/audioPolicy.js`, ไฟล์ใน `/purge/` บน R2): เหลือ 2 คนสุดท้าย (เกม 3+ คน) `playerjust2` → ORT ห่างผู้รอดคนใดไม่เกิน 3 ช่อง
+  `playermore3butless` → ORT โผล่แล้ว `ort_came` → ก่อน ORT โผล่ `normal_map` · ระหว่างฉากซูมออก (CUTSCENE ของโหมด) เพลงท่าไม้ตาย/ช่วงโจมตีถูกปิด เล่นแต่เพลงด่าน
+- เทสต์: [tests/purge.test.js](tests/purge.test.js) · เพลง: [tests/audio-policy.test.js](tests/audio-policy.test.js)
+
 
 ## 12. โหมดทีม
 

@@ -255,6 +255,14 @@ const ORT_ATTACK_DELAY = 2; // ORT ชนะรอบ: ค้างเฟสโ�
 //  start เริ่มตั้งแต่ฉากเปิดตัว "เริ่มปิดฉาก" (1 วิสุดท้ายของ gameIntroHoldSeconds + ส่วนเผื่อ ~1 วิ) จึงบวกเพิ่มแค่ 6 วิ
 const JOURNEY_START_SECONDS = Math.max(0, Number(process.env.JOURNEY_START_SECONDS ?? 6));
 const JOURNEY_ADVANCE_SECONDS = Math.max(0, Number(process.env.JOURNEY_ADVANCE_SECONDS ?? 7));
+// ---------- โหมด Purge (server/modes/purge.js) ----------
+//  ท่อยาว 50 ช่อง · ชนะรอบเดิน 3 (+1 ได้ 21) · ล้มลงถอย 5 · ORT โผล่จบเทิร์น 5 แล้วเดินเทิร์นละ 1 ช่อง
+//  ฉากเปิดฝั่ง client (ท่อเต็มวง → ลอยลงจุดเริ่ม → มุมสูง → เข้าสนาม) ยาว 10.5 วิ — พัก 11 วิ · เทสต์ย่อได้ผ่าน env
+const PURGE_STEPS = 50;
+const PURGE_WIN_STEPS = 3;
+const PURGE_KNOCKBACK = 5;
+const PURGE_ORT_TURN = 5;
+const PURGE_INTRO_SECONDS = Math.max(0, Number(process.env.PURGE_INTRO_SECONDS ?? 11));
 const TEAM_IDS = ["A", "B", "C"];
 
 // ---------- ยูนะ ไอดอลประจำสนาม (characters/yuna.js — ไม่ใช่ตัวละครที่เล่นได้ ไม่มี p เป็นของตัวเอง) ----------
@@ -290,5 +298,6 @@ module.exports = {
   OGURI_ULT2_CHARGE_COST, OGURI_ZONE_IMG, SATORU_PROFILE_IMG, PHENEX_BAN_ULT_TURNS,
   PHENEX_BASE_IMG, PHENEX_NTD_IMG, TRANSFORMS, ORT_ID, ORT_POSITION, MERCURY_ARRIVAL_SECONDS,
   MERCURY_SURRENDER_SECONDS, ORT_ATTACK_DELAY, JOURNEY_START_SECONDS, JOURNEY_ADVANCE_SECONDS,
+  PURGE_STEPS, PURGE_WIN_STEPS, PURGE_KNOCKBACK, PURGE_ORT_TURN, PURGE_INTRO_SECONDS,
   TEAM_IDS, YUNA_IMG, YUNA_COLOR, RESYNC_EVERY,
 };

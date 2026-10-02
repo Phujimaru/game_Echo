@@ -26,6 +26,7 @@ const dayNight = require("./dayNight");
 const cardDeck = require("./deck");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const pair = require("./pair");
 const shop = require("./shop");
 
@@ -399,6 +400,8 @@ function buildStateFor(viewerId) {
     // Type Mercury (Raid Boss ORT): ข้อมูลโหมด + บอส + โหวตยอมแพ้ + ตัวที่เลือกลงสนามได้ (per-viewer)
     mercury: mercury.mercuryStateFor(viewer),
     ortArrival: { seq: match.ortArrivalSeq, active: match.ortArrivalActive }, // ฉากเปิดตัว ORT (Raid)
+    // Purge: ตำแหน่งทุกคนในท่อ + ORT + ฉากเปิด/ฉากจบเทิร์นที่กำลังพักเกมรอ (ข้อมูลเดียวกันทุกคน)
+    purge: purge.purgeStateFor(),
     // การเดินทาง (ffa/duo/trio): ภูมิภาค + กลางวัน/กลางคืน + คำอธิบายผลสนาม + ฉากแผนที่ที่กำลังพักเกมรอ
     journey: Journey.publicInfo(engine, match.journeyScene),
     clockUpFrozen,   // Clock Up: ผู้ชมคนนี้ถูกแช่อยู่ไหม (ไรเดอร์ที่เปิด Clock Up เองจะเป็น false เสมอ)

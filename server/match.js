@@ -15,7 +15,7 @@ const match = {
   // ---------- สถานะเกมส่วนกลาง ----------
   players: {},
   gameState: "LOBBY", // LOBBY | TEAM_MODE | TEAM_SETUP | PLAYING | CUTSCENE | SUMMARY | ATTACK | TRANSITION | GAMEOVER
-  gameMode: "ffa", // ffa | duo | trio | seraph | mercury | pending
+  gameMode: "ffa", // ffa | duo | trio | seraph | mercury | purge | pending
   teamSize: 1,
   teamCount: 0,
   winningTeamId: null,
@@ -26,6 +26,8 @@ const match = {
   mercurySurrender: null,   // { votes: { [playerId]: true|false }, endsAt, timer }
   ortArrivalSeq: 0,         // เพิ่มทุกครั้งที่ ORT ปรากฏตัว (เริ่ม Raid) -> client เล่นฉากเปิดตัว
   ortArrivalActive: false,  // กำลังพักเกมรอฉากเปิดตัว ORT อยู่ (client ใช้ตัดสินว่าจะเล่นฉากไหม — รีคอนเนกต์กลางเกมไม่เล่นซ้ำ)
+  // โหมด Purge (server/modes/purge.js): { steps: {id: ช่อง}, ort, lost, turnFrom, scene, seq, result }
+  purge: null,
   journeyScene: null, // { seq, active, mode: "start" | "advance", area, fromArea }
   journeySceneSeq: 0,
   ortFxSeq: 0,

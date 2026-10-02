@@ -23,6 +23,7 @@ const combat = require("./combat");
 const cutscene = require("./cutscene");
 const draw = require("./phases/draw");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const overload = require("./overload");
 const pair = require("./pair");
 const socketLayer = require("./socket");
@@ -85,6 +86,7 @@ function validGameMode(mode, count = Object.keys(match.players).length) {
   if (mode === "duo") return count >= 4 && count % 2 === 0;
   if (mode === "trio") return count === 6;
   if (mode === "mercury") return count >= 1 && count <= MAX_PLAYERS; // Raid Boss ORT: เล่นได้ 1-7 คน
+  if (mode === "purge") return count >= 1 && count <= MAX_PLAYERS; // Purge: 1 คน = ทดสอบ (จบเมื่อโดน ORT กิน)
   return false;
 }
 // โหมดที่ "พักใช้งาน" — โค้ดยังอยู่ครบ แต่ไม่โผล่ในหน้าโหวตโหมด และโหวตเข้าไม่ได้
@@ -98,6 +100,7 @@ function modeOptionsFor(count = Object.keys(match.players).length) {
     { mode: "trio", label: "Trio", size: 3, group: "normal" },
     { mode: "seraph", label: "Moon Cell", size: 1, group: "special" },
     { mode: "mercury", label: "Type Mercury", size: 1, group: "special" },
+    { mode: "purge", label: "Purge", size: 1, group: "special" },
   ].map((opt) => {
     const suspended = SUSPENDED_MODES.has(opt.mode);
     return { ...opt, suspended, enabled: !suspended && validGameMode(opt.mode, count) };
@@ -149,7 +152,7 @@ function startTeamSetup(mode) {
   const count = Object.keys(match.players).length;
   if (!validGameMode(mode, count)) return;
   resetModeVotes();
-  if (mode === "ffa" || mode === "seraph" || mode === "mercury") {
+  if (mode === "ffa" || mode === "seraph" || mode === "mercury" || mode === "purge") {
     // SE.RA.PH เป็นโหมดเดี่ยวเหมือน ffa — ไม่ผ่านหน้าเลือกทีม
     // Type Mercury: ทุกคนอยู่ฝั่งเดียวกันโดยอัตโนมัติ (sameTeam) — ไม่ต้องเลือกทีม
     match.gameMode = mode;
@@ -268,6 +271,7 @@ function gameIntroHoldSeconds() {
 function startMatch() {
   delete match.players[ORT_ID]; // บอสของแมตช์ก่อน (ถ้ามี) — สร้างใหม่ด้านล่างเฉพาะโหมด Raid
   mercury.resetMercury();
+  purge.resetPurge();
   if (!teamModeActive()) {
     resetTeamAssignments(false);
     match.teamSize = 1;
@@ -315,6 +319,18 @@ function startMatch() {
     view.broadcastState();
     return;
   }
+  // Purge: ทุกคนเริ่มช่อง 0 · ฉากเปิดของท่อเล่นต่อจากฉากเปิดตัวผู้เล่น — พักรวมทั้งสองฉากแบบเดียวกับการเดินทาง
+  if (purge.purgeActive()) {
+    purge.startPurge();
+    match.cutsceneInfo = null;
+    match.gameState = "CUTSCENE";
+    timers.startPhaseTimer(gameIntroHoldSeconds() + purge.introHoldSeconds(), () => {
+      if (match.purge && match.purge.scene) match.purge.scene.active = false;
+      cutscene.runCutsceneQueue(draw.dealRound);
+    });
+    view.broadcastState();
+    return;
+  }
   // การเดินทาง: ฉากแผนที่ "การเดินทางเริ่มต้นขึ้น" ต่อท้ายฉากเปิดตัวผู้เล่น — พักรวมทั้งสองฉาก
   //  (client นับเวลาฉากแผนที่จาก timeLeft ของเฟสนี้ จึงจบพร้อมกันทุกเครื่องแม้ฉากเปิดตัวของแต่ละคนจะช้าเร็วต่างกัน)
   const journeyStart = Journey.active(engine) && JOURNEY_START_SECONDS > 0;
@@ -353,6 +369,7 @@ function relayLobbyEmote(playerId, payload) {
 function backToLobby() {
   delete match.players[ORT_ID];
   mercury.resetMercury();
+  purge.resetPurge();
   match.ortArrivalActive = false;
   // Type Mercury: คนที่เลือกตัวใหม่ระหว่าง Raid กลับไปเป็นตัวที่เลือกตอนเข้าห้อง
   for (const p of Object.values(match.players)) {

@@ -18,6 +18,7 @@ const cutscene = require("../cutscene");
 const cardDeck = require("../deck");
 const draw = require("./draw");
 const mercury = require("../modes/mercury");
+const purge = require("../modes/purge");
 const overload = require("../overload");
 const qteSystem = require("../qte");
 const shop = require("../shop");
@@ -156,7 +157,8 @@ function resolveRound() {
     const tied = combatants.filter((p) => val(p) === best);
     // สนาม Overload ต้องสุ่มก่อน Rip and Tear ของ DoomGuy เสมอ และเกิดได้เฉพาะตอนแต้มสูงสุดเสมอกันจริง
     // SE.RA.PH: Overload Force ทำงานเฉพาะวันที่ 7 และห้ามเรียกบอสยูกิทุกกรณี (§7 + §12)
-    if (!Seraph.active() && !mercury.mercuryActive() && !match.overloadForceActive && !CHAR_HOOKS.muimi.blocksOverloadForce(engine) && tied.length >= 2 && Math.random() < OVERLOAD_FORCE_CHANCE) {
+    // Purge: ไม่มี Overload Force (การย้อนเทิร์นไม่ย้อนตำแหน่งในท่อ)
+    if (!Seraph.active() && !mercury.mercuryActive() && !purge.purgeActive() && !match.overloadForceActive && !CHAR_HOOKS.muimi.blocksOverloadForce(engine) && tied.length >= 2 && Math.random() < OVERLOAD_FORCE_CHANCE) {
       overload.triggerOverloadForce();
       return;
     }
@@ -187,6 +189,8 @@ function resolveRound() {
     shop.addGold(w, GOLD_WIN_BONUS);
     // SE.RA.PH วันที่ 1-6: รางวัลผู้ชนะคือ Matrix +1 (มาแทนเฟสโจมตีของเกมปกติ)
     Seraph.onRoundWinner(engine, w);
+    // Purge: ผู้ชนะ (ไม่เสมอ) เดินหน้าในท่อ
+    purge.awardWinSteps(w);
     // patch 2.1.3.5: ชนะจั่วการ์ดไม่ได้แต้มสกิลอีกต่อไป
     combat.firePassive(w, "win");
     if (tied.length > 1) {

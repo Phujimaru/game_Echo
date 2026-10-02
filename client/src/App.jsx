@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
-import { musicForState, createPhaseSoundTracker } from "./audioPolicy";
+import { musicForState, createPhaseSoundTracker, purgeMusic } from "./audioPolicy";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
@@ -273,6 +273,9 @@ export default function App() {
   const skillMusicSeq = stage === "connected" && state ? state.skillMusicSeq : 0;
   const mandatoryCutscene = phase === "CUTSCENE" && state?.cutscene?.kind === "overloadForce";
   const introOn = !!intro; // ฉากเปิดแมตช์ (รวมช่วงดิ่ง) ยังเป็นเพลงห้องรอ
+  // Purge: เพลงด่านเปลี่ยนตามสถานการณ์ในท่อ + ปิดเพลงของผู้เล่นระหว่างฉากซูมออก
+  const purgeTrackNow = stage === "connected" ? purgeMusic(state) : null;
+  const purgeSceneNow = stage === "connected" && !!state?.purge?.scene?.active;
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: เพลงกลางวัน/กลางคืน | อื่นๆ: main_home
@@ -326,7 +329,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn, purgeTrackNow, purgeSceneNow]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);

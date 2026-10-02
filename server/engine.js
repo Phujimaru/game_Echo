@@ -39,6 +39,7 @@ const draw = require("./phases/draw");
 const endTurnPhase = require("./phases/endTurn");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const overload = require("./overload");
 const qteSystem = require("./qte");
 const shop = require("./shop");
@@ -56,6 +57,11 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   ortFx: mercury.ortFx,
   fortuneTargetList: cardDeck.fortuneTargetList,
   mercuryActive: mercury.mercuryActive,
+  // Purge (server/modes/purge.js) — เปิดให้เทสต์อ่าน/สั่งได้
+  purgeActive: purge.purgeActive,
+  purgeAdvance: purge.purgeAdvance,
+  purgeStateFor: purge.purgeStateFor,
+  get purge() { return match.purge; },
   isOrt: mercury.isOrt,
   players: match.players,
   CHAR_BY_ID,

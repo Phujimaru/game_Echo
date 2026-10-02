@@ -31,6 +31,7 @@ const characterRules = require("./characterRules");
 const cardDeck = require("./deck");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const qteSystem = require("./qte");
 const view = require("./view");
 
@@ -299,6 +300,9 @@ function instantDeath(p, force) {
   if (!force && p.characterId === "producer_lumi" && CHAR_HOOKS.producer_lumi.tryIdolDown(engine, p)) return;
   // ริต้า เบอร์นัล (สกิลติดตัว 2 patch 2.1.7, characters/phenex.js): ตกรอบจริงขณะท่าไม้ตาย 2 ยังทำงานอยู่ -> ปลดปล่อยความเจ็บปวดที่สะสมทั้งหมดก่อนตาย
   if (p.characterId === "phenex") CHAR_HOOKS.phenex.maybeReleasePainOnDeath(engine, p);
+  // Purge: เลือดหมด = ล้มลง ถอยหลังในท่อแล้วฟื้นเต็ม (ไม่มีการตกรอบจากการต่อสู้ — ตกรอบได้ทางเดียวคือโดน ORT กิน)
+  //  อยู่หลังระบบกันตาย/เกิดใหม่ของตัวละครทั้งหมด และมีผลแม้ force (การตายทันทีของยุยก็แค่ทำให้ล้ม)
+  if (purge.tryKnockBack(p)) return;
   // เท็นโนจิ โคทาโร่ (rewrite): ตกรอบจริง แต่ตั้งธงให้ endTurn() ย้อนเทิร์นกลับมาให้ 1 ครั้งต่อเกม
   p.hp = 0; p.alive = false; p.result = "dead"; p.locked = true;
   // คอนเนอร์ RK800 (สกิลติดตัว 3 ปัญญาประดิษฐ์): จองคิวฟื้นคืนชีพอีก 10 เทิร์น (ไม่ใช่การกันตาย — ตกรอบจริงก่อน)

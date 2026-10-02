@@ -18,6 +18,7 @@ const cutscene = require("../cutscene");
 const dayNight = require("../dayNight");
 const draw = require("./draw");
 const mercury = require("../modes/mercury");
+const purge = require("../modes/purge");
 const seraphMode = require("../modes/seraph");
 const shop = require("../shop");
 const timers = require("../timers");
@@ -303,6 +304,10 @@ function endTurn() {
       return;
     }
 
+    // ---------- Purge: ORT เดิน/จับคนที่ตามทัน → ฉากจบเทิร์น → เทิร์นถัดไปหรือจบเกม (จัดการเฟสถัดไปเองทั้งหมด) ----------
+    if (purge.purgeActive() && !shidoRewound) {
+      if (purge.purgeAdvance()) return;
+    }
     // นับเฉพาะผู้เล่นจริง — ORT (ถ้าบุกเข้ามาแล้ว) ไม่ใช่ผู้ชิงชัย (ดู normalGameOver)
     if (!shidoRewound && mercury.normalGameOver()) return;
     // การเดินทาง: ข้ามเข้าภูมิภาคใหม่ -> ฉากแผนที่ก่อนแจกไพ่เทิร์นแรกของภูมิภาคนั้น

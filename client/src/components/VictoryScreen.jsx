@@ -50,13 +50,15 @@ export default function VictoryScreen({ state, onBackToLobby }) {
       const boss = state.players.filter((p) => p.isBoss);
       return { heading: raid === "surrender" ? "ยอมแพ้ต่อ ORT" : "ORT ลบข้อมูลทั้งหมด", winners: boss };
     }
+    // Purge: ORT กลืนทุกคนในท่อ = ไม่มีผู้ชนะ
+    if (state.purge?.result === "allLost") return { heading: "ORT กลืนทั้งท่อ", winners: [] };
     if (state.gameMode !== "ffa" && state.winningTeamId) {
       const ws = state.players.filter((p) => p.alive && p.teamId === state.winningTeamId);
       return { heading: `ทีม ${state.winningTeamId}`, winners: ws };
     }
     const c = state.players.find((p) => p.alive && !p.isBoss); // ORT (บุกเทิร์น 60) ไม่ใช่ผู้ชิงชัย
     return { heading: c ? c.name : "จบเกม", winners: c ? [c] : [] };
-  }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result]);
+  }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result, state.purge?.result]);
 
   const names = winners.map((w) => w.name).join(" และ ");
 

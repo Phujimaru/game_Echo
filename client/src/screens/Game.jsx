@@ -22,6 +22,7 @@ import { SkillSlot, HexFrame } from "./hud/SkillSlot";
 import { OrtLostTierContext } from "./hud/ortLost";
 import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
 import { clickSound, playSfx, stopSfx, sfxPlayId, startLoopSfx, stopLoopSfx, playCutsceneVideo, suspendMusic, DOOM_WEAPON_SOUNDS } from "../audio";
+import PurgeStage from "../purge/PurgeStage";
 
 const P_DISPLAY = "var(--font-p-display)";
 const TEAM_COLORS = { A: "#22d3ee", B: "#f97316", C: "#a3e635" };
@@ -5042,11 +5043,16 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   //  กระดานทั้งหมดถูกย่อด้วย scale อยู่แล้ว → ตัวคูณภายในกระดาน = hudZ / scale
   const hudZ = Math.min(1.6, Math.max(0.6, Math.min(vp.h / 810, vp.w / 1376)));
   const hudK = hudZ / scale;
+  // โหมด Purge: ฉากท่อ 2.5D + ซ่อนกระดานระหว่างฉากเปิด/ฉากจบเทิร์นที่ server พักเกมรอ
+  const purgeOn = !!state.purge;
+  const purgeSceneOn = purgeOn && !!state.purge.scene?.active && !state.cutscene;
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div className={`fixed inset-0 overflow-hidden${purgeOn ? " purge-board" : ""}${purgeSceneOn ? " purge-scene-on" : ""}`}>
+      {/* Purge: ฉากอุโมงค์ท่อแทนฉากหลังทั้งหมด (ระหว่างฉากเปิด/จบเทิร์น ซ่อน UI กระดานไว้ — purge-scene-on) */}
+      {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} />}
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} arena={arenaBg} />}
+      {!raid && !purgeOn && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={state.journey} arena={arenaBg} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}

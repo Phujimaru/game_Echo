@@ -206,6 +206,22 @@
 .ocl-modetag[data-mode="mercury"]::before { left: 15px; }
 .ocl-modetag[data-mode="mercury"]::after { left: 21px; background: var(--orn2); }
 
+/* Purge — หกเหลี่ยมยาวปลายแหลมสองข้าง ขอบแดง ORT + หกเหลี่ยมผลึกเล็กนำหน้า */
+.ocl-modetag[data-mode="purge"] {
+  --shape: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%);
+  --edge: #c8243f; --fill: linear-gradient(180deg, #ffffff 0%, #eef5fc 55%, #dcebfa 100%);
+  padding: 10px 24px 10px 40px; font: 400 12px/1 var(--oc-f-logo); letter-spacing: 0.08em;
+}
+.ocl-modetag[data-mode="purge"]::before {
+  left: 17px; top: 50%; width: 12px; height: 14px; margin-top: -7px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(160deg, #ff4d6d, #5a0f22);
+}
+.ocl-modetag[data-mode="purge"]::after {
+  left: 31px; top: 50%; width: 4px; height: 4px; margin-top: -2px; transform: rotate(45deg);
+  background: #9fd6ff;
+}
+
 /* Moon Cell — ตัดมุมทแยง ขอบม่วงสองชั้น + จันทร์เสี้ยว */
 .ocl-modetag[data-mode="seraph"] {
   --shape: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);

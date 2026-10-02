@@ -61,3 +61,24 @@ test('การเดินทาง: เพลงประจำภูมิภ
   assert.equal(policy.musicForState({ ...j(2, false), gameState: 'ATTACK' }).name, 'battle_phase');
   assert.equal(policy.musicForState({ ...j(2, false, { seq: 4, active: false }) }).name, 'journey_2_day');
 });
+
+// โหมด Purge: เพลงด่านเปลี่ยนตามสถานการณ์ในท่อ
+test('Purge: เพลงด่านตาม ORT / ระยะห่าง / 2 คนสุดท้าย', async () => {
+  const { musicForState } = await import('../client/src/audioPolicy.js');
+  const base = (over = {}) => ({
+    gameState: 'PLAYING', youId: 'a',
+    players: [{ id: 'a', alive: true }, { id: 'b', alive: true }, { id: 'c', alive: true }],
+    purge: { ort: null, steps: { a: 10, b: 12, c: 9 }, scene: null },
+    ...over,
+  });
+  assert.equal(musicForState(base()).name, 'purge_normal');
+  assert.equal(musicForState(base({ purge: { ort: 2, steps: { a: 10, b: 12, c: 9 }, scene: null } })).name, 'purge_ort');
+  assert.equal(musicForState(base({ purge: { ort: 6, steps: { a: 10, b: 12, c: 9 }, scene: null } })).name, 'purge_close');
+  const two = base({ players: [{ id: 'a', alive: true }, { id: 'b', alive: true }, { id: 'c', alive: false }] });
+  assert.equal(musicForState(two).name, 'purge_final');
+  // ซูมออก (ฉากจบเทิร์น): เพลงท่าไม้ตายของผู้เล่นปิดไว้ เหลือแต่เพลงด่าน
+  const scene = base({ gameState: 'CUTSCENE', skillMusic: 'some_ult', purge: { ort: null, steps: { a: 1 }, scene: { active: true } } });
+  assert.equal(musicForState(scene).name, 'purge_normal');
+  // กลับเข้าสนาม: เพลงท่าไม้ตายเล่นตามปกติ
+  assert.equal(musicForState(base({ skillMusic: 'some_ult' })).name, 'some_ult');
+});
