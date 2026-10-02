@@ -36,6 +36,8 @@ function endTurn() {
   // คามิชิโร่ ซึรุงิ "Rider Slash": ฟันไปแค่จังหวะเดียว -> เปิดเฟสโจมตีอีกครั้งแทนการจบเทิร์น
   //  อยู่ตรงนี้เพราะหมัดที่ "ถูกหลบ" return ตั้งแต่ด่านหลบ ไม่ผ่าน postAttackFollowup — สเปคบอกว่าถูกหลบก็ต้องได้ตีจังหวะสอง
   if (CHAR_HOOKS.tsurugi.continueSlash(engine)) return;
+  // ไททัน: ชุดตีหลายครั้ง (Vigorous Rising Sun / มิวสิคคาร์ท) ยังไม่ครบ — ถูกหลบก็ตีต่อ (เหตุผลเดียวกับคาเยนน์)
+  if (CHAR_HOOKS.titan.continueAttack(engine)) return;
   // โปรดิวเซอร์ (luminous burst): ตาข่ายสำรอง — ถ้าหมัดที่ทำให้ครบ "ถูกหลบ" doAttack จะ return
   //  ตั้งแต่ด่านหลบ ไม่ผ่าน postAttackFollowup เลย รางวัลจึงไม่มีวันจ่าย (และ luminous มีการหลบ 40%
   //  ของคาโฮะติดมาด้วย จึงเกิดบ่อยมาก) · flushBurst เป็น idempotent เรียกซ้ำไม่มีผลข้างเคียง

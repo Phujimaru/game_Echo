@@ -24,6 +24,8 @@ const usagiChar = require("./usagi"); // อุซากิ: path รูป/ว�
 const artoriaChar = require("./artoria_caster"); // จอมเวทย์ อาร์โทเรีย: วีดีโอท่าไม้ตาย
 const reinesChar = require("./reines"); // ไรเนส เอลเมลลอย: วีดีโอท่าไม้ตาย
 const andersenChar = require("./andersen"); // แอนเดอร์เซน: วีดีโอท่าไม้ตาย
+const taktChar = require("./takt");   // อาซาฮินะ ทักต์: วีดีโอตอบรับพันธะ
+const titanChar = require("./titan"); // ไททัน: วีดีโอสกิล + ร่างบทเพลง
 const mark42 = require("./_mark42"); // เกราะ Mark 42 (ไอเทมร้านค้า): path วีดีโอชุดเดียวกับไฟล์ระบบ
 const strikerChar = require("./striker"); // สไตรเกอร์ ยูเรก้า: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const recruitChar = require("./recruit"); // Recruit: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
@@ -174,6 +176,15 @@ module.exports = function buildTransforms(img) {
     // ไรเนส เอลเมลลอย: วีดีโอท่าไม้ตายเล่นทุกครั้งที่กด (queueCutscene) — คลิปยาว 16.2 วิ
     // แอนเดอร์เซน: วีดีโอท่าไม้ตายเล่นทุกครั้งที่กด (queueCutscene) — คลิปยาว 9.7 วิ
     andersenUlt: { img: andersenChar.IMG.skill3, video: andersenChar.VIDEO.ult, title: "Märchen Meines Lebens", label: "เทพนิยายแห่งชีวิตของฉัน", seconds: 10, music: null, afterReveal: false },
+    // ---------- อาซาฮินะ ทักต์ / ไททัน — ทุกคลิปคิวเองจากโค้ด (afterReveal: false) · seconds ปัดขึ้นจากความยาวจริง ----------
+    //  taktAccept: มิวสิคคาร์ทตอบรับพันธะ (ทุกครั้ง) · taktSongTitan: ไททันได้บทเพลง (triggerCutscene = เต็มครั้งแรกต่อเกม)
+    //  titanAgile: คล่องตัวสูง (ครั้งแรกต่อเกม) · titanSun: ก่อนหมัดแรกของชุด Vigorous Rising Sun (ทุกครั้ง)
+    //  titanTriumph: Triumphant (ทุกครั้ง แล้วค่อยลงดาเมจ)
+    taktAccept:    { img: taktChar.IMG.bonded, video: taktChar.VIDEO.accept, title: "พันธะสัญญา", label: "มิวสิคคาร์ทตอบรับ", seconds: 7, music: null, afterReveal: false },
+    taktSongTitan: { img: titanChar.IMG.song, video: titanChar.VIDEO.song, title: "บทเพลงที่ไม่อาจลืม", label: "ไททัน", seconds: 13, music: null, afterReveal: false },
+    titanAgile:    { img: titanChar.IMG.skill3, video: titanChar.VIDEO.agile, title: "คล่องตัวสูง", label: "หลบหลีก + สวนกลับ", seconds: 4, music: null, afterReveal: false },
+    titanSun:      { img: titanChar.IMG.sun, video: titanChar.VIDEO.sun, title: "Vigorous Rising Sun", label: "โจมตี 2 ครั้ง", seconds: 3, music: null, afterReveal: false, noIntro: true },
+    titanTriumph:  { img: titanChar.IMG.triumph, video: titanChar.VIDEO.triumph, title: "Triumphant", label: "ความเสียหาย 4 ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     reinesUlt:   { img: reinesChar.IMG.skill3, video: reinesChar.VIDEO.ult, title: "แผนการลับสุดยอดชั้นครู", label: "เปราะบาง + อ่อนแอ ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     yuiSongFail: { img: yuiImg.skill3, video: "/characters/yui/skill3/yui_skill3_false.mp4", title: "เสียงเพี้ยน",    label: "บรรเลงล้มเหลว",   seconds: 4, music: null, afterReveal: false },
     yuiDead:     { img: yuiImg.base,   video: "/characters/yui/yui_dead.mp4",                title: "ความปรารถนา",    label: "คำอธิษฐานเป็นจริง", seconds: 16, music: null, afterReveal: false },

@@ -545,6 +545,27 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 - อาศัยจังหวะเรียกท้ายสุดของ `postAttackFollowup` (หลังตีเพิ่มทุกแบบของฝั่งตรงข้ามจบ) · งานช่างกันโจมตีที่ `afterSummary`
 - เทสต์: [tests/characters/striker.test.js](tests/characters/striker.test.js) · [tests/striker-pair.integration.test.js](tests/striker-pair.integration.test.js)
 
+**อาซาฮินะ ทักต์ (พิเศษ · unique) + ไททัน (ง่าย · มิวสิคคาร์ท)** — `characters/takt.js` · `characters/titan.js`
+- **ระบบพันธะเป็นของกลางของ "มิวสิคคาร์ท"** (`takt.MUSIC_CARTS` = characterId -> คีย์คัตซีนตอนได้บทเพลง) — มิวสิคคาร์ทตัวใหม่แค่เพิ่มในตารางนี้
+  แล้วอ่าน `takt.songActive(p)` เพื่อปลดล็อกความสามารถของตัวเอง · ฟิลด์ทั้งหมดอยู่บนตัวผู้เล่น (ย้อนได้ผ่านสแนปช็อต):
+  ทักต์ `taktBonds` · มิวสิคคาร์ท `taktBondBy` / `taktInvite` / `taktSongMode` / `taktModeRound` · บทเพลง = `statuses.taktSong` (นับเทิร์นปกติ)
+- เชิญ/ตอบ = socket `taktInvite {targetId}` / `taktInviteAnswer {accept}` (ไม่ผ่าน `useSkill` -> ไม่กินโควตา) · คำเชิญค้าง = `pendingAnswer`
+  ของ `checkAllLocked` · ไม่ตอบ = ปฏิเสธ (`sweepInvites` ต้น `dealRound`) · ตอบรับ = คิว `taktAccept` + `pausePlayingForCutscene`
+- **โหมดอิสระ: พันธะ = พวกเดียวกัน** ที่ `sameTeam()` และ `isAlly()` (เฉพาะ `gameMode === "ffa"`) -> ตีกันไม่ได้ · ผลเสียลงกันไม่ได้ · เห็นไพ่กัน ·
+  `normalGameOver()` จบเกมเมื่อคนที่รอดทั้งหมดอยู่ในพันธะเดียวกัน (`bondGroupWins`) · โหมดทีมผูกได้เฉพาะเพื่อนร่วมทีม (ไม่ต้องแก้ sameTeam)
+- พันธะหลุดที่ `takt.onDeath()` (เรียกจาก `instantDeath`) · ทักต์หลบ 35% / ทุ้มต่ำหลบ 5% ที่ `takt.tryAttackDodge` · ไม่รับดาเมจไพ่แตก = `bustDamageImmune` ใน `resolveRound`
+- ผลของบทเพลงเป็น ungated: พลังโจมตี +1 (`computeAttackBase` giftAtk) · แข็งกร้าว (`critBonus` -> `Journey.applyCrit` + `critBonusFor`) ·
+  ทุ้มต่ำ (`songIncoming` ใน `adjustIncomingDamage` ของมิวสิคคาร์ท — ไม่ลดดาเมจจากสถานะ) · อ่อนโยน (`songHealOnHit` หลังหมัดลง)
+- ไททัน: ชุดสกิลสลับระหว่างบทเพลงผ่าน `titan.dynamicSkillFor` (ต้องตรงกันทั้ง `useSkill` และ `buildStateFor`)
+  · **Triumphant 12 แต้มจ่ายร่วม**: `triumphSplit` (ไททันจ่ายทั้งหมดที่มี ทักต์จ่ายส่วนที่ขาด) แทนราคาหลังตัวปรับทุกตัวใน `useSkillCore`
+    (ไม่ใช้การ์ดราชินี) · ราคาบนปุ่ม = ส่วนของไททัน · ทักต์ถูกหักที่ `applyInstantSkill` · ดาเมจลงหลังวีดีโอผ่าน `takeAfter` (ช่องเดียวกับขีปนาวุธของยูเรก้า)
+  · **ตีหลายครั้ง**: `p.titan.set` สร้างที่ `beginAttack` (หัว doAttack) · หมัดต่อไปเปิดจาก `continueAttack` ที่หัว `endTurn` (ถูกหลบก็ตีต่อ)
+    · Vigorous Rising Sun เล่นวีดีโอก่อนหมัดแรกของชุดแบบเดียวกับ "แน่จริงก็หลบสิ" ของคาเยนน์ (`sunNeedsVideo`)
+  · ช็อตกัน +1 ทอยที่ `beginAttack` แล้วบวกใน doAttack (ห้ามทอยใน `damageBonus`)
+  · **สวนกลับ (คล่องตัวสูง)**: จองที่ `onTargeted` (หัว doAttack ก่อนด่านหลบ) / `onSkillTargeted` (useSkill) / `adjustIncomingDamage` (ดาเมจสกิล)
+    -> หมัดลง = สวนในการ์ดเดียวกัน (`flushCounters(engine, true)`) · ที่เหลือ flush ใน `flushOrtCounters()` · ดาเมจสวนตั้ง `_counterDamage` กันสวนกันไปมา
+เทสต์: [tests/characters/takt-titan.test.js](tests/characters/takt-titan.test.js)
+
 **คูลดาวน์ท่าไม้ตายที่วัดเป็น "เลขรอบ" (ชิโด · เอจิ)** — คูลดาวน์ที่กินเวลาข้ามเทิร์นห้ามเก็บเป็นตัวนับใน
 `p.statuses` ถ้าไม่อยากให้มันไปโผล่ในรายการสถานะให้ทุกคนเห็น จึงเก็บเป็น **เลขรอบที่ล็อกถึง**
 (`p.shidoRewindLock` / `p.eijiUltLock`) แล้วเทียบกับ `engine.roundNumber` — ไม่ต้องมีใครลดเทิร์นให้

@@ -110,6 +110,8 @@ const FILES = {
   mageslayer_attack: "/characters/mageslayer/BA.mp3",
   // โทโนะ ชิกิ (rework): เสียงตีธรรมดา + เสียงพากย์สุ่ม (ตี / โดนตี / กดสกิลรอง-ท่าไม้ตาย)
   tohno_hit: "/characters/tohno/tohno_update/tohno_hit.mp3",
+  // ไททัน: เสียงตีปกติ / หมัดสวนกลับของคล่องตัวสูง
+  titan_hit: "/characters/titan/titan_hit.mp3",
   tohno_voice_hit1: "/characters/tohno/tohno_update/hit_sound/tohno_hit.m4a",
   tohno_voice_hit2: "/characters/tohno/tohno_update/hit_sound/tohno_hit2.m4a",
   tohno_voice_hit3: "/characters/tohno/tohno_update/hit_sound/tohno_hit3.m4a",
@@ -256,6 +258,9 @@ const LOUDNESS_GAIN = {
   "/characters/Recruit/สกิลอันติเมต/สกิลอัลติเมติ.mp4": 0.44,
   "/characters/reines/reines_skill3.mp4": 0.77, // ไรเนส: วีดีโอท่าไม้ตาย -13.8 dBFS (เป้าวีดีโอ -16)
   "/characters/andersen/andersen_skill3.mp4": 0.64,
+  "/characters/takt/titan/takt_titan_skill2.mp4": 0.79, // ไททัน: วีดีโอ Vigorous Rising Sun (เป้าวีดีโอ -16)
+  "/characters/takt/titan/takt_titan_skill3.mp4": 0.71, // ไททัน: วีดีโอ Triumphant (เป้าวีดีโอ -16)
+  "/characters/titan/titan_hit.mp3": 0.64, // ไททัน: เสียงตีปกติ (เป้าเอฟเฟกต์ -14)
   "/characters/escanor/New Last Stand.mp4": 0.58, // เอสคานอร์: วีดีโอ Last Stand ใหม่ -11.3 dBFS (เป้าวีดีโอ -16) // แอนเดอร์เซน: วีดีโอท่าไม้ตาย -12.1 dBFS (เป้าวีดีโอ -16)
   "/characters/Recruit/โจมตีปกติ/โจมตีปกติ.mov": 0.66,
   "/characters/appleguy/appleguy_final.mp4": 0.4,

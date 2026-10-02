@@ -196,7 +196,7 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   accurateActive,
   journeyDotBonus() { return Journey.dotBonus(engine); },
   // อัตราคริเพิ่ม (%) ของผู้โจมตี = สนาม (อาณาจักรน้ำแข็ง กลางวัน) + บัฟคำสั่งขั้นเด็ดขาด (ไรเนส) — อ่านใน applyCrit ของอุซากิ/Kim
-  critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p) + CHAR_HOOKS.andersen.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
+  critBonusFor(p) { return Journey.critBonus(engine) + CHAR_HOOKS.reines.critBonus(p) + CHAR_HOOKS.andersen.critBonus(p) + CHAR_HOOKS.takt.critBonus(p); }, // การเดินทาง (ป่าไม้ต้องสาป กลางคืน) — อ่านใน _universal_status.js
   journeyGiftItem: shop.journeyGiftItem,
   refreshShopForJourney: shop.refreshShopForJourney, // เทสต์: จำลองการขึ้นเทิร์นใหม่ของร้านค้า // การเดินทาง (ทุ่งดอกไม้ กลางวัน): สุ่มไอเทมฟรีราคาไม่เกิน 5
   colorOf(p) { return lobby.colorOf(p); },

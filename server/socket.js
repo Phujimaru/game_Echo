@@ -455,6 +455,19 @@ io.on('connection', (socket) => {
   onPlayerEvent(socket, 'recruitQteHit', (id, { id: dotId } = {}) => characterRules.recruitQteHit(id, dotId), 40);
   onPlayerEvent(socket, 'recruitQteDone', (id) => characterRules.recruitQteDone(id), 10);
   onPlayerEvent(socket, 'recruitPick', (id, { targets } = {}) => characterRules.recruitPick(id, targets), 6);
+  // อาซาฮินะ ทักต์ (คอนดักเตอร์): ส่งคำเชิญพันธะ (ไม่เสียแต้ม ไม่นับเป็นการใช้สกิล) / มิวสิคคาร์ทตอบรับ-ปฏิเสธ
+  //  ตอบรับ = เล่นวีดีโอ takt_ac.mp4 แล้วกลับเข้าเฟสจั่วไพ่ด้วยเวลาที่เหลือ
+  onPlayerEvent(socket, 'taktInvite', (id, { targetId } = {}) => {
+    const p = match.players[id];
+    if (!p || !p.alive || match.gameState !== "PLAYING") return;
+    if (CHAR_HOOKS.takt.invite(engine, p, targetId)) view.broadcastState();
+  }, 6);
+  onPlayerEvent(socket, 'taktInviteAnswer', (id, { accept } = {}) => {
+    const p = match.players[id];
+    if (!p || match.gameState !== "PLAYING" || !p.taktInvite) return;
+    if (CHAR_HOOKS.takt.answerInvite(engine, p, !!accept) && match.cutsceneQueue.length) cutscene.pausePlayingForCutscene();
+    else { view.broadcastState(); draw.checkAllLocked(); }
+  }, 6);
   onPlayerEvent(socket, 'recruitPrep', (id, { kind } = {}) => characterRules.recruitPrep(id, kind), 6);
   onPlayerEvent(socket, 'backToLobby', () => { if (match.gameState === 'GAMEOVER') lobby.backToLobby(); }, 2);
 

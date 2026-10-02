@@ -64,6 +64,8 @@ function dealRound() {
   mercury.mercuryRespawnPicked();
   // ORT สกิลติดตัว 1: สกิลแรกของเทิร์นที่แล้ว "ข้อมูลสูญหาย" ในเทิร์นนี้ (อยู่หลังล้าง cutsceneQueue แล้ว)
   CHAR_HOOKS.ort.onRoundStart(engine);
+  // อาซาฮินะ ทักต์: คำเชิญพันธะที่ไม่ได้ตอบในเทิร์นที่แล้ว = ปฏิเสธ
+  CHAR_HOOKS.takt.sweepInvites(engine);
 
   for (const p of Object.values(match.players)) {
     combat.resetRoundDisplay(p);
@@ -277,6 +279,9 @@ function dealRound() {
     CHAR_HOOKS.striker.onRoundStartTick(engine, p);
     // ไดจิ เกราะเอเลคิง: สตั้นที่ติดไว้เมื่อเทิร์นก่อน -> เริ่มมีผลตอนนี้ (ก่อนบล็อกเช็คสตั้นด้านล่างด้วยเหตุผลเดียวกัน)
     CHAR_HOOKS.daichi.applyPendingStun(engine, p);
+    // อาซาฮินะ ทักต์: เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2 · ไททัน: ล้างชุดตี/คิวสวนที่ค้าง
+    CHAR_HOOKS.takt.onRoundStartTick(engine, p);
+    CHAR_HOOKS.titan.onRoundStartTick(engine, p);
     // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
     CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);
     // ---------- ไบรอัน (characters/brian.js): รถกินน้ำมัน (แปลงเป็นเลือด) หรือเติมน้ำมันประจำเทิร์น ----------
@@ -477,7 +482,9 @@ function flushOrtCounters() {
   const ort = CHAR_HOOKS.ort.flushCounters(engine);
   // Bamboo-Hatted Kim: สวนกลับ "ดาเมจจากสกิล" ที่จองไว้ ลงจังหวะเดียวกับสวนกลับของ ORT (หลังสกิล/ไอเทม/คลิปจบ)
   const kim = CHAR_HOOKS.kim.flushCounters(engine);
-  if (ort || kim) view.broadcastState();
+  // ไททัน "คล่องตัวสูง": สวนกลับที่จองไว้จากสกิล / หมัดที่ถูกหลบ
+  const titan = CHAR_HOOKS.titan.flushCounters(engine, false).length;
+  if (ort || kim || titan) view.broadcastState();
 }
 function checkAllLocked() {
   if (match.gameState !== "PLAYING") return;
@@ -496,7 +503,9 @@ function checkAllLocked() {
     // Recruit: QTE ของสกิลยังเล่นไม่จบ / ยังไม่เลือกเป้า (Desert Eagle นัดที่ 2 · FAMAS)
     CHAR_HOOKS.recruit.pickPending(engine) ||
     // สไตรเกอร์ ยูเรก้า: รอคู่หูอนุมัติท่าไม้ตาย 2 / กำลังต่อสายไฟ
-    CHAR_HOOKS.striker.approvalPending(engine);
+    CHAR_HOOKS.striker.approvalPending(engine) ||
+    // อาซาฮินะ ทักต์: มิวสิคคาร์ทยังไม่ตอบคำเชิญพันธะสัญญา
+    CHAR_HOOKS.takt.invitePending(engine);
   // ถ้าไม่เหลือใครรอดเลย (เช่น ทาคุโตะระเบิดใส่ทุกคนตายหมดรวมถึงตัวเอง) ก็ต้องสรุปผลด้วยเช่นกัน ไม่งั้นเกมค้าง
   // ORT ไม่ต้องกดเปิดไพ่ — รอเฉพาะผู้เล่นจริง (บอสจั่วรอบสุดท้ายใน resolveRound)
   if (c.filter((p) => !mercury.isOrt(p)).every((p) => p.locked) && !pendingAnswer) summary.resolveRound();

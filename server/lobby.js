@@ -48,6 +48,7 @@ function teamModeActive() {
 function isAlly(a, b) {
   if (!a || !b || a.id === b.id) return false;
   if (mercury.mercuryActive()) return !mercury.isOrt(a) && !mercury.isOrt(b);
+  if (!teamModeActive() && match.gameMode === "ffa" && CHAR_HOOKS.takt.bonded(engine, a, b)) return true; // ทักต์: พันธะสัญญา (โหมดอิสระ)
   return !!(teamModeActive() && a.teamId && b.teamId && a.teamId === b.teamId);
 }
 function pregameStateActive() {

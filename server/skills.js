@@ -230,6 +230,8 @@ function useSkillCore(id, tier, targets, item) {
   if (ch && ch.id === "kim") skill = CHAR_HOOKS.kim.dynamicSkillFor(p, ch, tier);
   // สไตรเกอร์ ยูเรก้า: เตาปฏิกรณ์ (พลังชีวิต <= 7) — ท่าไม้ตายเป็น "เป็นเกียรติมากครับ" (buildStateFor คิดสูตรเดียวกัน)
   if (ch && ch.id === "striker") skill = CHAR_HOOKS.striker.dynamicSkillFor(p, ch, tier);
+  // ไททัน: ระหว่างบทเพลงที่ไม่อาจลืม สกิลรอง/ท่าไม้ตายเป็น Vigorous Rising Sun / Triumphant (buildStateFor คิดสูตรเดียวกัน)
+  if (ch && ch.id === "titan") skill = CHAR_HOOKS.titan.dynamicSkillFor(p, ch, tier);
   if (!skill) return;
   const isEscanorSkill = p.characterId === "escanor";
   const isHisakawaSkill = p.characterId === "hisakawa_sister";
@@ -304,8 +306,12 @@ function useSkillCore(id, tier, targets, item) {
   //  ตัวปรับราคาขาขึ้นทั้งหมด (กลางคืน + ภาระเวท) รวมกันแล้วดันราคาได้ไม่เกิน SKILL_COST_MAX
   //  → สกิลที่ค่าใช้พลังงานถึงเพดานอยู่แล้ว (เช่นท่าไม้ตาย 8) จะไม่แพงขึ้นไปอีก
   cost = Math.min(CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), cost + nightTax + journeyTax + Math.min(SPELLBURDEN_MAX, statusAmtOf(p, "spellburden"))); // ยูเรก้า: เพดาน 16 (ท่าไม้ตาย 9/12)
-  // การ์ดราชินี: ใช้สกิลไม่เสียแต้ม 1 ครั้ง — ใช้กับสกิลที่มีค่าใช้จ่ายเท่านั้น
-  const blessFree = cost > 0 && (p.statuses.freecast || 0) > 0;
+  // ไททัน Triumphant (12): ราคาตายตัว ไม่โดนตัวปรับราคา · ไททันจ่ายที่มีทั้งหมด ทักต์ในพันธะจ่ายส่วนที่ขาด (หักที่ applyInstantSkill)
+  const titanSplit = p.characterId === "titan" && tier === "ultimate" ? CHAR_HOOKS.titan.triumphSplit(engine, p) : null;
+  if (titanSplit && !titanSplit.ok) return;
+  if (titanSplit) cost = titanSplit.own;
+  // การ์ดราชินี: ใช้สกิลไม่เสียแต้ม 1 ครั้ง — ใช้กับสกิลที่มีค่าใช้จ่ายเท่านั้น (ไม่ใช้กับ Triumphant ที่จ่ายร่วมกับทักต์)
+  const blessFree = !titanSplit && cost > 0 && (p.statuses.freecast || 0) > 0;
   if (blessFree) cost = 0;
   if (p.skillPoints < cost) return;
 
@@ -364,7 +370,7 @@ function useSkillCore(id, tier, targets, item) {
   const isUsagiBasic = isUsagiPick && tier === "basic";
   if (isHarukaBasic && (p.harukaBasicUses || 0) >= CHAR_HOOKS.haruka.BASIC_USES_PER_TURN) return;
   if (isSupPick && (p.supSkillUsesRound || 0) >= CHAR_HOOKS.the_supplicant.SKILL_USES_PER_TURN) return;
-  if (p.skillUsedRound && !isUsagiBasic && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !isSupPick && !isHarukaBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHisakawaFreeAction && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier)) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  if (p.skillUsedRound && !isUsagiBasic && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !isSupPick && !isHarukaBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHisakawaFreeAction && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier)) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
   // Beat Mode (ประกายเขี้ยว): ท่าไม้ตายใช้ไม่ได้เสมอ / สกิลพื้นฐานใช้ไม่ได้เฉพาะหลังกันตายทำงานแล้ว (patch 2.2 alpha)
   if (tier === "ultimate" && combat.beatActive(p)) return;
   // ท่าไม้ตาย: กดซ้ำไม่ได้จนกว่าผลจะหมดเวลา (สวมเกราะราชันคงอยู่ถาวร = กดซ้ำไม่ได้อีกเลยตลอดเกม)
@@ -502,6 +508,11 @@ function useSkillCore(id, tier, targets, item) {
   if (isReines && !CHAR_HOOKS.reines.canUseSkill(engine, p, tier, targets)) return;
   const isAndersen = p.characterId === "andersen";
   if (isAndersen && !CHAR_HOOKS.andersen.canUseSkill(engine, p, tier, targets, item)) return;
+  // อาซาฮินะ ทักต์ / ไททัน: เงื่อนไขรายช่องอยู่ในโมดูลของตัวเอง (effect: null)
+  const isTaktPick = p.characterId === "takt";
+  if (isTaktPick && !CHAR_HOOKS.takt.canUseSkill(engine, p, tier, targets, item)) return;
+  const isTitanPick = p.characterId === "titan";
+  if (isTitanPick && !CHAR_HOOKS.titan.canUseSkill(engine, p, tier)) return;
   // ---------- Recruit (characters/recruit.js) ----------
   //  คูลดาวน์ · กระสุนพอ · ไม่มี QTE/การเลือกเป้าค้าง · Desert Eagle / Barrett ต้องเลือกเป้าก่อนกด
   const isRecruitPick = p.characterId === "recruit";
@@ -636,12 +647,14 @@ function useSkillCore(id, tier, targets, item) {
   if (!CHAR_HOOKS.shido.silentSkill(p, tier)) CHAR_HOOKS.ort.onSkillUsed(engine, p, tier);
   // ORT สกิลติดตัว 2: ถูกเลือกเป็นเป้าของสกิล (แม้เป็นบัฟ/ดีบัฟ) -> สวนกลับผู้ใช้ (ลงท้าย useSkill)
   if (Array.isArray(targets) && targets.includes(ORT_ID)) CHAR_HOOKS.ort.queueCounter(engine, p.id);
+  // ไททัน "คล่องตัวสูง": ถูกเลือกเป็นเป้าของสกิล (แม้เป็นบัฟ) -> สวนกลับผู้ใช้ (ลงท้าย useSkill ผ่าน flushOrtCounters)
+  CHAR_HOOKS.titan.onSkillTargeted(engine, p, targets);
   if (blessFree) {
     p.statuses.freecast--;
     if (p.statuses.freecast <= 0) delete p.statuses.freecast;
     match.lastLog.push(`👸 ${p.name} การ์ดราชินี — ใช้สกิลนี้โดยไม่เสียแต้มสกิล`);
   }
-  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.oberon_summer.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
+  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.oberon_summer.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
   if (isKaiPick) p.kaiSkillUsesRound = (p.kaiSkillUsesRound || 0) + 1;
   if (isTakumiPick) p.takumiSkillUsesRound = (p.takumiSkillUsesRound || 0) + 1;
   // "คำสาป" (สถานะ Universal): กดสกิลสำเร็จแล้ว = เสียพลังชีวิต 1 หน่วย (1 ครั้ง/เทิร์น)
@@ -806,7 +819,10 @@ function useSkillCore(id, tier, targets, item) {
   if (isAndersen) flashSuffix = CHAR_HOOKS.andersen.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
   if (isRecruitPick) flashSuffix = CHAR_HOOKS.recruit.applyInstantSkill(engine, p, tier, targets) || flashSuffix; // เปิด QTE
   if (isStrikerPick) flashSuffix = CHAR_HOOKS.striker.applyInstantSkill(engine, p, tier, item) || flashSuffix;
-  const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : null; // ขีปนาวุธ: ยิงหลังวีดีโอ
+  if (isTaktPick) flashSuffix = CHAR_HOOKS.takt.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
+  if (isTitanPick) flashSuffix = CHAR_HOOKS.titan.applyInstantSkill(engine, p, tier, titanSplit) || flashSuffix;
+  // ผลที่ลง "หลังวีดีโอ": ขีปนาวุธของยูเรก้า · Triumphant ของไททัน
+  const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : isTitanPick ? CHAR_HOOKS.titan.takeAfter(p) : null;
   // ---------- ผู้วิงวอน (patch 3.4) ----------
   if (isSupPick && supTarget) flashSuffix = CHAR_HOOKS.the_supplicant.applyInstantSkill(engine, p, tier, supTarget) || flashSuffix;
   if (isBrianPick) flashSuffix = CHAR_HOOKS.brian.applyInstantSkill(engine, p, tier, brianTarget, item) || flashSuffix;

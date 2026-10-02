@@ -63,7 +63,10 @@ export default function VictoryScreen({ state, onBackToLobby }) {
       const ws = state.players.filter((p) => p.alive && p.teamId === state.winningTeamId);
       return { heading: `ทีม ${state.winningTeamId}`, winners: ws };
     }
-    const c = state.players.find((p) => p.alive && !p.isBoss); // ORT (บุกเทิร์น 60) ไม่ใช่ผู้ชิงชัย
+    // พันธะสัญญา (อาซาฮินะ ทักต์ + มิวสิคคาร์ท): เหลือกันเองหลายคน = ชนะพร้อมกัน
+    const aliveAll = state.players.filter((p) => p.alive && !p.isBoss);
+    if ((state.gameMode || "ffa") === "ffa" && aliveAll.length > 1) return { heading: aliveAll.map((p) => p.name).join(" และ "), winners: aliveAll };
+    const c = aliveAll[0]; // ORT (บุกเทิร์น 60) ไม่ใช่ผู้ชิงชัย
     return { heading: c ? c.name : "จบเกม", winners: c ? [c] : [] };
   }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result, purgeResult, purgeWinner]);
 
@@ -90,7 +93,7 @@ export default function VictoryScreen({ state, onBackToLobby }) {
           {heading}
         </h1>
 
-        {winners.length > 1 && (
+        {winners.length > 1 && names !== heading && (
           <div className="av-heading text-xl" style={{ color: "rgba(220,235,250,.75)" }}>{names}</div>
         )}
 

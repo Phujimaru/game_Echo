@@ -221,7 +221,8 @@ function attackSoundOf(attacker) {
   if (attacker.characterId === "tohno") return CHAR_HOOKS.tohno.attackSound(attacker); // ตีธรรมดา (ไม่ใช่ผลของสกิล)
   if (attacker.characterId === "recruit") return CHAR_HOOKS.recruit.attackSound(attacker); // เสียงปืน
   if (attacker.characterId === "striker") return CHAR_HOOKS.striker.attackSound(attacker);
-  if (attacker.characterId === "cayenne") return CHAR_HOOKS.cayenne.attackSound(attacker); // ร่างเกพาร์ด: เสียงปืน           // BA.mp3
+  if (attacker.characterId === "cayenne") return CHAR_HOOKS.cayenne.attackSound(attacker);
+  if (attacker.characterId === "titan") return CHAR_HOOKS.titan.attackSound(attacker); // titan_hit.mp3 // ร่างเกพาร์ด: เสียงปืน           // BA.mp3
   if (attacker.characterId === "muimi") return CHAR_HOOKS.muimi.towerActive(attacker) ? "muimi_ub_hit" : "muimi_normal_hit";
   if (CHAR_HOOKS.haruka.omegaActive(attacker)) return "haruka_attack";             // hit_haruka.mp3
   return undefined;
@@ -248,7 +249,8 @@ function computeAttackBase(engine, attacker, target) {
   const journeyAtkFx = Journey.attackBonus(engine);
   const journeyAtk = journeyAtkFx ? journeyAtkFx.amount : 0;
   // โอเบรอน (ฤดูร้อน) / จอมเวทย์ อาร์โทเรีย: บัฟพลังโจมตีที่แจกให้คนอื่น — ungated แยกคนละสถานะจึงซ้อนกันได้
-  const giftAtk = CHAR_HOOKS.oberon_summer.atkBonus(attacker) + CHAR_HOOKS.artoria_caster.atkBonus(attacker) + CHAR_HOOKS.reines.atkBonus(attacker);
+  const giftAtk = CHAR_HOOKS.oberon_summer.atkBonus(attacker) + CHAR_HOOKS.artoria_caster.atkBonus(attacker) + CHAR_HOOKS.reines.atkBonus(attacker)
+    + CHAR_HOOKS.takt.atkBonus(attacker); // บทเพลงที่ไม่อาจลืม (ทักต์ -> มิวสิคคาร์ท)
   const base = baseHook + hookBonus + mark42Atk + journeyAtk + giftAtk + (empowerAtk ? 1 : 0) + (discipleAtk ? CHAR_HOOKS.dan.DISCIPLE_ATK_BONUS : 0)
     + (yuiRockAtk ? CHAR_HOOKS.yui.ROCK_ATK : 0) + (yuiMelodyAtk ? CHAR_HOOKS.yui.MELODY_ATK : 0)
     + cardAtkBonus;
@@ -300,6 +302,13 @@ function doAttack(byId, targetId) {
     cutscene.runCutsceneQueue(() => { match.gameState = "ATTACK"; doAttack(byId, targetId); });
     return;
   }
+  // ไททัน "Vigorous Rising Sun": วีดีโอก่อนหมัดแรกของชุดทุกครั้ง แล้วค่อยเริ่มตีจริง
+  if (CHAR_HOOKS.titan.sunNeedsVideo(attacker)) {
+    timers.clearPhaseTimer();
+    CHAR_HOOKS.titan.startSunVideo(engine, attacker);
+    cutscene.runCutsceneQueue(() => { match.gameState = "ATTACK"; doAttack(byId, targetId); });
+    return;
+  }
   timers.clearPhaseTimer();
   CHAR_HOOKS.tohno.takeHurtVoice(engine); // เสียงร้องค้างจากหมัดก่อน (ไม่ได้ขึ้นการ์ด) ทิ้งไป ไม่ให้ไปโผล่ในการ์ดของหมัดนี้
   attacker.didAttackRound = true;
@@ -316,6 +325,7 @@ function doAttack(byId, targetId) {
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
   // โทโนะ ชิกิ: หมัดนี้เป็นหมัดแบบไหน (ธรรมดา / เชือดเฉือน / ระเบิดรอยร้าว) — ใช้สถานะที่รอไว้ตอนออกหมัด
   CHAR_HOOKS.tohno.beginAttack(engine, attacker);
+  CHAR_HOOKS.titan.beginAttack(engine, attacker); // ไททัน: เริ่มชุดตีหลายครั้ง + ทอยช็อตกันของหมัดนี้
   // "แม่นยำ" (บัฟ Universal — โทโนะ มองเห็นแล้ว!!): เจาะการหลบหลีกทุกแบบของเป้าหมาย (โล่กันครั้งยังกันได้ตามปกติ)
   const accurate = accurateActive(attacker);
   attacker.nanayaReattackReady = false; // หัวใจฆาตกร (นานายะ ชิกิ): กำลังใช้โอกาสโจมตีซ้ำนี้อยู่ (หรือไม่เกี่ยวข้องกับตัวละครนี้)
@@ -364,6 +374,8 @@ function doAttack(byId, targetId) {
     }
   }
 
+  // ไททัน "คล่องตัวสูง": ถูกเลือกเป็นเป้า = จองสวนกลับไว้ก่อนด่านหลบทั้งหมด (หลบได้ก็ยังสวน — flush หัว endTurn)
+  CHAR_HOOKS.titan.onTargeted(engine, attacker, target);
   // หลบหลีก (Encore / มิติมายาบรรเลง — Bard / สถานะพื้นฐาน patch 2.0.8): หลบการโดนโจมตีตาม % ที่ระบุ
   //  (ไม่ระบุ = 100%) — ซ้อนทับได้ หมดไปทีละ 1 ครั้งเมื่อถูกเลือกโจมตี ไม่ว่าหลบพ้นหรือไม่
   if (!accurate && (target.statuses.evade || 0) > 0) {
@@ -480,6 +492,9 @@ function doAttack(byId, targetId) {
   if (!accurate && CHAR_HOOKS.tsurugi.tryAttackDodge(engine, attacker, target)) return;
   // โทโนะ ชิกิ: หลบหลีก 5% (ตระกูลโทโนะ · ใจเย็น) / 15% (เดือดดาล)
   if (!accurate && CHAR_HOOKS.tohno.tryAttackDodge(engine, attacker, target)) return;
+  // อาซาฮินะ ทักต์: คอนดักเตอร์มีพันธะหลบ 35% · มิวสิคคาร์ทโหมดทุ้มต่ำหลบ 5% · ไททัน (ช็อตกัน) หลบ 5%
+  if (!accurate && CHAR_HOOKS.takt.tryAttackDodge(engine, attacker, target)) return;
+  if (!accurate && CHAR_HOOKS.titan.tryAttackDodge(engine, attacker, target)) return;
   // การเดินทาง (ป่าไม้ต้องสาป กลางวัน): โจมตีพลาด 40% — ฝั่งผู้ตีพลาดเอง แต่ "แม่นยำ" ก็เจาะได้เหมือนด่านหลบ
   if (!accurate && Journey.tryAttackMiss(engine, attacker, target)) return;
   // เอจิ สกิลติดตัว 1 (ผู้เล่นอันดับ 2): ผู้ชนะไปตีคนอื่นที่ไม่ใช่เอจิ -> 25% ขัดจังหวะแล้วสวนคืน
@@ -534,6 +549,9 @@ function doAttack(byId, targetId) {
   if (yunaLongingAtk > 0) dmg += yunaLongingAtk;
   const yunaBeatBark = attacker.characterId !== "ultraman_trigger" && characterRules.yunaBeatBarkActive();
   if (yunaBeatBark) dmg += 1;
+  // ไททัน (ช็อตกัน): 50% ดาเมจ +1 — ทอยไว้แล้วที่ titan.beginAttack (ห้ามทอยใน damageBonus)
+  const titanShot = CHAR_HOOKS.titan.shotBonus(attacker);
+  if (titanShot > 0) dmg += titanShot;
   //  "พิษร้าย" หักพลังโจมตีเหมือน "อ่อนแอ" — ซ้อนกันได้ จึงรวมกันก่อนหักทีเดียว
   const weakAtk = statusAmtOf(attacker, "weak") + CHAR_HOOKS.the_supplicant.statusAmtBonus(attacker, "weak") + poisonAtkPenalty(attacker);
   if (weakAtk > 0) dmg = Math.max(0, dmg - weakAtk);
@@ -597,7 +615,7 @@ function doAttack(byId, targetId) {
   //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้อัตราเพิ่มบวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.critBonusFor)
   //  + บัฟอัตราคริของไรเนส (คำสั่งขั้นเด็ดขาด) ทอยรวมกับสนามครั้งเดียว
   const journeyCritFx = {};
-  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker) + CHAR_HOOKS.andersen.critBonus(attacker));
+  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker) + CHAR_HOOKS.andersen.critBonus(attacker) + CHAR_HOOKS.takt.critBonus(attacker));
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -696,6 +714,13 @@ function doAttack(byId, targetId) {
   // สไตรเกอร์ ยูเรก้า: มือมีดมอบเลือดไหล · เตาปฏิกรณ์ 15% แทงสวน (วีดีโอเล่นก่อนสรุปความเสียหาย)
   const strikerBleed = CHAR_HOOKS.striker.onAttackLanded(engine, attacker, target);
   const strikerCounterFx = CHAR_HOOKS.striker.onAttackedNormally(engine, attacker, target);
+  // ไททัน: หมัดลง -> ลุกไหม้ (ซองแฝด/Vigorous Rising Sun) · ดูดเลือด (มิวสิคคาร์ท) · อ่อนโยน (บทเพลง)
+  const titanAtkFx = CHAR_HOOKS.titan.onAttackLanded(engine, attacker, target,
+    Math.max(0, (hpBefore + ippoArmorBefore) - (target.hp + target.armor)));
+  // อ่อนโยน (บทเพลงของทักต์) สำหรับมิวสิคคาร์ทตัวอื่นที่ไม่ใช่ไททัน
+  const taktGentleHeal = attacker.characterId !== "titan" ? CHAR_HOOKS.takt.songHealOnHit(engine, attacker) : 0;
+  // ไททัน "คล่องตัวสูง": สวนผู้โจมตีทันทีในการ์ดสรุปเดียวกัน (จองไว้ตอนถูกเลือกเป็นเป้า)
+  const titanCounterFx = CHAR_HOOKS.titan.flushCounters(engine, true);
   // แบทแมน (characters/bat_ben.js): ปืนติดรถ — ใช้แล้วหมดกระสุน (ดาเมจถูกบวกไปแล้วที่ computeAttackBase)
   const batGunFired = CHAR_HOOKS.bat_ben.consumeGun(engine, attacker);
   // อิปโป (characters/ippo.js): Uper Cut ลงผลตามว่าเป้าหมาย "มีเกราะก่อนโดนหมัดนี้" หรือไม่
@@ -832,6 +857,10 @@ function doAttack(byId, targetId) {
   if (strikerBleed > 0) addFx({ name: `มือมีด — เลือดไหล +${strikerBleed}`, img: CHAR_HOOKS.striker.IMG.skill1, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (strikerCounterFx) addFx({ name: `เตาปฏิกรณ์ — แทงสวน -${strikerCounterFx.dmg}`, img: CHAR_HOOKS.striker.IMG.base, by: target.name, color: lobby.colorOf(target) }, "def");
   if (kimCounterFx) addFx({ name: kimCounterFx.name, img: kimCounterFx.img, by: target.name, color: lobby.colorOf(target) }, "def");
+  for (const name of titanAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
+  for (const name of CHAR_HOOKS.takt.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.takt.IMG.skill3, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
+  if (taktGentleHeal > 0) addFx({ name: `อ่อนโยน ฟื้นพลังชีวิต +${taktGentleHeal}`, img: CHAR_HOOKS.takt.IMG.skill2, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
+  for (const c of titanCounterFx) addFx({ name: `คล่องตัวสูง — สวนกลับ ${c.foe.name} -${c.dmg}`, img: CHAR_HOOKS.titan.IMG.skill3, by: c.titan.name, color: lobby.colorOf(c.titan) }, "def");
   for (const fx of ignisAttackFx || []) addFx(fx, fx.side || "atk");
   if (ginga) addFx(combat.skillByStatus(attacker, "ginga"), "atk");
   if (gingastriumAtk) addFx({ name: `Ginga Strium${lastStanding ? " +1 (คู่ต่อสู้คนเดียว)" : ""}`, img: HIKARU_STRIUM_IMG, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
@@ -908,7 +937,7 @@ function doAttack(byId, targetId) {
         byDoomWeapon: attacker.characterId === "doomguy" ? attacker.doomWeapon : undefined, // DoomGuy: อาวุธที่ใช้ยิงตอนนี้ (เสียงยิงฝั่ง client)
         byAttackSound: attackSoundOf(attacker), // เสียงโจมตีปกติเฉพาะตัว (ผู้สังหารเมจ / ฮารุกะระหว่างโอเมก้า)
     byVoice: CHAR_HOOKS.tohno.attackVoice(attacker), // เสียงพากย์ตอนตี (โทโนะ — สุ่ม 1 จาก 6 ทุกหมัด รวมหมัดของสกิล)
-    targetVoice: CHAR_HOOKS.tohno.takeHurtVoice(engine), // เสียงร้องของโทโนะที่โดนดาเมจระหว่างหมัดนี้ (เล่นพร้อมการ์ด ไม่ทับคลิป)
+    targetVoice: CHAR_HOOKS.tohno.takeHurtVoice(engine) || (titanCounterFx.length ? CHAR_HOOKS.titan.HIT_SOUND : undefined), // เสียงร้องของโทโนะ / เสียงหมัดสวนของไททัน (เล่นพร้อมการ์ด ไม่ทับคลิป)
     targetName: target.name, targetImg: view.displayImg(target), targetColor: lobby.colorOf(target),
     dmg, aoe: ginga || storiumAtk, revenge: false, skills: fxSkills,
     fxMs: (fxSkills.length ? ATTACKFX_TIME + 2 : ATTACKFX_TIME) * 1000,

@@ -72,7 +72,9 @@ function isTargetable(p, iAmAttacker, c) {
   // Type Mercury: โจมตีปกติเล็งได้แค่ ORT — แต่สกิล/ไอเทมยังเลือกเพื่อนร่วมทีมได้ตามปกติ
   //  (หลายตัวละครต้องเลือกเพื่อน เช่น มอบบัฟ/รับศิษย์ · ผลที่เป็นโทษต่อเพื่อน server กันที่ friendlyEffectBlocked เอง)
   const raidMate = c.raid && !p.isBoss;
-  const normalAttackTarget = iAmAttacker && !friendly && !raidMate && !p.statuses?.seal && (!c.kaiRivalId || p.id === c.kaiRivalId);
+  // พันธะสัญญา (อาซาฮินะ ทักต์ + มิวสิคคาร์ท): พวกเดียวกันในโหมดอิสระ — ตีปกติไม่ได้ แต่สกิลยังเลือกได้
+  const bondAlly = (c.allyIds || []).includes(p.id);
+  const normalAttackTarget = iAmAttacker && !friendly && !bondAlly && !raidMate && !p.statuses?.seal && (!c.kaiRivalId || p.id === c.kaiRivalId);
   const gunTarget = !!c.gunSel && !self && !friendly;
   const escanorSkillTarget = c.escanorSel && !self && !friendly;
   // คอนเนอร์ RK800: สกิลรองเลือกใครก็ได้ที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม — ท่าไม้ตายเลือกได้เฉพาะระดับ "อาชญากร"
@@ -86,7 +88,8 @@ function isTargetable(p, iAmAttacker, c) {
   const brianTarget = !!c.brianSel && !self && !friendly; // ไบรอัน: ท้าแข่งใครก็ได้ที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
   // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: โหมดเลือกเป้าหมายกลาง — ตัวเองกดปุ่ม "เลือกตัวเอง" บนแบนเนอร์
   //  anyone = เลือกศัตรูได้แม้โหมดทีม (โอเบรอนใช้ผลเสียของท่ากับศัตรูได้) · ไม่งั้นโหมดทีมเลือกได้เฉพาะเพื่อน (server กันซ้ำ)
-  const giftTarget = !!c.giftSel && (c.giftSel.anyone || !c.teamModeActive || friendly || c.raid);
+  //  onlyIds = จำกัดเฉพาะบางคน (ทักต์: มิวสิคคาร์ทในพันธะที่เข้าเงื่อนไข)
+  const giftTarget = !!c.giftSel && (!c.giftSel.onlyIds || c.giftSel.onlyIds.includes(p.id)) && (c.giftSel.anyone || !c.teamModeActive || friendly || c.raid);
   return (normalAttackTarget || giftTarget || !!c.anataSel || c.appleSel || c.skSel || c.doomSel || c.saObSel || escanorSkillTarget || c.ignisSel || c.ignisImpactSel || !!c.bardPending || c.nanayaSel || c.tpSel || c.kaiCreateSel || c.kaiPunishSel || c.msMarkSel || c.msRuptureSel || c.psSealSel || connorTarget || usagiTarget || recruitTarget || danTarget || supTarget || brianTarget || gunTarget) && p.alive;
 }
 // แตะ/คลิกการ์ดคู่ต่อสู้แล้วต้องทำอะไร — ไล่ตามโหมดเลือกเป้าหมายที่เปิดอยู่ ไม่มีเลยก็โจมตีปกติ
@@ -1476,6 +1479,10 @@ const STATUS_INFO = {
   andCrit:     { icon: "📖", label: "บทที่งดงาม", cls: "bg-echo-hp", desc: "Märchen Meines Lebens (แอนเดอร์เซน): อัตราคริติคอล +20% (คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   reinesCmd:   { icon: "📜", label: "คำสั่งขั้นเด็ดขาด", cls: "bg-echo-hp", desc: "คำสั่งขั้นเด็ดขาด: โจมตี +1 และคริติคอล +20% (×2) · ออกหมัดโจมตีปกติแล้วไรเนสได้แต้มสกิล +2 · ตัวเลข = เทิร์นที่เหลือ" },
   reinesCrit:  { icon: "📘", label: "คำแนะนำชั้นครู", cls: "bg-echo-hp", desc: "คำแนะนำชั้นครู (ไรเนส): อัตราคริติคอล +30% (รวมกับคำสั่งขั้นเด็ดขาดได้ · คริครั้งเดียว ×2) · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
+  // อาซาฮินะ ทักต์ / ไททัน (มิวสิคคาร์ท)
+  taktSong:    { icon: "🎼", label: "บทเพลงที่ไม่อาจลืม", cls: "bg-echo-ice text-gray-900", desc: "บทเพลงที่ไม่อาจลืม: พลังโจมตี +1 · ผลตามโหมดเพลง · ปลดล็อกมิวสิคคาร์ท · ตัวเลข = เทิร์นที่เหลือ" },
+  titanTwin:   { icon: "🔥", label: "ซองแฝด", cls: "bg-echo-hp", desc: "ซองแฝด: ตีปกติโดนแล้วเป้าติดลุกไหม้ 2 · ตัวเลข = เทิร์นที่เหลือ" },
+  titanAgile:  { icon: "💨", label: "คล่องตัวสูง", cls: "bg-echo-cyan text-gray-900", desc: "คล่องตัวสูง: ถูกโจมตีหรือถูกสกิลเล็งแล้วสวนกลับ · ตัวเลข = เทิร์นที่เหลือ" },
   artHope:     { icon: "✨", label: "ความหวัง", cls: "bg-echo-ice text-gray-900", desc: "ความหวัง (อาร์โทเรีย): ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1 · ตัวเลข = จำนวนเทิร์นที่ยังเหลือ" },
   usagiMath:  { icon: "🧮", label: "โจทย์คณิต (เทิร์นที่เหลือ)", cls: "bg-echo-magenta", desc: "โจทย์คณิตของอุซากิ: ตอนกดและต้นเทิร์นอีก 2 เทิร์น ศัตรูทุกคนทำโจทย์ 3 ข้อ ข้อละ 5 วินาที · ผิดหรือไม่ทันโดน 1 ต่อข้อ · ตัวเลข = เทิร์นที่เหลือ" },
   yuiRock:    { icon: "\u{1F3B8}", label: "girl don't cry", cls: "bg-echo-ice text-gray-900", desc: "girl don't cry (ยุย): พลังโจมตี +1 · และคนที่แต้มสกิลน้อยที่สุดในวงจะได้รับแต้มสกิล +1 ทุกเทิร์น (ประเมินใหม่ทุกเทิร์น)" },
@@ -1510,6 +1517,14 @@ const STATUS_INFO = {
   hisakawaTalent: { icon: "✨", label: "พรสวรรค์ของพวกเรา", cls: "bg-echo-ice text-gray-900", desc: "พลังโจมตี +2" },
   hisakawaDream: { icon: "🎁", label: "ฝันของเหล่าฝาแฝด", cls: "bg-echo-ice text-gray-900", desc: "แต้มสกิล +1, โจมตี +2, โชคลาภ +1 ทุกเทิร์น และทุกครั้งที่ได้โจมตีแฝดอีกคนจะออกมาโจมตีเป็นครั้งที่ 2 (100%) ดาเมจ 2 (ต้องมีแฝดครบทั้งคู่)" },
 };
+// อาซาฮินะ ทักต์: โหมดของบทเพลง (บรรเลงเสียงสวรรค์) — key ตรงกับ characters/takt.js MODES
+const TAKT_MODES = [
+  { key: "low", icon: "🎻", label: "ทุ้มต่ำ", desc: "ได้รับความเสียหาย -1 · หลบ 5%" },
+  { key: "gentle", icon: "🎶", label: "อ่อนโยน", desc: "ตีโดนฟื้นพลังชีวิต 2" },
+  { key: "fierce", icon: "🥁", label: "แข็งกร้าว", desc: "คริติคอล 20%" },
+];
+const TAKT_MODE_LABEL = Object.fromEntries(TAKT_MODES.map((m) => [m.key, m.label]));
+const TAKT_MODE_DESC = Object.fromEntries(TAKT_MODES.map((m) => [m.key, `${m.label}: ${m.desc}`]));
 // รวมสถานะทั้งหมดของผู้เล่นเป็นรายการเดียว — full = รวมของที่โชว์แยกที่อื่นด้วย (โล่/เลือดชั่วคราว)
 function statusEntries(p, full) {
   const out = [];
@@ -1640,6 +1655,27 @@ function statusEntries(p, full) {
     out.push({ key: "recruitPrep", v: 1, icon: "🎒", label: `Bandage ${r.bandage} · Armor ${r.armorUses}`, cls: "bg-white/20",
       desc: `สกิลพิเศษ เตรียมตัว: Bandage เหลือ ${r.bandage} ครั้ง · Armor เหลือ ${r.armorUses} ครั้ง · Reload ไม่จำกัด` });
     if (r.aiming) out.push({ key: "recruitAim", v: 1, icon: "🎯", label: "กำลังเล็ง", cls: "bg-echo-hp", desc: "Recruit กำลังเล่น QTE เล็งยิง" });
+  }
+  // อาซาฮินะ ทักต์ (คอนดักเตอร์) / มิวสิคคาร์ท: พันธะสัญญา + โหมดเพลง — ข้อมูลสาธารณะ
+  if (p.takt) {
+    const t = p.takt;
+    if (t.role === "conductor") {
+      const bonds = t.bonds || [];
+      out.push({ key: "taktBonds", v: 1, icon: "🎼", label: `พันธะ ${bonds.length}/${t.maxBonds || 2}`, cls: bonds.length ? "bg-echo-ice text-gray-900" : "bg-white/20",
+        desc: bonds.length ? `พันธะสัญญา: ${bonds.map((b) => `${b.name}${b.song > 0 ? ` (${TAKT_MODE_LABEL[b.mode] || ""} ${b.song})` : ""}`).join(" · ")}` : "พันธะสัญญา: ยังไม่มี" });
+      if (t.dodge > 0) out.push({ key: "taktDodge", v: 1, icon: "💨", label: `หลบ ${t.dodge}%`, cls: "bg-echo-cyan text-gray-900", desc: `คอนดักเตอร์: หลบการโจมตีปกติ ${t.dodge}%` });
+    } else if (t.role === "cart") {
+      if (t.bondBy) out.push({ key: "taktBondBy", v: 1, icon: "🎼", label: `พันธะกับ ${t.bondBy.name}`, cls: "bg-echo-ice text-gray-900", desc: `พันธะสัญญากับ ${t.bondBy.name}` });
+      else if (t.invited) out.push({ key: "taktInvited", v: 1, icon: "✉️", label: "รอตอบคำเชิญ", cls: "bg-white/20", desc: "มีคำเชิญพันธะสัญญารอตอบ" });
+      if (t.song > 0) out.push({ key: "taktMode", v: 1, icon: "🎵", label: TAKT_MODE_LABEL[t.mode] || t.mode, cls: "bg-echo-magenta", desc: TAKT_MODE_DESC[t.mode] || "" });
+    }
+  }
+  // ไททัน: ของว่างที่เหลือ / Vigorous Rising Sun ที่ค้าง / ชุดหมัด
+  if (p.titan) {
+    const t = p.titan;
+    out.push({ key: "titanSnack", v: 1, icon: "🍙", label: `ของว่าง เหลือ ${t.snacksLeft ?? 0}`, cls: (t.snacksLeft ?? 0) > 0 ? "bg-white/20" : "bg-echo-hp", desc: "ของว่าง: ฟื้นพลังชีวิต 2 · แต้มสกิล +3" });
+    if (t.sun) out.push({ key: "titanSun", v: 1, icon: "☀️", label: "Vigorous Rising Sun", cls: "bg-echo-hp", desc: "Vigorous Rising Sun: การโจมตีชุดถัดไปตีได้ 2 ครั้ง หมัดละลุกไหม้ 1" });
+    if (t.set && t.set.total > 1) out.push({ key: "titanSet", v: 1, icon: "🥁", label: `หมัด ${t.set.n}/${t.set.total}`, cls: "bg-echo-magenta", desc: "ชุดหมัดของไททัน" });
   }
   // โทโนะ ชิกิ: โหมด / สถานะที่รอ / ชุดเชือดเฉือน — ข้อมูลสาธารณะ
   if (p.tohno) {
@@ -1947,7 +1983,11 @@ function GutsVideoPreloader({ me, players }) {
   const preloadMuimi = (players || []).some((p) => p.character?.id === "muimi");
   // โทโนะ ชิกิ: คลิปไม้ตาย (ครั้งแรก) + คลิประเบิดรอยร้าว ไฟล์ใหญ่ (~8-10 MB) — โหลดไว้ก่อน ไม่งั้นกระตุกตอนเล่นจาก R2
   const preloadTohno = (players || []).some((p) => p.character?.id === "tohno" && p.alive);
-  if (!ammoTypes.length && !preloadImpact && !preloadConnorIntro && !preloadMuimi && !preloadTohno) return null;
+  // อาซาฮินะ ทักต์ / ไททัน: คลิปตอบรับพันธะ · คลิปได้บทเพลง/ท่าระหว่างบทเพลง (เฉพาะเมื่อมีทั้งคู่) · คลิปคล่องตัวสูง
+  const preloadTakt = (players || []).some((p) => p.character?.id === "takt" && p.alive);
+  const preloadTitan = (players || []).some((p) => p.character?.id === "titan" && p.alive);
+  const preloadTaktTitan = preloadTakt && preloadTitan;
+  if (!ammoTypes.length && !preloadImpact && !preloadConnorIntro && !preloadMuimi && !preloadTohno && !preloadTakt && !preloadTitan) return null;
   return (
     <div aria-hidden className="hidden">
       {ammoTypes.map((a) => GUTS_AMMO_INFO[a] && (
@@ -1959,6 +1999,11 @@ function GutsVideoPreloader({ me, players }) {
       {preloadMuimi && <video src="/characters/muimi/muimi_skill3_short.mp4" preload="auto" muted playsInline />}
       {preloadTohno && <video src="/characters/tohno/tohno_skill1.mp4" preload="auto" muted playsInline />}
       {preloadTohno && <video src="/characters/tohno/tohno_update/tohno_skill3.mp4" preload="auto" muted playsInline />}
+      {preloadTaktTitan && <video src="/characters/takt/takt_ac.mp4" preload="auto" muted playsInline />}
+      {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan.mp4" preload="auto" muted playsInline />}
+      {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill2.mp4" preload="auto" muted playsInline />}
+      {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill3.mp4" preload="auto" muted playsInline />}
+      {preloadTitan && <video src="/characters/titan/titan_skill3.mp4" preload="auto" muted playsInline />}
     </div>
   );
 }
@@ -2989,6 +3034,89 @@ function RecruitPrepModal({ me, onPick, onClose }) {
   );
 }
 
+// ---------- อาซาฮินะ ทักต์ (สกิลรอง บรรเลงเสียงสวรรค์): เลือกโหมดของบทเพลงก่อน แล้วค่อยเลือกมิวสิคคาร์ท ----------
+//  carts = มิวสิคคาร์ทในพันธะที่สลับโหมดได้เทิร์นนี้ ({ id, name, mode }) — ป้าย "ตอนนี้" บอกโหมดปัจจุบันของแต่ละคน
+function TaktModeModal({ carts, onPick, onClose }) {
+  const many = carts.length > 1;
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-cyan text-center">🎼 บรรเลงเสียงสวรรค์</div>
+        {TAKT_MODES.map((m) => {
+          const now = carts.filter((c) => c.mode === m.key);
+          return (
+            <button key={m.key} onClick={() => onPick(m.key)}
+              className={`text-left rounded-lg px-4 py-3 border ${now.length ? "bg-echo-cyan/15 border-echo-cyan" : "bg-white/10 border-white/25"} hover:bg-white/20`}>
+              <div className="font-black flex items-center gap-2">
+                <span>{m.icon} {m.label}</span>
+                {now.length > 0 && (
+                  <span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-echo-cyan text-gray-900">
+                    ตอนนี้{many ? ` · ${now.map((c) => c.name).join(", ")}` : ""}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs opacity-80">{m.desc}</div>
+            </button>
+          );
+        })}
+        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ยกเลิก</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- อาซาฮินะ ทักต์ (คอนดักเตอร์): พันธะสัญญา — พันธะที่มีอยู่ + ส่งคำเชิญมิวสิคคาร์ท ----------
+function TaktBondModal({ me, onInvite, onClose }) {
+  const t = me?.takt || {};
+  const bonds = t.bonds || [];
+  const cands = me?.taktCandidates || [];
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-cyan text-center">🎼 พันธะสัญญา {bonds.length}/{t.maxBonds || 2}</div>
+        {bonds.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {bonds.map((b) => (
+              <div key={b.id} className="rounded-lg px-4 py-2 bg-echo-cyan/15 border border-echo-cyan flex items-center justify-between gap-2">
+                <span className="font-black">🔗 {b.name}</span>
+                <span className="text-xs opacity-85">{b.song > 0 ? `🎵 ${TAKT_MODE_LABEL[b.mode] || ""} · ${b.song} เทิร์น` : "ยังไม่มีบทเพลง"}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="text-xs font-bold opacity-70">เชิญ</div>
+        {cands.length === 0 ? (
+          <div className="text-sm opacity-60 text-center py-2">ไม่มีมิวสิคคาร์ท</div>
+        ) : cands.map((c) => (
+          <button key={c.id} disabled={!!c.block} onClick={() => onInvite(c.id)}
+            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
+            <span className="font-black">{c.name}</span>
+            <span className="text-xs opacity-80">{c.block || "✉️ เชิญ"}</span>
+          </button>
+        ))}
+        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ปิด</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- มิวสิคคาร์ท: คำเชิญพันธะสัญญา — ไม่มีปุ่มปิดเฉยๆ ต้องตอบ (ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ) ----------
+function TaktInviteModal({ invite }) {
+  const answer = (accept) => { clickSound(); socket.emit("taktInviteAnswer", { accept }); };
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4">
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-sm w-full shadow-2xl text-center flex flex-col gap-3">
+        <div className="text-lg font-black text-echo-ice">🎼 คำเชิญพันธะสัญญา</div>
+        <div className="text-sm opacity-80">จาก <b>{invite.fromName}</b></div>
+        <div className="flex gap-2">
+          <button onClick={() => answer(true)} className="flex-1 py-2 rounded-lg font-black bg-echo-ice text-gray-900">ตอบรับ</button>
+          <button onClick={() => answer(false)} className="flex-1 py-2 rounded-lg font-black bg-white/10 border border-white/30">ปฏิเสธ</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- อุซากิ (ท่าไม้ตาย): โจทย์คณิต ข้อละ 5 วินาที ----------
 //  server ส่ง "เหลือกี่มิลลิวินาที" มา (ไม่ใช่เวลาของเครื่อง server — นาฬิกาคนละเครื่องไม่ตรงกัน) · ไม่ส่งเฉลย
 //  paused = มีคัตซีนคั่นอยู่ นาฬิกาหยุด · key ของคอมโพเนนต์เปลี่ยนทุกข้อ ช่องคำตอบจึงว่างใหม่เสมอ
@@ -3744,6 +3872,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [recruitSel, setRecruitSel] = useState(null);   // Recruit: โหมดเลือกเป้าก่อน QTE ("basic" | "ultimate" | null)
   const [recruitPicks, setRecruitPicks] = useState([]); // Recruit: เป้าที่เลือกไปแล้วของนัดหลัง QTE (FAMAS เลือก 2 คน)
   const [recruitPrepOpen, setRecruitPrepOpen] = useState(false); // Recruit: หน้าต่างสกิลพิเศษ "เตรียมตัว"
+  const [taktModeOpen, setTaktModeOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างเลือกโหมดของบรรเลงเสียงสวรรค์
+  const [taktBondOpen, setTaktBondOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างพันธะสัญญา (เชิญมิวสิคคาร์ท)
   const [usagiSel, setUsagiSel] = useState(false);   // อุซากิ: โหมดเลือกเป้าหมาย "ปรุ้ต....."
   const [usagiItemOpen, setUsagiItemOpen] = useState(false); // อุซากิ: หน้าต่างเลือกไอเทมที่จะกิน
   const [connorSel, setConnorSel] = useState(null);                 // คอนเนอร์: โหมดเลือกเป้าหมาย ("secondary" | "ultimate" | null)
@@ -3972,6 +4102,24 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const giftLocks = me?.skillLocks || {};
   const giftCd = (t) => (giftLocks[t] && giftLocks[t].cd) || 0;
   const giftLocked = (t) => !!(giftLocks[t] && (giftLocks[t].locked || giftLocks[t].cd > 0));
+  // free = ช่องนี้ไม่กินโควตา 1 สกิล/เทิร์น (ไททัน ของว่าง · ทักต์ บรรเลงเสียงสวรรค์) — skillUsed แล้วยังกดได้
+  const giftFree = (t) => !!(giftLocks[t] && giftLocks[t].free);
+  // อาซาฮินะ ทักต์: มิวสิคคาร์ทในพันธะที่สลับโหมดได้ (มีบทเพลง · ยังไม่สลับเทิร์นนี้) / ที่รับบทเพลงได้ (ยังไม่มีบทเพลง)
+  const isTakt = ch?.id === "takt";
+  const taktBonds = isTakt ? (me?.takt?.bonds || []) : [];
+  const taktCartRec = (id) => state.players.find((x) => x.id === id);
+  const taktModeCarts = taktBonds.filter((b) => b.song > 0 && taktCartRec(b.id)?.alive && !taktCartRec(b.id)?.takt?.modeUsed);
+  const taktUltCarts = taktBonds.filter((b) => !(b.song > 0) && taktCartRec(b.id)?.alive);
+  // พันธะสัญญา = พวกเดียวกัน (โหมดอิสระ): ทักต์ + มิวสิคคาร์ททุกคนที่ผูกกับทักต์คนเดียวกัน — ตีปกติใส่กันไม่ได้
+  const bondAllyIds = (() => {
+    const t = me?.takt;
+    if (!t) return [];
+    if (t.role === "conductor") return (t.bonds || []).map((b) => b.id);
+    if (t.role === "cart" && t.bondBy) {
+      return [t.bondBy.id, ...state.players.filter((x) => x.id !== me.id && x.takt?.bondBy?.id === t.bondBy.id).map((x) => x.id)];
+    }
+    return [];
+  })();
   // นกจาบยามเช้าไม่กินโควตาสกิลของเทิร์น — ท่าอื่นยังกดได้หลังใช้ (server ไม่ตั้ง skillUsed ให้อยู่แล้ว)
   // Recruit: คูลดาวน์รายช่อง · กระสุนไม่พอ · กำลังเล่น QTE/เลือกเป้าอยู่ = กดสกิลอื่นไม่ได้
   const isRecruit = ch?.id === "recruit";
@@ -4184,6 +4332,14 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (tier === "ultimate" && ch?.id === "striker" && !me?.striker?.reactor) { setStrikerMissileOpen(true); return; }
     // Recruit: Desert Eagle / Barrett เลือกเป้าก่อน แล้ว server เปิด QTE ให้ · FAMAS กดแล้วเล่น QTE เลย
     if ((tier === "basic" || tier === "ultimate") && ch?.id === "recruit") { setRecruitSel(tier); return; }
+    // อาซาฮินะ ทักต์: พื้นฐานเลือกใครก็ได้ (ตัวเองได้) · รองเลือกโหมดก่อน · ไม้ตายเลือกมิวสิคคาร์ทในพันธะที่ยังไม่มีบทเพลง
+    if (ch?.id === "takt" && tier === "basic") { setGiftSel({ tier, anyone: true, name: ch[tier]?.name }); return; }
+    if (ch?.id === "takt" && tier === "secondary") { setTaktModeOpen(true); return; }
+    if (ch?.id === "takt" && tier === "ultimate") {
+      const ids = taktUltCarts.map((b) => b.id);
+      if (ids.length === 1) { socket.emit("useSkill", { tier, targets: ids }); return; }
+      setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
+    }
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); return; }
     // โทโนะ ชิกิ: สกิลพื้นฐานเปิดเมนูเลือกระดับมีดพับประจำตระกูล (1-5)
     if (tier === "basic" && ch?.id === "tohno") { setTohnoOpen(true); return; }
@@ -4316,6 +4472,15 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const pickAndersenColor = (color) => {
     setAndersenColorOpen(false);
     setGiftSel({ tier: "secondary", anyone: false, item: color, name: ch?.secondary?.name });
+  };
+  // อาซาฮินะ ทักต์: เลือกโหมดแล้ว — มิวสิคคาร์ทที่เข้าเงื่อนไขมีคนเดียวส่งเลย ไม่งั้นจิ้มเลือกบนกระดาน
+  const pickTaktMode = (mode) => {
+    clickSound();
+    setTaktModeOpen(false);
+    const ids = taktModeCarts.map((b) => b.id);
+    if (ids.length === 1) { socket.emit("useSkill", { tier: "secondary", targets: ids, item: mode }); return; }
+    if (!ids.length) return;
+    setGiftSel({ tier: "secondary", anyone: true, onlyIds: ids, item: mode, name: `${ch?.secondary?.name} · ${TAKT_MODE_LABEL[mode]}` });
   };
   const pickGift = (id) => {
     socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
@@ -4539,10 +4704,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (andersenColorOpen && (phase !== "PLAYING" || done)) setAndersenColorOpen(false);
     if (recruitSel && (phase !== "PLAYING" || done)) setRecruitSel(null);
     if (recruitPrepOpen && (phase !== "PLAYING" || done)) setRecruitPrepOpen(false);
+    if (taktModeOpen && (phase !== "PLAYING" || done)) setTaktModeOpen(false);
+    if (taktBondOpen && (phase !== "PLAYING" || done)) setTaktBondOpen(false);
     if (strikerMissileOpen && (phase !== "PLAYING" || done)) setStrikerMissileOpen(false);
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
-  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -4594,6 +4761,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     pickAnata, pickGive,   pickSk, pickDoom, pickSaOb, pickEscanor, pickIgnis, pickIgnisImpact,  pickBard, pickNanaya, pickTp,
     pickKaiCreate, pickKaiPunish, pickMsMark, pickMsRupture,
     kaiRivalId,
+    allyIds: bondAllyIds,
     myId: me?.id,
     myTeamId: me?.teamId,
     teamModeActive: state.gameMode === "duo" || state.gameMode === "trio",
@@ -4779,6 +4947,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {me?.qte && <QtePanel key={me.qte.idx} qte={me.qte} />}
         {me?.usagiQuiz && <UsagiQuizPanel key={`${me.usagiQuiz.idx}-${me.usagiQuiz.q}`} quiz={me.usagiQuiz} />}
         {me?.usagiSwapOffer && <UsagiSwapModal offer={me.usagiSwapOffer} />}
+        {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
+        {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
+        {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
         {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
         {/* ---------- แผงตัวเรา (ล่างสุด กดง่ายด้วยนิ้วโป้ง) ----------
@@ -5100,6 +5271,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {me?.recruitQte && <RecruitQtePanel key={me.recruitQte.dots.map((d) => d.id).join("")} qte={me.recruitQte} lowQ={lowQ} />}
       {recruitPrepOpen && me && <RecruitPrepModal me={me} onPick={(kind) => { clickSound(); socket.emit("recruitPrep", { kind }); setRecruitPrepOpen(false); }} onClose={() => { clickSound(); setRecruitPrepOpen(false); }} />}
       {me?.usagiSwapOffer && <UsagiSwapModal offer={me.usagiSwapOffer} />}
+      {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
+      {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
+      {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
       {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
       {/* แถบซ้ายบน: กลางวัน/คืน · รอบ · เวลา · ภูมิภาค (รวมกล่อง "รอบที่" กับป้ายการเดินทางเดิมเป็นแถบเดียว — แตะภูมิภาคเปิดหน้าต่างผลสนาม) */}
@@ -5287,7 +5461,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {giftSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
           <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">✨ คลิกเลือกเป้าหมายของ “{giftSel.name}”</span>
-          <button onClick={() => { clickSound(); pickGift(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          {(!giftSel.onlyIds || giftSel.onlyIds.includes(me?.id)) && (
+            <button onClick={() => { clickSound(); pickGift(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
+          )}
           <button onClick={() => { clickSound(); setGiftSel(null); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
         </div>
       )}
@@ -5490,6 +5666,16 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                       🎒 เตรียมตัว · 🔫 {me.recruit?.bullets ?? 0}/{me.recruit?.bulletMax ?? 6}
                     </button>
                   )}
+                  {isTakt && phase === "PLAYING" && me.alive && !done && (
+                    <button
+                      onClick={() => { clickSound(); setTaktBondOpen(true); }}
+                      disabled={frozenByClockUp}
+                      className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
+                      title="พันธะสัญญา"
+                    >
+                      🎼 พันธะสัญญา {taktBonds.length}/{me.takt?.maxBonds || 2}
+                    </button>
+                  )}
                 </>
               }
               bagCount={me.inventory?.length || 0}
@@ -5500,9 +5686,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               onShop={() => { clickSound(); setShopOpen(true); }}
               skills={
                 <>
-                  <SkillSlot variant="hud" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
-                  <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
-                  {isBard ? <BardComposeSlot me={me} hud /> : isKai ? <KaiOverhaulSlot me={me} frozen={frozenByClockUp} hud /> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
+                  <SkillSlot variant="hud" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker && !giftFree("basic")) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
+                  <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup && !giftFree("secondary")) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
+                  {isBard ? <BardComposeSlot me={me} hud /> : isKai ? <KaiOverhaulSlot me={me} frozen={frozenByClockUp} hud /> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O && !giftFree("ultimate")) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
                 </>
               }
             />

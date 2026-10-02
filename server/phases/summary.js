@@ -243,6 +243,12 @@ function resolveRound() {
         match.lastLog.push(`💥 ${l.name} โดน New Omega ระเบิดแต้มการ์ด — ไม่รับความเสียหายจากการที่ไพ่แตก`);
         continue;
       }
+      if (cardDeck.bustedOf(l) && CHAR_HOOKS.takt.bustDamageImmune(l)) {
+        // อาซาฮินะ ทักต์ (ตระกูลอาซาฮินะ): ไม่รับความเสียหายจากการที่ไพ่แตก
+        combat.firePassive(l, "lose");
+        match.lastLog.push(`🎼 ${l.name} ตระกูลอาซาฮินะ — ไม่รับความเสียหายจากการที่ไพ่แตก`);
+        continue;
+      }
       if (cardDeck.bustedOf(l) && CHAR_HOOKS.escanor.bustDamageImmune(l)) {
         // เอสคานอร์ร่าง Last Stand: ไม่รับความเสียหายจากการที่ไพ่แตก
         combat.firePassive(l, "lose");

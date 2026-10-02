@@ -59,6 +59,8 @@ function maxHpOf(p) {
   if (p && p.characterId === "kim") return Math.max(1, CHAR_HOOKS.kim.maxHp() - ((p.maxHpPenalty) || 0));
   // Recruit: พลังชีวิตพื้นฐาน 5 หน่วย
   if (p && p.characterId === "recruit") return Math.max(1, CHAR_HOOKS.recruit.maxHp() - ((p.maxHpPenalty) || 0));
+  // อาซาฮินะ ทักต์ (ตระกูลอาซาฮินะ): พลังชีวิตพื้นฐาน 5 หน่วย
+  if (p && p.characterId === "takt") return Math.max(1, CHAR_HOOKS.takt.maxHp() - ((p.maxHpPenalty) || 0));
   // สไตรเกอร์ ยูเรก้า: พลังชีวิตพื้นฐาน 12 หน่วย
   if (p && p.characterId === "striker") return Math.max(1, CHAR_HOOKS.striker.maxHp() - ((p.maxHpPenalty) || 0));
   return Math.max(1, MAX_HP - ((p && p.maxHpPenalty) || 0));
@@ -155,6 +157,8 @@ function sameTeam(a, b) {
     if (match.explicitTargetIds && ((a.id === match.explicitActorId && match.explicitTargetIds.has(b.id)) || (b.id === match.explicitActorId && match.explicitTargetIds.has(a.id)))) return false;
     return true;
   }
+  // อาซาฮินะ ทักต์: โหมดอิสระ ทักต์กับมิวสิคคาร์ทในพันธะเป็นพวกเดียวกัน (โหมดทีมผูกได้เฉพาะเพื่อนร่วมทีมอยู่แล้ว)
+  if (!lobby.teamModeActive() && match.gameMode === "ffa" && CHAR_HOOKS.takt.bonded(engine, a, b)) return true;
   return !!(lobby.teamModeActive() && a && b && a.id !== b.id && a.teamId && b.teamId && a.teamId === b.teamId);
 }
 function friendlyEffectBlocked(target) {
@@ -248,6 +252,7 @@ function maxArmorOf(p) {
     : (p && p.characterId === "kim") ? CHAR_HOOKS.kim.maxArmor() // Bamboo-Hatted Kim: "โล่ 2" = เพดานเกราะ 2
     : (p && p.characterId === "recruit") ? CHAR_HOOKS.recruit.maxArmor() // Recruit: เกราะ 2
     : (p && p.characterId === "striker") ? CHAR_HOOKS.striker.maxArmor() // สไตรเกอร์ ยูเรก้า: เกราะ 3
+    : (p && p.characterId === "takt") ? CHAR_HOOKS.takt.maxArmor() // อาซาฮินะ ทักต์: ไม่มีเกราะ
     : MAX_ARMOR;
   return armorBase
     + (characterRules.oguriGoldStacks(p) >= OGURI_GOLD_ARMOR_AT ? 1 : 0) // ยุคทอง (โอกูริ Rework): ครบ 2 แต้มขึ้นไป เพดานเกราะ +1
@@ -319,6 +324,8 @@ function instantDeath(p, force) {
   CHAR_HOOKS.the_supplicant.onDeath(engine, p);
   // ไบรอัน (characters/brian.js): คนขับหรือคู่แข่งตกรอบ -> ลงจากรถ / ยกเลิกการแข่ง
   CHAR_HOOKS.brian.onDeath(engine, p);
+  // อาซาฮินะ ทักต์ (characters/takt.js): ทักต์หรือมิวสิคคาร์ทตกรอบ -> พันธะสัญญาหลุด
+  CHAR_HOOKS.takt.onDeath(engine, p);
   // มหาเทพ อรชุน (สกิลติดตัว หัวใจที่เที่ยงธรรม): จำไว้ว่าใครเคยสังหารผู้เล่นอื่น — ธงถาวรทั้งเกม
   //  อ่านจาก effectSourceId (ต้นตอของเอฟเฟกต์ที่กำลังทำงาน) เพราะ instantDeath ไม่มีพารามิเตอร์ผู้สังหาร
   const killer = match.players[match.effectSourceId];
@@ -731,6 +738,8 @@ function resetCombat(p) {
   CHAR_HOOKS.kim.resetCombat(p); // Bamboo-Hatted Kim: ฝักดาบ/Poise/บัพ/คูลดาวน์ + เหน็บชาที่จองไว้ (ติดที่ผู้ถูกมอบ)
   CHAR_HOOKS.recruit.resetCombat(p); // Recruit: กระสุน / โควตาเตรียมตัว / ตัวนับเกราะ / คูลดาวน์ / QTE ที่ค้าง
   CHAR_HOOKS.striker.resetCombat(p);
+  CHAR_HOOKS.takt.resetCombat(p);  // อาซาฮินะ ทักต์: พันธะ/คำเชิญ/โหมดบทเพลง (ฟิลด์ฝั่งมิวสิคคาร์ทอยู่ที่ทุกคน)
+  CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน
   CHAR_HOOKS.brian.resetCombat(p);

@@ -140,9 +140,10 @@ function normalGameOver() {
     } else {
       match.lastLog.push("ไม่มีทีมที่รอด — เสมอ");
     }
-  } else if (!lobby.teamModeActive() && total >= 2 && stillAlive.length <= 1) {
+  } else if (!lobby.teamModeActive() && total >= 2 && (stillAlive.length <= 1 || CHAR_HOOKS.takt.bondGroupWins(engine, stillAlive))) {
     match.winningTeamId = null;
-    if (stillAlive.length === 1) match.lastLog.push(`🏆 ${stillAlive[0].name} คือผู้ชนะคนสุดท้าย!`);
+    if (stillAlive.length > 1) match.lastLog.push(`🏆 ${stillAlive.map((p) => p.name).join(" & ")} ชนะพร้อมกันด้วยพันธะสัญญา!`); // อาซาฮินะ ทักต์
+    else if (stillAlive.length === 1) match.lastLog.push(`🏆 ${stillAlive[0].name} คือผู้ชนะคนสุดท้าย!`);
     else match.lastLog.push("ไม่มีผู้รอด — เสมอ");
   } else {
     return false;
