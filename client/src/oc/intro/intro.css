@@ -98,9 +98,8 @@
 .ocx-warp-zoom { animation: ocx-warp-zoom var(--warp) cubic-bezier(.55, 0, .7, .4) both; transform-origin: 64% 37%; }
 .ocx-warp-zoom { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
 @keyframes ocx-warp-zoom {
-  0%, 6% { transform: none; filter: none; }
-  26% { transform: translate(-14vw, 13vh) scale(3.4); filter: blur(1.5px); }
-  100% { transform: translate(-14vw, 13vh) scale(3.4); filter: blur(1.5px); }
+  0%, 6% { transform: none; }
+  26%, 100% { transform: translate(-14vw, 13vh) scale(3.4); }
 }
 .ocx-warp-line {
   position: absolute; left: 50%; top: 54%; width: 120vmax; height: 3px;
