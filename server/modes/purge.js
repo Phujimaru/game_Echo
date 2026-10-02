@@ -1,6 +1,6 @@
 // โหมด Purge — หนี ORT ในอุโมงค์ท่อ (ffa)
 //  · สู้กันตามปกติ · ผู้ชนะรอบ (ไม่เสมอ) ได้เดิน PURGE_WIN_STEPS ช่อง · คนแพ้ไม่เดิน
-//  · ท่อยาว PURGE_STEPS ช่อง · ORT โผล่ที่ช่อง 0 ตอนจบเทิร์น PURGE_ORT_TURN แล้วเดิน 1 ช่องทุกเทิร์น (ถึงปลายท่อเทิร์น 55)
+//  · ท่อยาว PURGE_STEPS ช่อง · ORT โผล่ที่ช่อง 0 ตอนจบเทิร์น PURGE_ORT_TURN แล้วเดิน 1 ช่องทุก PURGE_ORT_EVERY เทิร์น (ถึงปลายท่อเทิร์น 110)
 //  · ORT ไล่ทัน (ช่อง <= ORT) = LOST DATA ตกรอบทันที ไม่มีฉากสู้ · เทิร์นที่ ORT เพิ่งโผล่ยังไม่กินใคร
 //  · เลือดหมด = "ล้มลง" ไม่ตาย: ถอยหลัง PURGE_KNOCKBACK ช่อง แล้วเลือด/เกราะเต็ม (ดัก instantDeath จุดเดียว)
 //  · เหลือรอดคนเดียว = ชนะ · ORT ถึงปลายท่อ = ทุกคนที่เหลือโดนกิน (แพ้หมด)
@@ -13,7 +13,7 @@ Object.assign(module.exports, {
 });
 
 const {
-  PURGE_INTRO_SECONDS, PURGE_KNOCKBACK, PURGE_ORT_TURN, PURGE_STEPS, PURGE_WIN_STEPS, TRANSITION_TIME,
+  PURGE_INTRO_SECONDS, PURGE_KNOCKBACK, PURGE_ORT_EVERY, PURGE_ORT_TURN, PURGE_STEPS, PURGE_WIN_STEPS, TRANSITION_TIME,
 } = require("../constants");
 const match = require("../match");
 const combat = require("../combat");
@@ -132,7 +132,11 @@ function purgeAdvance() {
   const ortFrom = s.ort;
   let ortTo = ortFrom;
   if (match.roundNumber === PURGE_ORT_TURN) ortTo = 0;
-  else if (match.roundNumber > PURGE_ORT_TURN) ortTo = Math.min(PURGE_STEPS, match.roundNumber - PURGE_ORT_TURN);
+  else if (match.roundNumber > PURGE_ORT_TURN) {
+    // เดิน 1 ช่องทุก PURGE_ORT_EVERY เทิร์น — เทิร์นที่ไม่เดินยังจับคนที่ถอยลงมาอยู่ช่อง <= ORT ตามปกติ · ไม่ถอยหลังเด็ดขาด
+    const at = Math.floor((match.roundNumber - PURGE_ORT_TURN) / PURGE_ORT_EVERY);
+    ortTo = Math.min(PURGE_STEPS, Math.max(ortFrom ?? 0, at));
+  }
   s.ort = ortTo;
   const caught = [];
   if (ortTo != null && ortFrom != null) {
@@ -171,6 +175,7 @@ function purgeStateFor() {
     steps: { ...s.steps },
     ort: s.ort,
     ortTurn: PURGE_ORT_TURN,
+    ortEvery: PURGE_ORT_EVERY,
     totalSteps: PURGE_STEPS,
     lost: [...s.lost],
     scene: s.scene ? { ...s.scene } : null,

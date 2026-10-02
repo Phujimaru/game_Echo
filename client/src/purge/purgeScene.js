@@ -13,6 +13,7 @@ const T = THREE;
 
 // ---------- โครงท่อ ----------
 export const STEPS = 50;
+const ORT_IMG = "/characters/ort/ort_body.jpg";
 const R = 46;
 const L = 610;
 const CUT = -4;                                  // ระนาบตัดครึ่งบน (เก็บเฉพาะ y <= CUT)
@@ -603,21 +604,42 @@ export function createPurgeScene(canvas, opts = {}) {
 
   // ---------- ORT: ยูนิตหกเหลี่ยมใหญ่ ----------
   const ort = new T.Group();
-  const ortTex = keep(canvasTex(512, 592, (g) => {
+  // ตัวหมาก ORT: หกเหลี่ยมขอบผลึก + รูป ORT (ort_body.jpg ตัวเดียวกับโหมด Type Mercury) + ป้ายชื่อด้านล่าง
+  const ortCv = document.createElement("canvas"); ortCv.width = 512; ortCv.height = 592;
+  const ortTex = keep(new T.CanvasTexture(ortCv)); ortTex.colorSpace = T.SRGBColorSpace;
+  function drawOrt(img) {
+    const g = ortCv.getContext("2d");
+    g.clearRect(0, 0, 512, 592);
     g.save(); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowBlur = 16;
     hexPath(g, 256, 296, 240, 280);
     const rim = g.createLinearGradient(0, 0, 512, 592);
     rim.addColorStop(0, "#f4fbff"); rim.addColorStop(0.5, "#9fd6ff"); rim.addColorStop(1, "#8c78e8");
     g.fillStyle = rim; g.fill(); g.restore();
-    hexPath(g, 256, 296, 218, 254);
+    g.save(); hexPath(g, 256, 296, 218, 254); g.clip();
     const gr = g.createRadialGradient(256, 250, 10, 256, 296, 300);
     gr.addColorStop(0, "#ff3a5c"); gr.addColorStop(0.35, "#7a1028"); gr.addColorStop(1, "#0c0307");
-    g.fillStyle = gr; g.fill();
-    g.strokeStyle = "rgba(190,235,255,.35)"; g.lineWidth = 3;
-    for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(256, 296); const an = k * Math.PI / 3 + 0.5; g.lineTo(256 + Math.cos(an) * 226, 296 + Math.sin(an) * 226); g.stroke(); }
-    g.fillStyle = "#ffe6ec"; g.font = '700 132px "Chakra Petch", "Segoe UI", sans-serif';
-    g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ORT", 256, 306);
-  }));
+    g.fillStyle = gr; g.fillRect(0, 0, 512, 592);
+    if (img && img.naturalWidth) {
+      const sc = Math.max(436 / img.naturalWidth, 508 / img.naturalHeight);
+      const w = img.naturalWidth * sc, h = img.naturalHeight * sc;
+      g.drawImage(img, 256 - w / 2, 296 - h / 2, w, h);
+      const shade = g.createLinearGradient(0, 330, 0, 560);
+      shade.addColorStop(0, "rgba(40,4,14,0)"); shade.addColorStop(1, "rgba(40,4,14,.92)");
+      g.fillStyle = shade; g.fillRect(0, 330, 512, 262);
+    }
+    g.restore();
+    g.fillStyle = "#ffe6ec"; g.font = '700 96px "Chakra Petch", "Segoe UI", sans-serif';
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.shadowColor = "rgba(255,40,80,.8)"; g.shadowBlur = 18;
+    g.fillText("ORT", 256, img && img.naturalWidth ? 478 : 306);
+    ortTex.needsUpdate = true;
+  }
+  drawOrt(null);
+  {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => { drawOrt(im); dirty = true; };
+    im.src = ORT_IMG;
+  }
   const ortSpr = new T.Sprite(keep(new T.SpriteMaterial({ map: ortTex, depthWrite: false })));
   ortSpr.scale.set(9, 10.4, 1); ortSpr.position.y = 6.4; ort.add(ortSpr);
   const ortAura = new T.Sprite(keep(new T.SpriteMaterial({ map: keep(glowTex("rgba(255,60,90,.7)", "rgba(255,30,70,.25)")), blending: T.AdditiveBlending, depthWrite: false })));

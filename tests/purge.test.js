@@ -94,9 +94,13 @@ test('ล้มลงตอนอยู่ช่องต้นๆ: ถอยไ
   assert.equal(steps().A, 0);
 });
 
-test('ORT โผล่จบเทิร์น 5 ที่ช่อง 0 และยังไม่กินใคร', () => {
+test('ORT โผล่จบเทิร์น 10 ที่ช่อง 0 และยังไม่กินใคร', () => {
   const { A } = setup(['A', 'B']);
-  engine.setRoundNumber(5);
+  engine.setRoundNumber(9);
+  engine.purgeAdvance();
+  assert.equal(engine.purge.ort, null);
+  engine.clearPhaseTimer();
+  engine.setRoundNumber(10);
   engine.purgeAdvance();
   assert.equal(engine.purge.ort, 0);
   assert.equal(A.alive, true);
@@ -106,11 +110,11 @@ test('ORT โผล่จบเทิร์น 5 ที่ช่อง 0 แล�
   assert.equal(engine.gameState, 'CUTSCENE');
 });
 
-test('ORT เดินเทิร์นละ 1 ช่อง และกินคนที่ช่อง <= ORT (LOST DATA)', () => {
+test('ORT เดิน 1 ช่องทุก 2 เทิร์น และกินคนที่ช่อง <= ORT (LOST DATA)', () => {
   const { A, B, C } = setup(['A', 'B', 'C']);
   engine.purge.ort = 3;
   Object.assign(engine.purge.steps, { A: 4, B: 9, C: 2 });
-  engine.setRoundNumber(9);
+  engine.setRoundNumber(18);
   engine.purgeAdvance();
   assert.equal(engine.purge.ort, 4);
   assert.equal(A.alive, false);
@@ -118,6 +122,17 @@ test('ORT เดินเทิร์นละ 1 ช่อง และกิน
   assert.equal(B.alive, true);
   assert.deepEqual([...engine.purge.scene.caught].sort(), ['A', 'C']);
   assert.equal(A.purgeLost, true);
+});
+
+test('เทิร์นที่ ORT ไม่เดิน: อยู่ที่เดิม แต่คนที่ถอยลงมาถึง ORT ยังโดนกิน', () => {
+  const { A, B } = setup(['A', 'B', 'C']);
+  engine.purge.ort = 4;
+  Object.assign(engine.purge.steps, { A: 4, B: 9, C: 12 });
+  engine.setRoundNumber(19);
+  engine.purgeAdvance();
+  assert.equal(engine.purge.ort, 4);
+  assert.equal(A.alive, false);
+  assert.equal(B.alive, true);
 });
 
 test('ฉากจบเทิร์นบอกการเดินของเทิร์นนี้ (from → to)', () => {
@@ -135,7 +150,7 @@ test('เหลือรอดคนเดียว = จบเกม ผู้�
   const { B } = setup(['A', 'B']);
   engine.purge.ort = 6;
   Object.assign(engine.purge.steps, { A: 7, B: 20 });
-  engine.setRoundNumber(12);
+  engine.setRoundNumber(24);
   engine.purgeAdvance();
   assert.equal(engine.players.A.alive, false);
   engine.clearPhaseTimer();
@@ -149,7 +164,7 @@ test('ORT ถึงปลายท่อ (ช่อง 50): ทุกคนท�
   const { A, B } = setup(['A', 'B']);
   engine.purge.ort = 49;
   Object.assign(engine.purge.steps, { A: 50, B: 50 });
-  engine.setRoundNumber(55);
+  engine.setRoundNumber(110);
   engine.purgeAdvance();
   assert.equal(engine.purge.ort, 50);
   assert.equal(A.alive, false);
