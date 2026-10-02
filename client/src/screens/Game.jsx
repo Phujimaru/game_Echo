@@ -1,7 +1,7 @@
 import { GUTS_AMMO_INFO, shopInfoOf } from "../data/shop";
 import { useTick, TickSeconds } from "../tickStore";
 import { PERMANENT_STATUS_KEYS } from "../data/permanentStatus";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -17,6 +17,10 @@ import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
 import { socket } from "../socket";
+import { StatRow, SpRow, VitalExtras } from "./hud/StatRow";
+import { SkillSlot } from "./hud/SkillSlot";
+import { OrtLostTierContext } from "./hud/ortLost";
+import { SelfHud, HudPanel, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
 import { clickSound, playSfx, stopSfx, sfxPlayId, startLoopSfx, stopLoopSfx, playCutsceneVideo, suspendMusic, DOOM_WEAPON_SOUNDS } from "../audio";
 
 const P_DISPLAY = "var(--font-p-display)";
@@ -602,29 +606,8 @@ function TransformNotice({ n }) {
   );
 }
 
-// ---------- การเดินทาง (ffa/duo/trio): ป้ายภูมิภาคใต้กล่อง "รอบที่" + หน้าต่างอ่านผลสนาม ----------
+// ---------- การเดินทาง (ffa/duo/trio): หน้าต่างอ่านผลสนาม (ป้ายภูมิภาครวมอยู่ในแถบซ้ายบน HudTopBar แล้ว) ----------
 //  ข้อความผลสนามมาจาก server (characters/_journey.js) ทั้งหมด — client ไม่เก็บตัวเลขบาลานซ์ซ้ำ
-function JourneyBadge({ journey, onOpen }) {
-  const a = journeyArea(journey.area);
-  return (
-    <button
-      onClick={() => { clickSound(); onOpen(); }}
-      className="jr-badge"
-      style={{ "--jr": a.color, "--jr-glow": a.glow }}
-      title="แตะเพื่อดูผลของภูมิภาคนี้"
-    >
-      <span className="jr-badge-num">{a.numeral}</span>
-      <span className="jr-badge-text">
-        <span className="jr-badge-name">{journey.name}</span>
-        <span className="jr-badge-sub">
-          {journey.night ? "🌙 กลางคืน" : "☀️ กลางวัน"}
-          {journey.turnsLeft != null ? ` · อีก ${journey.turnsLeft} เทิร์นถึงภูมิภาคถัดไป` : " · ปลายทางสุดท้าย"}
-        </span>
-      </span>
-    </button>
-  );
-}
-
 function JourneyInfoModal({ journey, onClose }) {
   const a = journeyArea(journey.area);
   const rows = [
@@ -2242,128 +2225,6 @@ function InventoryModal({ me, players, gameState, roundNumber, frozen, onPickGun
   );
 }
 
-// ---------- แถววัดค่า: ไอคอน + ช่องนับหน่วย + ตัวเลข ----------
-//  สีอย่างเดียวแยกเลือดกับเกราะไม่ออก จึงใช้สัญญาณซ้อนกันสามชั้น:
-//   1) ไอคอนนำหน้าแถว (หัวใจ / โล่)  2) ตัวเลขจริงท้ายแถว (3/6)
-//   3) รูปทรงของช่อง — เลือดเป็นแคปซูลมน เกราะเป็นทรงโล่ปลายแหลม (มองเห็นต่างแม้ภาพขาวดำ)
-function HeartGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" className="sr-ico" aria-hidden="true">
-      <path d="M12 21s-8-5.2-8-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 3.6C20 15.8 12 21 12 21Z" fill="#ff8a94" stroke="#5c0f1d" strokeWidth="1.4" />
-    </svg>
-  );
-}
-function ShieldGlyph({ tone }) {
-  return (
-    <svg viewBox="0 0 24 24" className="sr-ico" aria-hidden="true">
-      <path d="M12 2 21 6v6c0 5-9 10-9 10S3 17 3 12V6Z" fill={tone === "orange" ? "#fdba74" : "#8ec5ff"} stroke={tone === "orange" ? "#7c2d12" : "#0e2c4c"} strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-// เกินจำนวนนี้แล้วช่องแต่ละช่องจะแคบกว่า ~4px = นับไม่ออก เปลี่ยนไปใช้หลอดต่อเนื่องที่มีขีดแบ่งหน่วยแทน
-//  เพดานจริงในเกมโตได้เกินค่าพื้นฐานเยอะ: ผู้วิงวอนเกราะ 5 · แบทแมนบนรถ 7 · ฮิคารุ MonsterLive +2
-//  · เกราะสวมวิญญาณ/ยุคทอง +1 ต่อชั้น · และเลือดชั่วคราว/เกราะศรัทธายังต่อท้ายหลอดอีก
-const SEG_LIMIT = 9;
-const SEG_LIMIT_BIG = 14;
-
-// รอยร้าว (โทโนะ ชิกิ): วงขอบสีม่วงรอบไอคอนเกราะ ไล่เติมทีละขั้นจนครบ 8 = ม่วงทั้งวง
-const CRACK_MAX = 8;
-function CrackRing({ n, children }) {
-  if (!(n > 0)) return children;
-  const r = 10.5;
-  const c = 2 * Math.PI * r;
-  const filled = (Math.min(n, CRACK_MAX) / CRACK_MAX) * c;
-  return (
-    <span className="sr-crack" title={`รอยร้าว ${n}/${CRACK_MAX}`}>
-      {children}
-      <svg viewBox="0 0 24 24" className="sr-crack-ring" aria-hidden="true">
-        <circle cx="12" cy="12" r={r} fill="none" stroke="rgba(168,85,247,.25)" strokeWidth="2.2" />
-        <circle cx="12" cy="12" r={r} fill="none" stroke="#c084fc" strokeWidth="2.2" strokeLinecap="round"
-          strokeDasharray={`${filled} ${c}`} transform="rotate(-90 12 12)" />
-      </svg>
-    </span>
-  );
-}
-
-function StatRow({ kind, value, max, extra = 0, extraLabel, big, tone, crack = 0 }) {
-  // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ — ค่าถูกซ่อนเป็น null
-  if (max == null) {
-    return (
-      <div className={`sr ${big ? "sr-big" : ""}`} title="ถูกซ่อน (ถึงจะมองไม่เห็น แต่ฉันยังอยู่)">
-        {kind === "hp" ? <HeartGlyph /> : <ShieldGlyph tone={tone} />}
-        <span className="sr-num">🌑 ???</span>
-      </div>
-    );
-  }
-  const total = max + extra;
-  const label = `${kind === "hp" ? "พลังชีวิต" : "เกราะ"} ${value}/${max}${extra > 0 && extraLabel ? ` · ${extraLabel} ${extra}` : ""}`;
-  const icon = kind === "hp" ? <HeartGlyph /> : <CrackRing n={crack}><ShieldGlyph tone={tone} /></CrackRing>;
-  const num = <span className="sr-num">{value}<span className="sr-max">/{max}</span></span>;
-
-  // หลอดต่อเนื่อง: ขีดแบ่งทุกหน่วยยังวาดอยู่ จึงนับได้เหมือนเดิมถ้าอยากนับ
-  if (total > (big ? SEG_LIMIT_BIG : SEG_LIMIT)) {
-    return (
-      <div className={`sr ${big ? "sr-big" : ""}`} data-kind={kind} data-tone={tone || undefined} title={label}>
-        {icon}
-        <span className="sr-track sr-solid" style={{ "--n": total }}>
-          <span className={`sr-fill sr-${kind}`} style={{ width: `${(Math.min(value, max) / total) * 100}%` }} />
-          {extra > 0 && (
-            <span className="sr-fill sr-tmp" style={{ left: `${(max / total) * 100}%`, width: `${(extra / total) * 100}%` }} />
-          )}
-        </span>
-        {num}
-      </div>
-    );
-  }
-
-  const cells = [];
-  for (let i = 0; i < max; i++) cells.push(i < value ? kind : "off");
-  for (let i = 0; i < extra; i++) cells.push("tmp"); // ส่วนเกินเพดาน (เลือดชั่วคราว / เกราะศรัทธา) ต่อท้ายเป็นช่องสีทอง
-  return (
-    <div className={`sr ${big ? "sr-big" : ""}`} data-kind={kind} data-tone={tone || undefined} title={label}>
-      {icon}
-      <span className="sr-track">
-        {cells.map((c, i) => <span key={i} className={`sr-cell sr-${c}`} />)}
-      </span>
-      {num}
-    </div>
-  );
-}
-
-// แต้มสกิล: แถวเดียวกันกับเลือด/เกราะ มีป้าย SP นำหน้าและตัวเลขท้ายแถวเหมือนกัน
-function SpRow({ p, big }) {
-  // ซาโตรุ / ทาคุมิ: แต้มสกิลถูกซ่อนจากผู้เล่นอื่น
-  if (p.skillPoints < 0) {
-    return <div className={`sr ${big ? "sr-big" : ""}`} title="แต้มสกิลถูกซ่อน"><span className="sr-sp-label">SP</span><span className="sr-num">🌩️ ???</span></div>;
-  }
-  return (
-    <div className={`sr ${big ? "sr-big" : ""}`} data-kind="sp" title={`แต้มสกิล ${p.skillPoints}/${p.maxSkill}`}>
-      <span className="sr-sp-label">SP</span>
-      <span className="sr-track">
-        {Array.from({ length: p.maxSkill }, (_, i) => (
-          <span key={i} className={`sr-cell ${i < p.skillPoints ? "sr-sp" : "sr-off"}`} />
-        ))}
-      </span>
-      <span className="sr-num">{p.skillPoints}<span className="sr-max">/{p.maxSkill}</span></span>
-    </div>
-  );
-}
-
-// ค่าที่ไม่ได้นับเป็นหน่วยเต็มของเกจ (โล่ชั่วคราว/เกราะศรัทธา/เลือดโปรดิวเซอร์) — ชิปเล็กใต้การ์ด
-function VitalExtras({ p, className = "" }) {
-  const bits = [];
-  if (p.shield > 0) bits.push(["sh", `+🛡️${p.shield}`, "#7fd4ff", `โล่ชั่วคราว ${p.shield}`]);
-  if (p.lumiProducerHp != null && !p.lumiIdolDown) bits.push(["pr", `🎧${p.lumiProducerHp}`, "#ff8ad0", `โปรดิวเซอร์เหลือพลังชีวิต ${p.lumiProducerHp}/${p.lumiProducerMax}`]);
-  if (!bits.length) return null;
-  return (
-    <div className={`pc-extra ${className}`}>
-      {bits.map(([k, t, c, title]) => (
-        <span key={k} className="pc-extra-chip" style={{ color: c }} title={title}>{t}</span>
-      ))}
-    </div>
-  );
-}
 
 // ---------- ลวดลายแผ่นป้าย: ยอดตราบนสุด + เส้นคั่นมีเพชรกลาง ----------
 //  รูปทรงตัวการ์ดเป็น clip-path เฉพาะตัว (ยอดแหลมกลาง มุมบนเฉียง มุมล่างตัด) ไม่ใช่สี่เหลี่ยมมนสำเร็จรูป
@@ -2842,83 +2703,6 @@ function BatKarmaModal({ ask, onPick }) {
     </div>
   );
 }
-// ช่องสกิลเป็นรูป (คลิกใช้ระหว่างเฟสไพ่) — cost = แต้มที่ใช้จริง (เวลาทองแกมเบลอร์ลดครึ่ง)
-//  เฟรมตัดมุมเฉียง + แถบสีบอกระดับสกิล (พื้นฐาน/รอง/ท่าไม้ตาย) แทนกรอบมนธรรมดา
-const SKILL_TIER_ACCENT = { basic: "var(--oc-sky)", secondary: "var(--oc-ice)", ultimate: "var(--oc-echo-glow)" };
-// ORT สกิลติดตัว 1 (โหมด Type Mercury): ช่องสกิลของเราที่ "ข้อมูลสูญหาย" เทิร์นนี้ — ส่งผ่าน context
-//  แทนการไล่เติม prop ให้ทุกจุดที่วาง SkillSlot (server กันการกดอยู่แล้ว ฝั่งนี้แค่ปิดปุ่ม + ขึ้นป้าย)
-const OrtLostTierContext = createContext(null);
-function SkillSlot({ label, tier, skill, points, disabled: disabledProp, onUse, ammo, cost, size, cooldown }) {
-  const [broken, setBroken] = useState(false);
-  const lost = useContext(OrtLostTierContext);
-  const dataLost = !!lost && lost.tier === tier;
-  const disabled = disabledProp || dataLost;
-  const hasAmmo = skill && skill.ammo != null;
-  const ammoLeft = hasAmmo ? (ammo ?? skill.ammo) : null;
-  const outOfAmmo = hasAmmo && ammoLeft <= 0;
-  const useCost = skill ? (cost ?? skill.cost) : 0;
-  const afford = skill && points >= useCost;
-  const usable = skill && !disabled && afford && !outOfAmmo;
-  const accent = SKILL_TIER_ACCENT[tier] || "var(--color-echo-ice)";
-  const heightCls = size === "lg" ? "h-24 sm:h-28" : "h-20 sm:h-24";
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <button
-        disabled={!usable}
-        onClick={() => usable && onUse(tier, skill, label, useCost)}
-        title={skill ? `${skill.name} — ${skill.desc}` : ""}
-        data-usable={usable ? "true" : "false"}
-        data-tier={tier}
-        className={`bd-skill ${heightCls} ${usable ? "" : "opacity-65 cursor-not-allowed grayscale"}`}
-        style={{
-          boxShadow: usable
-            ? `0 0 0 1px ${accent}, 0 0 24px -9px ${accent}, 0 16px 28px -14px rgba(0,0,0,.92)`
-            : "0 0 0 1px rgba(255,255,255,.12)",
-        }}
-      >
-        <span className="bd-skill-bar" style={{ background: accent }} />
-        {skill && skill.img && !broken ? (
-          <img src={skill.img} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center text-gray-500 text-3xl">✦</div>
-        )}
-        {skill && (
-          <span className={`bd-skill-cost ${useCost < skill.cost ? "bg-echo-ice text-gray-900" : "bg-[#0b1d3a]/85 text-white"}`}>
-            {useCost}
-          </span>
-        )}
-        {/* คูลดาวน์: ตัวเลขนับถอยหลังกลางการ์ด (การ์ดถูก disable อยู่แล้วจึงแสดงเป็นขาวดำ) */}
-        {(cooldown || 0) > 0 && (
-          <span className="absolute inset-0 z-20 grid place-items-center bg-black/60">
-            <span className="text-3xl sm:text-4xl font-black text-white leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,.9)]" style={{ fontFamily: P_DISPLAY }}>
-              {cooldown}
-            </span>
-          </span>
-        )}
-        {dataLost && (
-          <span className="absolute inset-0 z-20 grid place-items-center text-center bg-black/70 leading-tight" style={{ fontFamily: P_DISPLAY }}>
-            <span>
-              <span className="block text-sm font-black text-[#ff8fab]">DATA LOST</span>
-              <span className="block text-xs font-bold text-white">ข้อมูลสูญหาย</span>
-              <span className="block text-[11px] text-white/80">อีก {lost.turns} เทิร์น</span>
-            </span>
-          </span>
-        )}
-        {hasAmmo && (
-          <span className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 bg-black/55 rounded px-1 py-0.5">
-            {Array.from({ length: skill.ammo }, (_, i) => (
-              <span key={i} className={`w-2 h-2.5 rounded-[2px] ${i < ammoLeft ? "bg-echo-cyan shadow-[0_0_4px] shadow-echo-cyan" : "bg-white/25"}`} />
-            ))}
-          </span>
-        )}
-      </button>
-      <div className="text-sm sm:text-base font-bold text-center leading-tight" style={{ fontFamily: P_DISPLAY }}>
-        {label}{hasAmmo && <span className="text-echo-cyan"> · {ammoLeft}/{skill.ammo}</span>}
-      </div>
-    </div>
-  );
-}
-
 // ---------- QTE (ยุย: ทำนองเพลงร็อก) — เดสก์ท็อป: กด W/A/S/D ตามที่ขึ้น ----------
 //  server ส่งมาแค่ "ปุ่มตัวถัดไป" ตัวเดียว (ส่งทั้งชุด = เห็นล่วงหน้าทั้งเพลง หมดความหมาย)
 //  แถบเวลาวิ่งเองฝั่ง client เพื่อความลื่น แต่ผลตัดสินที่ server เสมอ (deadline เป็นเวลาของ server)
@@ -5129,6 +4913,15 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const scale = Math.min(vp.w / Math.max(900, vp.w), Math.min(1, vp.h / MIN_DESIGN_H));
   const DESIGN_W = vp.w / scale;
   const designH = vp.h / scale;
+  // กำลังเลือกเป้าหมาย (สกิล/ไอเทม — ทุกโหมดที่มีแถบ "คลิกเลือกเป้าหมาย") หรือเป็นฝ่ายโจมตีที่ต้องเลือกเป้า
+  //  → แผงตัวเราเลื่อนลงพ้นจอ เหลือแต่เป้าหมายบนสนาม · ยกเลิก/เลือกเสร็จ/เปลี่ยนเฟส = state ถูกล้าง แผงเลื่อนกลับขึ้นมาเอง
+  const pickingTarget = !!(anataSel || appleSel || skSel || psSealSel || gunSel || tpSel || saObSel || nanayaSel
+    || brianSel || supSel || kaiCreateSel || kaiPunishSel || recruitSel || (recruitPickInfo && !me?.recruitQte) || giftSel || usagiSel
+    || connorSel || msMarkSel || danSel || msRuptureSel || doomSel || escanorSel || ignisSel || ignisImpactSel);
+  //  Bard (bardPending) ไม่นับ: เลือกเป้าบทเพลงเป็นทางเลือก (server สุ่มให้ตอนเปิดไพ่) ต้องจั่ว/เปิดไพ่ต่อได้
+  //  ATTACKING ของฝ่ายเราเองยังซ่อนต่อ — โจมตีซ้ำ (ATTACK → ATTACKING → ATTACK) แผงจะได้ไม่เด้งขึ้นลง
+  const attackingSelf = phase === "ATTACKING" && state.attackerId === state.youId && pairPilot;
+  const hudAway = !!me && (pickingTarget || iAmAttacker || attackingSelf);
 
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -5178,20 +4971,16 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {me?.usagiSwapOffer && <UsagiSwapModal offer={me.usagiSwapOffer} />}
       {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
-      {/* ตัวจับเวลา + รอบ */}
-      {(phase === "PLAYING" || phase === "ATTACK") && (
-        <div className="bd-top">
-          <span className="relative text-3xl leading-none">{nightNow ? "🌙" : "☀️"}</span>
-          <div className="relative text-center">
-            <div className="av-label" style={{ fontSize: "0.68rem" }}>รอบที่</div>
-            <div className="av-title leading-none" style={{ fontSize: "1.7rem", fontFamily: "var(--font-av-numeral)", fontWeight: 400 }}>{state.roundNumber}</div>
-          </div>
-          <BoardTimer phaseKey={`${phase}-${state.roundNumber}`} />
-        </div>
-      )}
-      {state.journey && (phase === "PLAYING" || phase === "ATTACK" || phase === "SUMMARY") && (
-        <JourneyBadge journey={state.journey} onOpen={() => setJourneyInfoOpen(true)} />
-      )}
+      {/* แถบซ้ายบน: กลางวัน/คืน · รอบ · เวลา · ภูมิภาค (รวมกล่อง "รอบที่" กับป้ายการเดินทางเดิมเป็นแถบเดียว — แตะภูมิภาคเปิดหน้าต่างผลสนาม) */}
+      <HudTopBar
+        night={nightNow}
+        round={phase === "PLAYING" || phase === "ATTACK" ? state.roundNumber : null}
+        timer={<BoardTimer phaseKey={`${phase}-${state.roundNumber}`} />}
+        journey={state.journey && (phase === "PLAYING" || phase === "ATTACK" || phase === "SUMMARY")
+          ? { ...journeyArea(state.journey.area), name: state.journey.name, turnsLeft: state.journey.turnsLeft }
+          : null}
+        onJourney={() => { clickSound(); setJourneyInfoOpen(true); }}
+      />
       {/* ORT ชั้นที่กดได้ (แถบข้อมูล + พื้นที่คลิกโจมตี) — ต้องอยู่ในกรอบกระดานนี้ ไม่งั้นกรอบกินคลิกไปหมด */}
       {boss && (
         <OrtBossPanel
@@ -5409,264 +5198,177 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         </div>
       )}
 
-      {/* ---------- แผงตัวเรา ฉบับที่ 5 "LOW UI DOCK" (ล่างสุด ลดพื้นหลังลงมาก) ----------
-          ไม่มีแถบทึบเต็มความกว้างจอแบบรอบก่อนแล้ว — แยกเป็น 3 กลุ่มลอยอิสระตามขอบล่างจอ แต่ละกลุ่ม
-          มีพื้นหลังเท่าที่จำเป็นเท่านั้น (ชื่อ/เลือด/เกราะ/แต้ม ใช้ text-hard แทนกล่องพื้นหลังทึบ)
-          กลุ่มการ์ด+จั่ว/เปิดไพ่ ลอยสูงกว่ากลุ่มอื่น ไม่เรียงแถวเดียวกันแบบเดิม
-          กฎตายตัวที่คงไว้: (1) สถานะเห็นไอคอนได้เลย (2) การ์ดแยกกล่องชัดเจนอยู่บนสุด
-          (3) SP แนวนอนเท่านั้น + (4) กล่องการ์ดขนาดคงที่ scroll เมื่อการ์ดล้น */}
-      {me && (
-        <div className="absolute inset-x-0 bottom-0 pb-3 sm:pb-5 px-3 sm:px-6 flex flex-col items-center gap-2">
-          {/* หมายเหตุ: ตามคำขอผู้ใช้ — เอาแถบข้อความแจ้งเตือน/สถานะเทิร์นออกทั้งหมดแล้ว ห้ามมีข้อความ
-              โผล่ตรงจุดนี้อีก (เดิมเคยมี noDraw/atCap/done/ATTACK/skill-lock ฯลฯ) */}
+      {/* อิกนิส / เอสคานอร์: โหมดเลือกเป้าหมาย — เดิมไม่มีแถบบนจอคอม แต่แผงตัวเราเลื่อนลงตอนเลือกเป้า จึงต้องมีปุ่มยกเลิกเหมือนโหมดอื่น */}
+      {(escanorSel || ignisSel || ignisImpactSel) && (
+        <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
+          <span className="text-xl font-black text-echo-hp animate-pulse bg-black/60 rounded-full px-5 py-1.5">🎯 คลิกเลือกเป้าหมาย {(ignisImpactSel ? ch?.ultimate?.name : ch?.basic?.name) || ""}</span>
+          <button onClick={() => { clickSound(); setEscanorSel(false); setIgnisSel(false); setIgnisImpactSel(false); }} className="ml-2 text-sm font-bold bg-black/60 rounded-full px-3 py-1 border border-white/30">ยกเลิก</button>
+        </div>
+      )}
 
-          {/* บั๊กเดิม: lg:flex-nowrap บังคับแถวเดียวตั้งแต่จอกว้าง 1024px ขึ้นไป แต่เนื้อหาจริงต้องการพื้นที่ ~1500px+ ถึงจะพอไม่ล้น
-              ทำให้จอ 1024-1480px (ความละเอียดโน้ตบุ๊คที่พบบ่อยมาก เช่น 1366x768) กลุ่มขวา (กระเป๋า/ร้านค้า) ถูกดันล้นออกนอกจอขวาไปเลย มองไม่เห็น
-              เอา lg:flex-nowrap ออก — ปล่อยให้ wrap ตามธรรมชาติ (ตัด/ล้นเฉพาะตอนพื้นที่ไม่พอจริงๆ ไม่ใช่บังคับตายตัวตามความกว้างจอ) */}
-          <div className="w-full max-w-[1580px] mx-auto flex items-end justify-between gap-2 sm:gap-3 flex-wrap">
-            {/* ซ้าย: ตัวละคร + เลือด/เกราะ + สถานะ — ไม่มีกล่องพื้นหลังทึบ ใช้ text-hard คุมความคมชัด
-                บั๊กเดิม (ไบเลธ): กลุ่มนี้เป็น shrink-0 + คอลัมน์ข้างในไม่มี min-w-0 ป้ายสถานะเป็น
-                whitespace-nowrap ทั้งหมด -> พอกดสกิลแล้วมีป้ายโผล่เพิ่ม
-                กลุ่มนี้กว้างขึ้นแต่ย่อไม่ได้ ดันกลุ่มขวาทะลุออกนอกกรอบ DESIGN_W ที่ overflow-hidden
-                = แถวล่างหักพัง ต้องปล่อยให้ย่อได้ (ไม่มี shrink-0) + min-w-0 ให้ flex-wrap ทำงานจริง */}
-            <div className="self-panel flex items-start gap-2 min-w-0 mb-5 sm:mb-9">
-              {/* ผู้เล่นรู้อยู่แล้วว่าหยิบตัวไหนมา รูปจึงไม่ต้องกินช่องของตัวเองถึง 112px
-                  ปล่อยให้ซึมจางอยู่หลังแผงแทน — ยังเห็นตัวละคร แต่ที่ว่างคืนให้เลือด/เกราะ/สถานะ
-                  (ฝาแฝดฮิซากาวะยังใช้การ์ดคู่: ต้องแยกให้ออกว่านากิหรือฮายาเตะกำลังยืนหน้า) */}
-              {me.hisakawa ? (
-                <button
-                  onClick={() => { clickSound(); setShowChar(true); }}
-                  className="shrink-0"
-                  style={{ "--p-frame-color": me.color }}
-                  title="รายละเอียดตัวละคร"
-                >
-                  <TwinPortraitCards p={me} size="md" />
+      {/* ---------- แผงตัวเรา ฉบับที่ 6 (ดีไซน์ HudMain — กระจกน้ำเงินตัดมุม) ----------
+          ซ้ายล่าง = แผงผู้เล่น (รูป/ชื่อ/ทีม · เลือด/เกราะ · ทรัพยากรตัวละคร · สถานะแนวตั้งเลื่อนลง แตะแถวดูรายละเอียด)
+          กลางล่าง = แต้ม · มือไพ่ · จั่ว/เปิดไพ่ · ขวาล่าง = SP · กระเป๋า · ร้านค้า · สกิล 3 ช่อง
+          ตอนเลือกเป้าหมาย/เป็นฝ่ายโจมตี (hudAway) แผงทั้งหมดเลื่อนลงพ้นจอ ไม่บังเป้าหมายบนสนาม
+          ส่วนวาดอยู่ที่ hud/SelfHud.jsx — เงื่อนไขกดได้/ไม่ได้ทั้งหมดยังอยู่ตรงนี้เหมือนเดิม */}
+      {me && (
+        <SelfHud
+          hidden={hudAway}
+          lowQ={lowQ}
+          compact={DESIGN_W < 1240}
+          panel={
+            <HudPanel
+              portrait={me.hisakawa ? (
+                // ฝาแฝดฮิซากาวะยังใช้การ์ดคู่: ต้องแยกให้ออกว่านากิหรือฮายาเตะกำลังยืนหน้า
+                <button type="button" onClick={() => { clickSound(); setShowChar(true); }} className="shrink-0" style={{ "--p-frame-color": me.color }} title="รายละเอียดตัวละคร">
+                  <TwinPortraitCards p={me} size="sm" />
                 </button>
               ) : (
-                <div className="self-bleed" aria-hidden="true" style={{ "--p-frame-color": me.color }}>
-                  <Portrait p={me} className="w-full h-full" rounded="" />
+                <Portrait p={me} className="w-full h-full" rounded="" />
+              )}
+              hexPortrait={!me.hisakawa}
+              name={me.character.name}
+              onName={() => { clickSound(); setShowChar(true); }}
+              teamId={me.teamId}
+              teamColor={teamAccent(me.teamId)}
+              vitals={me.hisakawa ? null : (
+                // แถวไอคอน+ช่อง+ตัวเลขชุดเดียวกับการ์ดคู่ต่อสู้ — เลือดกับเกราะแยกกันด้วยไอคอน ตัวเลข และรูปทรงช่อง
+                <div className="hud-vitals">
+                  <StatRow kind="hp" value={me.hp} max={me.maxHp} extra={me.tempHp || 0} extraLabel="เลือดชั่วคราว" />
+                  <StatRow kind="ar" value={me.armor} max={me.maxArmor} extra={me.supFaith || 0} extraLabel="เกราะศรัทธา" tone={armorToneOf(me)} crack={me.tohnoCrack || 0} />
+                  <VitalExtras p={me} className="pc-extra-inline" />
                 </div>
               )}
-              <div className="self-content min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0 max-w-[26rem]">
-                  <button
-                    type="button"
-                    onClick={() => { clickSound(); setShowChar(true); }}
-                    className="self-name font-black text-2xl sm:text-3xl text-hard truncate max-w-[13rem] sm:max-w-[18rem]"
-                    style={{ fontFamily: P_DISPLAY }}
-                    title="รายละเอียดตัวละคร"
-                  >
-                    {me.character.name}
-                  </button>
-                  <TeamBadge teamId={me.teamId} />
+              chips={
+                <>
+                  {me.hisakawa && <TwinVitals p={me} compact />}
                   <DoomChargeBadge me={me} ch={ch} />
                   <TakutoStarBadge me={me} ch={ch} />
                   <TakumiGearBadge me={me} ch={ch} />
                   <EijiDodgeBadge me={me} ch={ch} />
                   <MuimiLoseBadge me={me} ch={ch} />
-                <ConnorStressBadge me={me} />
-                </div>
-                {isEiji && <EijiOrdinalButton me={me} usable={eijiOrdinalUsable} onPress={useEijiOrdinal} className="w-14 h-11 shrink-0 mt-1" />}
-                {me.hisakawa ? (
-                  <TwinVitals p={me} />
-                ) : (
-                  // ใช้แถวไอคอน+ตัวเลขชุดเดียวกับการ์ดคู่ต่อสู้ — เลือดกับเกราะแยกออกจากกันได้
-                  //  ด้วยไอคอน ตัวเลข และรูปทรงช่อง ไม่ต้องอาศัยสีอย่างเดียวเหมือนเกจแบบก่อน
-                  <div className="self-vitals mt-1.5">
-                    <StatRow big kind="hp" value={me.hp} max={me.maxHp} extra={me.tempHp || 0} extraLabel="เลือดชั่วคราว" />
-                    <StatRow big kind="ar" value={me.armor} max={me.maxArmor} extra={me.supFaith || 0} extraLabel="เกราะศรัทธา" tone={armorToneOf(me)} crack={me.tohnoCrack || 0} />
-                    <VitalExtras p={me} className="pc-extra-inline" />
-                  </div>
-                )}
-                {/* สถานะ — ไอคอนเห็นได้เลยไม่ต้องกดดู (กฎข้อ 1) กดเพื่อดูรายละเอียด+เวลาคงเหลือเต็ม
-                    จำกัดไม่เกิน 2 แถวเสมอ (max-h + clip) ห้ามขยายสูงขึ้นไปดันของอย่างอื่น — เยอะกว่านั้นให้กดดูเพิ่มเอา */}
-                <button
-                  type="button"
-                  onClick={() => { clickSound(); setStatusViewId(me.id); }}
-                  className="p-status-click flex items-start mt-2.5 -ml-1 px-1 py-0.5 w-[19rem] sm:w-[30rem] max-h-[64px] overflow-hidden"
-                  title="แตะเพื่อดูรายละเอียดสถานะ+เวลาคงเหลือ"
-                >
-                  {me.hisakawa ? <span className="text-xs opacity-60 text-hard whitespace-nowrap">แตะดูสถานะรวม</span>
-                    : meStatuses.length > 0 ? <StatusChips p={me} left grid /> : <span className="text-xs opacity-60 text-hard whitespace-nowrap">ไม่มีสถานะ</span>}
-                </button>
-              </div>
-            </div>
-
-            {/* กลาง: แต้มรวมย้ายมาไว้บนสุด (เปิดที่ให้สกิลฝั่งขวากว้างขึ้น) การ์ดไม่มีพื้นหลังกล่อง/ไม่มี scroll
-                เด็ดขาด (บีบระยะซ้อนอัตโนมัติให้พอดีพื้นที่เสมอ) เมาส์ชี้การ์ดใบไหนจะยกขึ้นให้ดูแต้มชัดแบบ UNO
-                แตกแล้วการ์ดจะเป็นสีเทาเหมือน disable + ขึ้นคำว่า "แต้มเกิน" แทนสัญลักษณ์ระเบิด
-                ลอยสูงกว่ากลุ่มอื่น (mb เยอะกว่า) — กฎข้อ 2 การ์ดต้องอยู่บนสุดเสมอ */}
-            <div className="flex flex-col items-center mb-3 sm:mb-6 order-first lg:order-none w-full lg:w-auto">
-              <div
-                className={`${me.busted ? "av-heading" : "av-title"} leading-none mb-1.5`}
-                style={me.busted
-                  ? { fontSize: "2rem", color: "#ff8a94", textShadow: "0 2px 10px rgba(0,0,0,.95)" }
-                  : { fontSize: "3rem" }}
-              >
-                {me.busted ? "แต้มเกิน" : (me.score != null ? me.score : "???")}
-              </div>
-              <div ref={selfHandRef} className="flex items-center justify-center w-[240px] sm:w-[290px] h-[120px] sm:h-[140px]">
-                {me.cards === null ? (
-                  // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ ทำงานอยู่ — การ์ด/แต้มของตัวเองก็ถูกซ่อน
-                  <span className="text-3xl font-black text-hard opacity-80">🌑 ???</span>
-                ) : phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" ? (
-                  <div className="text-lg font-black text-hard opacity-80">{me.busted ? <span className="text-echo-hp opacity-100">แต้มเกิน</span> : "เปิดไพ่แล้ว"}</div>
-                ) : me.cards && me.cards.length ? (
-                  // ถือการ์ดแบบพัดสไตล์ UNO — บีบระยะซ้อนอัตโนมัติตามจำนวนใบให้พอดีพื้นที่เสมอ (ห้ามเกิด scroll เด็ดขาด)
-                  // เมาส์ชี้ใบไหนจะยกขึ้น+ขยาย ให้เห็นแต้มชัดเจนแบบเกม UNO
-                  <div className="flex items-center pl-1 pr-4">
-                    {(() => {
-                      const CARD_W = 80; // ความกว้างการ์ด size="lg"
-                      const FAN_AREA_W = 230; // พื้นที่กางพัดตายตัว ไม่ล้นออกกรอบแน่นอน
-                      const n = me.cards.length;
-                      const step = n > 1 ? Math.max(16, Math.min(CARD_W, (FAN_AREA_W - CARD_W) / (n - 1))) : 0;
-                      const mid = (n - 1) / 2;
-                      return me.cards.map((c, i) => {
-                        const off = i - mid;
-                        return (
-                          <div
-                            key={i}
-                            className="relative shrink-0 group hover:z-30"
-                            style={{
-                              marginLeft: i === 0 ? 0 : -(CARD_W - step),
-                              transform: `rotate(${off * 6}deg) translateY(${Math.abs(off) * 4}px)`,
-                            }}
-                          >
-                            <div className={`transition-transform duration-150 group-hover:-translate-y-6 group-hover:scale-110 ${me.busted ? "grayscale opacity-60" : ""}`}>
-                              <Card value={c.value} color={c.color} special={c.special} size="lg" />
-                            </div>
+                  <ConnorStressBadge me={me} />
+                  {isEiji && <EijiOrdinalButton me={me} usable={eijiOrdinalUsable} onPress={useEijiOrdinal} className="w-14 h-11 shrink-0" />}
+                </>
+              }
+              statuses={meStatuses}
+              rawStatuses={me.statuses || {}}
+              statusAlt={me.hisakawa ? (
+                <button type="button" className="hud-st-alt" onClick={() => { clickSound(); setStatusViewId(me.id); }}>ดูสถานะรวม</button>
+              ) : null}
+              onOpenAll={() => { clickSound(); setStatusViewId(me.id); }}
+            />
+          }
+          center={
+            <HudCenter
+              score={me.score}
+              busted={me.busted}
+              handRef={selfHandRef}
+              hand={me.cards === null ? (
+                // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ — การ์ด/แต้มของตัวเองก็ถูกซ่อน
+                <span className="hud-hand-note">🌑 ???</span>
+              ) : phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" ? (
+                <span className="hud-hand-note" data-tone={me.busted ? "bad" : undefined}>{me.busted ? "แต้มเกิน" : "เปิดไพ่แล้ว"}</span>
+              ) : me.cards && me.cards.length ? (
+                // ถือการ์ดแบบพัดสไตล์ UNO — บีบระยะซ้อนอัตโนมัติตามจำนวนใบให้พอดีพื้นที่เสมอ (ห้ามเกิด scroll เด็ดขาด)
+                <div className="flex items-center pl-1 pr-4">
+                  {(() => {
+                    const CARD_W = 80; // ความกว้างการ์ด size="lg"
+                    const FAN_AREA_W = 230; // พื้นที่กางพัดตายตัว ไม่ล้นออกกรอบแน่นอน
+                    const n = me.cards.length;
+                    const step = n > 1 ? Math.max(16, Math.min(CARD_W, (FAN_AREA_W - CARD_W) / (n - 1))) : 0;
+                    const mid = (n - 1) / 2;
+                    return me.cards.map((c, i) => {
+                      const off = i - mid;
+                      return (
+                        <div
+                          key={i}
+                          className="relative shrink-0 group hover:z-30"
+                          style={{
+                            marginLeft: i === 0 ? 0 : -(CARD_W - step),
+                            transform: `rotate(${off * 6}deg) translateY(${Math.abs(off) * 4}px)`,
+                          }}
+                        >
+                          <div className={`transition-transform duration-150 group-hover:-translate-y-6 group-hover:scale-110 ${me.busted ? "grayscale opacity-60" : ""}`}>
+                            <Card value={c.value} color={c.color} special={c.special} size="lg" />
                           </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                ) : (
-                  <span className="text-sm opacity-40 text-hard">ยังไม่จั่วไพ่</span>
-                )}
-              </div>
-
-              {/* ปุ่มจั่ว/เปิดไพ่ — ย้ายมาไว้ใต้การ์ดแล้ว */}
-              <div className="flex gap-2 mt-2">
-                <button
-                  disabled={state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!me.kimNoDraw || !pairPilot}
-                  onClick={() => { clickSound(); socket.emit("hit"); }}
-                  className="p-hs-action p-hs-action-draw w-28 sm:w-32 h-14 sm:h-16 flex items-center justify-center gap-2 disabled:opacity-35 disabled:cursor-not-allowed"
-                  title="จั่วการ์ด"
-                >
-                  <span className="text-xl">🂠</span>
-                  <span className="text-sm font-bold text-echo-ice" style={{ fontFamily: P_DISPLAY }}>จั่ว</span>
-                </button>
-                <button
-                  disabled={!(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || (!pairPilot && !pilotAway)}
-                  onClick={() => { clickSound(); socket.emit("lock"); }}
-                  className="p-hs-action p-hs-action-reveal w-28 sm:w-32 h-14 sm:h-16 flex items-center justify-center gap-2 disabled:opacity-35 disabled:cursor-not-allowed"
-                  title="เปิดไพ่"
-                >
-                  <span className="text-xl">🃏</span>
-                  <span className="text-sm font-bold text-white" style={{ fontFamily: P_DISPLAY }}>เปิดไพ่</span>
-                </button>
-              </div>
-            </div>
-
-            {/* ขวา: สกิล 3 ช่อง + หลอด SP แนวนอนขยายใหญ่ (กฎข้อ 3) แล้วกระเป๋า/ร้านค้าขยายใหญ่ขึ้น
-                ร้านค้าโชว์จำนวนเหรียญปัจจุบันเด่นชัดในตัวปุ่มเลย */}
-            <div className="flex items-end gap-1.5 sm:gap-2 shrink-0">
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-end gap-2 sm:gap-3">
-                  <div className="w-40 sm:w-48">
-                    <SkillSlot size="lg" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
-                  </div>
-                  <div className="w-40 sm:w-48">
-                    <SkillSlot size="lg" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
-                  </div>
-                  <div className="w-40 sm:w-48">
-                    {isBard ? <BardComposeSlot me={me} /> : isKai ? <KaiOverhaulSlot me={me} frozen={frozenByClockUp} /> : <SkillSlot size="lg" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
-                  </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-hard" style={{ fontFamily: P_DISPLAY, color: "var(--oc-echo-glow)" }}>SP</span>
-                  <div className="flex gap-1">
-                    {Array.from({ length: me.maxSkill }, (_, i) => (
-                      <span
-                        key={i}
-                        className="p-sp-cell w-6 sm:w-7 h-4 sm:h-5"
-                        style={
-                          i < me.skillPoints
-                            ? { background: "linear-gradient(180deg,#ead2f0,var(--oc-echo-glow) 45%,var(--oc-echo))", boxShadow: "0 0 7px rgba(201,154,214,.85)" }
-                            : { background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)" }
-                        }
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm font-bold text-hard whitespace-nowrap">{me.skillPoints}/{me.maxSkill}</span>
-                </div>
-                {ch?.id === "nanaya" && phase === "PLAYING" && me.alive && !done && (
-                  <button
-                    onClick={nanayaToggleEye}
-                    disabled={me.nanayaToggleUsed || frozenByClockUp}
-                    className={`text-[10px] font-bold rounded-lg px-2 py-1 border ${me.nanayaEyeOn ? "bg-echo-hp/30 border-echo-hp" : "bg-white/5 border-white/20"} disabled:opacity-40`}
-                    title="Mystic eye of death perception"
-                  >
-                    👁️ Mystic eye — {me.nanayaEyeOn ? "เปิดอยู่" : "ปิดอยู่"}
-                  </button>
-                )}
-                {isStriker && pairPilot && phase === "PLAYING" && me.alive && !done && (
-                  <button
-                    onClick={() => { clickSound(); socket.emit("strikerRepairStart"); }}
-                    disabled={(st.repairCd || 0) > 0 || !!st.repairing || frozenByClockUp}
-                    className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
-                    title="งานช่าง: ต่อสายไฟ ฟื้นพลังชีวิต 3 + เกราะ 1 (เทิร์นนี้ชนะก็โจมตีไม่ได้)"
-                  >
-                    🔧 ซ่อม{(st.repairCd || 0) > 0 ? ` (อีก ${st.repairCd} เทิร์น)` : ""}
-                  </button>
-                )}
-                {isPairChar && (
-                  <span className="text-[11px] font-bold rounded-lg px-2 py-1 border border-white/25 bg-black/30">
-                    {pairRole === "pilot" ? "🃏 คุณคือนักบิน" : "🎯 คุณคือพลปืน"}{pilotAway && pairRole === "gunner" ? " · นักบินหลุด: เปิดการ์ดแทนได้" : ""}
-                  </span>
-                )}
-                {isRecruit && phase === "PLAYING" && me.alive && !done && (
-                  <button
-                    onClick={() => { clickSound(); setRecruitPrepOpen(true); }}
-                    disabled={noSkill || recruitBusy || (me.skillPoints || 0) < 1 || frozenByClockUp}
-                    className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
-                    title="สกิลพิเศษ เตรียมตัว (1 แต้ม)"
-                  >
-                    🎒 เตรียมตัว · 🔫 {me.recruit?.bullets ?? 0}/{me.recruit?.bulletMax ?? 6}
-                  </button>
-                )}
-              </div>
-
-              <div className="p-hs-tab-group">
-                <button
-                  onClick={() => { clickSound(); setBagOpen(true); }}
-                  className="p-hs-tab p-hs-tab-bag w-28 sm:w-36 h-11 sm:h-12 px-2 sm:px-3"
-                  title="กระเป๋า"
-                >
-                  <span className="text-xl sm:text-2xl">🎒</span>
-                  <span className="text-xs sm:text-sm font-bold text-echo-ice" style={{ fontFamily: P_DISPLAY }}>กระเป๋า</span>
-                  {me.inventory?.length > 0 && (
-                    <span className="ml-auto text-[10px] font-black bg-black text-white rounded-full w-5 h-5 grid place-items-center shrink-0">{me.inventory.length}</span>
+              ) : (
+                <span className="hud-hand-note">ยังไม่จั่วไพ่</span>
+              )}
+              draw={{
+                disabled: state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!me.kimNoDraw || !pairPilot,
+                onClick: () => { clickSound(); socket.emit("hit"); },
+              }}
+              reveal={{
+                disabled: !(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || (!pairPilot && !pilotAway),
+                onClick: () => { clickSound(); socket.emit("lock"); },
+              }}
+            />
+          }
+          right={
+            <HudRight
+              sp={me.skillPoints}
+              spMax={me.maxSkill}
+              extras={
+                <>
+                  {ch?.id === "nanaya" && phase === "PLAYING" && me.alive && !done && (
+                    <button
+                      onClick={nanayaToggleEye}
+                      disabled={me.nanayaToggleUsed || frozenByClockUp}
+                      className={`text-[10px] font-bold rounded-lg px-2 py-1 border ${me.nanayaEyeOn ? "bg-echo-hp/30 border-echo-hp" : "bg-white/5 border-white/20"} disabled:opacity-40`}
+                      title="Mystic eye of death perception"
+                    >
+                      👁️ Mystic eye — {me.nanayaEyeOn ? "เปิดอยู่" : "ปิดอยู่"}
+                    </button>
                   )}
-                </button>
-                {/* SE.RA.PH: วันดวล (วันที่ 5) ซื้อของไม่ได้ — ร้านสะดวกซื้อเป็น 1 ใน 5 สถานที่
-                    ของ "วันสืบสวน" เท่านั้น จึงซ่อนปุ่มทิ้งไปเลย ไม่ใช่แค่กดไม่ได้
-                    (server กันซ้ำอีกชั้นที่ buyShopItem) */}
-                {!state.seraph && (
-                  <button
-                    onClick={() => { clickSound(); setShopOpen(true); }}
-                    className="p-hs-tab p-hs-tab-shop w-28 sm:w-36 h-11 sm:h-12 px-2 sm:px-3"
-                    title="ร้านค้า"
-                  >
-                    <span className="text-xl sm:text-2xl">🏪</span>
-                    <span className="text-xs sm:text-sm font-bold text-white" style={{ fontFamily: P_DISPLAY }}>ร้านค้า</span>
-                    <span className="ml-auto text-xs sm:text-sm font-black text-echo-ice whitespace-nowrap shrink-0">🪙{me.gold ?? 0}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                  {isStriker && pairPilot && phase === "PLAYING" && me.alive && !done && (
+                    <button
+                      onClick={() => { clickSound(); socket.emit("strikerRepairStart"); }}
+                      disabled={(st.repairCd || 0) > 0 || !!st.repairing || frozenByClockUp}
+                      className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
+                      title="งานช่าง: ต่อสายไฟ ฟื้นพลังชีวิต 3 + เกราะ 1 (เทิร์นนี้ชนะก็โจมตีไม่ได้)"
+                    >
+                      🔧 ซ่อม{(st.repairCd || 0) > 0 ? ` (อีก ${st.repairCd} เทิร์น)` : ""}
+                    </button>
+                  )}
+                  {isPairChar && (
+                    <span className="text-[11px] font-bold rounded-lg px-2 py-1 border border-white/25 bg-black/30">
+                      {pairRole === "pilot" ? "🃏 คุณคือนักบิน" : "🎯 คุณคือพลปืน"}{pilotAway && pairRole === "gunner" ? " · นักบินหลุด: เปิดการ์ดแทนได้" : ""}
+                    </span>
+                  )}
+                  {isRecruit && phase === "PLAYING" && me.alive && !done && (
+                    <button
+                      onClick={() => { clickSound(); setRecruitPrepOpen(true); }}
+                      disabled={noSkill || recruitBusy || (me.skillPoints || 0) < 1 || frozenByClockUp}
+                      className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
+                      title="สกิลพิเศษ เตรียมตัว (1 แต้ม)"
+                    >
+                      🎒 เตรียมตัว · 🔫 {me.recruit?.bullets ?? 0}/{me.recruit?.bulletMax ?? 6}
+                    </button>
+                  )}
+                </>
+              }
+              bagCount={me.inventory?.length || 0}
+              onBag={() => { clickSound(); setBagOpen(true); }}
+              gold={me.gold ?? 0}
+              // SE.RA.PH: วันดวลซื้อของไม่ได้ — ซ่อนปุ่มร้านค้าทิ้งไปเลย (server กันซ้ำอีกชั้นที่ buyShopItem)
+              showShop={!state.seraph}
+              onShop={() => { clickSound(); setShopOpen(true); }}
+              skills={
+                <>
+                  <SkillSlot variant="hud" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
+                  <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
+                  {isBard ? <div className="hud-skill-alt"><BardComposeSlot me={me} /></div> : isKai ? <div className="hud-skill-alt"><KaiOverhaulSlot me={me} frozen={frozenByClockUp} /></div> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
+                </>
+              }
+            />
+          }
+        />
       )}
 
       {/* ---------- เฟสสรุปผล: ลีดเดอร์บอร์ด (กลางจอ) ---------- */}

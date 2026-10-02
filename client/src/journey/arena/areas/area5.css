@@ -1,0 +1,4 @@
+/* ภูมิภาค V — ทะเลทรายไม่อาจหวนคืน (keyframes ขึ้นต้น ar5) */
+@keyframes ar5Blow { 0% { transform: translateX(-160px) scaleX(0.5); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 0.8; } 100% { transform: translateX(240px) scaleX(1.2); opacity: 0; } }
+@keyframes ar5Heat { 0%, 100% { transform: scaleY(1) translateY(0); opacity: 0.35; } 50% { transform: scaleY(1.35) translateY(-3px); opacity: 0.85; } }
+@keyframes ar5Glint { 0%, 70%, 100% { opacity: 0.2; } 82% { opacity: 1; } }

@@ -1,0 +1,22 @@
+/* ภูมิภาค VI — อนิเมชันเฉพาะ (หิมะตก · แสงเหนือ) */
+@keyframes ar6SnowA {
+  0% { transform: translate(0, 0); opacity: 0; }
+  6% { opacity: 1; }
+  30% { transform: translate(26px, 33vh); }
+  62% { transform: translate(-14px, 70vh); }
+  92% { opacity: 1; }
+  100% { transform: translate(18px, 108vh); opacity: 0; }
+}
+@keyframes ar6SnowB {
+  0% { transform: translate(0, 0); opacity: 0; }
+  6% { opacity: 1; }
+  35% { transform: translate(-24px, 38vh); }
+  70% { transform: translate(16px, 76vh); }
+  92% { opacity: 1; }
+  100% { transform: translate(-30px, 108vh); opacity: 0; }
+}
+@keyframes ar6Aurora {
+  0%, 100% { transform: translateX(-3%) scaleY(1); opacity: 0.55; }
+  35% { transform: translateX(1%) scaleY(1.14); opacity: 1; }
+  70% { transform: translateX(4%) scaleY(0.92); opacity: 0.75; }
+}

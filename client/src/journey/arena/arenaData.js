@@ -78,10 +78,11 @@ export function arenaLayout(W, H, area, nOthers) {
     const p = seatPoint(R, phi);
     return { phi, ...seatScreen(c, p, seatTop(lift, p.y, ringLift, AH.pad)) };
   };
+  const center = proj(c, 0, chainLift(lift, AH.center));
   return {
-    others: stackCards(W, H, seatAngles(nOthers).map(at)),
+    others: stackCards(W, H, seatAngles(nOthers).map(at), center),
     me: at(90),
-    center: proj(c, 0, chainLift(lift, AH.center)),
+    center,
   };
 }
 
@@ -90,10 +91,13 @@ export function arenaLayout(W, H, area, nOthers) {
    ขนาดการ์ดประมาณจากการ์ดจริง (236×165 ที่สเกลกระดาน min(1, H/920)) · bottom/stem = px บนจอ */
 const CARD_W = 236;
 const CARD_H = 165;
-function stackCards(W, H, seats) {
+const DECK_W = 110;
+const DECK_H = 140;
+function stackCards(W, H, seats, center) {
   const bs = Math.min(1, H / 920) * Math.min(1, W / 900);
   const u = H / 900;
-  const placed = [];
+  // กองไพ่บนแท่นกลางนับเป็นสิ่งกีดขวางชิ้นแรก — ที่นั่งไกลกลาง (คนอื่น 1/3/5 คน) จะลอยการ์ดขึ้นพ้นกองไพ่ ไม่ทับกัน
+  const placed = center ? [{ x: center.x, w: DECK_W * bs, top: center.y - DECK_H * bs }] : [];
   const order = seats.map((st, i) => i).sort((a, b) => seats[b].y - seats[a].y);
   const out = seats.map((st) => ({ ...st }));
   for (const i of order) {

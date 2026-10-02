@@ -1,0 +1,510 @@
+/* ===== แผงตัวเรา (จอคอม/แท็บเล็ต) — ดีไซน์ HudMain: กระจกน้ำเงินตัดมุม · Kanit/Chakra Petch =====
+   ข้อความไทยห้ามมี letter-spacing / uppercase
+   ไฟล์นี้โหลดก่อน index.css (ผ่าน App → Game) จึงต้องนำหน้า selector ด้วย .hud-* ให้ชนะกฎเดิมของ .sr ฯลฯ */
+
+.hud-glass {
+  background: rgba(12, 28, 58, 0.88);
+  border: 1px solid rgba(127, 184, 230, 0.38);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #eaf3fc;
+}
+.hud-num { font-family: "Chakra Petch", Kanit, sans-serif; font-variant-numeric: tabular-nums; }
+
+/* ---------- กล่องรวม + เลื่อนลงซ่อน ---------- */
+.hud-dock { position: absolute; inset: 0; pointer-events: none; }
+.hud-grp {
+  position: absolute;
+  bottom: 20px;
+  pointer-events: auto;
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  color: #eaf3fc;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, visibility 0s linear 0s;
+}
+.hud-left { left: 20px; }
+.hud-center { left: 50%; bottom: 22px; translate: -50% 0; }
+.hud-right { right: 20px; }
+.hud-rcol { right: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.hud-dock[data-away="true"] .hud-grp {
+  transform: translateY(calc(100% + 48px));
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease 0.05s, visibility 0s linear 0.35s;
+}
+.hud-dock[data-instant="true"] .hud-grp { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .hud-grp, .hud-dock[data-away="true"] .hud-grp { transition: none !important; }
+}
+
+/* ปุ่มแถบเล็กเรียกแผงกลับมาดูชั่วคราว (ตอนแผงเลื่อนลง) */
+.hud-peek {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  translate: -50% 0;
+  z-index: 41;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 14px;
+  border: 1px solid rgba(127, 184, 230, 0.45);
+  border-bottom: 0;
+  background: rgba(12, 28, 58, 0.9);
+  color: #c8dbf2;
+  font: 500 13px/1 Kanit, sans-serif;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  cursor: pointer;
+}
+.hud-peek:hover { color: #ffffff; }
+.hud-peek[data-peek="true"] svg { transform: rotate(180deg); }
+.hud-peek:focus-visible { outline: 2px solid #bee3f8; outline-offset: 2px; }
+
+.hud-dock button:focus-visible, .hud-top button:focus-visible { outline: 2px solid #bee3f8; outline-offset: 2px; }
+
+/* ---------- แผงผู้เล่น (ซ้ายล่าง) ---------- */
+.hud-panel {
+  width: 344px;
+  box-sizing: border-box;
+  padding: 14px 12px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hud-head { display: flex; align-items: center; gap: 12px; }
+.hud-hex {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 68px;
+  padding: 0;
+  border: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(160deg, #3d8bd9 0%, #12264a 110%);
+  cursor: pointer;
+  overflow: hidden;
+}
+.hud-hex > * { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+.hud-head-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hud-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hud-name {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eaf3fc;
+  font: 600 20px/1.15 Kanit, sans-serif;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.hud-name:hover { color: #bee3f8; }
+.hud-team {
+  flex: none;
+  padding: 1px 8px;
+  color: #0b1d3a;
+  font: 600 12px/1.5 Kanit, "Chakra Petch", sans-serif;
+}
+
+/* เลือด/เกราะ: ใช้ StatRow เดิม (ไอคอน · ช่อง · ตัวเลข) ปรับขนาดตามดีไซน์ */
+.hud-panel .hud-vitals { display: flex; flex-direction: column; gap: 6px; }
+.hud-panel .hud-vitals .sr { gap: 6px; }
+.hud-panel .hud-vitals .sr .sr-ico { width: 15px; height: 15px; }
+.hud-panel .hud-vitals .sr .sr-track { gap: 2px; }
+.hud-panel .hud-vitals .sr[data-kind="hp"] .sr-cell,
+.hud-panel .hud-vitals .sr[data-kind="hp"] .sr-solid { height: 9px; }
+.hud-panel .hud-vitals .sr[data-kind="ar"] .sr-cell,
+.hud-panel .hud-vitals .sr[data-kind="ar"] .sr-solid { height: 9px; }
+.hud-panel .hud-vitals .sr .sr-num {
+  min-width: 36px;
+  font: 600 13px/1 "Chakra Petch", sans-serif;
+  text-shadow: none;
+}
+.hud-panel .hud-vitals .sr .sr-max { color: #eaf3fc; font-size: 1em; }
+.hud-panel .hud-vitals .pc-extra { margin-top: 1px; }
+
+/* ป้ายเฉพาะตัวละคร (ชาร์จ/เกียร์/หลบหลีก/ความเครียด …) — ทรงเหลี่ยมตัดมุมเข้าชุดกับแผง */
+.hud-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hud-chips:empty { display: none; }
+.hud-chips > span {
+  border-radius: 0 !important;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 3px 9px !important;
+}
+
+/* แถว (ทรัพยากร + สถานะ) */
+.hud-res { display: flex; flex-direction: column; gap: 4px; }
+.hud-row { flex: none; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.04); }
+.hud-row[data-open="true"] { background: rgba(127, 184, 230, 0.14); }
+.hud-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px 6px 6px;
+  border: 0;
+  background: transparent;
+  color: #eaf3fc;
+  text-align: left;
+  cursor: pointer;
+}
+.hud-row-btn:hover { background: rgba(255, 255, 255, 0.05); }
+.hud-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Kanit, sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.hud-row-label {
+  flex: 1;
+  min-width: 0;
+  font: 400 15px/1.25 Kanit, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hud-pill {
+  flex: none;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font: 600 13px/1.4 "Chakra Petch", Kanit, sans-serif;
+  white-space: nowrap;
+}
+.hud-row-desc { padding: 0 12px 10px 44px; font: 300 13px/1.45 Kanit, sans-serif; color: #b9cde6; }
+.hud-res-label {
+  flex: 0 1 auto;
+  max-width: 46%;
+  min-width: 0;
+  font: 500 15px/1.2 Kanit, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hud-res-num {
+  flex: none;
+  min-width: 34px;
+  text-align: right;
+  font: 600 13px/1 "Chakra Petch", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.hud-cells { flex: 1; min-width: 40px; display: flex; gap: 3px; }
+.hud-cells > span { flex: 1; min-width: 2px; }
+.hud-cells-solid { position: relative; display: block; background: rgba(255, 255, 255, 0.12); }
+.hud-cells-solid > span { position: absolute; left: 0; top: 0; bottom: 0; }
+
+.hud-st-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+  border-top: 1px solid rgba(127, 184, 230, 0.25);
+}
+.hud-st-title { font: 500 15px/2 Kanit, sans-serif; color: #c8dbf2; }
+.hud-st-tools { display: inline-flex; align-items: center; gap: 6px; }
+.hud-count {
+  min-width: 22px;
+  padding: 0 7px;
+  text-align: center;
+  background: rgba(127, 184, 230, 0.18);
+  font: 600 13px/1.6 "Chakra Petch", sans-serif;
+}
+.hud-open-all {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(127, 184, 230, 0.35);
+  background: transparent;
+  color: #9db8da;
+  cursor: pointer;
+}
+.hud-open-all:hover { color: #ffffff; border-color: rgba(127, 184, 230, 0.7); }
+
+/* รายการสถานะ: แนวตั้งอย่างเดียว เลื่อนลง */
+.hud-st-wrap { position: relative; }
+.hud-st-list {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(127, 184, 230, 0.55) rgba(255, 255, 255, 0.06);
+}
+.hud-st-list::-webkit-scrollbar { width: 6px; }
+.hud-st-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.06); }
+.hud-st-list::-webkit-scrollbar-thumb { background: rgba(127, 184, 230, 0.55); }
+.hud-st-inner { display: flex; flex-direction: column; gap: 4px; }
+.hud-st-empty { padding: 14px 8px; font: 400 14px/1.4 Kanit, sans-serif; color: #8ba3c2; text-align: center; }
+.hud-st-fade {
+  position: absolute;
+  left: 0;
+  right: 6px;
+  bottom: 0;
+  height: 30px;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(12, 28, 58, 0.95), rgba(12, 28, 58, 0));
+}
+.hud-st-alt {
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed rgba(127, 184, 230, 0.35);
+  background: transparent;
+  color: #c8dbf2;
+  font: 400 14px/1.4 Kanit, sans-serif;
+  cursor: pointer;
+}
+
+/* ---------- กลางล่าง ---------- */
+.hud-center-in { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.hud-hand-row { display: flex; align-items: flex-end; gap: 16px; }
+.hud-score { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hud-score-label {
+  padding: 3px 10px;
+  background: rgba(12, 28, 58, 0.88);
+  border: 1px solid rgba(127, 184, 230, 0.38);
+  font: 500 13px/1 Kanit, sans-serif;
+  color: #c8dbf2;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+.hud-medal {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(12, 28, 58, 0.92);
+  border: 2px solid #f0c868;
+  box-shadow: 0 6px 18px rgba(3, 10, 24, 0.5);
+  color: #f0c868;
+  font: 700 32px/1 "Chakra Petch", sans-serif;
+}
+.hud-medal[data-busted="true"] { border-color: #ff6b81; color: #ff8a94; font: 600 15px/1.1 Kanit, sans-serif; text-align: center; }
+.hud-hand { display: flex; align-items: center; justify-content: center; width: 290px; height: 140px; }
+.hud-hand-note {
+  padding: 8px 16px;
+  background: rgba(12, 28, 58, 0.8);
+  border: 1px solid rgba(127, 184, 230, 0.3);
+  font: 400 16px/1.2 Kanit, sans-serif;
+  color: #c8dbf2;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.hud-hand-note[data-tone="bad"] { color: #ff8a94; font-weight: 600; }
+.hud-actions { display: flex; gap: 10px; }
+.hud-btn {
+  width: 168px;
+  height: 58px;
+  border: 0;
+  color: #ffffff;
+  font: 600 21px/1 Kanit, sans-serif;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  cursor: pointer;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+}
+.hud-btn-draw { background: #8a4386; }
+.hud-btn-reveal { background: #3d8bd9; }
+.hud-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.12); }
+.hud-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.95); }
+.hud-btn:disabled { opacity: 0.38; cursor: not-allowed; filter: saturate(0.5); }
+
+/* ---------- ขวาล่าง ---------- */
+.hud-right-in { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.hud-extras { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.hud-extras:empty { display: none; }
+.hud-extras > * {
+  border-radius: 0 !important;
+  border: 1px solid rgba(127, 184, 230, 0.45) !important;
+  background: rgba(12, 28, 58, 0.9) !important;
+  color: #eaf3fc;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 5px 10px !important;
+}
+.hud-sp-row { display: flex; align-items: center; gap: 10px; }
+.hud-sp { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.hud-sp-label { font: 700 14px/1 "Chakra Petch", sans-serif; color: #7fb8e6; }
+.hud-sp-cells { flex: 1; display: flex; gap: 3px; }
+.hud-sp-cells > span {
+  flex: 1;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+}
+.hud-sp-cells > span[data-on="true"] { background: linear-gradient(180deg, #a9d3f5, #7fb8e6); }
+.hud-sp-num { font: 600 14px/1 "Chakra Petch", sans-serif; font-variant-numeric: tabular-nums; }
+.hud-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(127, 184, 230, 0.45);
+  background: rgba(12, 28, 58, 0.9);
+  color: #eaf3fc;
+  font: 500 15px/1 Kanit, sans-serif;
+  white-space: nowrap;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  cursor: pointer;
+}
+.hud-tab:hover { filter: brightness(1.2); }
+.hud-tab-shop { border-color: rgba(240, 200, 104, 0.55); color: #f0c868; gap: 4px; }
+.hud-tab-badge { margin-left: 6px; padding: 0 6px; background: #8a4386; color: #ffffff; font: 600 12px/1.5 "Chakra Petch", sans-serif; }
+.hud-skills { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* การ์ดสกิล 122×156 */
+.hud-skill {
+  position: relative;
+  flex: none;
+  width: 122px;
+  height: 156px;
+  padding: 0;
+  border: 1.5px solid rgba(127, 184, 230, 0.45);
+  background: rgba(12, 28, 58, 0.92);
+  color: #eaf3fc;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, opacity 0.18s ease;
+}
+.hud-skill[data-tier="ultimate"] { border-color: #f0c868; }
+.hud-skill[data-state="ready"] { border-color: #bee3f8; }
+.hud-skill[data-tier="ultimate"][data-state="ready"] { border-color: #ffd98a; }
+.hud-skill[data-state="ready"]:hover { transform: translateY(-4px); filter: brightness(1.1); }
+.hud-skill:disabled { cursor: not-allowed; }
+.hud-skill[data-state="nosp"], .hud-skill[data-state="off"] { opacity: 0.5; }
+.hud-skill[data-state="off"] .hud-skill-art img { filter: grayscale(0.7); }
+.hud-skill-art { position: relative; display: block; flex: none; height: 92px; overflow: hidden; background: linear-gradient(160deg, #3d8bd9, #12264a); }
+.hud-skill[data-tier="secondary"] .hud-skill-art { background: linear-gradient(160deg, #9b4f96, #12264a); }
+.hud-skill[data-tier="ultimate"] .hud-skill-art { background: linear-gradient(160deg, #f0c868, #6e4a12); }
+.hud-skill-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hud-skill-blank { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: rgba(255, 255, 255, 0.5); }
+.hud-skill-cd {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 12, 28, 0.62);
+  font: 700 34px/1 "Chakra Petch", sans-serif;
+}
+.hud-skill-lost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(60, 10, 20, 0.72);
+  color: #ff9aa8;
+  font: 600 14px/1.2 Kanit, sans-serif;
+  text-align: center;
+}
+.hud-skill-lost-sub { font-weight: 400; font-size: 12px; color: #ffd0d6; }
+.hud-skill-ammo {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: rgba(5, 12, 28, 0.6);
+}
+.hud-skill-ammo > span { width: 7px; height: 9px; background: rgba(255, 255, 255, 0.25); }
+.hud-skill-ammo > span[data-on="true"] { background: #7fe0d0; }
+.hud-skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px 8px; }
+.hud-skill-tier { font: 600 15px/1.2 Kanit, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-skill[data-tier="ultimate"] .hud-skill-tier { color: #f0c868; }
+.hud-skill-ammo-n { color: #7fe0d0; font-family: "Chakra Petch", sans-serif; font-size: 13px; }
+.hud-skill-name { font: 400 12px/1.2 Kanit, sans-serif; color: #b9cde6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-skill-cost {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  background: #12264a;
+  border: 1px solid #f0c868;
+  color: #f0c868;
+  font: 700 13px/1.4 "Chakra Petch", sans-serif;
+}
+.hud-skill-cost[data-cheap="true"] { background: #f0c868; color: #12264a; }
+
+/* ช่องท่าไม้ตายแบบพิเศษ (Bard ประพันธ์เพลง / Kai Overhaul) — กรอบเท่าการ์ดสกิล */
+.hud-skill-alt {
+  flex: none;
+  width: 122px;
+  height: 156px;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1.5px solid #f0c868;
+  background: rgba(12, 28, 58, 0.92);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  font-family: Kanit, sans-serif;
+}
+.hud-skill-alt > div { height: 100%; justify-content: space-between; }
+.hud-skill-alt > div > :first-child { height: 104px !important; border-radius: 0 !important; }
+.hud-skill-alt > div > :last-child { font-size: 12px !important; line-height: 1.25 !important; font-weight: 500 !important; }
+
+/* ---------- ซ้ายบน: รอบ · เวลา · ภูมิภาค ---------- */
+.hud-top {
+  position: absolute;
+  left: 20px;
+  top: 18px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px 8px 12px;
+  font-family: Kanit, "Chakra Petch", sans-serif;
+}
+.hud-top-cycle { display: grid; place-items: center; }
+.hud-top-round { display: flex; flex-direction: column; align-items: center; }
+.hud-top-k { font: 400 12px/1.2 Kanit, sans-serif; color: #9db8da; }
+.hud-top-n { font: 600 24px/1 "Chakra Petch", sans-serif; }
+.hud-top .bd-timer { width: 42px; height: 42px; }
+.hud-top .bd-timer-ring { stroke: rgba(255, 255, 255, 0.15); stroke-width: 4; }
+.hud-top .bd-timer-arc { stroke: #7fb8e6; stroke-width: 4; stroke-linecap: round; }
+.hud-top .bd-timer[data-low="true"] .bd-timer-arc { stroke: #ff6b78; }
+.hud-top .bd-timer > span { font-family: "Chakra Petch", sans-serif !important; font-weight: 600 !important; font-size: 15px !important; }
+.hud-top-div { width: 1px; height: 34px; background: rgba(127, 184, 230, 0.3); }
+.hud-top-region {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eaf3fc;
+  text-align: left;
+  cursor: pointer;
+}
+.hud-top-region:hover .hud-top-name { color: #bee3f8; }
+.hud-top-gem {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin: 0 3px;
+  display: grid;
+  place-items: center;
+  transform: rotate(45deg);
+}
+.hud-top-gem > span { transform: rotate(-45deg); font: 400 11px/1 Michroma, sans-serif; color: #12264a; }
+.hud-top-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hud-top-name { font: 500 15px/1.2 Kanit, sans-serif; white-space: nowrap; max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
+.hud-top-sub { font: 400 13px/1.2 Kanit, sans-serif; color: #9db8da; white-space: nowrap; }
