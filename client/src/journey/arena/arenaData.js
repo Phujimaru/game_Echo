@@ -6,42 +6,18 @@
 // ============================================================
 
 import { seeded, twistedTree } from "../geometry";
+import { NONE, r1, rand32, proj, seatPoint, nearSector } from "./arenaKit";
+import { EXTRA_AREAS } from "./areas";
 
 /** ความสูงเส้นแสงจากฐานที่นั่งถึงขอบล่างการ์ด (px ที่ความสูงจอ 900) — Game.jsx ใช้ค่าเดียวกันวางการ์ด */
 export const ARENA_STEM = 38;
 /** ย่อการ์ดผู้เล่นบนสนาม (คูณกับสเกลความลึก) ให้การ์ดใบติดกันไม่ทับกัน */
 export const ARENA_CARD_SCALE = 0.86;
 
-export const ARENA_AREA_MAX = 3;
+export const ARENA_AREA_MAX = 7;
+/** ภูมิภาคนี้มีสนาม 2.5D แล้วหรือยัง (ภูมิภาคที่ยังไม่ทำ = ใช้ฉากหลัง JourneyBackdrop เดิม) */
 export function hasArena(area) {
-  return area >= 1 && area <= ARENA_AREA_MAX;
-}
-
-const NONE = "0 solid transparent";
-
-function r1(n) {
-  return Math.round(n * 10) / 10;
-}
-
-function rand32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/* จุดบนพื้น (x,y เทียบกลางสนาม, y บวก = เข้าหากล้อง) -> ตำแหน่งบนจอ + สเกลความลึก
-   ตรงกับ CSS: เวที perspective:p (origin = กลางแนวนอน, สูง oy) · พื้น rotateX(90-e) หมุนรอบจุดกลางที่ cy
-   oy ต่ำกว่ากลางจอ = เลนส์เลื่อนแกน (shift lens) ยกเส้นขอบฟ้าขึ้นมาในจอโดยไม่ต้องลดระยะ perspective ให้ภาพบิด */
-function proj(c, x, y) {
-  const t = ((90 - c.e) * Math.PI) / 180;
-  const z = y * Math.sin(t);
-  const s = c.p / (c.p - z);
-  return { x: r1(c.W / 2 + x * s), y: r1(c.oy + (c.cy - c.oy + y * Math.cos(t)) * s), s: Math.round(s * 1000) / 1000 };
+  return !!AREAS[area];
 }
 
 /* ผู้เล่นอื่นนั่งครึ่งวงด้านไกล (กลางด้านบน = 270°) ห่างกันไม่เกิน 44° · ตัวเรา = 90° (ใกล้กล้อง) */
@@ -52,16 +28,6 @@ export function seatAngles(n) {
   const out = [];
   for (let i = 0; i < n; i++) out.push(270 + (i - (n - 1) / 2) * step);
   return out;
-}
-
-function seatPoint(R, phi) {
-  const a = (phi * Math.PI) / 180;
-  return { x: Math.cos(a) * R, y: Math.sin(a) * R };
-}
-
-function nearSector(deg) {
-  const d = ((deg % 360) + 360) % 360;
-  return d > 40 && d < 140;
 }
 
 /* กล้องตามขนาดจอ — 5.1.9: กล้องก้ม 30° (ผู้ใช้ขอ: 55° ดูแบนเหมือน 2D) · เห็นเส้นขอบฟ้า ~16% จากบนจอ
@@ -179,11 +145,12 @@ function makeBuilder(c) {
       col: "#9b4f96", c1: "#8fb878", c2: "#7aa765", c3: "#b4d69b", d1: "#ffffff", d2: "#ffffff", trunk: "#8b7355", crystalOp: B.night ? 0.9 : 0.35,
       ...(extra || {}),
     };
-    /* ระยะไกล -> เบลอ + จางเข้าหมอก (ความลึกแบบภาพวาด) */
+    /* ระยะไกล -> จางเข้าหมอก (ความลึกแบบภาพวาด)
+       5.1.10: เลิกใช้ filter blur/brightness ต่อชิ้น — ของตั้งหลายสิบชิ้นที่มี filter กิน GPU จนจอกระพริบในเครื่องเพื่อน
+       ใช้ความทึบอย่างเดียวแทน (ชั้นหมอกด้านบนจอช่วยกลืนของไกลอยู่แล้ว) */
     const ff = Math.max(0, Math.min(1, (0.97 - sp.s) / 0.32));
-    s.filter = ff < 0.05 ? "none" : B.hazeDark
-      ? `blur(${r1(ff * 1.8)}px) brightness(${r1(1 - 0.5 * ff)}) saturate(${r1(1 - 0.3 * ff)})`
-      : `blur(${r1(ff * 1.6)}px) brightness(${r1(1 + 0.12 * ff)}) saturate(${r1(1 - 0.45 * ff)})`;
+    s.filter = "none";
+    s.op = r1(1 - (B.hazeDark ? 0.45 : 0.35) * ff);
     if (s.l + s.w / 2 < -40 || s.l - s.w / 2 > c.W + 40 || s.t < -20 || s.t - s.h > c.H + 20) return;
     B.stands.push(s);
     if (shadow !== false) B.oval(x, y + 4 * k, w * k * 0.45, 9 * k + w * k * 0.08, `radial-gradient(closest-side, ${B.shadow || "rgba(0,0,0,0.25)"}, transparent)`, 1);
@@ -663,7 +630,12 @@ function area3(B) {
   };
 }
 
+/* ภูมิภาค IV–VII อยู่คนละไฟล์ใน areas/ (default export { H, build }) */
 const AREAS = { 1: area1, 2: area2, 3: area3 };
+for (const [id, mod] of Object.entries(EXTRA_AREAS)) {
+  AREAS[id] = mod.build;
+  AREA_H[id] = mod.H;
+}
 
 /* สร้างฉากทั้งฉาก
    seats = [{ phi, col, me?, target?, boss? }] · lowQ = ตัด fx (เหลือ Vignette) / fore / filter ของ stand */

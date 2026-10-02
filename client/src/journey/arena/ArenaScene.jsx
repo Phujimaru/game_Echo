@@ -13,7 +13,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { buildArena, ARENA_STEM } from "./arenaData";
-import { onArenaLandRequest, announceArenaLand } from "./arenaLandBus";
+import { onArenaLandRequest, announceArenaLand, shouldLandOnMount, noteArenaShown } from "./arenaLandBus";
 import { StandArt, FxArt, ForeArt } from "./ArenaArt";
 import "./arena.css";
 
@@ -73,7 +73,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           <div
             key={s.key}
             className="ar-stand"
-            style={{ left: s.left, top: s.top, width: s.width, height: s.height, transform: `translate(-50%, -100%) scaleY(${s.fold})`, filter: s.filter === "none" ? undefined : s.filter, "--i": s.i }}
+            style={{ left: s.left, top: s.top, width: s.width, height: s.height, transform: `translate(-50%, -100%) scaleY(${s.fold})`, opacity: s.op ?? 1, "--i": s.i }}
           >
             <div className="ar-pop">
               <div className="ar-sway" style={s.anim && s.anim !== "none" ? { animation: s.anim } : undefined}>
@@ -106,11 +106,10 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           <div
             key={f.key}
             className="ar-fore"
-            style={{ left: f.x, top: f.y, width: f.w, height: f.h, marginLeft: -f.w / 2, marginTop: -f.h / 2, opacity: f.op, filter: `blur(${f.blur}px)` }}
+            // แกว่งที่ชิ้นเดียวกับ filter: GPU เลื่อนภาพเบลอที่วาดไว้แล้วได้เลย (แกว่งชั้นในของ blur = วาดเบลอใหม่ทุกเฟรม)
+            style={{ left: f.x, top: f.y, width: f.w, height: f.h, marginLeft: -f.w / 2, marginTop: -f.h / 2, opacity: f.op, filter: `blur(${f.blur}px)`, transformOrigin: "50% 100%", animation: f.anim && f.anim !== "none" ? f.anim : undefined }}
           >
-            <div className="ar-sway" style={f.anim && f.anim !== "none" ? { animation: f.anim } : undefined}>
-              <ForeArt f={f} />
-            </div>
+            <ForeArt f={f} />
           </div>
         ))}
       </div>
@@ -130,7 +129,8 @@ const LAND_WAIT_MS = 9000;
 function ArenaScene({ area = 1, night = false, lowQ = false, W, H, seats }) {
   const n = !!night;
   const seq = useRef(0);
-  const [layers, setLayers] = useState(() => [{ key: `${area}${n ? "n" : "d"}-0`, area, night: n, land: true }]);
+  // mount ใหม่ในภูมิภาคเดิมหลังคัตซีน (กระดานถูกแทนทั้งจอชั่วคราว) = ไม่พุ่งลงซ้ำ — ดู arenaLandBus
+  const [layers, setLayers] = useState(() => [{ key: `${area}${n ? "n" : "d"}-0`, area, night: n, land: shouldLandOnMount(area) }]);
   const top = layers[layers.length - 1];
 
   // สลับกลางวัน/กลางคืนในภูมิภาคเดิม = เฟดเฉยๆ (ปรับ state ระหว่าง render แบบเดียวกับ JourneyBackdrop)
@@ -153,6 +153,18 @@ function ArenaScene({ area = 1, night = false, lowQ = false, W, H, seats }) {
     const t = setTimeout(go, LAND_WAIT_MS);
     return () => { off(); clearTimeout(t); };
   }, [area, n, top.area]);
+
+  // พุ่งลงตอน mount → บอก Game.jsx ให้การ์ดหล่นลงที่นั่ง · จำภูมิภาคที่แสดงอยู่ (ทั้งตอนแสดงและตอนถอด)
+  const shownArea = top.area;
+  useEffect(() => {
+    if (layers[0].land && layers.length === 1 && layers[0].key.endsWith("-0")) announceArenaLand();
+    // ครั้งเดียวต่อการ mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    noteArenaShown(shownArea);
+    return () => noteArenaShown(shownArea);
+  }, [shownArea]);
 
   useEffect(() => {
     if (layers.length < 2) return undefined;

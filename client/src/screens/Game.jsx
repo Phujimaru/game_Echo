@@ -1,7 +1,7 @@
 import { GUTS_AMMO_INFO, shopInfoOf } from "../data/shop";
 import { useTick, TickSeconds } from "../tickStore";
 import { PERMANENT_STATUS_KEYS } from "../data/permanentStatus";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -12,7 +12,7 @@ import ArenaBackdrop from "../components/ArenaBackdrop";
 import JourneyBackdrop from "../journey/JourneyBackdrop";
 import ArenaScene from "../journey/arena/ArenaScene";
 import { arenaLayout, hasArena, ARENA_CARD_SCALE } from "../journey/arena/arenaData";
-import { onArenaLand } from "../journey/arena/arenaLandBus";
+import { onArenaLand, getArenaLandSeq, arenaLandDelay } from "../journey/arena/arenaLandBus";
 import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
@@ -3815,8 +3815,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [showChar, setShowChar] = useState(false);
   const [flash, setFlash] = useState(null); // สกิลช่วงจั่วการ์ด เด้งทันทีบนกระดาน
   // สนาม 2.5D: ทุกครั้งที่ฉากพุ่งลงภูมิภาคใหม่เริ่ม → ใส่ key ใหม่ให้การ์ดผู้เล่น/กองไพ่ หล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
-  const [arenaLandSeq, setArenaLandSeq] = useState(0);
-  useEffect(() => onArenaLand(setArenaLandSeq), []);
+  //  อ่านผ่าน store เพราะสนาม (ลูก) ประกาศตอน mount ก่อน effect ของกระดานจะได้สมัครฟัง
+  //  กระดาน mount ใหม่หลังคัตซีน: seq เดิม + arenaLandDelay = null → การ์ดไม่หล่นซ้ำ (เคยทำให้จอกระพริบ)
+  const arenaLandSeq = useSyncExternalStore(onArenaLand, getArenaLandSeq);
   const [notice, setNotice] = useState(null); // แปลงร่างซ้ำ (ครั้งที่ 2 เป็นต้นไป) เด้งแจ้งเตือนทันที ไม่หยุดเกม
   const [anataSel, setAnataSel] = useState(null); // เทมาริ: โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (null = ไม่ได้เลือกอยู่)
   const [appleOpen, setAppleOpen] = useState(false); // Apple guy: เมนูเลือกของส่งมอบ (สกิลพื้นฐาน)
@@ -5153,7 +5154,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         <div
           className={`absolute inset-x-0 ${arenaLay ? "" : "top-[40%]"} flex justify-center pointer-events-none`}
           // สนาม 2.5D: กองการ์ดตั้งอยู่บนแท่นกลางสนาม (ขอบล่างกองตรงหน้าบนของแท่น)
-          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)", ...(lowQ ? null : { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${ARENA_SEAT_IN_S - 0.2}s both` }) } : undefined}
+          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)", ...(lowQ || arenaLandDelay(ARENA_SEAT_IN_S - 0.2) == null ? null : { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${arenaLandDelay(ARENA_SEAT_IN_S - 0.2)}s both` }) } : undefined}
           key={arenaLay ? `deck-l${arenaLandSeq}` : "deck"}
         >
           <div className="bd-deck relative grid place-items-center">
@@ -5227,7 +5228,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
           // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
           key={arenaSlots ? `${p.id}-l${arenaLandSeq}` : p.id}
-          enterDelay={arenaSlots && !lowQ ? ARENA_SEAT_IN_S + i * 0.09 : null}
+          enterDelay={arenaSlots && !lowQ ? arenaLandDelay(ARENA_SEAT_IN_S + i * 0.09) : null}
           p={p}
           phase={phase}
           slot={(arenaSlots || slots)[i] || [50, 50]}

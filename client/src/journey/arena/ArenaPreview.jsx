@@ -1,4 +1,4 @@
-// หน้าดูสนาม 2.5D แบบไม่ต่อ socket (เฉพาะ dev): ?arena=1..3&n=0..6&night=1&lowq=1
+// หน้าดูสนาม 2.5D แบบไม่ต่อ socket (เฉพาะ dev): ?arena=1..7&n=0..6&night=1&lowq=1
 //  การ์ดผู้เล่นเป็นกล่องจำลองขนาดเท่าการ์ดจริง (236×150) วางด้วยสูตรเดียวกับ Game.jsx
 import { useEffect, useMemo, useState } from "react";
 import ArenaScene from "./ArenaScene";
@@ -8,7 +8,7 @@ const COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", 
 
 export default function ArenaPreview() {
   const q = new URLSearchParams(location.search);
-  const area = Math.min(3, Math.max(1, Number(q.get("arena")) || 1));
+  const area = Math.min(7, Math.max(1, Number(q.get("arena")) || 1));
   const n = Math.min(6, Math.max(0, Number(q.get("n") ?? 6)));
   const night = q.get("night") === "1";
   const lowQ = q.get("lowq") === "1";

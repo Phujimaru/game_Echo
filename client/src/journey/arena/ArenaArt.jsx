@@ -7,12 +7,13 @@
 // ============================================================
 
 import { memo } from "react";
+import { EXTRA_ART } from "./areas";
 
 const FULL = { width: "100%", height: "100%" };
 const SVG_A11Y = { "aria-hidden": "true", focusable: "false" };
 
 // svg มาตรฐานของของตั้ง: ยึดก้นภาพไว้กับพื้น
-function Stand({ vb, par = "xMidYMax meet", children }) {
+export function Stand({ vb, par = "xMidYMax meet", children }) {
   return (
     <svg viewBox={vb} width="100%" height="100%" preserveAspectRatio={par} {...SVG_A11Y}>
       {children}
@@ -285,7 +286,7 @@ function StandArtBase({ s }) {
         </Stand>
       );
     default:
-      return null;
+      { const X = EXTRA_ART.stand[s.kind]; return X ? <X s={s} /> : null; }
   }
 }
 
@@ -363,7 +364,7 @@ function FxArtBase({ f }) {
         <div style={{ ...FULL, background: `radial-gradient(ellipse at 50% 58%, rgba(0,0,0,0) 42%, ${c} 100%)` }} />
       );
     default:
-      return null;
+      { const X = EXTRA_ART.fx[f.kind]; return X ? <X f={f} /> : null; }
   }
 }
 
@@ -406,7 +407,7 @@ function ForeArtBase({ f }) {
         </div>
       );
     default:
-      return null;
+      { const X = EXTRA_ART.fore[f.kind]; return X ? <X f={f} /> : null; }
   }
 }
 
