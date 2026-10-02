@@ -401,7 +401,7 @@ function buildStateFor(viewerId) {
     mercury: mercury.mercuryStateFor(viewer),
     ortArrival: { seq: match.ortArrivalSeq, active: match.ortArrivalActive }, // ฉากเปิดตัว ORT (Raid)
     // Purge: ตำแหน่งทุกคนในท่อ + ORT + ฉากเปิด/ฉากจบเทิร์นที่กำลังพักเกมรอ (ข้อมูลเดียวกันทุกคน)
-    purge: purge.purgeStateFor(),
+    purge: purge.purgeStateFor(viewerId),
     // การเดินทาง (ffa/duo/trio): ภูมิภาค + กลางวัน/กลางคืน + คำอธิบายผลสนาม + ฉากแผนที่ที่กำลังพักเกมรอ
     journey: Journey.publicInfo(engine, match.journeyScene),
     clockUpFrozen,   // Clock Up: ผู้ชมคนนี้ถูกแช่อยู่ไหม (ไรเดอร์ที่เปิด Clock Up เองจะเป็น false เสมอ)

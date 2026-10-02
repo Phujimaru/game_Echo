@@ -326,7 +326,7 @@ function startMatch() {
     match.gameState = "CUTSCENE";
     timers.startPhaseTimer(gameIntroHoldSeconds() + purge.introHoldSeconds(), () => {
       if (match.purge && match.purge.scene) match.purge.scene.active = false;
-      cutscene.runCutsceneQueue(purge.diceTurn); // เทิร์นแรก = ฉากทอยเต๋า (ไม่มีรอบการ์ดจนกว่าจะมีคนตกช่องเดียวกัน)
+      cutscene.runCutsceneQueue(purge.beginRollPhase); // เทิร์นแรก = ฉากทอยเต๋า (ไม่มีรอบการ์ดจนกว่าจะมีคนตกช่องเดียวกัน)
     });
     view.broadcastState();
     return;

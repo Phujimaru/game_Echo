@@ -113,7 +113,7 @@ export default function App() {
     const onState = (s) => {
       // SERAPH_PLACE ต้องนับเป็น "อยู่ในแมตช์" ด้วย ไม่งั้นทุกครั้งที่เข้าเฟสเลือกสถานที่
       // ระบบจะคิดว่าออกจากแมตช์แล้วกลับเข้ามาใหม่ (เด้งฉากเปิดตัว + รีเซ็ตเพลงทั้งหมด)
-      const matchStates = new Set(["PLAYING", "SERAPH_PLACE", "CUTSCENE", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "GAMEOVER"]);
+      const matchStates = new Set(["PLAYING", "SERAPH_PLACE", "PURGE_ROLL", "CUTSCENE", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "GAMEOVER"]);
       const wasInMatch = matchStates.has(prevGameStateRef.current);
       const nowInMatch = matchStates.has(s.gameState);
       // SE.RA.PH: **ห้ามเล่นฉากเปิดตัวผู้เล่นเด็ดขาด** — GameIntro เผยหน้า+ชื่อตัวละครของทุกคน

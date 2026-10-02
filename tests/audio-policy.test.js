@@ -65,20 +65,24 @@ test('การเดินทาง: เพลงประจำภูมิภ
 // โหมด Purge: เพลงด่านเปลี่ยนตามสถานการณ์ในท่อ
 test('Purge: เพลงด่านตาม ORT / ระยะห่าง / 2 คนสุดท้าย', async () => {
   const { musicForState } = await import('../client/src/audioPolicy.js');
+  const board = { nodes: [10, 12, 9, 1].map((n) => ({ id: `m${n}`, prog: n })) };
+  const pg = (ort, at = { a: 10, b: 12, c: 9 }, scene = null) => ({
+    ort, scene, board, pl: Object.fromEntries(Object.entries(at).map(([id, n]) => [id, { node: `m${n}` }])),
+  });
   const base = (over = {}) => ({
-    gameState: 'PLAYING', youId: 'a',
+    gameState: 'PURGE_ROLL', youId: 'a',
     players: [{ id: 'a', alive: true }, { id: 'b', alive: true }, { id: 'c', alive: true }],
-    purge: { ort: null, steps: { a: 10, b: 12, c: 9 }, scene: null },
+    purge: pg(null),
     ...over,
   });
   assert.equal(musicForState(base()).name, 'purge_normal');
-  assert.equal(musicForState(base({ purge: { ort: 2, steps: { a: 10, b: 12, c: 9 }, scene: null } })).name, 'purge_ort');
-  assert.equal(musicForState(base({ purge: { ort: 6, steps: { a: 10, b: 12, c: 9 }, scene: null } })).name, 'purge_close');
+  assert.equal(musicForState(base({ purge: pg(2) })).name, 'purge_ort');
+  assert.equal(musicForState(base({ purge: pg(6) })).name, 'purge_close');
   const two = base({ players: [{ id: 'a', alive: true }, { id: 'b', alive: true }, { id: 'c', alive: false }] });
   assert.equal(musicForState(two).name, 'purge_final');
-  // ซูมออก (ฉากจบเทิร์น): เพลงท่าไม้ตายของผู้เล่นปิดไว้ เหลือแต่เพลงด่าน
-  const scene = base({ gameState: 'CUTSCENE', skillMusic: 'some_ult', purge: { ort: null, steps: { a: 1 }, scene: { active: true } } });
+  // ซูมออก (ฉาก ORT): เพลงท่าไม้ตายของผู้เล่นปิดไว้ เหลือแต่เพลงด่าน
+  const scene = base({ gameState: 'CUTSCENE', skillMusic: 'some_ult', purge: pg(null, { a: 1 }, { active: true }) });
   assert.equal(musicForState(scene).name, 'purge_normal');
   // กลับเข้าสนาม: เพลงท่าไม้ตายเล่นตามปกติ
-  assert.equal(musicForState(base({ skillMusic: 'some_ult' })).name, 'some_ult');
+  assert.equal(musicForState(base({ gameState: 'PLAYING', skillMusic: 'some_ult' })).name, 'some_ult');
 });

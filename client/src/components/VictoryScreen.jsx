@@ -68,6 +68,8 @@ export default function VictoryScreen({ state, onBackToLobby }) {
   }, [state.gameMode, state.winningTeamId, state.players, state.mercury?.result, purgeResult, purgeWinner]);
 
   const names = winners.map((w) => w.name).join(" และ ");
+  // Purge: อันดับเข้าประตูผนึก (1 2 3 …)
+  const purgeRank = (state.purge?.finished || []).map((id) => state.players.find((p) => p.id === id)).filter(Boolean);
 
   return (
     <div className="av-over" style={{ "--rot": 1 }}>
@@ -95,6 +97,17 @@ export default function VictoryScreen({ state, onBackToLobby }) {
         {winners.length > 0 && (
           <div className="flex flex-wrap justify-center gap-7 mt-3 max-w-[92vw]">
             {winners.map((p, i) => <WinnerPortrait key={p.id} p={p} i={i} />)}
+          </div>
+        )}
+
+        {purgeRank.length > 1 && (
+          <div className="flex flex-col gap-2 mt-2 min-w-[280px]">
+            {purgeRank.map((p, i) => (
+              <div key={p.id} className="flex items-center gap-4 px-5 py-2 rounded-xl" style={{ background: "rgba(8,16,30,.6)", border: `1px solid ${i === 0 ? "rgba(255,217,138,.8)" : "rgba(255,255,255,.18)"}` }}>
+                <b className="text-2xl" style={{ fontFamily: '"Chakra Petch", sans-serif', color: i === 0 ? "#ffd98a" : "#cfe0f6" }}>{i + 1}</b>
+                <span className="text-lg font-semibold">{p.name}</span>
+              </div>
+            ))}
           </div>
         )}
 

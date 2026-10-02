@@ -3805,7 +3805,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const invader = !raid ? others.find((p) => p.isBoss) : null;
   // Purge: ระหว่างปะทะ (สนามประลองของภูมิภาคที่ช่องนั้น) ที่นั่งมีเฉพาะคู่ปะทะ — คนอื่นเป็นผู้ชม
   const purgeFight = state.purge?.fight && !state.purge.scene?.active ? state.purge.fight : null;
-  const purgeArena = purgeFight ? { area: Math.min(5, Math.floor(purgeFight.tile / 16) + 1), night: state.cycle === "night" } : null;
+  const purgeArena = purgeFight ? { area: Math.min(5, Math.floor((state.purge.board?.nodes?.find((n) => n.id === purgeFight.node)?.prog ?? 0) / 30) + 1), night: state.cycle === "night" } : null;
   const arenaJourney = state.journey || purgeArena;
   const seatOthers = purgeFight ? others.filter((p) => purgeFight.ids.includes(p.id))
     : (raid || invader) ? others.filter((p) => !p.isBoss) : others;
@@ -5055,7 +5055,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   return (
     <div className={`fixed inset-0 overflow-hidden${purgeOn ? " purge-board" : ""}${purgeSceneOn ? " purge-scene-on" : ""}`}>
       {/* Purge: ฉากอุโมงค์ท่อแทนฉากหลังทั้งหมด (ระหว่างฉากเปิด/จบเทิร์น ซ่อน UI กระดานไว้ — purge-scene-on) */}
-      {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} night={state.cycle === "night"} hidden={!!purgeFight} />}
+      {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} night={state.cycle === "night"} hidden={!!purgeFight} gameState={state.gameState} />}
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
       {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={arenaJourney} arena={arenaBg} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}

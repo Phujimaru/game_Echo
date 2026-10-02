@@ -29,7 +29,7 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
   if (state?.ortArrival?.active && phase === "CUTSCENE") return { name: "ort_theme" };
   // ช่วงโจมตี: เพลงเฉพาะกิจทับเพลงกลางวัน/กลางคืน และเริ่มจากต้นทุกครั้งที่เข้าช่วง (attackSeq ขยับ)
   if (phase === "ATTACK" || phase === "ATTACKING") return { name: "battle_phase", seq: attackSeq };
-  if (purgeTrack && ["PLAYING", "SUMMARY", "TRANSITION", "CUTSCENE"].includes(phase)) return { name: purgeTrack };
+  if (purgeTrack && ["PURGE_ROLL", "PLAYING", "SUMMARY", "TRANSITION", "CUTSCENE"].includes(phase)) return { name: purgeTrack };
   if (["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE"].includes(phase)) {
     // การเดินทาง (ffa/duo/trio): เพลงประจำภูมิภาค แยกกลางวัน/กลางคืน
     if (journey) return { name: `journey_${journey.area}_${journey.night ? "night" : "day"}`, seq: cycleSeq };
@@ -44,10 +44,11 @@ export function purgeMusic(state) {
   const pg = state?.purge;
   if (!pg) return null;
   const humans = (state.players || []).filter((p) => !p.isBoss);
-  const alive = humans.filter((p) => p.alive);
+  const alive = humans.filter((p) => p.alive && !pg.pl?.[p.id]?.finished);
   if (humans.length >= 3 && alive.length === 2) return "purge_final";
   if (pg.ort == null) return "purge_normal";
-  if (alive.some((p) => (pg.steps[p.id] ?? 0) - pg.ort <= 3)) return "purge_close";
+  const prog = (id) => pg.board?.nodes?.find((n) => n.id === pg.pl?.[id]?.node)?.prog ?? 0;
+  if (alive.some((p) => prog(p.id) - pg.ort <= 3)) return "purge_close";
   return "purge_ort";
 }
 

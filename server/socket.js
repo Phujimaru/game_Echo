@@ -23,6 +23,7 @@ const draw = require("./phases/draw");
 const endTurnPhase = require("./phases/endTurn");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
+const purge = require("./modes/purge");
 const pair = require("./pair");
 const qteSystem = require("./qte");
 const shop = require("./shop");
@@ -323,6 +324,13 @@ io.on('connection', (socket) => {
   onPlayerEvent(socket, 'lobbyEmote', (id, payload) => lobby.relayLobbyEmote(id, payload), 1, 600);
 
   onPlayerEvent(socket, 'hit', (id) => draw.hit(id), 8);
+  // Purge: กดทอยเต๋า / เลือกทางที่ทางแยก / ใช้ไอเทมกระดาน (ก่อนทอย)
+  onPlayerEvent(socket, 'purgeRoll', (id) => purge.roll(id), 4);
+  onPlayerEvent(socket, 'purgeChoose', (id, { nextId } = {}) => { if (typeof nextId === 'string') purge.choose(id, nextId); }, 6);
+  onPlayerEvent(socket, 'purgeItem', (id, payload = {}) => {
+    if (!payload || typeof payload.uid !== 'string') return;
+    purge.useBoardItem(id, { uid: payload.uid, value: payload.value, targetId: typeof payload.targetId === 'string' ? payload.targetId : null });
+  }, 6);
   onPlayerEvent(socket, 'lock', (id) => draw.lock(id), 4);
   onPlayerEvent(socket, 'useSkill', (id, { tier, targets, item } = {}) => skills.useSkill(id, tier, targets, item), 12);
   onPlayerEvent(socket, 'buyShopItem', (id, { itemId } = {}) => shop.buyShopItem(id, itemId), 8);
