@@ -12,16 +12,36 @@
 // ============================================================
 
 import { memo, useEffect, useMemo, useState } from "react";
-import { buildArena } from "./arenaData";
+import { buildArena, ARENA_STEM } from "./arenaData";
 import { StandArt, FxArt, ForeArt } from "./ArenaArt";
 import "./arena.css";
 
 const FADE_MS = 1600;
 
-/** ความสูงเส้นแสงจากฐานที่นั่งถึงขอบล่างการ์ด (px ที่ความสูงจอ 900) — Game.jsx ใช้ค่าเดียวกันวางการ์ด */
-export const ARENA_STEM = 38;
-/** ย่อการ์ดผู้เล่นบนสนาม (คูณกับสเกลความลึก) ให้การ์ดใบติดกันไม่ทับกัน */
-export const ARENA_CARD_SCALE = 0.86;
+
+/* ฉากพุ่งลงจากฟ้า: [left%, top%, ขนาด vmax, หน่วงวินาที] — เมฆแตกออกจากกลางจอเหมือนกล้องดิ่งทะลุชั้นเมฆ */
+const DIVE_CLOUDS = [
+  [50, 50, 70, 0.1], [22, 30, 46, 0.15], [78, 28, 50, 0.2], [18, 74, 52, 0.25], [82, 72, 48, 0.3],
+  [50, 18, 44, 0.45], [50, 84, 46, 0.5], [32, 52, 40, 0.6], [68, 50, 42, 0.65], [8, 50, 40, 0.75],
+  [92, 46, 40, 0.8], [36, 22, 34, 0.9], [64, 80, 36, 0.95], [50, 50, 50, 1.0],
+];
+
+/** ชั้นฉากพุ่งลง (เล่นครั้งเดียวตอนเข้าภูมิภาค ~3.4 วิ) — ท้องฟ้าทึบ → เมฆแตกออก + เส้นความเร็ว → เผยพื้นที่กำลังซูม/เอียง */
+function DiveSky({ night }) {
+  return (
+    <div className={`ar-dive${night ? " is-night" : ""}`}>
+      <div className="ar-dive-veil" />
+      <div className="ar-dive-speed" />
+      {DIVE_CLOUDS.map(([x, y, w, d], i) => (
+        <span
+          key={i}
+          className="ar-dive-cloud"
+          style={{ left: `${x}%`, top: `${y}%`, width: `${w}vmax`, height: `${w * 0.62}vmax`, animationDelay: `${d}s`, "--dx": `${(x - 50) * 1.6}vw`, "--dy": `${(y - 50) * 1.6}vh` }}
+        />
+      ))}
+    </div>
+  );
+}
 
 function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
   const sc = useMemo(() => buildArena({ W, H, area, night, seats, lowQ }), [W, H, area, night, seats, lowQ]);
@@ -29,7 +49,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
   const cls = `ar-scene${land ? " ar-land" : ""}${fadeIn ? " ar-fadein" : ""}`;
   return (
     <div className={cls} style={{ background: sc.sky }}>
-      <div className="ar-stage" style={{ perspective: `${sc.plane.perspective}px` }}>
+      <div className="ar-stage" style={{ perspective: `${sc.plane.perspective}px`, perspectiveOrigin: `50% ${sc.plane.originY}px` }}>
         <div
           className="ar-plane"
           style={{ left: sc.plane.left, top: sc.plane.top, width: sc.plane.size, height: sc.plane.size, background: sc.ground, "--ar-rx": `${sc.plane.rx}deg` }}
@@ -67,7 +87,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
       {/* เส้นแสงจากฐานที่นั่งขึ้นไปหาการ์ดผู้เล่น (การ์ดจริงวางโดย Game.jsx) */}
       <div className="ar-layer ar-stems">
         {sc.pts.filter((p) => !p.me).map((p) => (
-          <span key={p.idx} className="ar-stem" style={{ left: p.x, top: p.y, height: ARENA_STEM * u * p.s, "--c": p.col }} />
+          <span key={p.idx} className="ar-stem" style={{ left: p.x, top: p.y, height: seats[p.idx]?.stem ?? ARENA_STEM * u * p.s, "--c": p.col }} />
         ))}
       </div>
       <div className="ar-layer ar-forel ar-par-c">
@@ -83,6 +103,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           </div>
         ))}
       </div>
+      {land && !lowQ && <DiveSky night={night} />}
     </div>
   );
 }

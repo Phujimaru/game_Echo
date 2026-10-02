@@ -1,8 +1,8 @@
 // หน้าดูสนาม 2.5D แบบไม่ต่อ socket (เฉพาะ dev): ?arena=1..3&n=0..6&night=1&lowq=1
 //  การ์ดผู้เล่นเป็นกล่องจำลองขนาดเท่าการ์ดจริง (236×150) วางด้วยสูตรเดียวกับ Game.jsx
 import { useEffect, useMemo, useState } from "react";
-import ArenaScene, { ARENA_STEM, ARENA_CARD_SCALE } from "./ArenaScene";
-import { arenaLayout } from "./arenaData";
+import ArenaScene from "./ArenaScene";
+import { arenaLayout, ARENA_CARD_SCALE } from "./arenaData";
 
 const COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
 
@@ -19,8 +19,7 @@ export default function ArenaPreview() {
     return () => window.removeEventListener("resize", on);
   }, []);
   const lay = useMemo(() => arenaLayout(vp.w, vp.h, area, n), [vp.w, vp.h, area, n]);
-  const seats = useMemo(() => [{ phi: 90, col: COLS[0], me: true }, ...lay.others.map((o, i) => ({ phi: o.phi, col: COLS[(i + 1) % 7] }))], [lay]);
-  const u = vp.h / 900;
+  const seats = useMemo(() => [{ phi: 90, col: COLS[0], me: true }, ...lay.others.map((o, i) => ({ phi: o.phi, stem: o.stem, col: COLS[(i + 1) % 7] }))], [lay]);
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#000" }}>
       <ArenaScene area={area} night={night} lowQ={lowQ} W={vp.w} H={vp.h} seats={seats} />
@@ -28,10 +27,11 @@ export default function ArenaPreview() {
         <div
           key={i}
           style={{
-            position: "absolute", left: o.x, top: o.y - ARENA_STEM * u * o.s, width: 236, height: 150,
+            position: "absolute", left: o.x, top: o.bottom, width: 236, height: 150,
             transform: `translate(-50%, -100%) scale(${o.s * ARENA_CARD_SCALE})`, transformOrigin: "bottom center",
             background: "rgba(18,38,74,0.88)", border: `2px solid ${COLS[(i + 1) % 7]}`, color: "#eaf3fc",
             font: "500 15px Kanit, sans-serif", display: "grid", placeItems: "center",
+            animation: lowQ ? undefined : `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${2.9 + i * 0.09}s both`,
           }}
         >
           ผู้เล่น {i + 2}

@@ -20,19 +20,51 @@
 .ar-par-b { animation: arParB 16s ease-in-out infinite; }
 .ar-par-c { animation: arParC 16s ease-in-out infinite; }
 
-/* ---------- ร่อนลง: พื้นเอียงจากมองตรงลงมา · ของตั้งกางขึ้นเป็นป๊อปอัป · เอฟเฟกต์ค่อยมา ---------- */
-.ar-land .ar-plane { animation: arLandPlane 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.ar-land .ar-pop { animation: arPop 0.55s cubic-bezier(0.3, 1.45, 0.55, 1) both; animation-delay: calc(1s + var(--i, 0) * 12ms); }
-.ar-land .ar-haze { animation: arFadeIn 1.2s ease 0.6s both; }
-.ar-land .ar-fxl { animation: arFadeIn 1s ease 1.4s both, arParB 16s ease-in-out infinite; }
-.ar-land .ar-forel { animation: arFadeIn 1s ease 1.2s both, arParC 16s ease-in-out infinite; }
-.ar-land .ar-stems { animation: arFadeIn 0.8s ease 1.6s both; }
+/* ---------- พุ่งลงจากฟ้า (ARENA_LAND_MS ≈ 3.4 วิ นับจาก mount ใต้แฟลชของฉากดิ่ง) ----------
+   0.0–1.5  ท้องฟ้าทึบ + เมฆแตกออก + เส้นความเร็ว (แฟลชขาวของฉากดิ่งจางหมดราว 1.1 วิ)
+   0.3–1.7  พื้นซูมลงแบบมองตรงลงมา (rotateX 0) · 1.7–2.9 เอียงกล้องลงเป็นมุมจริง
+   2.3–     ของตั้งกางขึ้นเป็นป๊อปอัป · 2.6– หมอก/เอฟเฟกต์/เส้นแสงที่นั่ง · การ์ดผู้เล่นหล่นลงที่นั่ง (Game.jsx) */
+.ar-land .ar-plane { animation: arLandPlane 2.6s linear 0.3s both; }
+.ar-land .ar-pop { animation: arPop 0.55s cubic-bezier(0.3, 1.45, 0.55, 1) both; animation-delay: calc(2.3s + var(--i, 0) * 10ms); }
+.ar-land .ar-haze { animation: arFadeIn 1.2s ease 2.2s both; }
+.ar-land .ar-fxl { animation: arFadeIn 1s ease 2.6s both, arParB 16s ease-in-out infinite; }
+.ar-land .ar-forel { animation: arFadeIn 1s ease 2.5s both, arParC 16s ease-in-out infinite; }
+.ar-land .ar-stems { animation: arFadeIn 0.6s ease 2.8s both; }
 
-@keyframes arLandPlane { from { transform: scale(2.4) rotateX(0deg); } to { transform: scale(1) rotateX(var(--ar-rx)); } }
+@keyframes arLandPlane {
+  0% { transform: scale(3) rotateX(0deg); animation-timing-function: cubic-bezier(0.3, 0, 0.35, 1); }
+  50% { transform: scale(1.2) rotateX(0deg); animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1); }
+  100% { transform: scale(1) rotateX(var(--ar-rx)); }
+}
 @keyframes arPop { 0% { transform: scaleY(0); opacity: 0; } 35% { opacity: 1; } 100% { transform: scaleY(1); opacity: 1; } }
 @keyframes arFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes arParB { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-6px, -2px); } }
 @keyframes arParC { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-22px, -7px); } }
+
+.ar-dive { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ar-dive-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 50%, #ffffff 0%, #e8f2fb 45%, #bcd8f0 100%); animation: arVeil 1.5s ease-in both; }
+.ar-dive.is-night .ar-dive-veil { background: radial-gradient(120% 90% at 50% 50%, #3b4f7a 0%, #1c2c50 50%, #0b1630 100%); }
+.ar-dive-cloud {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0) 100%);
+  animation: arCloudBurst 1.6s cubic-bezier(0.4, 0, 0.7, 1) both;
+}
+.ar-dive.is-night .ar-dive-cloud { background: radial-gradient(closest-side, rgba(170,190,230,0.9) 0%, rgba(120,140,190,0.7) 45%, rgba(120,140,190,0) 100%); }
+.ar-dive-speed {
+  position: absolute; inset: -20%;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0deg 5deg, rgba(255,255,255,0.55) 5deg 5.5deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 18%, #000 60%); mask-image: radial-gradient(circle, transparent 18%, #000 60%);
+  animation: arSpeed 1.5s ease-out 0.15s both;
+}
+@keyframes arVeil { 0%, 25% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes arCloudBurst {
+  0% { transform: translate(-50%, -50%) scale(0.55); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(2.8); opacity: 0; }
+}
+@keyframes arSpeed { 0% { transform: scale(0.8); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: scale(1.7); opacity: 0; } }
+
+/* การ์ดผู้เล่น/กองไพ่บนกระดานหล่นลงที่นั่งหลังร่อนลงเสร็จ (ใช้ property translate แยกจาก transform ที่จัดตำแหน่งไว้) */
+@keyframes arSeatIn { from { opacity: 0; translate: 0 -46px; } to { opacity: 1; translate: 0 0; } }
 
 /* ---------- อนิเมชันของชิ้นในฉาก ---------- */
 @keyframes arPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
@@ -55,4 +87,5 @@
 .ar-lowq *, .ar-lowq { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .ar *, .ar { animation: none !important; }
+  .ar-dive { display: none; }
 }

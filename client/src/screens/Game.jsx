@@ -10,8 +10,8 @@ import OrtBossPanel from "../raid/OrtBossPanel";
 import { RaidRespawn, RaidSurrender, RaidDeckDrawer } from "../raid/RaidOverlays";
 import ArenaBackdrop from "../components/ArenaBackdrop";
 import JourneyBackdrop from "../journey/JourneyBackdrop";
-import ArenaScene, { ARENA_STEM, ARENA_CARD_SCALE } from "../journey/arena/ArenaScene";
-import { arenaLayout, hasArena } from "../journey/arena/arenaData";
+import ArenaScene from "../journey/arena/ArenaScene";
+import { arenaLayout, hasArena, ARENA_CARD_SCALE } from "../journey/arena/arenaData";
 import { journeyArea } from "../journey/areas";
 import { RoundBanner, CycleScene } from "../components/BattleScenes";
 import { AvModal, AvButton } from "../components/avalon";
@@ -659,6 +659,8 @@ function OverloadForceBadge() {
 }
 
 // สนามประลอง 2.5D: spec = "จำนวนคนอื่น~กว้าง~สูง~สีเรา|สีคนอื่น…" (สตริงเดียว memo ง่าย) → ผังที่นั่งชุดเดียวกับ GameBoard
+// การ์ดผู้เล่น/กองไพ่หล่นลงที่นั่งเมื่อฉากพุ่งลง (ArenaScene) ใกล้จบ — วินาทีนับจาก mount
+const ARENA_SEAT_IN_S = 2.9;
 const ARENA_FALLBACK_COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
 function ArenaBackground({ area, night, lowQ, spec }) {
   const { W, H, seats } = useMemo(() => {
@@ -668,7 +670,7 @@ function ArenaBackground({ area, night, lowQ, spec }) {
     return {
       W: Number(w), H: Number(h),
       seats: [{ phi: 90, col: cols[0] || ARENA_FALLBACK_COLS[0], me: true },
-        ...lay.others.map((o, i) => ({ phi: o.phi, col: cols[i + 1] || ARENA_FALLBACK_COLS[(i + 1) % 7] }))],
+        ...lay.others.map((o, i) => ({ phi: o.phi, stem: o.stem, col: cols[i + 1] || ARENA_FALLBACK_COLS[(i + 1) % 7] }))],
     };
   }, [spec, area]);
   return <ArenaScene area={area} night={night} lowQ={lowQ} W={W} H={H} seats={seats} />;
@@ -2388,7 +2390,7 @@ function PlaqueRule() {
 //  แบบแนวตั้งที่เกจขนาบสองข้างอ่านยาก (ต้องเทียบสีเอาเองว่าเสาไหนคือเลือด) — แถวมีไอคอนกับตัวเลขกำกับชัดกว่า
 // alwaysScore: Type Mercury — เพื่อนร่วมทีมเห็นแต้มการ์ดกันตลอดเวลา (server ส่ง score มาให้แล้ว)
 // slot[2] (ถ้ามี) = ย่อการ์ด — ผังที่นั่งของโหมด Raid วางเพื่อนร่วมทีมหลายคนเรียงแถวเดียว
-function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false }) {
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null }) {
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
   const seatScale = slot[2];
@@ -2399,7 +2401,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       // Tailwind v4: -translate-x-1/2 ใช้ property `translate` แยกจาก `transform` — ใส่ทั้งคู่ = เลื่อนซ้ำ 2 เท่า
       //  ที่นั่งแบบย่อ (โหมด Raid) จึงเลื่อนกึ่งกลางใน transform เองแทนคลาส
       className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[236px]"}`}
-      style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null) }}
+      style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null), ...(enterDelay != null ? { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${enterDelay}s both` } : null) }}
     >
       <div
         onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
@@ -3914,7 +3916,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // ฉากหลังได้แค่ค่าพื้นฐาน (ภูมิภาค/จำนวน/สี/ขนาดจอ) — ArenaBackground memo เองแล้วค่อยสร้างฉาก (หนัก) เมื่อค่าเปลี่ยน
   const arenaBg = arenaArea ? `${arenaSeatN}~${vpW}~${vpH}~${arenaColorKey}` : null;
   const arenaSlots = arenaLay
-    ? arenaLay.others.map((o) => [((o.y - ARENA_STEM * (vp.h / 900) * o.s) / vp.h) * 100, (o.x / vp.w) * 100, o.s * ARENA_CARD_SCALE, "bottom"])
+    ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.x / vp.w) * 100, o.s * ARENA_CARD_SCALE, "bottom"])
     : null;
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): เครื่องนี้บังคับส่วนไหน — นักบิน (จั่ว/เปิดการ์ด/โจมตี/ซ่อม) · พลปืน (สกิล/ร้านค้า/ไอเทม)
   const meRec = state.players.find((pl) => pl.id === state.youId);
@@ -5147,7 +5149,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         <div
           className={`absolute inset-x-0 ${arenaLay ? "" : "top-[40%]"} flex justify-center pointer-events-none`}
           // สนาม 2.5D: กองการ์ดตั้งอยู่บนแท่นกลางสนาม (ขอบล่างกองตรงหน้าบนของแท่น)
-          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)" } : undefined}
+          style={arenaLay ? { top: `${(arenaLay.center.y / vp.h) * 100}%`, transform: "translateY(-92%)", ...(lowQ ? null : { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${ARENA_SEAT_IN_S - 0.2}s both` }) } : undefined}
+          key={arenaLay ? `deck-a${arenaArea}` : "deck"}
         >
           <div className="bd-deck relative grid place-items-center">
             <img src="/image/logo_current.webp" alt="" className="relative h-16 sm:h-20 w-auto opacity-20" />
@@ -5218,7 +5221,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {seatOthers.map((p, i) => (
         <OtherPlayer
           alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
-          key={p.id}
+          // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
+          key={arenaSlots ? `${p.id}-a${arenaArea}` : p.id}
+          enterDelay={arenaSlots && !lowQ ? ARENA_SEAT_IN_S + i * 0.09 : null}
           p={p}
           phase={phase}
           slot={(arenaSlots || slots)[i] || [50, 50]}

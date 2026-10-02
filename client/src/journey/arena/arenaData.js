@@ -7,6 +7,11 @@
 
 import { seeded, twistedTree } from "../geometry";
 
+/** ความสูงเส้นแสงจากฐานที่นั่งถึงขอบล่างการ์ด (px ที่ความสูงจอ 900) — Game.jsx ใช้ค่าเดียวกันวางการ์ด */
+export const ARENA_STEM = 38;
+/** ย่อการ์ดผู้เล่นบนสนาม (คูณกับสเกลความลึก) ให้การ์ดใบติดกันไม่ทับกัน */
+export const ARENA_CARD_SCALE = 0.86;
+
 export const ARENA_AREA_MAX = 3;
 export function hasArena(area) {
   return area >= 1 && area <= ARENA_AREA_MAX;
@@ -30,19 +35,20 @@ function rand32(seed) {
 }
 
 /* จุดบนพื้น (x,y เทียบกลางสนาม, y บวก = เข้าหากล้อง) -> ตำแหน่งบนจอ + สเกลความลึก
-   ตรงกับ CSS: เวที perspective:p (origin กลางจอ) · พื้น rotateX(90-e) หมุนรอบจุดกลางที่ cy */
+   ตรงกับ CSS: เวที perspective:p (origin = กลางแนวนอน, สูง oy) · พื้น rotateX(90-e) หมุนรอบจุดกลางที่ cy
+   oy ต่ำกว่ากลางจอ = เลนส์เลื่อนแกน (shift lens) ยกเส้นขอบฟ้าขึ้นมาในจอโดยไม่ต้องลดระยะ perspective ให้ภาพบิด */
 function proj(c, x, y) {
   const t = ((90 - c.e) * Math.PI) / 180;
   const z = y * Math.sin(t);
   const s = c.p / (c.p - z);
-  return { x: r1(c.W / 2 + x * s), y: r1(c.H / 2 + (c.cy - c.H / 2 + y * Math.cos(t)) * s), s: Math.round(s * 1000) / 1000 };
+  return { x: r1(c.W / 2 + x * s), y: r1(c.oy + (c.cy - c.oy + y * Math.cos(t)) * s), s: Math.round(s * 1000) / 1000 };
 }
 
-/* ผู้เล่นอื่นนั่งครึ่งวงด้านไกล (กลางด้านบน = 270°) ห่างกันไม่เกิน 40° · ตัวเรา = 90° (ใกล้กล้อง) */
+/* ผู้เล่นอื่นนั่งครึ่งวงด้านไกล (กลางด้านบน = 270°) ห่างกันไม่เกิน 44° · ตัวเรา = 90° (ใกล้กล้อง) */
 export function seatAngles(n) {
   if (n <= 0) return [];
   if (n === 1) return [270];
-  const step = Math.min(40, 204 / (n - 1));
+  const step = Math.min(44, 220 / (n - 1));
   const out = [];
   for (let i = 0; i < n; i++) out.push(270 + (i - (n - 1) / 2) * step);
   return out;
@@ -58,10 +64,11 @@ function nearSector(deg) {
   return d > 40 && d < 140;
 }
 
-/* กล้องตามขนาดจอ (ต้นแบบ W1440 H900 -> p1600 cy520 R340) */
+/* กล้องตามขนาดจอ — 5.1.9: กล้องก้ม 30° (ผู้ใช้ขอ: 55° ดูแบนเหมือน 2D) · เห็นเส้นขอบฟ้า ~16% จากบนจอ
+   วงที่นั่งกว้างขึ้น (R 590) เพราะมุมต่ำบีบวงในแนวตั้ง การ์ดใบติดกันจะได้ไม่ทับกัน */
 export function arenaCamera(W, H) {
   const u = H / 900;
-  return { W, H, e: 55, p: 1600 * u, cy: H * 0.6, R: 395 * u };
+  return { W, H, e: 30, p: 1300 * u, oy: H, cy: H * 0.606, R: 590 * u };
 }
 
 /* ความสูง (หน่วยสนาม) ของแท่นที่ใช้ทั้งตอนวาดและตอนหาตำแหน่งที่นั่ง — แก้ที่เดียว ไม่หลุดกัน
@@ -106,10 +113,34 @@ export function arenaLayout(W, H, area, nOthers) {
     return { phi, ...seatScreen(c, p, seatTop(lift, p.y, ringLift, AH.pad)) };
   };
   return {
-    others: seatAngles(nOthers).map(at),
+    others: stackCards(W, H, seatAngles(nOthers).map(at)),
     me: at(90),
     center: proj(c, 0, chainLift(lift, AH.center)),
   };
+}
+
+/* การ์ดผู้เล่นยืนบนเส้นแสงเหนือฐานที่นั่ง — มุมกล้องต่ำบีบวงที่นั่งในแนวตั้ง การ์ดใบใกล้จะบังใบไกล
+   จึงไล่จากที่นั่งใกล้กล้องไปไกล: ถ้าการ์ดใบไกลซ้อนแนวนอนกับใบที่วางแล้ว ยืดเส้นแสงให้การ์ดลอยขึ้นพ้นขอบบนของใบนั้น
+   ขนาดการ์ดประมาณจากการ์ดจริง (236×165 ที่สเกลกระดาน min(1, H/920)) · bottom/stem = px บนจอ */
+const CARD_W = 236;
+const CARD_H = 165;
+function stackCards(W, H, seats) {
+  const bs = Math.min(1, H / 920) * Math.min(1, W / 900);
+  const u = H / 900;
+  const placed = [];
+  const order = seats.map((st, i) => i).sort((a, b) => seats[b].y - seats[a].y);
+  const out = seats.map((st) => ({ ...st }));
+  for (const i of order) {
+    const st = out[i];
+    const sc = st.s * ARENA_CARD_SCALE * bs;
+    const w = CARD_W * sc, h = CARD_H * sc;
+    let bottom = st.y - ARENA_STEM * u * st.s;
+    for (const q of placed) if (Math.abs(q.x - st.x) < (q.w + w) / 2 + 6) bottom = Math.min(bottom, q.top - 8 * u);
+    st.bottom = r1(bottom);
+    st.stem = r1(st.y - bottom);
+    placed.push({ x: st.x, w, top: bottom - h });
+  }
+  return out;
 }
 
 /* ---------- ตัวช่วยวาด: พื้น (flats) · ของตั้ง (stands) · เอฟเฟกต์บนจอ (fx) ---------- */
@@ -134,7 +165,7 @@ function makeBuilder(c) {
   /* ทรงกระบอกหลอกตา: ซ้อนวงด้านข้างไล่ขึ้นไปแล้วปิดด้วยหน้าบน · คืนค่า y ของหน้าบน */
   B.cyl = (x, y, r, h, side, top, topBd, topAnim) => {
     const dy = B.lift(h);
-    const steps = Math.max(2, Math.min(16, Math.ceil(dy / (2.2 * k))));
+    const steps = Math.max(2, Math.min(48, Math.ceil(dy / (1.5 * k)))); // มุมต่ำ = ผนังสูง ต้องซ้อนถี่ ไม่งั้นขอบเป็นหยัก
     B.disc(x, y + 2 * k, r * 1.05, `radial-gradient(closest-side, ${B.shadow || "rgba(0,0,0,0.3)"}, transparent)`, null, 1);
     if (dy > 0.5) for (let i = 0; i <= steps; i++) B.disc(x, y - (dy * i) / steps, r, side, null, 1);
     B.disc(x, y - dy, r, top, topBd, 1, topAnim);
@@ -377,6 +408,8 @@ function area2(B) {
       return B.cyl(p.x, y, rr * 0.8, AH.pad, sideS, st.col, `${px(3)} solid rgba(255,255,255,0.9)`) - p.y;
     },
     after: () => {
+      /* แนวเนินไกลปิดช่องระหว่างขอบพื้นกับเส้นขอบฟ้า (มุมกล้องต่ำเห็นท้องฟ้า) */
+      B.stand("Hills", 0, -1660 * k, 3400, 420, { h1: night ? "#2a4250" : "#cfe8c8", h2: night ? "#22394a" : "#b2d8a4" }, false);
       B.stand("Windmill", 0, -1450 * k, 260, 380, {});
       /* ซุ้มกุหลาบที่ทางเข้า */
       [270, 0, 180].forEach((d) => {
@@ -478,12 +511,12 @@ function area3(B) {
   const AH = AREA_H[3];
   const rand = rand32(303);
   const C = night ? {
-    sky: "#07040c", clear: "#2a2433", moss: "#17121d", dark: "#06030a", leaf: "rgba(90, 70, 110, 0.4)", leaf2: "rgba(5, 3, 8, 0.6)",
+    sky: "linear-gradient(180deg, #04020a 0%, #120a1d 34%, #26143a 64%, #3a1f4a 100%)", hills: ["#2a1a38", "#1f1229"], clear: "#2a2433", moss: "#17121d", dark: "#06030a", leaf: "rgba(90, 70, 110, 0.4)", leaf2: "rgba(5, 3, 8, 0.6)",
     root: ["#0d0a10", "#1c1622"], bark: "#120e16", ring1: "#3a3040", ring2: "#2c2432", curse: "#b06cf0", curseGlow: "rgba(160, 90, 240, 0.5)",
     shadow: "rgba(0, 0, 0, 0.65)", tree: ["#06030a", "#150b1e", "#26183a"], fog: "rgba(138, 85, 181, 0.32)", haze: ["rgba(8,4,14,0.9)", "rgba(40,20,60,0.45)"],
     grave: "#3a3346", dead: "#3a3044",
   } : {
-    sky: "#2b3425", clear: "#6b6a4c", moss: "#3e4430", dark: "#151a10", leaf: "rgba(110, 90, 50, 0.55)", leaf2: "rgba(20, 24, 14, 0.45)",
+    sky: "linear-gradient(180deg, #181d16 0%, #2b3425 30%, #4a5538 58%, #767f55 80%, #8a8d62 100%)", hills: ["#46513a", "#343e2a"], clear: "#6b6a4c", moss: "#3e4430", dark: "#151a10", leaf: "rgba(110, 90, 50, 0.55)", leaf2: "rgba(20, 24, 14, 0.45)",
     root: ["#14170f", "#2a2e1f"], bark: "#1c2015", ring1: "#5b5640", ring2: "#4a4633", curse: "#c9d66a", curseGlow: "rgba(201, 214, 106, 0.4)",
     shadow: "rgba(8, 10, 5, 0.5)", tree: ["#0f130c", "#252d1e", "#343e2a"], fog: "rgba(185, 196, 141, 0.42)", haze: ["rgba(43,52,37,0.92)", "rgba(74,85,56,0.5)"],
     grave: "#7a7a68", dead: "#8a8160",
@@ -561,6 +594,7 @@ function area3(B) {
     },
     after: () => {
       const tr = rand32(37);
+      B.stand("Hills", 0, -1660 * k, 3400, 420, { h1: C.hills[0], h2: C.hills[1] }, false);
       const DT = deadTrees();
       /* ป่าต้นไม้ตาย (ใกล้ = ดำสนิท · ไกล = จางเข้าหมอก ด้วย filter ของ stand) */
       for (let t = 0; t < 120; t++) {
@@ -698,7 +732,7 @@ export function buildArena({ W, H, area, night, seats, lowQ = false, noFx = fals
 
   return {
     sky: B.sky,
-    plane: { left: r1(c.W / 2 - B.HS), top: r1(c.cy - B.HS), size: r1(B.HS * 2), rx: r1(B.th), perspective: c.p },
+    plane: { left: r1(c.W / 2 - B.HS), top: r1(c.cy - B.HS), size: r1(B.HS * 2), rx: r1(B.th), perspective: c.p, originY: c.oy },
     ground: B.ground,
     flats,
     stands,
