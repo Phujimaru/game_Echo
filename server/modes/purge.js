@@ -1,5 +1,5 @@
 // โหมด Purge — หนี ORT ในอุโมงค์ท่อ (ffa)
-//  · สู้กันตามปกติ · ผู้ชนะรอบ (ไม่เสมอ) ได้เดิน PURGE_WIN_STEPS ช่อง (+1 ถ้าได้ 21 พอดี) · คนแพ้ไม่เดิน
+//  · สู้กันตามปกติ · ผู้ชนะรอบ (ไม่เสมอ) ได้เดิน PURGE_WIN_STEPS ช่อง · คนแพ้ไม่เดิน
 //  · ท่อยาว PURGE_STEPS ช่อง · ORT โผล่ที่ช่อง 0 ตอนจบเทิร์น PURGE_ORT_TURN แล้วเดิน 1 ช่องทุกเทิร์น (ถึงปลายท่อเทิร์น 55)
 //  · ORT ไล่ทัน (ช่อง <= ORT) = LOST DATA ตกรอบทันที ไม่มีฉากสู้ · เทิร์นที่ ORT เพิ่งโผล่ยังไม่กินใคร
 //  · เลือดหมด = "ล้มลง" ไม่ตาย: ถอยหลัง PURGE_KNOCKBACK ช่อง แล้วเลือด/เกราะเต็ม (ดัก instantDeath จุดเดียว)
@@ -17,7 +17,6 @@ const {
 } = require("../constants");
 const match = require("../match");
 const combat = require("../combat");
-const cardDeck = require("../deck");
 const draw = require("../phases/draw");
 const timers = require("../timers");
 const view = require("../view");
@@ -64,12 +63,10 @@ function startPurge() {
 // ผู้ชนะรอบ: เดินหน้า — เรียกจาก resolveRound() ตรงจุดที่ตัดสินผู้ชนะแล้ว
 function awardWinSteps(w) {
   if (!purgeActive() || !w || !w.alive || match.roundTiedWin) return;
-  const exact = !cardDeck.bustedOf(w) && cardDeck.scoreOf(w) === 21;
-  const n = PURGE_WIN_STEPS + (exact ? 1 : 0);
   const before = stepOf(w);
-  moveTo(w, before + n);
+  moveTo(w, before + PURGE_WIN_STEPS);
   const moved = stepOf(w) - before;
-  if (moved > 0) match.lastLog.push(`👣 ${w.name} ชนะ${exact ? "ด้วย 21" : ""} เดินหน้า ${moved} ช่อง (ช่อง ${stepOf(w)})`);
+  if (moved > 0) match.lastLog.push(`👣 ${w.name} ชนะ เดินหน้า ${moved} ช่อง (ช่อง ${stepOf(w)})`);
 }
 
 // เลือดหมด = ล้มลง: ถอยหลังแล้วฟื้นเต็ม แทนการตกรอบ — เรียกจาก instantDeath() ก่อนบรรทัดตั้ง alive=false

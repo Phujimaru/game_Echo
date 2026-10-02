@@ -256,11 +256,11 @@ const ORT_ATTACK_DELAY = 2; // ORT ชนะรอบ: ค้างเฟสโ�
 const JOURNEY_START_SECONDS = Math.max(0, Number(process.env.JOURNEY_START_SECONDS ?? 6));
 const JOURNEY_ADVANCE_SECONDS = Math.max(0, Number(process.env.JOURNEY_ADVANCE_SECONDS ?? 7));
 // ---------- โหมด Purge (server/modes/purge.js) ----------
-//  ท่อยาว 50 ช่อง · ชนะรอบเดิน 3 (+1 ได้ 21) · ล้มลงถอย 5 · ORT โผล่จบเทิร์น 5 แล้วเดินเทิร์นละ 1 ช่อง
+//  ท่อยาว 50 ช่อง · ชนะรอบเดิน 1 ช่อง · ล้มลงถอย 2 · ORT โผล่จบเทิร์น 5 แล้วเดินเทิร์นละ 1 ช่อง
 //  ฉากเปิดฝั่ง client (ท่อเต็มวง → ลอยลงจุดเริ่ม → มุมสูง → เข้าสนาม) ยาว 10.5 วิ — พัก 11 วิ · เทสต์ย่อได้ผ่าน env
 const PURGE_STEPS = 50;
-const PURGE_WIN_STEPS = 3;
-const PURGE_KNOCKBACK = 5;
+const PURGE_WIN_STEPS = 1;
+const PURGE_KNOCKBACK = 2;
 const PURGE_ORT_TURN = 5;
 const PURGE_INTRO_SECONDS = Math.max(0, Number(process.env.PURGE_INTRO_SECONDS ?? 11));
 const TEAM_IDS = ["A", "B", "C"];

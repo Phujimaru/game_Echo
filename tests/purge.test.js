@@ -50,21 +50,21 @@ test('เริ่มแมตช์: ทุกคนช่อง 0 · พัก
   assert.equal(st.totalSteps, 50);
 });
 
-test('ผู้ชนะรอบเดิน 3 ช่อง · คนแพ้ไม่เดิน', () => {
+test('ผู้ชนะรอบเดิน 1 ช่อง · คนแพ้ไม่เดิน', () => {
   const { A, B } = setup(['A', 'B']);
   A.cards = [{ value: 10, color: 'blue' }, { value: 8, color: 'blue' }];
   B.cards = [{ value: 5, color: 'blue' }];
   resolveRound();
-  assert.equal(steps().A, 3);
+  assert.equal(steps().A, 1);
   assert.equal(steps().B, 0);
 });
 
-test('ชนะด้วย 21 พอดีเดิน 4 ช่อง', () => {
+test('ชนะด้วย 21 พอดีก็เดิน 1 ช่องเท่าเดิม', () => {
   const { A, B } = setup(['A', 'B']);
   A.cards = [{ value: 10, color: 'blue' }, { value: 9, color: 'blue' }, { value: 2, color: 'blue' }];
   B.cards = [{ value: 5, color: 'blue' }];
   resolveRound();
-  assert.equal(steps().A, 4);
+  assert.equal(steps().A, 1);
 });
 
 test('เสมอแต้มสูงสุด: ไม่มีใครเดิน', () => {
@@ -76,19 +76,19 @@ test('เสมอแต้มสูงสุด: ไม่มีใครเด
   assert.equal(steps().B, 0);
 });
 
-test('เลือดหมด = ล้มลง: ไม่ตาย ถอยหลัง 5 ช่อง เลือดเต็ม', () => {
+test('เลือดหมด = ล้มลง: ไม่ตาย ถอยหลัง 2 ช่อง เลือดเต็ม', () => {
   const { A } = setup(['A', 'B']);
   engine.purge.steps.A = 12;
   A.hp = 0;
   engine.instantDeath(A);
   assert.equal(A.alive, true);
-  assert.equal(steps().A, 7);
+  assert.equal(steps().A, 10);
   assert.equal(A.hp, engine.maxHpOf(A));
 });
 
 test('ล้มลงตอนอยู่ช่องต้นๆ: ถอยได้ไม่ต่ำกว่าช่อง 0', () => {
   const { A } = setup(['A', 'B']);
-  engine.purge.steps.A = 2;
+  engine.purge.steps.A = 1;
   engine.instantDeath(A, true);
   assert.equal(A.alive, true);
   assert.equal(steps().A, 0);
@@ -127,7 +127,7 @@ test('ฉากจบเทิร์นบอกการเดินของ�
   resolveRound();
   engine.setRoundNumber(1);
   engine.purgeAdvance();
-  assert.deepEqual(engine.purge.scene.moves, [{ id: 'A', from: 0, to: 3 }]);
+  assert.deepEqual(engine.purge.scene.moves, [{ id: 'A', from: 0, to: 1 }]);
   assert.equal(engine.purge.scene.ortTo, null);
 });
 

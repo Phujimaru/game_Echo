@@ -814,11 +814,11 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 
 - `gameMode = "purge"` (กลุ่ม special) · เล่นได้ 1-7 คน (1 คน = ทดสอบ จบเมื่อโดนกิน) · โมดูล [server/modes/purge.js](server/modes/purge.js)
   สถานะอยู่ `match.purge` = `{ steps: {id: ช่อง}, ort, lost, turnFrom, scene, seq, result }` (รีเซ็ตใน `startMatch`/`backToLobby`)
-- กติกา (ค่าคงที่ `PURGE_*` ใน constants): ท่อ 50 ช่อง · ผู้ชนะรอบที่ **ไม่เสมอ** เดิน 3 ช่อง (+1 ถ้า 21 พอดี) — `awardWinSteps()`
+- กติกา (ค่าคงที่ `PURGE_*` ใน constants): ท่อ 50 ช่อง · ผู้ชนะรอบที่ **ไม่เสมอ** เดิน 1 ช่อง — `awardWinSteps()`
   ถัดจาก `Seraph.onRoundWinner` ใน `resolveRound()` · คนแพ้ไม่เดิน · ORT โผล่ช่อง 0 ตอนจบเทิร์น 5 แล้วเดินเทิร์นละ 1 ช่อง (ถึงช่อง 50 เทิร์น 55)
   · ช่อง ≤ ORT = LOST DATA (`lose()` ตั้ง `alive=false` ตรงๆ **ไม่ผ่าน `instantDeath`** — ไม่ปลุกระบบกันตาย/ยูนะ) · เทิร์นที่ ORT เพิ่งโผล่ยังไม่กินใคร
 - **เลือดหมด = ล้มลง ไม่ตาย**: `tryKnockBack()` ดักใน `instantDeath()` ก่อนบรรทัด `p.alive = false` (หลังระบบกันตาย/เกิดใหม่ของตัวละคร และมีผลแม้ `force`)
-  ถอยหลัง 5 ช่อง เลือด/เกราะเต็ม — ถอยไปอยู่ ≤ ORT จะโดนกินตอนจบเทิร์น
+  ถอยหลัง 2 ช่อง เลือด/เกราะเต็ม — ถอยไปอยู่ ≤ ORT จะโดนกินตอนจบเทิร์น
 - ไม่มี Overload Force (การย้อนเทิร์นไม่ย้อนตำแหน่งในท่อ)
 - `purgeAdvance()` ใน callback ท้าย `endTurn()` (ก่อน `normalGameOver`): ORT เดิน → จับคน → ฉากจบเทิร์น `scene = { kind: "turn", moves:[{id,from,to}], ortFrom, ortTo, caught }`
   พักเฟส CUTSCENE (ไม่มีคลิป) `ceil(turnSceneSeconds(scene) + 0.6)` → `nextPhaseOrEnd()`: เหลือคนเดียว (เกม 2 คนขึ้นไป) = `result "survivor"` · ไม่เหลือใคร/ORT ถึงปลายท่อ = `"allLost"`
