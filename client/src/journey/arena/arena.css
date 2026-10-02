@@ -20,21 +20,34 @@
 .ar-par-b { animation: arParB 16s ease-in-out infinite; }
 .ar-par-c { animation: arParC 16s ease-in-out infinite; }
 
-/* ---------- พุ่งลงจากฟ้า (ARENA_LAND_MS ≈ 3.4 วิ นับจาก mount ใต้แฟลชของฉากดิ่ง) ----------
-   0.0–1.5  ท้องฟ้าทึบ + เมฆแตกออก + เส้นความเร็ว (แฟลชขาวของฉากดิ่งจางหมดราว 1.1 วิ)
-   0.3–1.7  พื้นซูมลงแบบมองตรงลงมา (rotateX 0) · 1.7–2.9 เอียงกล้องลงเป็นมุมจริง
-   2.3–     ของตั้งกางขึ้นเป็นป๊อปอัป · 2.6– หมอก/เอฟเฟกต์/เส้นแสงที่นั่ง · การ์ดผู้เล่นหล่นลงที่นั่ง (Game.jsx) */
-.ar-land .ar-plane { animation: arLandPlane 2.6s linear 0.3s both; }
-.ar-land .ar-pop { animation: arPop 0.55s cubic-bezier(0.3, 1.45, 0.55, 1) both; animation-delay: calc(2.3s + var(--i, 0) * 10ms); }
-.ar-land .ar-haze { animation: arFadeIn 1.2s ease 2.2s both; }
-.ar-land .ar-fxl { animation: arFadeIn 1s ease 2.6s both, arParB 16s ease-in-out infinite; }
-.ar-land .ar-forel { animation: arFadeIn 1s ease 2.5s both, arParC 16s ease-in-out infinite; }
-.ar-land .ar-stems { animation: arFadeIn 0.6s ease 2.8s both; }
+/* ---------- พุ่งลงจากฟ้า (~5 วิ นับจาก mount/สัญญาณ ซึ่งเกิดใต้แฟลชขาวของฉากลูกโลก) ----------
+   0.0–2.3  ฟ้าทึบ+แสงแดด → เมฆ 3 ระลอกแตกออก + เส้นความเร็ว · กล้องสั่นเบาๆ ตลอดช่วงดิ่ง
+   0.2–2.6  ภูมิภาคทั้งผืนอยู่ไกลลงไป หมุนเป็นเกลียวเข้าหาสนาม (มองตรงลง)
+   2.6–3.6  เอียงกล้องลงเป็นมุมจริง (เลยไปนิดแล้วเด้งกลับ) · 3.5 แตะพื้น: คลื่นกระแทกบนพื้น + ฝุ่นพุ่ง + สั่น
+   3.6–     ของตั้งกางขึ้นเป็นป๊อปอัป · 4.0– หมอก/เอฟเฟกต์/เส้นแสงที่นั่ง · ~4.9 การ์ดผู้เล่นหล่นลงที่นั่ง (Game.jsx) */
+.ar-land .ar-plane { animation: arLandPlane 3.6s linear 0s both; }
+.ar-land .ar-stage { animation: arDiveShake 2.4s linear 0s both, arImpactShake 0.5s linear 3.5s both; }
+.ar-land .ar-pop { animation: arPop 0.6s cubic-bezier(0.3, 1.5, 0.55, 1) both; animation-delay: calc(3.6s + var(--i, 0) * 10ms); }
+.ar-land .ar-haze { animation: arFadeIn 1.4s ease 2.6s both; }
+.ar-land .ar-fxl { animation: arFadeIn 1s ease 4.2s both, arParB 16s ease-in-out infinite; }
+.ar-land .ar-forel { animation: arFadeIn 1s ease 4s both, arParC 16s ease-in-out infinite; }
+.ar-land .ar-stems { animation: arFadeIn 0.6s ease 4.5s both; }
 
 @keyframes arLandPlane {
-  0% { transform: scale(3) rotateX(0deg); animation-timing-function: cubic-bezier(0.3, 0, 0.35, 1); }
-  50% { transform: scale(1.2) rotateX(0deg); animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1); }
-  100% { transform: scale(1) rotateX(var(--ar-rx)); }
+  0% { transform: rotateX(0deg) rotateZ(-48deg) scale(0.36); animation-timing-function: cubic-bezier(0.25, 0, 0.3, 1); }
+  70% { transform: rotateX(0deg) rotateZ(-4deg) scale(1.12); animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1); }
+  90% { transform: rotateX(calc(var(--ar-rx) + 5deg)) rotateZ(0deg) scale(1.01); animation-timing-function: ease-out; }
+  100% { transform: rotateX(var(--ar-rx)) rotateZ(0deg) scale(1); }
+}
+@keyframes arDiveShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-3px, 2px); } 20% { transform: translate(3px, -2px); } 30% { transform: translate(-2px, -3px); }
+  40% { transform: translate(2px, 3px); } 50% { transform: translate(-3px, 1px); } 60% { transform: translate(2px, -2px); }
+  70% { transform: translate(-1px, 2px); } 80% { transform: translate(1px, -1px); } 90% { transform: translate(-1px, 0); }
+}
+@keyframes arImpactShake {
+  0% { transform: translate(0, 0); } 15% { transform: translate(0, 9px); } 35% { transform: translate(0, -5px); }
+  55% { transform: translate(0, 3px); } 75% { transform: translate(0, -1px); } 100% { transform: translate(0, 0); }
 }
 @keyframes arPop { 0% { transform: scaleY(0); opacity: 0; } 35% { opacity: 1; } 100% { transform: scaleY(1); opacity: 1; } }
 @keyframes arFadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -42,26 +55,48 @@
 @keyframes arParC { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-22px, -7px); } }
 
 .ar-dive { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.ar-dive-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 50%, #ffffff 0%, #e8f2fb 45%, #bcd8f0 100%); animation: arVeil 1.5s ease-in both; }
+.ar-dive-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 50%, #ffffff 0%, #e8f2fb 45%, #bcd8f0 100%); animation: arVeil 1.6s ease-in both; }
 .ar-dive.is-night .ar-dive-veil { background: radial-gradient(120% 90% at 50% 50%, #3b4f7a 0%, #1c2c50 50%, #0b1630 100%); }
+.ar-dive-glare {
+  position: absolute; left: 50%; top: 0; width: 120vmax; height: 120vmax; margin-left: -60vmax; margin-top: -70vmax; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,250,230,0.9) 0%, rgba(255,245,215,0.35) 40%, rgba(255,255,255,0) 100%);
+  animation: arGlare 2.4s ease-out both;
+}
+.ar-dive.is-night .ar-dive-glare { background: radial-gradient(closest-side, rgba(200,215,255,0.5) 0%, rgba(160,180,240,0.2) 40%, rgba(255,255,255,0) 100%); }
 .ar-dive-cloud {
   position: absolute; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0) 100%);
-  animation: arCloudBurst 1.6s cubic-bezier(0.4, 0, 0.7, 1) both;
+  animation: arCloudBurst 1.1s cubic-bezier(0.45, 0, 0.75, 1) both;
 }
 .ar-dive.is-night .ar-dive-cloud { background: radial-gradient(closest-side, rgba(170,190,230,0.9) 0%, rgba(120,140,190,0.7) 45%, rgba(120,140,190,0) 100%); }
 .ar-dive-speed {
   position: absolute; inset: -20%;
-  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0deg 5deg, rgba(255,255,255,0.55) 5deg 5.5deg);
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0deg 5deg, rgba(255,255,255,0.6) 5deg 5.5deg);
   -webkit-mask-image: radial-gradient(circle, transparent 18%, #000 60%); mask-image: radial-gradient(circle, transparent 18%, #000 60%);
-  animation: arSpeed 1.5s ease-out 0.15s both;
+  animation: arSpeed 2.6s ease-in-out 0.1s both;
 }
-@keyframes arVeil { 0%, 25% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes arVeil { 0%, 30% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes arGlare { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.6); } }
 @keyframes arCloudBurst {
-  0% { transform: translate(-50%, -50%) scale(0.55); opacity: 1; }
-  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(2.8); opacity: 0; }
+  0% { transform: translate(-50%, -50%) scale(0.45); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(2.9); opacity: 0; }
 }
-@keyframes arSpeed { 0% { transform: scale(0.8); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes arSpeed { 0% { transform: scale(0.8) rotate(0deg); opacity: 0; } 15% { opacity: 0.9; } 75% { opacity: 0.7; } 100% { transform: scale(1.8) rotate(-30deg); opacity: 0; } }
+
+/* แตะพื้น: คลื่นกระแทกวิ่งออกบนพื้นสนาม (อยู่ในแผ่นพื้น จึงเอียงตามพื้น) + ฝุ่นพุ่งออกรอบแท่นกลาง */
+.ar-shock {
+  position: absolute; transform: translate(-50%, -50%) scale(0); border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.95); box-shadow: 0 0 40px 10px rgba(190, 227, 248, 0.8), inset 0 0 40px 10px rgba(190, 227, 248, 0.6);
+  animation: arShock 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) 3.5s both;
+}
+@keyframes arShock { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
+.ar-dust span {
+  position: absolute; left: var(--cx); top: var(--cy); width: calc(90px * var(--u)); height: calc(54px * var(--u)); margin: calc(-27px * var(--u)) 0 0 calc(-45px * var(--u));
+  border-radius: 50%; background: radial-gradient(closest-side, rgba(240, 236, 225, 0.85), rgba(240, 236, 225, 0));
+  animation: arDust 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes arDust { 0% { transform: translate(0, 0) scale(0.3); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.8); opacity: 0; } }
 
 /* การ์ดผู้เล่น/กองไพ่บนกระดานหล่นลงที่นั่งหลังร่อนลงเสร็จ (ใช้ property translate แยกจาก transform ที่จัดตำแหน่งไว้) */
 @keyframes arSeatIn { from { opacity: 0; translate: 0 -46px; } to { opacity: 1; translate: 0 0; } }
@@ -87,5 +122,5 @@
 .ar-lowq *, .ar-lowq { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .ar *, .ar { animation: none !important; }
-  .ar-dive { display: none; }
+  .ar-dive, .ar-dust { display: none; }
 }

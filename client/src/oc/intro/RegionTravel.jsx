@@ -13,6 +13,7 @@ import {
   REDUCED, clamp01, easeInOutCubic, span, aimAngles, setAim, createMarker, createDiveCamera, slerpDir, glowTexture,
 } from "./diveKit";
 import { DiveStreaks, DiveReticle, RegionTag, DiveImpact, Chrome } from "./DiveFx";
+import { requestArenaLand } from "../../journey/arena/arenaLandBus";
 import "./dive.css";
 
 // สัดส่วนเวลา (คูณ D)
@@ -42,6 +43,8 @@ export default function RegionTravel({ from, to, durationMs, lowQ = false, onDon
     at(T.tag * D, () => setPhase(2));
     at(T.dive * D, () => setPhase(3));
     at(T.crash * D, () => setPhase(4));
+    // สนาม 2.5D ภูมิภาคใหม่เริ่มพุ่งลงใต้แฟลชตอนชน (เท่ากับจังหวะส่งต่อของฉากเปิดแมตช์: 10% ของช่วงเผย)
+    at((T.crash + (1 - T.crash) * 0.1) * D, requestArenaLand);
     at(D, () => {
       if (fired) return;
       fired = true;

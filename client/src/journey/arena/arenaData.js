@@ -504,7 +504,7 @@ function deadTrees() {
 /* ============================================================
    ภูมิภาค III — ป่าไม้ต้องสาป
    สนาม = ลานดินแห้งกลางป่าตาย · วงที่นั่ง = รากไม้ดำ · กลางสนาม = ตอไม้ผุยักษ์ + วงคำสาป
-   รอบนอก = ต้นไม้ตายหนาแน่น · ป้ายหลุมศพ · หินจารึก · พุ่มหนาม
+   รอบนอก = ต้นไม้ตายหนาแน่น · ป้ายหลุมศพ · หินจารึก · พุ่มไม้แห้ง
    ============================================================ */
 function area3(B) {
   const { k, px, night } = B;
@@ -618,11 +618,12 @@ function area3(B) {
         const gp = seatPoint((450 + tr() * 70) * k, gd);
         B.stand(g % 3 === 2 ? "Stake" : "Grave", gp.x, gp.y, 46, 60, { col: C.grave, c1: C.dead, rot: r1((tr() - 0.5) * 24) });
       }
-      /* พุ่มหนามริมลาน */
+      /* พุ่มไม้แห้งตายริมลาน */
       for (let th = 0; th < 14; th++) {
         const hd = 178 + th * 13 + tr() * 6;
         const hp = seatPoint((540 + tr() * 25) * k, hd);
-        B.stand("Thorn", hp.x, hp.y, 120, 70, { col: night ? "#7a2a3a" : "#5a1e22", c1: C.tree[0] });
+        const hs = 0.85 + tr() * 0.6;
+        B.stand("Shrub", hp.x, hp.y, 140 * hs, 90 * hs, { col: C.tree[0], c1: night ? "#4a3a52" : "#6b5a36" });
       }
       [205, 270, 335].forEach((d) => {
         const p = seatPoint(400 * k, d);
@@ -740,6 +741,7 @@ export function buildArena({ W, H, area, night, seats, lowQ = false, noFx = fals
     fore,
     haze,
     center: proj(c, 0, A.centerLift || 0),
+    centerLift: A.centerLift || 0,
     pts,
   };
 }

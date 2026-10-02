@@ -11,26 +11,30 @@
 //   - lowQ = หยุดอนิเมชันทั้งหมด ไม่มีเอฟเฟกต์/เบลอ (เหลือภาพนิ่งที่ยังมีมิติ)
 // ============================================================
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { buildArena, ARENA_STEM } from "./arenaData";
+import { onArenaLandRequest, announceArenaLand } from "./arenaLandBus";
 import { StandArt, FxArt, ForeArt } from "./ArenaArt";
 import "./arena.css";
 
 const FADE_MS = 1600;
+const LAND_MS = 2000; // ฉากใหม่ที่พุ่งลงทับฉากเดิม: ม่านฟ้าทึบตั้งแต่เฟรมแรก จึงถอดฉากเดิมได้เร็ว
 
 
-/* ฉากพุ่งลงจากฟ้า: [left%, top%, ขนาด vmax, หน่วงวินาที] — เมฆแตกออกจากกลางจอเหมือนกล้องดิ่งทะลุชั้นเมฆ */
-const DIVE_CLOUDS = [
-  [50, 50, 70, 0.1], [22, 30, 46, 0.15], [78, 28, 50, 0.2], [18, 74, 52, 0.25], [82, 72, 48, 0.3],
-  [50, 18, 44, 0.45], [50, 84, 46, 0.5], [32, 52, 40, 0.6], [68, 50, 42, 0.65], [8, 50, 40, 0.75],
-  [92, 46, 40, 0.8], [36, 22, 34, 0.9], [64, 80, 36, 0.95], [50, 50, 50, 1.0],
+/* ฉากพุ่งลงจากฟ้า — เมฆ 3 ระลอก [left%, top%, ขนาด vmax, หน่วงวินาที] แตกออกจากกลางจอเหมือนกล้องดิ่งทะลุชั้นเมฆ */
+const CLOUD_WAVE = [
+  [50, 50, 72, 0], [22, 30, 46, 0.05], [78, 28, 50, 0.1], [18, 74, 52, 0.12], [82, 72, 48, 0.16],
+  [50, 16, 44, 0.22], [50, 86, 46, 0.25], [6, 48, 40, 0.3], [94, 50, 40, 0.32],
 ];
+const DIVE_CLOUDS = [0.05, 0.75, 1.45].flatMap((t0, w) =>
+  CLOUD_WAVE.map(([x, y, s, d]) => [w % 2 ? 100 - x : x, y, s * (1 - w * 0.12), t0 + d]));
 
-/** ชั้นฉากพุ่งลง (เล่นครั้งเดียวตอนเข้าภูมิภาค ~3.4 วิ) — ท้องฟ้าทึบ → เมฆแตกออก + เส้นความเร็ว → เผยพื้นที่กำลังซูม/เอียง */
+/** ชั้นฉากพุ่งลง (เล่นครั้งเดียวตอนเข้าภูมิภาค ~5 วิ) — ฟ้าทึบ+แสงแดด → เมฆ 3 ระลอก + เส้นความเร็ว → เห็นภูมิภาคหมุนเป็นเกลียวอยู่ไกลลงไป */
 function DiveSky({ night }) {
   return (
     <div className={`ar-dive${night ? " is-night" : ""}`}>
       <div className="ar-dive-veil" />
+      <div className="ar-dive-glare" />
       <div className="ar-dive-speed" />
       {DIVE_CLOUDS.map(([x, y, w, d], i) => (
         <span
@@ -42,6 +46,12 @@ function DiveSky({ night }) {
     </div>
   );
 }
+
+/** ตอนแตะพื้น: ฝุ่นพุ่งออกรอบกองไพ่กลางสนาม (พิกัดจอ) */
+const DUST = Array.from({ length: 14 }, (_, i) => {
+  const a = (i / 14) * Math.PI * 2;
+  return { dx: Math.cos(a), dy: Math.sin(a) * 0.45, d: (i % 3) * 0.04 };
+});
 
 function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
   const sc = useMemo(() => buildArena({ W, H, area, night, seats, lowQ }), [W, H, area, night, seats, lowQ]);
@@ -55,6 +65,7 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           style={{ left: sc.plane.left, top: sc.plane.top, width: sc.plane.size, height: sc.plane.size, background: sc.ground, "--ar-rx": `${sc.plane.rx}deg` }}
         >
           {sc.flats.map((f) => <div key={f.key} className="ar-flat" style={f.style} />)}
+          {land && !lowQ && <div className="ar-shock" style={{ left: sc.plane.size / 2, top: sc.plane.size / 2 + sc.centerLift, width: sc.plane.size * 0.34, height: sc.plane.size * 0.34 }} />}
         </div>
       </div>
       <div className="ar-layer ar-par-b">
@@ -103,32 +114,56 @@ function Layer({ area, night, lowQ, W, H, seats, land, fadeIn }) {
           </div>
         ))}
       </div>
+      {land && !lowQ && (
+        <div className="ar-layer ar-dust" style={{ "--cx": `${sc.center.x}px`, "--cy": `${sc.center.y}px`, "--u": u }}>
+          {DUST.map((p, i) => <span key={i} style={{ "--dx": `${p.dx * 360 * u}px`, "--dy": `${p.dy * 360 * u}px`, animationDelay: `${3.55 + p.d}s` }} />)}
+        </div>
+      )}
       {land && !lowQ && <DiveSky night={night} />}
     </div>
   );
 }
 
+/* เปลี่ยนภูมิภาคแล้วไม่มีสัญญาณจากฉากลูกโลก (รีคอนเนกต์ / ฉากถูกข้าม) — พุ่งลงเองหลังรอเท่านี้ */
+const LAND_WAIT_MS = 9000;
+
 function ArenaScene({ area = 1, night = false, lowQ = false, W, H, seats }) {
   const n = !!night;
-  const key = `${area}${n ? "n" : "d"}`;
-  const [layers, setLayers] = useState(() => [{ key, area, night: n, land: true }]);
-
-  // ปรับ state ตาม props ระหว่าง render (แพทเทิร์นเดียวกับ JourneyBackdrop)
+  const seq = useRef(0);
+  const [layers, setLayers] = useState(() => [{ key: `${area}${n ? "n" : "d"}-0`, area, night: n, land: true }]);
   const top = layers[layers.length - 1];
-  if (top.key !== key) {
-    setLayers([top, { key, area, night: n, land: top.area !== area }]);
+
+  // สลับกลางวัน/กลางคืนในภูมิภาคเดิม = เฟดเฉยๆ (ปรับ state ระหว่าง render แบบเดียวกับ JourneyBackdrop)
+  if (top.area === area && top.night !== n) {
+    setLayers([top, { key: `${area}${n ? "n" : "d"}-f${layers.length}-${top.key}`, area, night: n, land: false }]);
   }
+
+  // เปลี่ยนภูมิภาค = รอฉากลูกโลก (RegionTravel) ส่งสัญญาณตอนชนผิวโลก แล้วค่อยพุ่งลง — ระหว่างรอฉากเดิมค้างไว้ใต้ลูกโลก
+  useEffect(() => {
+    if (top.area === area) return undefined;
+    let fired = false;
+    const go = () => {
+      if (fired) return;
+      fired = true;
+      seq.current += 1;
+      setLayers((prev) => [prev[prev.length - 1], { key: `${area}${n ? "n" : "d"}-${seq.current}`, area, night: n, land: true }]);
+      announceArenaLand();
+    };
+    const off = onArenaLandRequest(go);
+    const t = setTimeout(go, LAND_WAIT_MS);
+    return () => { off(); clearTimeout(t); };
+  }, [area, n, top.area]);
 
   useEffect(() => {
     if (layers.length < 2) return undefined;
-    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), FADE_MS + 120);
+    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), (layers[layers.length - 1].land ? LAND_MS : FADE_MS) + 120);
     return () => clearTimeout(t);
   }, [layers]);
 
   return (
     <div className={`ar${lowQ ? " ar-lowq" : ""}`} style={{ "--ar-fade": `${FADE_MS}ms` }} aria-hidden="true">
       {layers.map((l, i) => (
-        <Layer key={l.key} area={l.area} night={l.night} lowQ={lowQ} W={W} H={H} seats={seats} land={l.land} fadeIn={i > 0} />
+        <Layer key={l.key} area={l.area} night={l.night} lowQ={lowQ} W={W} H={H} seats={seats} land={l.land} fadeIn={i > 0 && !l.land} />
       ))}
     </div>
   );

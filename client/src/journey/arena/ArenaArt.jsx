@@ -273,6 +273,17 @@ function StandArtBase({ s }) {
           <circle cx="92" cy="48" r="3" fill={s.col} />
         </Stand>
       );
+    case "Shrub":
+      // พุ่มไม้แห้งตาย (ป่าต้องสาป): กิ่งเปลือยแตกแขนงจากโคน ไม่มีใบ — เหลือใบแห้งติดอยู่ไม่กี่ใบ
+      return (
+        <Stand vb="0 0 140 90">
+          <path d="M70 90 C66 72 50 60 26 46 M70 90 C64 68 52 44 44 18 M70 90 C72 66 70 42 77 10 M70 90 C78 68 92 46 114 30 M70 90 C82 76 102 66 130 58 M70 90 C58 78 38 72 10 66" fill="none" stroke={s.col} strokeWidth={3.6} strokeLinecap="round" />
+          <path d="M26 46 L14 40 M26 46 L22 32 M44 18 L34 8 M44 18 L52 6 M77 10 L70 2 M77 10 L86 3 M114 30 L124 20 M114 30 L128 34 M130 58 L138 50 M10 66 L2 58 M52 60 L42 50 M92 50 L98 38 M60 40 L52 30 M84 30 L94 22" fill="none" stroke={s.col} strokeWidth={1.8} strokeLinecap="round" />
+          <ellipse cx="40" cy="30" rx="3.5" ry="2" fill={s.c1} transform="rotate(30 40 30)" />
+          <ellipse cx="104" cy="40" rx="3.5" ry="2" fill={s.c1} transform="rotate(-20 104 40)" />
+          <ellipse cx="72" cy="22" rx="3" ry="1.8" fill={s.c1} />
+        </Stand>
+      );
     default:
       return null;
   }
