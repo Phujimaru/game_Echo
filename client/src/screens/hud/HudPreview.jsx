@@ -1,12 +1,12 @@
 // หน้าดูแผงตัวเรา (เฉพาะ dev ไม่ต่อ socket): ?hud=1
 //  พารามิเตอร์: st=0..14 (จำนวนสถานะ) · res=0 (ไม่มีทรัพยากรตัวละคร) · target=1 (กำลังเลือกเป้า → แผงเลื่อนลง)
-//  open=1 (กางรายละเอียดสถานะแถวแรก) · lost=1 (สกิลรองข้อมูลสูญหาย) · bust=1 · cards=0..6 · team=A · night=1 · arena=1..3 · n=0..6 · lowq=1
+//  drawer=1 (เปิดลิ้นชักสถานะ) · open=1 (กางรายละเอียดสถานะแถวแรก) · lost=1 (สกิลรองข้อมูลสูญหาย) · bust=1 · cards=0..6 · team=A · night=1 · arena=1..3 · n=0..6 · lowq=1
 import { useEffect, useMemo, useState } from "react";
 import ArenaScene from "../../journey/arena/ArenaScene";
 import { arenaLayout, ARENA_CARD_SCALE } from "../../journey/arena/arenaData";
 import { journeyArea } from "../../journey/areas";
 import Card from "../../components/Card";
-import { SelfHud, HudPanel, HudCenter, HudRight, HudTopBar } from "./SelfHud";
+import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } from "./SelfHud";
 import { SkillSlot } from "./SkillSlot";
 import { StatRow, VitalExtras } from "./StatRow";
 import { OrtLostTierContext } from "./ortLost";
@@ -138,7 +138,15 @@ export default function HudPreview() {
                 chips={withRes ? <span className="text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap bg-black/55">⚙️ เกียร์ 3/6 (+1)</span> : null}
                 statuses={statuses}
                 rawStatuses={raw}
-                defaultOpen={q.get("open") === "1" ? MOCK_STATUS[0].key : null}
+              />
+            }
+            drawer={
+              <HudStatusDrawer
+                statuses={statuses}
+                rawStatuses={raw}
+                lowQ={lowQ}
+                defaultOpen={q.get("drawer") === "1"}
+                defaultOpenKey={q.get("open") === "1" ? MOCK_STATUS[0].key : null}
                 onOpenAll={() => {}}
               />
             }

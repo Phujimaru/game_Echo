@@ -57,7 +57,7 @@ export function SkillSlot({ label, tier, skill, points, disabled: disabledProp, 
           <span className="hud-skill-tier">{label}{hasAmmo && <span className="hud-skill-ammo-n"> · {ammoLeft}/{skill.ammo}</span>}</span>
           <span className="hud-skill-name">{skill?.name || "—"}</span>
         </span>
-        {skill && <span className="hud-skill-cost" data-cheap={useCost < skill.cost ? "true" : "false"}>{useCost} SP</span>}
+        {skill && <span className="hud-skill-cost" data-cheap={useCost < skill.cost ? "true" : "false"}>{useCost} แต้ม</span>}
       </button>
     );
   }

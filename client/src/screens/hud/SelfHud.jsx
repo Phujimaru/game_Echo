@@ -1,7 +1,7 @@
 // แผงตัวเรา (จอคอม/แท็บเล็ต) — กระจกน้ำเงินตัดมุม ตามดีไซน์ HudMain ที่ผู้ใช้อนุมัติ
 //  ซ้ายล่าง = แผงผู้เล่น · กลางล่าง = แต้ม/มือไพ่/จั่ว-เปิดไพ่ · ขวาล่าง = SP/กระเป๋า/ร้านค้า/สกิล · ซ้ายบน = รอบ/เวลา/ภูมิภาค
 //  คอมโพเนนต์ในไฟล์นี้วาดอย่างเดียว — เงื่อนไขกดได้/ไม่ได้ทั้งหมดส่งมาจาก GameBoard (Game.jsx) ผ่าน props
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PERMANENT_STATUS_KEYS } from "../../data/permanentStatus";
 import "./hud.css";
 
@@ -24,6 +24,23 @@ function hexA(h, a) {
   return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
+// ป้ายภาษาอังกฤษจาก statusEntries → ไทย/ทับศัพท์ (แปลเฉพาะใน HUD ไม่แตะข้อมูลต้นทาง)
+//  ชื่อเฉพาะ (ชื่อท่า/ชื่ออาวุธ/ชื่อร่าง เช่น Resentful Scabbard, Rider Kick, Mark 42, PUT ON) คงเดิม
+const LABEL_TH = [
+  ["Sun Charge", "ชาร์จสุริยะ"],
+  ["Solar", "โซลาร์"],
+  ["Energy", "พลังงาน"],
+  ["Stamina ชาร์จ", "ชาร์จสตามินา"],
+  ["Dempsey Charge", "ชาร์จเดมป์ซีย์"],
+  ["[Armor]", "อาร์เมอร์"],
+  ["Poise", "พอยส์"],
+];
+function thLabel(label = "") {
+  let out = String(label);
+  for (const [en, th] of LABEL_TH) out = out.split(en).join(th);
+  return out;
+}
+
 // ทรัพยากรตัวละคร = รายการที่ไม่ได้มาจาก p.statuses และมีตัวนับ "x/y" ในชื่อ (Energy 4/16, กระสุน 2/3 …)
 const COUNTER_RE = /(\d+)\s*\/\s*(\d+)/;
 function splitEntries(entries, raw) {
@@ -33,7 +50,7 @@ function splitEntries(entries, raw) {
     const m = !(raw && it.key in raw) && COUNTER_RE.exec(it.label || "");
     if (m) {
       const label = it.label.replace(m[0], "").replace(/\s+/g, " ").replace(/^[\s·]+|[\s·]+$/g, "");
-      res.push({ ...it, short: label || it.label, cur: Number(m[1]), max: Number(m[2]) });
+      res.push({ ...it, short: thLabel(label || it.label), cur: Number(m[1]), max: Number(m[2]) });
     } else list.push(it);
   }
   return { res, list };
@@ -78,9 +95,10 @@ function Cells({ n, on, color, h, solidOver = 16 }) {
 }
 
 // ---------- ซ้ายล่าง: แผงผู้เล่น ----------
-export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, teamColor, chips, vitals, statuses = [], rawStatuses, statusAlt, onOpenAll, listMax = 196, defaultOpen = null }) {
-  const [openKey, setOpenKey] = useState(defaultOpen);
-  const { res, list } = splitEntries(statuses, rawStatuses);
+//  รูป/ชื่อ/ทีม · เลือด/เกราะ · ป้ายตัวละคร · แถวทรัพยากร — รายการสถานะย้ายไปลิ้นชักซ้าย (HudStatusDrawer) แผงจึงเตี้ยพอไม่ทับที่นั่งคู่แข่ง
+export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, teamColor, chips, vitals, statuses = [], rawStatuses }) {
+  const [openKey, setOpenKey] = useState(null);
+  const { res } = splitEntries(statuses, rawStatuses);
   const toggle = (k) => setOpenKey((o) => (o === k ? null : k));
   return (
     <section className="hud-panel hud-glass" aria-label="ผู้เล่น">
@@ -108,20 +126,74 @@ export function HudPanel({ portrait, hexPortrait = true, name, onName, teamId, t
           ))}
         </div>
       )}
-      <div className="hud-st-head">
-        <span className="hud-st-title">สถานะ</span>
-        <span className="hud-st-tools">
-          <span className="hud-count">{list.length}</span>
-          {onOpenAll && (
-            <button type="button" className="hud-open-all" onClick={onOpenAll} aria-label="ดูสถานะทั้งหมด" title="ดูสถานะทั้งหมด">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-            </button>
-          )}
-        </span>
-      </div>
-      {/* มีแถวทรัพยากรด้วย → รายการสถานะเตี้ยลงหน่อย แผงจะได้ไม่สูงจนทับที่นั่งคู่แข่งมุมซ้าย */}
-      {statusAlt || <StatusList items={list} raw={rawStatuses} openKey={openKey} onToggle={toggle} max={res.length > 0 ? Math.min(listMax, 152) : listMax} />}
     </section>
+  );
+}
+
+// ---------- ลิ้นชักสถานะ (ชิดขอบซ้ายจอ) ----------
+//  ปิด = เหลือแท็บเล็กติดขอบซ้าย (ไอคอน + จำนวน) · กดแท็บ = สไลด์ออกจากซ้าย · กดซ้ำ/ปุ่มปิด/Esc = สไลด์กลับ
+//  ในลิ้นชักเป็นรายการแนวตั้งเลื่อนลงอย่างเดียว แตะแถวกางรายละเอียด · ความสูงพอดีเนื้อหา ไม่เกินพื้นที่เหนือแผงผู้เล่น
+export function HudStatusDrawer({ statuses = [], rawStatuses, statusAlt, onOpenAll, lowQ = false, defaultOpen = false, defaultOpenKey = null }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [openKey, setOpenKey] = useState(defaultOpenKey);
+  const panelRef = useRef(null);
+
+  const tabRef = useRef(null);
+  const { list } = splitEntries(statuses, rawStatuses);
+  const toggle = (k) => setOpenKey((o) => (o === k ? null : k));
+  // ปิดอยู่ = เนื้อหาในลิ้นชักห้ามรับโฟกัส (อยู่นอกจอ)
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    if (open) el.removeAttribute("inert");
+    else {
+      if (el.contains(document.activeElement)) tabRef.current?.focus({ preventScroll: true });
+      el.setAttribute("inert", "");
+    }
+  }, [open]);
+  // Esc = ปิดลิ้นชัก
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  return (
+    <div className="hud-drawer" data-open={open ? "true" : "false"} data-instant={lowQ ? "true" : "false"}>
+      <section ref={panelRef} id="hud-status-drawer" className="hud-drawer-panel hud-glass" aria-label="สถานะ">
+        <div className="hud-st-head">
+          <span className="hud-st-title">สถานะ</span>
+          <span className="hud-st-tools">
+            <span className="hud-count">{list.length}</span>
+            {onOpenAll && (
+              <button type="button" className="hud-open-all" onClick={onOpenAll} aria-label="ดูสถานะทั้งหมด" title="ดูสถานะทั้งหมด">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </button>
+            )}
+            <button type="button" className="hud-open-all" onClick={() => setOpen(false)} aria-label="ปิด" title="ปิด">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+            </button>
+          </span>
+        </div>
+        {statusAlt || <StatusList items={list} raw={rawStatuses} openKey={openKey} onToggle={toggle} />}
+      </section>
+      <button
+        ref={tabRef}
+        type="button"
+        className="hud-drawer-tab"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="hud-status-drawer"
+        aria-label={open ? "ปิดสถานะ" : `สถานะ ${list.length}`}
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+        <span className="hud-drawer-count">{list.length}</span>
+        <span className="hud-drawer-word">สถานะ</span>
+        <svg className="hud-drawer-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+    </div>
   );
 }
 
@@ -162,7 +234,7 @@ function StatusList({ items, raw, openKey, onToggle, max }) {
   }, []);
   return (
     <div className="hud-st-wrap">
-      <div ref={boxRef} className="hud-st-list" style={{ maxHeight: max }} onScroll={measure}>
+      <div ref={boxRef} className="hud-st-list" style={max ? { maxHeight: max } : undefined} onScroll={measure}>
         <div ref={innerRef} className="hud-st-inner">
           {items.length === 0 && <div className="hud-st-empty">ไม่มีสถานะ</div>}
           {items.map((it) => {
@@ -174,7 +246,7 @@ function StatusList({ items, raw, openKey, onToggle, max }) {
               <div key={it.key} className="hud-row" data-open={open ? "true" : "false"}>
                 <button type="button" className="hud-row-btn" onClick={it.desc ? () => onToggle(it.key) : undefined} aria-expanded={it.desc ? open : undefined} aria-controls={it.desc ? id : undefined}>
                   <IconTile icon={it.icon} tone={tone} />
-                  <span className="hud-row-label">{it.label}</span>
+                  <span className="hud-row-label">{thLabel(it.label)}</span>
                   {val && <span className="hud-pill" style={{ color: tone }}>{val}</span>}
                 </button>
                 {open && it.desc && <div id={id} className="hud-row-desc">{it.desc}</div>}
@@ -207,14 +279,14 @@ export function HudCenter({ score, busted, handRef, hand, draw, reveal }) {
   );
 }
 
-// ---------- ขวาล่าง: SP · กระเป๋า · ร้านค้า · สกิล 3 ช่อง ----------
+// ---------- ขวาล่าง: แต้มสกิล · กระเป๋า · ร้านค้า · สกิล 3 ช่อง ----------
 export function HudRight({ sp, spMax, extras, bagCount = 0, onBag, gold = 0, showShop = true, onShop, skills }) {
   return (
     <section className="hud-right-in" aria-label="สกิล">
       <div className="hud-extras">{extras}</div>
       <div className="hud-sp-row">
         <div className="hud-sp hud-glass" title={`แต้มสกิล ${sp}/${spMax}`}>
-          <span className="hud-sp-label">SP</span>
+          <span className="hud-sp-label">แต้มสกิล</span>
           {spMax > 16 ? (
             <span className="hud-cells hud-cells-solid" style={{ height: 14 }}><span style={{ width: `${(Math.max(0, sp) / spMax) * 100}%`, background: "#c99ad6" }} /></span>
           ) : (
@@ -239,9 +311,19 @@ export function HudRight({ sp, spMax, extras, bagCount = 0, onBag, gold = 0, sho
 }
 
 // ---------- กล่องรวมทั้งสามกลุ่ม + เลื่อนลงซ่อนตอนเลือกเป้าหมาย ----------
-//  hidden = กำลังเลือกเป้าหมาย/เป็นฝ่ายโจมตี — แผงทั้งหมดเลื่อนลงพ้นจอ เหลือแค่ปุ่มแถบเล็กไว้เรียกกลับมาดูชั่วคราว
-export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, center, right }) {
+//  hidden = กำลังเลือกเป้าหมาย/เป็นฝ่ายโจมตี — แผงทั้งหมด (รวมลิ้นชักสถานะ) หลบพ้นจอ เหลือแค่ปุ่มลูกศรไว้เรียกกลับมาดูชั่วคราว
+export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, center, right, drawer }) {
   const dockRef = useRef(null);
+  const leftRef = useRef(null);
+  const [panelH, setPanelH] = useState(240);
+  // ความสูงแผงผู้เล่น → ลิ้นชักสถานะวางเหนือแผงพอดี ไม่ทับกัน
+  useLayoutEffect(() => {
+    const el = leftRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => setPanelH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [peek, setPeek] = useState(false);
   const [prevHidden, setPrevHidden] = useState(hidden);
   if (prevHidden !== hidden) {
@@ -260,8 +342,9 @@ export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, 
   }, [away]);
   return (
     <>
-      <div ref={dockRef} className="hud-dock" data-away={away ? "true" : "false"} data-instant={lowQ ? "true" : "false"} aria-hidden={away ? "true" : undefined}>
-        <div className="hud-grp hud-left">{panel}</div>
+      <div ref={dockRef} className="hud-dock" data-away={away ? "true" : "false"} data-instant={lowQ ? "true" : "false"} aria-hidden={away ? "true" : undefined} style={{ "--hud-panel-h": `${panelH}px` }}>
+        {drawer && <div className="hud-drawer-zone">{drawer}</div>}
+        <div ref={leftRef} className="hud-grp hud-left">{panel}</div>
         {compact ? (
           <div className="hud-grp hud-rcol">
             {center}
@@ -275,9 +358,8 @@ export function SelfHud({ hidden = false, lowQ = false, compact = false, panel, 
         )}
       </div>
       {hidden && (
-        <button type="button" className="hud-peek" data-peek={peek ? "true" : "false"} onClick={() => setPeek((v) => !v)} aria-expanded={peek}>
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          แผงผู้เล่น
+        <button type="button" className="hud-peek" data-peek={peek ? "true" : "false"} onClick={() => setPeek((v) => !v)} aria-expanded={peek} aria-label={peek ? "ซ่อนแผงผู้เล่น" : "แสดงแผงผู้เล่น"}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
       )}
     </>

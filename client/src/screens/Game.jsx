@@ -20,7 +20,7 @@ import { socket } from "../socket";
 import { StatRow, SpRow, VitalExtras } from "./hud/StatRow";
 import { SkillSlot } from "./hud/SkillSlot";
 import { OrtLostTierContext } from "./hud/ortLost";
-import { SelfHud, HudPanel, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
+import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
 import { clickSound, playSfx, stopSfx, sfxPlayId, startLoopSfx, stopLoopSfx, playCutsceneVideo, suspendMusic, DOOM_WEAPON_SOUNDS } from "../audio";
 
 const P_DISPLAY = "var(--font-p-display)";
@@ -5207,8 +5207,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       )}
 
       {/* ---------- แผงตัวเรา ฉบับที่ 6 (ดีไซน์ HudMain — กระจกน้ำเงินตัดมุม) ----------
-          ซ้ายล่าง = แผงผู้เล่น (รูป/ชื่อ/ทีม · เลือด/เกราะ · ทรัพยากรตัวละคร · สถานะแนวตั้งเลื่อนลง แตะแถวดูรายละเอียด)
-          กลางล่าง = แต้ม · มือไพ่ · จั่ว/เปิดไพ่ · ขวาล่าง = SP · กระเป๋า · ร้านค้า · สกิล 3 ช่อง
+          ซ้ายล่าง = แผงผู้เล่น (รูป/ชื่อ/ทีม · เลือด/เกราะ · ทรัพยากรตัวละคร) · ขอบซ้าย = ลิ้นชักสถานะ (แนวตั้งเลื่อนลง แตะแถวดูรายละเอียด)
+          กลางล่าง = แต้ม · มือไพ่ · จั่ว/เปิดไพ่ · ขวาล่าง = แต้มสกิล · กระเป๋า · ร้านค้า · สกิล 3 ช่อง
           ตอนเลือกเป้าหมาย/เป็นฝ่ายโจมตี (hudAway) แผงทั้งหมดเลื่อนลงพ้นจอ ไม่บังเป้าหมายบนสนาม
           ส่วนวาดอยู่ที่ hud/SelfHud.jsx — เงื่อนไขกดได้/ไม่ได้ทั้งหมดยังอยู่ตรงนี้เหมือนเดิม */}
       {me && (
@@ -5253,6 +5253,14 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               }
               statuses={meStatuses}
               rawStatuses={me.statuses || {}}
+            />
+          }
+          drawer={
+            // ลิ้นชักสถานะชิดขอบซ้าย (แยกจากแผงผู้เล่น — แผงจะได้เตี้ย ไม่ทับที่นั่งคู่แข่งมุมซ้ายล่าง)
+            <HudStatusDrawer
+              statuses={meStatuses}
+              rawStatuses={me.statuses || {}}
+              lowQ={lowQ}
               statusAlt={me.hisakawa ? (
                 <button type="button" className="hud-st-alt" onClick={() => { clickSound(); setStatusViewId(me.id); }}>ดูสถานะรวม</button>
               ) : null}

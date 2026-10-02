@@ -44,20 +44,20 @@
   bottom: 0;
   translate: -50% 0;
   z-index: 41;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 14px;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 26px;
+  padding: 0;
   border: 1px solid rgba(127, 184, 230, 0.45);
   border-bottom: 0;
   background: rgba(12, 28, 58, 0.9);
   color: #c8dbf2;
-  font: 500 13px/1 Kanit, sans-serif;
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
   cursor: pointer;
 }
 .hud-peek:hover { color: #ffffff; }
+.hud-peek svg { transition: transform 0.2s ease; }
 .hud-peek[data-peek="true"] svg { transform: rotate(180deg); }
 .hud-peek:focus-visible { outline: 2px solid #bee3f8; outline-offset: 2px; }
 
@@ -335,7 +335,7 @@
 }
 .hud-sp-row { display: flex; align-items: center; gap: 10px; }
 .hud-sp { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.hud-sp-label { font: 700 14px/1 "Chakra Petch", sans-serif; color: #7fb8e6; }
+.hud-sp-label { flex: none; font: 500 14px/1 Kanit, sans-serif; color: #7fb8e6; white-space: nowrap; }
 .hud-sp-cells { flex: 1; display: flex; gap: 3px; }
 .hud-sp-cells > span {
   flex: 1;
@@ -508,3 +508,90 @@
 .hud-top-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .hud-top-name { font: 500 15px/1.2 Kanit, sans-serif; white-space: nowrap; max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
 .hud-top-sub { font: 400 13px/1.2 Kanit, sans-serif; color: #9db8da; white-space: nowrap; }
+
+/* ---------- ลิ้นชักสถานะ (ชิดขอบซ้ายจอ เหนือแผงผู้เล่น) ---------- */
+.hud-drawer-zone {
+  position: absolute;
+  left: 0;
+  top: 96px;
+  bottom: calc(var(--hud-panel-h, 240px) + 20px + 12px);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0s linear 0s;
+}
+.hud-dock[data-away="true"] .hud-drawer-zone {
+  transform: translateX(-110%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0s linear 0.35s;
+}
+.hud-dock[data-instant="true"] .hud-drawer-zone { transition: none !important; }
+.hud-drawer {
+  --drawer-w: 308px;
+  --drawer-gap: 20px;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  pointer-events: none;
+  transform: translateX(calc(-1 * (var(--drawer-w) + var(--drawer-gap))));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hud-drawer[data-open="true"] { transform: translateX(0); }
+.hud-drawer[data-instant="true"] { transition: none; }
+.hud-drawer-panel {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: var(--drawer-w);
+  max-height: 100%;
+  margin-left: var(--drawer-gap);
+  padding: 8px 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  font-family: Kanit, "Chakra Petch", sans-serif;
+  transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+.hud-drawer[data-open="false"] .hud-drawer-panel { opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0s linear 0.3s; }
+.hud-drawer[data-instant="true"] .hud-drawer-panel { transition: none; }
+.hud-drawer-panel .hud-st-head { border-top: 0; padding-top: 0; border-bottom: 1px solid rgba(127, 184, 230, 0.25); padding-bottom: 4px; }
+.hud-drawer-panel .hud-st-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.hud-drawer-panel .hud-st-list { flex: 1 1 auto; min-height: 0; }
+.hud-drawer-tab {
+  pointer-events: auto;
+  flex: none;
+  align-self: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 52px;
+  padding: 10px 0 8px;
+  margin-left: 6px;
+  border: 1px solid rgba(127, 184, 230, 0.45);
+  border-left: 0;
+  background: rgba(12, 28, 58, 0.9);
+  color: #c8dbf2;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.hud-drawer[data-open="false"] .hud-drawer-tab { margin-left: 0; }
+.hud-drawer-tab:hover { color: #ffffff; filter: brightness(1.15); }
+.hud-drawer-tab:focus-visible { outline: 2px solid #bee3f8; outline-offset: 2px; }
+.hud-drawer-count {
+  min-width: 26px;
+  padding: 0 6px;
+  text-align: center;
+  background: rgba(127, 184, 230, 0.22);
+  color: #ffffff;
+  font: 600 14px/1.5 "Chakra Petch", sans-serif;
+}
+.hud-drawer-word { font: 500 12px/1.1 Kanit, sans-serif; }
+.hud-drawer-chev { transition: transform 0.2s ease; }
+.hud-drawer[data-open="true"] .hud-drawer-chev { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .hud-drawer, .hud-drawer-panel, .hud-drawer-zone, .hud-dock[data-away="true"] .hud-drawer-zone { transition: none !important; }
+}

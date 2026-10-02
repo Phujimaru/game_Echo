@@ -1,6 +1,8 @@
 // หน้าดูกระดานจริง (Game.jsx) ด้วย state จำลอง — เฉพาะ dev: ?hud=1&game=1
 //  ไว้ตรวจว่าแผงตัวเราต่อกับ GameBoard ถูก (เงื่อนไขปุ่ม/สถานะ/การ์ด) โดยไม่ต้องเปิดห้องจริง
 //  phase=PLAYING|ATTACK (ATTACK = เราเป็นฝ่ายโจมตี → แผงเลื่อนลง) · arena=1..3 · n=1..6 · ch=<id ตัวละครเรา>
+//  ch=oguri / escanor / kim = มีแถวทรัพยากร · st=many = สถานะเยอะ · drawer=1 = กดเปิดลิ้นชักสถานะให้หลังโหลด
+import { useEffect } from "react";
 import Game from "../Game";
 
 const COLS = ["#3d8bd9", "#9b4f96", "#e0812f", "#2fa39a", "#d2455b", "#6b7fd6", "#c49a2c"];
@@ -33,6 +35,10 @@ function player(i, me, chId) {
     inventory: me ? [{ id: "a" }, { id: "b" }] : [],
     gold: 12,
     teamId: null,
+    // ข้อมูลทรัพยากรของตัวละครที่ statusEntries อ่าน (โชว์เป็นแถวทรัพยากรในแผงผู้เล่น)
+    ...(me && chId === "oguri" ? { oguriEnergy: 10, stamina: 30, oguriChargeCap: 52 } : {}),
+    ...(me && chId === "escanor" ? { escanorCharge: 7, escanorChargeMax: 12 } : {}),
+    ...(me && chId === "kim" ? { kim: { scabbard: 42, scabbardMax: 100, poise: 20, poiseMax: 50, crit: 24, awake: false, coin: "heads", resentUsed: false } } : {}),
   };
 }
 
@@ -42,6 +48,14 @@ export default function GamePreview() {
   const area = Math.min(3, Math.max(1, Number(q.get("arena") || 1)));
   const phase = q.get("phase") || "PLAYING";
   const players = Array.from({ length: n + 1 }, (_, i) => player(i, i === 0, q.get("ch") || "artoria_caster"));
+  if (q.get("st") === "many") {
+    Object.assign(players[0].statuses, { bleed: 3, regen: 2, shock: 2, numb: 1, curse: 4, silence: 2, chill: 2, invert: 3, decay: 2 });
+  }
+  useEffect(() => {
+    if (q.get("drawer") !== "1") return undefined;
+    const t = setTimeout(() => document.querySelector(".hud-drawer-tab")?.click(), 600);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const state = {
     gameState: phase,
     youId: "p0",
