@@ -89,15 +89,15 @@ export function StatRow({ kind, value, max, extra = 0, extraLabel, big, tone, cr
   );
 }
 
-// แต้มสกิล: แถวเดียวกันกับเลือด/เกราะ มีป้าย SP นำหน้าและตัวเลขท้ายแถวเหมือนกัน
+// แต้มสกิล: แถวเดียวกันกับเลือด/เกราะ มีป้าย "แต้ม" นำหน้า (ไทยตามที่ผู้ใช้ขอ แทน SP)และตัวเลขท้ายแถวเหมือนกัน
 export function SpRow({ p, big }) {
   // ซาโตรุ / ทาคุมิ: แต้มสกิลถูกซ่อนจากผู้เล่นอื่น
   if (p.skillPoints < 0) {
-    return <div className={`sr ${big ? "sr-big" : ""}`} title="แต้มสกิลถูกซ่อน"><span className="sr-sp-label">SP</span><span className="sr-num">🌩️ ???</span></div>;
+    return <div className={`sr ${big ? "sr-big" : ""}`} title="แต้มสกิลถูกซ่อน"><span className="sr-sp-label">แต้ม</span><span className="sr-num">🌩️ ???</span></div>;
   }
   return (
     <div className={`sr ${big ? "sr-big" : ""}`} data-kind="sp" title={`แต้มสกิล ${p.skillPoints}/${p.maxSkill}`}>
-      <span className="sr-sp-label">SP</span>
+      <span className="sr-sp-label">แต้ม</span>
       <span className="sr-track">
         {Array.from({ length: p.maxSkill }, (_, i) => (
           <span key={i} className={`sr-cell ${i < p.skillPoints ? "sr-sp" : "sr-off"}`} />
