@@ -243,10 +243,10 @@ function resolveRound() {
         match.lastLog.push(`💥 ${l.name} โดน New Omega ระเบิดแต้มการ์ด — ไม่รับความเสียหายจากการที่ไพ่แตก`);
         continue;
       }
-      if (cardDeck.bustedOf(l) && CHAR_HOOKS.takt.bustDamageImmune(l)) {
-        // อาซาฮินะ ทักต์ (ตระกูลอาซาฮินะ): ไม่รับความเสียหายจากการที่ไพ่แตก
+      if (CHAR_HOOKS.takt.lossDamageImmune(l)) {
+        // อาซาฮินะ ทักต์ (ตระกูลอาซาฮินะ): ไม่รับความเสียหายจากการแพ้รอบ ทั้งแต้มน้อยสุดและไพ่แตก
         combat.firePassive(l, "lose");
-        match.lastLog.push(`🎼 ${l.name} ตระกูลอาซาฮินะ — ไม่รับความเสียหายจากการที่ไพ่แตก`);
+        match.lastLog.push(`🎼 ${l.name} ตระกูลอาซาฮินะ — ไม่รับความเสียหายจากการ${cardDeck.bustedOf(l) ? "ที่ไพ่แตก" : "แพ้"}`);
         continue;
       }
       if (cardDeck.bustedOf(l) && CHAR_HOOKS.escanor.bustDamageImmune(l)) {

@@ -5,8 +5,8 @@
 //    ฟื้นพลังชีวิต 2 · แต้มสกิล +3
 //  สกิลรอง ซองแฝด (4) — ก่อนเปิดไพ่ · titanTwin 3 เทิร์น: ตีปกติโดนแล้วเป้าติดลุกไหม้ 2 (กดซ้ำ = ต่ออายุ)
 //  ท่าไม้ตาย คล่องตัวสูง (4 · กดซ้ำไม่ได้ระหว่างผลยังอยู่ · วีดีโอเต็มครั้งแรกต่อเกม) — ก่อนเปิดไพ่
-//    หลบหลีก 2 ครั้ง + titanAgile 3 เทิร์น: ถูกตีปกติ/ถูกสกิลเล็ง/โดนดาเมจสกิล (ไม่ว่าจะเสียหายหรือไม่ · แม้หลบได้)
-//    สวนผู้กระทำด้วยพลังโจมตีปกติ ไม่จำกัดครั้ง (หมัดสวนพ่วงช็อตกัน/ซองแฝด/ดูดเลือดด้วย)
+//    หลบหลีก 1 ครั้ง (อยู่ 2 เทิร์นตามสแตคปกติ) + titanAgile 3 เทิร์น: ถูกตีปกติ/ถูกสกิลเล็ง/โดนดาเมจสกิล (ไม่ว่าจะเสียหายหรือไม่ · แม้หลบได้)
+//    สวนผู้กระทำด้วยพลังโจมตีปกติ ไม่จำกัดครั้ง (หมัดสวนพ่วงช็อตกัน +1/ฟื้น 1 และซองแฝดด้วย)
 //    ตีปกติ: จองที่หัว doAttack ก่อนด่านหลบ -> หมัดลง = สวนในการ์ดสรุปเดียวกัน / ถูกหลบ = สวนตอน flush หัว endTurn
 //    สกิล: จองที่ useSkill (เป้าที่เลือก) + adjustIncomingDamage (ดาเมจสกิลหมู่) -> สวนตอน flushOrtCounters
 //
@@ -18,10 +18,10 @@
 //      ศัตรูทุกคน (ไม่โดนทักต์/พวกเดียวกัน) ถูกลบบัฟกลางทั้งหมดแล้วรับดาเมจ 4 (ลดเกราะก่อน · ฆ่าได้)
 //      หลังใช้ ไททันติดสตั้น 2 + เปราะบาง 2 ทันที (ต้านไม่ได้)
 //    สกิลติดตัว มิวสิคคาร์ท (ปลดล็อก): ตีปกติได้อีก 1 ครั้ง (รวม Vigorous Rising Sun = 3 ครั้ง ครั้งที่ 3 โอกาส 25%)
-//      + ตีปกติโดนแล้วฟื้นพลังชีวิตตามดาเมจที่ทำได้ (สูงสุด 2 ต่อครั้ง)
 //    ภาพบนสนามเปลี่ยนเป็น takt_titan.jpg (วีดีโอ takt_titan.mp4 เล่นที่ takt.js ตอนได้บทเพลง)
 //  สกิลติดตัว 2 ช็อตกัน: ตีปกติ 50% ดาเมจ +1 (ทอยที่ doAttack ไม่ใช่ damageBonus — buildStateFor เรียกทุก broadcast)
-//    + หลบการโจมตีปกติ 5%
+//    + ตีปกติโดนฟื้นพลังชีวิต 1 ทุกหมัด (ชุดหลายหมัดได้ทุกหมัด) + หลบการโจมตีปกติ 5%
+//    + ชุดที่ตีได้ครั้งเดียว 50% ได้ตีครั้งที่ 2 (ชุดที่มีหลายหมัดอยู่แล้วไม่เพิ่ม — สูงสุดยังเป็น 3)
 //
 //  ชุดตีหลายครั้ง: p.titan.set { left, n, total, sun } สร้างที่หมัดแรก · หมัดต่อไปเปิดจากหัว endTurn
 //    (continueAttack — ถูกหลบก็ตีต่อ แบบเดียวกับคาเยนน์/โทโนะ) · เลือกเป้าใหม่ได้ทุกหมัด
@@ -56,7 +56,7 @@ const SNACK_HEAL = 2;
 const SNACK_SP = 3;
 const TWIN_TURNS = 3;
 const TWIN_BURN = 2;
-const AGILE_EVADE = 2;
+const AGILE_EVADE = 1;
 const AGILE_TURNS = 3;
 const SUN_BURN = 1;
 const TRIUMPH_COST = 12;
@@ -64,7 +64,8 @@ const TRIUMPH_DMG = 4;
 const TRIUMPH_STUN = 2;
 const TRIUMPH_FRAGILE = 2;
 const THIRD_HIT_PCT = 25;
-const LIFESTEAL_MAX = 2;
+const SHOT_HEAL = 1;
+const SHOT_EXTRA_PCT = 50;
 const SHOT_PCT = 50;
 const SHOT_BONUS = 1;
 const DODGE_PCT = 5;
@@ -99,7 +100,7 @@ module.exports = {
   id: ID,
   IMG, VIDEO, HIT_SOUND,
   SNACK_USES, SNACK_HEAL, SNACK_SP, TWIN_TURNS, TWIN_BURN, AGILE_EVADE, AGILE_TURNS, SUN_BURN,
-  TRIUMPH_COST, TRIUMPH_DMG, TRIUMPH_STUN, TRIUMPH_FRAGILE, THIRD_HIT_PCT, LIFESTEAL_MAX, SHOT_PCT, SHOT_BONUS, DODGE_PCT,
+  TRIUMPH_COST, TRIUMPH_DMG, TRIUMPH_STUN, TRIUMPH_FRAGILE, THIRD_HIT_PCT, SHOT_HEAL, SHOT_EXTRA_PCT, SHOT_PCT, SHOT_BONUS, DODGE_PCT,
   isTitan, unlocked,
 
   resetCombat(p) { p.titan = isTitan(p) ? fresh() : null; },
@@ -225,16 +226,18 @@ module.exports = {
       const cart = unlocked(attacker);
       let total = 1 + (sun ? 1 : 0) + (cart ? 1 : 0);
       if (sun && cart && !(Math.random() * 100 < THIRD_HIT_PCT)) total--; // ครั้งที่ 3 โอกาส 25%
+      const extra = total === 1 && Math.random() * 100 < SHOT_EXTRA_PCT; // ช็อตกัน: ชุดเดี่ยว 50% ได้ตีครั้งที่ 2
+      if (extra) total = 2;
       s.set = { left: total - 1, n: 1, total, sun };
       s.sun = false;
       s.sunVideo = false;
-      if (total > 1) engine.log(`🥁 ${attacker.name} ${sun ? "Vigorous Rising Sun" : "มิวสิคคาร์ท"} — โจมตีชุดนี้ได้ ${total} ครั้ง`);
+      if (total > 1) engine.log(`🥁 ${attacker.name} ${extra ? "ช็อตกัน" : sun ? "Vigorous Rising Sun" : "มิวสิคคาร์ท"} — โจมตีชุดนี้ได้ ${total} ครั้ง`);
     }
     s.shot = Math.random() * 100 < SHOT_PCT;
   },
   shotBonus(attacker) { return isTitan(attacker) && st(attacker).shot ? SHOT_BONUS : 0; },
-  // หมัดลงแล้ว — dealt = ความเสียหายที่ลงเลือด+เกราะจริง · คืนชื่อเอฟเฟกต์ไว้โชว์บนการ์ดสรุป
-  onAttackLanded(engine, attacker, target, dealt) {
+  // หมัดลงแล้ว — คืนชื่อเอฟเฟกต์ไว้โชว์บนการ์ดสรุป
+  onAttackLanded(engine, attacker, target) {
     if (!isTitan(attacker)) return [];
     const s = st(attacker);
     const fx = [];
@@ -246,10 +249,8 @@ module.exports = {
       if (s.set && s.set.sun) burn += addBurn(engine, attacker, target, SUN_BURN);
     });
     if (burn > 0) fx.push(`ลุกไหม้ +${burn}`);
-    if (unlocked(attacker) && dealt > 0) {
-      const h = engine.healHp(attacker, Math.min(LIFESTEAL_MAX, dealt));
-      if (h > 0) fx.push(`มิวสิคคาร์ท ฟื้นพลังชีวิต +${h}`);
-    }
+    const h = engine.healHp(attacker, SHOT_HEAL); // ช็อตกัน: ทุกหมัดที่โดน
+    if (h > 0) fx.push(`ช็อตกัน ฟื้นพลังชีวิต +${h}`);
     const gentle = takt.songHealOnHit(engine, attacker);
     if (gentle > 0) fx.push(`อ่อนโยน ฟื้นพลังชีวิต +${gentle}`);
     s.shot = false;
@@ -326,19 +327,17 @@ module.exports = {
     }
     return takt.songIncoming(p, n);
   },
-  // หมัดสวน 1 ครั้ง: พลังโจมตีปกติ + ช็อตกัน · พ่วงซองแฝด/ดูดเลือด — คืน { foe, dmg } หรือ null
+  // หมัดสวน 1 ครั้ง: พลังโจมตีปกติ + ช็อตกัน · พ่วงฟื้น 1 (ช็อตกัน) และซองแฝด — คืน { foe, dmg } หรือ null
   counterStrike(engine, titan, foe) {
     if (!titan.alive || titan.hp <= 0 || !foe || !foe.alive || engine.sameTeam(titan, foe)) return null;
     const shot = Math.random() * 100 < SHOT_PCT;
     const dmg = Math.max(0, engine.attackPowerAgainst(titan, foe) || 0) + (shot ? SHOT_BONUS : 0);
-    const before = foe.hp + foe.armor;
     engine.withEffectSource(titan, () => {
       foe._counterDamage = true; // ดาเมจสวนกลับ — ORT/Kim/ไททันอีกคนจะไม่สวนตอบ
       try { engine.dealMixed(foe, dmg); } finally { foe._counterDamage = false; }
       foe.wasAttacked = true;
       if (twin(titan)) addBurn(engine, titan, foe, TWIN_BURN);
-      const dealt = Math.max(0, before - (foe.hp + foe.armor));
-      if (unlocked(titan) && dealt > 0) engine.healHp(titan, Math.min(LIFESTEAL_MAX, dealt));
+      engine.healHp(titan, SHOT_HEAL);
       engine.resolveDamageAftermath(foe);
     });
     engine.log(`💥 ${titan.name} คล่องตัวสูง — สวนกลับ ${foe.name} -${dmg}${shot ? " (ช็อตกัน +1)" : ""}${foe.alive ? "" : " — ตกรอบ!"}`);

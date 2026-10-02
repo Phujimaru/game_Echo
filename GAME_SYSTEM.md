@@ -553,7 +553,8 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   ของ `checkAllLocked` · ไม่ตอบ = ปฏิเสธ (`sweepInvites` ต้น `dealRound`) · ตอบรับ = คิว `taktAccept` + `pausePlayingForCutscene`
 - **โหมดอิสระ: พันธะ = พวกเดียวกัน** ที่ `sameTeam()` และ `isAlly()` (เฉพาะ `gameMode === "ffa"`) -> ตีกันไม่ได้ · ผลเสียลงกันไม่ได้ · เห็นไพ่กัน ·
   `normalGameOver()` จบเกมเมื่อคนที่รอดทั้งหมดอยู่ในพันธะเดียวกัน (`bondGroupWins`) · โหมดทีมผูกได้เฉพาะเพื่อนร่วมทีม (ไม่ต้องแก้ sameTeam)
-- พันธะหลุดที่ `takt.onDeath()` (เรียกจาก `instantDeath`) · ทักต์หลบ 35% / ทุ้มต่ำหลบ 5% ที่ `takt.tryAttackDodge` · ไม่รับดาเมจไพ่แตก = `bustDamageImmune` ใน `resolveRound`
+- พันธะหลุดที่ `takt.onDeath()` (เรียกจาก `instantDeath`) · ทักต์หลบตีปกติ 15% (มีพันธะ 35% เอาค่าสูงสุด) / ทุ้มต่ำหลบ 5% ที่ `takt.tryAttackDodge`
+  · ทักต์หลบดาเมจสกิล 15% ที่ `takt.adjustIncomingDamage` (ปืน `_itemDamage` / สถานะ / แม่นยำ หลบไม่ได้) · ไม่รับดาเมจแพ้รอบเลย = `lossDamageImmune` ใน `resolveRound`
 - ผลของบทเพลงเป็น ungated: พลังโจมตี +1 (`computeAttackBase` giftAtk) · แข็งกร้าว (`critBonus` -> `Journey.applyCrit` + `critBonusFor`) ·
   ทุ้มต่ำ (`songIncoming` ใน `adjustIncomingDamage` ของมิวสิคคาร์ท — ไม่ลดดาเมจจากสถานะ) · อ่อนโยน (`songHealOnHit` หลังหมัดลง)
 - ไททัน: ชุดสกิลสลับระหว่างบทเพลงผ่าน `titan.dynamicSkillFor` (ต้องตรงกันทั้ง `useSkill` และ `buildStateFor`)

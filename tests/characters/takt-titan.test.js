@@ -64,11 +64,11 @@ test('ข้อมูล: ทักต์พิเศษ unique · ไททั�
   assert.deepEqual([n.basic.cost, n.secondary.cost, n.ultimate.cost, n.secondary2.cost, n.ultimate2.cost], [0, 4, 4, 4, 12]);
 });
 
-test('ตระกูลอาซาฮินะ: พลังชีวิต 5 ไม่มีเกราะ · ไม่รับดาเมจไพ่แตก · ฟื้น 2 ทุก 3 เทิร์น', () => {
+test('ตระกูลอาซาฮินะ: พลังชีวิต 5 ไม่มีเกราะ · ไม่รับดาเมจแพ้รอบ · ฟื้น 2 ทุก 3 เทิร์น', () => {
   const { K } = setup();
   assert.equal(engine.maxHpOf(K), 5);
   assert.equal(engine.maxArmorOf(K), 0);
-  assert.equal(takt.bustDamageImmune(K), true);
+  assert.equal(takt.lossDamageImmune(K), true);
   K.hp = 1;
   engine.setRoundNumber(3);
   takt.onRoundStartTick(engine, K);
@@ -118,9 +118,9 @@ test('พันธะหลุดเมื่อมิวสิคคาร์�
   assert.equal(engine.sameTeam(K, N), false);
 });
 
-test('คอนดักเตอร์: มีพันธะแล้วหลบการโจมตีปกติ 35%', () => {
+test('หลบการโจมตีปกติ: 15% ติดตัว · มีพันธะ 35% (ไม่บวกกัน)', () => {
   const { K, N, T } = setup();
-  assert.equal(takt.dodgeChance(engine, K), 0);
+  assert.equal(takt.dodgeChance(engine, K), 15);
   bond(K, N);
   assert.equal(takt.dodgeChance(engine, K), 35);
   Math.random = () => 0.1;
@@ -132,7 +132,7 @@ test('คอนดักเตอร์: มีพันธะแล้วหล
   assert.ok(T);
 });
 
-test('เสียงอันไพเราะ: โชคลาภ/เลือด/เกราะ · ให้ตัวเองฟื้น 2 · ให้มิวสิคคาร์ทโชคลาภ 2 · คูลดาวน์ 2', () => {
+test('เสียงอันไพเราะ: โชคลาภ/เลือด/เกราะ · ให้ตัวเองฟื้น 2 · ให้มิวสิคคาร์ทโชคลาภ 2 · คูลดาวน์ 3', () => {
   const { K, N, T } = setup();
   T.hp = 3; T.armor = 0;
   engine.useSkill('K', 'basic', ['T']);
@@ -144,11 +144,13 @@ test('เสียงอันไพเราะ: โชคลาภ/เลื�
   K.skillUsedRound = false;
   assert.equal(takt.canUseSkill(engine, K, 'basic', ['K']), false);
   engine.setRoundNumber(r + 2);
+  assert.equal(takt.canUseSkill(engine, K, 'basic', ['K']), false);
+  engine.setRoundNumber(r + 3);
   K.hp = 1;
   engine.useSkill('K', 'basic', ['K']);
   assert.equal(K.hp, 3);
   bond(K, N);
-  engine.setRoundNumber(r + 4);
+  engine.setRoundNumber(r + 6);
   K.skillUsedRound = false;
   engine.useSkill('K', 'basic', ['N']);
   assert.equal(N.statuses.fortune, 2);
@@ -210,10 +212,11 @@ test('ซองแฝด: ตีปกติโดนติดลุกไหม
   assert.equal(T.hp, 4);
 });
 
-test('คล่องตัวสูง: หลบหลีก 2 · ถูกตีปกติสวนกลับ (แม้หลบได้) · ถูกสกิลเล็งสวนกลับ', () => {
+test('คล่องตัวสูง: หลบหลีก 1 · ถูกตีปกติสวนกลับ (แม้หลบได้) · ถูกสกิลเล็งสวนกลับ', () => {
   const { N, T, K } = setup();
   engine.useSkill('N', 'ultimate');
-  assert.equal(N.statuses.evade, 2);
+  assert.equal(N.statuses.evade, 1);
+  assert.deepEqual(N.evadeStacks, [2], 'หลบหลีกอยู่ 2 เทิร์น');
   assert.equal(N.statuses.titanAgile, 3);
   assert.ok(cutscenes.includes('titanAgile'));
   N.skillUsedRound = false;
@@ -262,15 +265,38 @@ test('Vigorous Rising Sun: วีดีโอก่อนหมัดแรก �
   assert.equal(N.titan.set.total, 3);
 });
 
-test('ดูดเลือด (มิวสิคคาร์ทปลดล็อก): ฟื้นตามดาเมจที่ทำได้ สูงสุด 2', () => {
+test('ช็อตกัน: ตีโดนฟื้น 1 ทุกหมัด · ชุดเดี่ยว 50% ได้ตีครั้งที่ 2 · ชุดหลายหมัดไม่เพิ่ม', () => {
   const { K, N, T } = setup();
-  bond(K, N);
-  engine.useSkill('K', 'ultimate', ['N']);
   N.hp = 2; T.armor = 0; T.hp = 7;
   Math.random = () => 0.9;
   attack('N', 'T');
-  assert.equal(T.hp, 5, 'พลังโจมตี 1 + บทเพลง 1');
-  assert.equal(N.hp, 4);
+  assert.equal(N.hp, 3);
+  assert.equal(N.titan.set.total, 1);
+  N.titan.set = null;
+  Math.random = () => 0.1;
+  titan.beginAttack(engine, N);
+  assert.equal(N.titan.set.total, 2, 'ช็อตกันได้ตีครั้งที่ 2');
+  // มิวสิคคาร์ทปลดล็อก (2 หมัดอยู่แล้ว) -> ช็อตกันไม่เพิ่ม
+  bond(K, N);
+  engine.useSkill('K', 'ultimate', ['N']);
+  N.titan.set = null;
+  titan.beginAttack(engine, N);
+  assert.equal(N.titan.set.total, 2);
+  assert.ok(T);
+});
+
+test('ตระกูลอาซาฮินะ: หลบดาเมจสกิล 15% · ปืน/สถานะหลบไม่ได้', () => {
+  const { K, T } = setup();
+  Math.random = () => 0.1;
+  engine.withEffectSource(T, () => engine.dealMixed(K, 2));
+  assert.equal(K.hp, 5, 'หลบสกิลได้');
+  K._itemDamage = true;
+  engine.withEffectSource(T, () => engine.dealMixed(K, 2));
+  K._itemDamage = false;
+  assert.equal(K.hp, 3, 'ปืนหลบไม่ได้');
+  Math.random = () => 0.9;
+  engine.withEffectSource(T, () => engine.dealMixed(K, 1));
+  assert.equal(K.hp, 2);
 });
 
 test('Triumphant: ไททันจ่ายที่มี ทักต์จ่ายส่วนที่ขาด · 4 ดาเมจศัตรู ไม่โดนทักต์ · ลบบัฟ · สตั้น+เปราะบางตัวเอง', () => {

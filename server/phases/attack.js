@@ -714,9 +714,8 @@ function doAttack(byId, targetId) {
   // สไตรเกอร์ ยูเรก้า: มือมีดมอบเลือดไหล · เตาปฏิกรณ์ 15% แทงสวน (วีดีโอเล่นก่อนสรุปความเสียหาย)
   const strikerBleed = CHAR_HOOKS.striker.onAttackLanded(engine, attacker, target);
   const strikerCounterFx = CHAR_HOOKS.striker.onAttackedNormally(engine, attacker, target);
-  // ไททัน: หมัดลง -> ลุกไหม้ (ซองแฝด/Vigorous Rising Sun) · ดูดเลือด (มิวสิคคาร์ท) · อ่อนโยน (บทเพลง)
-  const titanAtkFx = CHAR_HOOKS.titan.onAttackLanded(engine, attacker, target,
-    Math.max(0, (hpBefore + ippoArmorBefore) - (target.hp + target.armor)));
+  // ไททัน: หมัดลง -> ลุกไหม้ (ซองแฝด/Vigorous Rising Sun) · ฟื้น 1 (ช็อตกัน) · อ่อนโยน (บทเพลง)
+  const titanAtkFx = CHAR_HOOKS.titan.onAttackLanded(engine, attacker, target);
   // อ่อนโยน (บทเพลงของทักต์) สำหรับมิวสิคคาร์ทตัวอื่นที่ไม่ใช่ไททัน
   const taktGentleHeal = attacker.characterId !== "titan" ? CHAR_HOOKS.takt.songHealOnHit(engine, attacker) : 0;
   // ไททัน "คล่องตัวสูง": สวนผู้โจมตีทันทีในการ์ดสรุปเดียวกัน (จองไว้ตอนถูกเลือกเป็นเป้า)

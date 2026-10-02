@@ -8,10 +8,12 @@
 //    ปฏิเสธแล้วเชิญคนเดิมซ้ำได้เทิร์นถัดไป · โหมดทีมผูกได้เฉพาะเพื่อนร่วมทีม
 //    โหมดอิสระ: ทักต์ + มิวสิคคาร์ทที่ผูกกันเป็นพวกเดียวกัน (sameTeam/isAlly) — เหลือกันเองครบ = ชนะพร้อมกัน
 //    ผูกพันธะอยู่อย่างน้อย 1 คน: ทักต์หลบการโจมตีปกติ 35% (ไม่ขึ้นแจ้งเตือน)
-//  สกิลติดตัว 2 ตระกูลอาซาฮินะ: พลังชีวิต 5 ไม่มีเกราะ · ไม่รับดาเมจจากไพ่แตก (ผลสกิลที่เกาะกับคนไพ่แตกยังโดน)
-//    เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2
+//  สกิลติดตัว 2 ตระกูลอาซาฮินะ: พลังชีวิต 5 ไม่มีเกราะ · ไม่รับดาเมจจากการแพ้รอบ (แต้มน้อยสุด/ไพ่แตก —
+//    ผลสกิลที่เกาะกับคนไพ่แตกยังโดน) · เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2
+//    หลบหลีกติดตัว 15% ทั้งโจมตีปกติ (tryAttackDodge) และดาเมจจากสกิล (adjustIncomingDamage) — หลบปืน (ไอเทม)
+//    และดาเมจจากสถานะไม่ได้ · มีพันธะ: การโจมตีปกติใช้ 35% แทน (เอาค่าสูงสุด ไม่บวกกัน) · "แม่นยำ" เจาะได้
 //
-//  สกิลพื้นฐาน เสียงอันไพเราะ (2 · คูลดาวน์ 2) — เลือกใครก็ได้ 1 คน (ตัวเองได้)
+//  สกิลพื้นฐาน เสียงอันไพเราะ (2 · คูลดาวน์ 3) — เลือกใครก็ได้ 1 คน (ตัวเองได้)
 //    โชคลาภ +1 · ฟื้นพลังชีวิต 1 · เกราะ +1 — ให้ตัวเองฟื้นพลังชีวิต 2 · ให้มิวสิคคาร์ทในพันธะได้โชคลาภ 2
 //  สกิลรอง บรรเลงเสียงสวรรค์ (0 · ไม่นับเป็นการใช้สกิล · มิวสิคคาร์ทละ 1 ครั้ง/เทิร์น)
 //    เลือกมิวสิคคาร์ทในพันธะที่มี "บทเพลงที่ไม่อาจลืม" อยู่ แล้วเลือกโหมด (item):
@@ -46,9 +48,10 @@ const MAX_BONDS = 2;
 const TAKT_HP = 5;
 const TAKT_ARMOR = 0;
 const BOND_DODGE = 35;
+const INNATE_DODGE = 15;
 const REGEN_EVERY = 3;
 const REGEN_HP = 2;
-const BASIC_COOLDOWN = 2;
+const BASIC_COOLDOWN = 3;
 const BASIC_FORTUNE = 1;
 const BASIC_FORTUNE_CART = 2;
 const BASIC_HEAL = 1;
@@ -106,7 +109,7 @@ function unbond(engine, takt, cart) {
 
 module.exports = {
   id: ID,
-  IMG, VIDEO, MUSIC_CARTS, MODES, MAX_BONDS, TAKT_HP, TAKT_ARMOR, BOND_DODGE, REGEN_EVERY, REGEN_HP,
+  IMG, VIDEO, MUSIC_CARTS, MODES, MAX_BONDS, TAKT_HP, TAKT_ARMOR, BOND_DODGE, INNATE_DODGE, REGEN_EVERY, REGEN_HP,
   BASIC_COOLDOWN, SONG_TURNS, SONG_ATK,
   isTakt, isMusicCart, taktOf, groupOf, songActive, modeOf,
 
@@ -215,12 +218,12 @@ module.exports = {
     }
   },
 
-  // ---------- สกิลติดตัว 2: ไม่รับดาเมจจากไพ่แตก ----------
-  bustDamageImmune(p) { return isTakt(p); },
+  // ---------- สกิลติดตัว 2: ไม่รับดาเมจจากการแพ้รอบ (แต้มน้อยสุด/ไพ่แตก) ----------
+  lossDamageImmune(p) { return isTakt(p); },
 
-  // ---------- หลบการโจมตีปกติ: ทักต์ 35% (มีพันธะ) · มิวสิคคาร์ทโหมดทุ้มต่ำ 5% ----------
+  // ---------- หลบการโจมตีปกติ: ทักต์ 15% ติดตัว / 35% เมื่อมีพันธะ (ไม่บวกกัน) · มิวสิคคาร์ทโหมดทุ้มต่ำ 5% ----------
   dodgeChance(engine, target) {
-    if (isTakt(target)) return bondedCarts(engine, target).length ? BOND_DODGE : 0;
+    if (isTakt(target)) return bondedCarts(engine, target).length ? BOND_DODGE : INNATE_DODGE;
     if (isMusicCart(target) && songActive(target) && MODES[modeOf(target)].dodge) return MODES[modeOf(target)].dodge;
     return 0;
   },
@@ -228,14 +231,16 @@ module.exports = {
     const pct = this.dodgeChance(engine, target);
     if (!target || !target.alive || !(pct > 0) || Math.random() * 100 >= pct) return false;
     const takt = isTakt(target);
+    const bondDodge = takt && pct === BOND_DODGE;
+    const why = bondDodge ? "คอนดักเตอร์" : takt ? "ตระกูลอาซาฮินะ" : "ทุ้มต่ำ";
     target.wasAttacked = true;
-    engine.log(`💨 หลบหลีก! ${target.name} หลบการโจมตีของ ${attacker.name} ได้ (${takt ? "คอนดักเตอร์" : "ทุ้มต่ำ"} · ${pct}%)`);
+    engine.log(`💨 หลบหลีก! ${target.name} หลบการโจมตีของ ${attacker.name} ได้ (${why} · ${pct}%)`);
     engine.setLastAttack({
       byName: attacker.name, byImg: engine.displayImg(attacker), byColor: engine.colorOf(attacker),
       targetName: target.name, targetImg: engine.displayImg(target), targetColor: engine.colorOf(target),
       dmg: 0, dodge: true,
       // คอนดักเตอร์: หลบโดยไม่ขึ้นป้ายบอกเหตุผล (สเปค "ไม่ต้องขึ้นแจ้งเตือน")
-      skills: takt ? [] : [{ name: `ทุ้มต่ำ — หลบหลีก (${pct}%)`, img: IMG.skill2, by: target.name, color: engine.colorOf(target), side: "def" }],
+      skills: bondDodge ? [] : [{ name: `${why} — หลบหลีก (${pct}%)`, img: takt ? IMG.base : IMG.skill2, by: target.name, color: engine.colorOf(target), side: "def" }],
     });
     engine.runCutsceneQueue(() => {
       engine.setGameState("ATTACKING");
@@ -243,6 +248,16 @@ module.exports = {
       engine.broadcastState();
     });
     return true;
+  },
+
+  // ---------- ตระกูลอาซาฮินะ: หลบดาเมจจากสกิล 15% (ไม่หลบปืน/สถานะ · แม่นยำเจาะได้) ----------
+  adjustIncomingDamage(engine, p, n, isNormalAttack) {
+    if (!isTakt(p) || !(n > 0) || isNormalAttack || p._statusDamage || p._itemDamage) return n;
+    const src = engine.effectSourceId;
+    if (!src || src === p.id || engine.sourceAccurate() || Math.random() * 100 >= INNATE_DODGE) return n;
+    engine.log(`💨 ${p.name} ตระกูลอาซาฮินะ — หลบความเสียหายจากสกิลได้ (${INNATE_DODGE}%)`);
+    engine.skillFlash({ name: `ตระกูลอาซาฮินะ — หลบสกิล (${INNATE_DODGE}%)`, img: IMG.base, by: p.name, color: engine.colorOf(p) });
+    return 0;
   },
 
   // ---------- ผลของบทเพลง (ungated — มิวสิคคาร์ทตัวไหนก็ได้) ----------
@@ -323,7 +338,7 @@ module.exports = {
         role: "conductor",
         bonds: bondedCarts(engine, p).map((c) => ({ id: c.id, name: c.name, song: songActive(c) ? (c.statuses.taktSong || 0) : 0, mode: modeOf(c) })),
         maxBonds: MAX_BONDS,
-        dodge: bondedCarts(engine, p).length ? BOND_DODGE : 0,
+        dodge: bondedCarts(engine, p).length ? BOND_DODGE : INNATE_DODGE,
       };
     }
     if (isMusicCart(p)) {
