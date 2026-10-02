@@ -442,7 +442,7 @@ function tryNoonRevive(engine, p) {
   engine.log?.(`☀️ ${p.name} ฟื้นคืนชีพเข้าสู่ Last Stand!`);
   return true;
 }
-// ไพ่แตกในร่าง Last Stand: ไม่รับความเสียหายจากการที่ไพ่แตก (ยังได้แต้มสกิลจากการแพ้ตามปกติ)
+// ไพ่แตกในร่าง Last Stand: ไม่รับความเสียหายจากการที่ไพ่แตก
 function bustDamageImmune(p) { return p && p.characterId === ID && isLast(p); }
 function hburnImmune(p) { return p && p.characterId === ID && isLast(p); }
 function hburnLabel(p) { return hburnImmune(p) ? "Last Stand ไม่รับดาเมจจากลุกไหม้" : null; }

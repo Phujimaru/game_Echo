@@ -216,42 +216,36 @@ function resolveRound() {
       l.result = "lose";
       if (combat.sealActive(l)) {
         // เรจูอาคมบัญชา (อมตะ): ไม่รับความเสียหายใดๆ เทิร์นนี้
-        combat.addSkill(l, 1);
         combat.firePassive(l, "lose");
         match.lastLog.push(`📜 ${l.name} อาคมบัญชาคุ้มครอง — ไม่รับความเสียหายจากการแพ้`);
         continue;
       }
       if (l.beatSaved) {
         // หลังกันตายทำงานแล้ว: ความเสียหายจากการแพ้ตอนจั่วการ์ดไม่มีผล ไม่ว่าห่าง 21 แค่ไหน
-        combat.addSkill(l, 1);
         combat.firePassive(l, "lose");
         match.lastLog.push(`⚡ ${l.name} กันตายทำงานแล้ว — ไม่รับความเสียหายจากการแพ้`);
         continue;
       }
       if ((l.statuses.monster || 0) > 0) {
         // ร่างไคจู (MonsterLive): แพ้เพราะแต้มน้อยสุด/ไพ่แตก รับความเสียหายน้อยลง 1 หน่วย (1 -> 0)
-        combat.addSkill(l, 1);
         combat.firePassive(l, "lose");
         match.lastLog.push(`🦖 ${l.name} ร่างไคจู — ไม่รับความเสียหายจากการแพ้`);
         continue;
       }
       if (cardDeck.bustedOf(l) && CHAR_HOOKS.haruka.bustDamageImmune(l)) {
-        // New Omega (ฮารุกะ): โดนบังคับให้ไพ่แตก จึงไม่รับความเสียหายจากการแตกครั้งนี้ (ยังได้แต้มสกิลปกติ)
-        combat.addSkill(l, 1);
+        // New Omega (ฮารุกะ): โดนบังคับให้ไพ่แตก จึงไม่รับความเสียหายจากการแตกครั้งนี้
         combat.firePassive(l, "lose");
         match.lastLog.push(`💥 ${l.name} โดน New Omega ระเบิดแต้มการ์ด — ไม่รับความเสียหายจากการที่ไพ่แตก`);
         continue;
       }
       if (cardDeck.bustedOf(l) && CHAR_HOOKS.escanor.bustDamageImmune(l)) {
-        // เอสคานอร์ร่าง Last Stand: ไม่รับความเสียหายจากการที่ไพ่แตก (ยังได้แต้มสกิลจากการแพ้ตามปกติ)
-        combat.addSkill(l, 1);
+        // เอสคานอร์ร่าง Last Stand: ไม่รับความเสียหายจากการที่ไพ่แตก
         combat.firePassive(l, "lose");
         match.lastLog.push(`🔥 ${l.name} Last Stand — ไม่รับความเสียหายจากการที่ไพ่แตก`);
         continue;
       }
       if (CHAR_HOOKS.producer_lumi.isLossImmune(engine, l)) {
         // โปรดิวเซอร์ (ความฝันของฉันคือเธอ): ขณะท่าไม้ตายทำงาน ไม่รับดาเมจแพ้จั่ว/ไพ่แตก
-        combat.addSkill(l, 1);
         combat.firePassive(l, "lose");
         match.lastLog.push(`🌈 ${l.name} ความฝันของฉันคือเธอ — ไม่รับความเสียหายจากการแพ้/ไพ่แตก`);
         continue;
@@ -265,7 +259,6 @@ function resolveRound() {
       for (let i = 0; i < lossDmg; i++) combat.damageSoft(l);
       // Beat Mode กันตาย: ทำงานทันทีแม้ความเสียหายถึงตายมาจากการแพ้จั่ว/แตก
       combat.maybeBeatSave(l);
-      combat.addSkill(l, 1); // โดนความเสียหายเพราะแต้มห่างจาก 21 มากที่สุด +1
       CHAR_HOOKS.mageslayer.onBustOrLoseRoll(engine, l);
       combat.firePassive(l, "lose");
       match.lastLog.push(`${l.name} แต้มน้อยสุด รับความเสียหาย -${lossDmg}`);
