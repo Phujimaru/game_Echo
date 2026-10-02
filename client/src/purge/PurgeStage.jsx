@@ -56,6 +56,10 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
   const [ortDice, setOrtDice] = useState(null);
   const [forkPos, setForkPos] = useState([]);
   const [picking, setPicking] = useState(null); // ไอเทมที่ต้องเลือกค่าก่อนใช้ (เต๋าทอง / ผลัก)
+  const [viewChanged, setViewChanged] = useState(false); // ผู้เล่นหมุน/ซูมกล้องเอง → โชว์ปุ่มคืนมุม
+  const [following, setFollowing] = useState(null);
+  const [logOpen, setLogOpen] = useState(false);
+  const [seenLog, setSeenLog] = useState(0); // id บันทึกล่าสุดที่เห็นแล้ว (จุดแจ้งเตือนบนแถบ)
   const timers = useRef([]);
 
   const st = useMemo(() => sceneState(purge, players, youId), [purge, players, youId]);
@@ -80,6 +84,7 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
         setLost({ names, k });
         later(2600, () => setLost((l) => (l && l.k === k ? null : l)));
       },
+      onView: (changed) => setViewChanged(changed),
       onOrtDice: (roll) => {
         const k = Date.now();
         setOrtDice({ roll, k });
@@ -146,6 +151,15 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
     return () => { cancelAnimationFrame(raf); setForkPos([]); };
   }, [choices]);
 
+  const logList = purge.log || [];
+  const lastLogId = logList.length ? logList[logList.length - 1].id : 0;
+  const toggleLog = () => { clickSound(); setLogOpen((o) => !o); setSeenLog(lastLogId); };
+  const follow = (id) => {
+    clickSound();
+    const next = following === id || id === youId ? null : id;
+    setFollowing(next);
+    sceneRef.current?.setFollow(next);
+  };
   const roll = () => { clickSound(); setPicking(null); socket.emit("purgeRoll"); };
   const choose = (nextId) => { clickSound(); socket.emit("purgeChoose", { nextId }); };
   const applyItem = (it, extra = {}) => { clickSound(); setPicking(null); socket.emit("purgeItem", { uid: it.uid, ...extra }); };
@@ -163,6 +177,7 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
   const humans = players.filter((p) => !p.isBoss && purge.pl?.[p.id]);
   const nameOf = (id) => players.find((p) => p.id === id)?.name || "?";
   const canAct = rolling && me && !me.finished && !purge.lost.includes(youId);
+  const spectating = !hidden && (purge.lost.includes(youId) || !!me?.finished);
   const pushTargets = picking?.type === "push"
     ? humans.filter((p) => p.id !== youId && p.alive && !purge.pl[p.id].finished && progOf(p.id) - myProg >= 0 && progOf(p.id) - myProg <= 6)
     : [];
@@ -205,42 +220,66 @@ export default function PurgeStage({ purge, players, youId, night, hidden, gameS
         )}
         {watching && <div className="pg-watch">ชมการปะทะ</div>}
 
-        {/* อันดับเข้าเส้นชัย */}
-        {purge.finished?.length > 0 && (
-          <div className="pg-rank">
-            {purge.finished.map((id, i) => (
-              <div key={id} className={`pg-rank-row${id === youId ? " is-me" : ""}`}>
-                <b>{i + 1}</b><span>{nameOf(id)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* สถานะการทอยของทุกคน */}
-        {rolling && (
-          <div className="pg-roster">
-            {humans.map((p) => {
-              const ps = purge.pl[p.id];
-              const r = purge.rolls?.[p.id];
-              const out = purge.lost.includes(p.id) || ps.finished;
-              return (
-                <div key={p.id} className={`pg-roster-row${out ? " is-out" : ""}${p.id === youId ? " is-me" : ""}`} style={{ "--c": p.color || "#fff" }}>
-                  <span className="pg-roster-dot" />
-                  <span className="pg-roster-name">{p.name}</span>
-                  <span className="pg-roster-st">
-                    {ps.finished ? `อันดับ ${ps.rank}` : purge.lost.includes(p.id) ? "LOST" : ps.done && !r ? "⛓️" : ps.choices ? "เลือกทาง" : r ? `🎲 ${r.total}` : "…"}
-                  </span>
+        {/* ซ้าย: สถานะทุกคน (คลิกเพื่อตามดู) + อันดับเข้าเส้นชัย */}
+        <div className="pg-side">
+          {(rolling || spectating) && (
+            <div className="pg-roster">
+              {humans.map((p) => {
+                const ps = purge.pl[p.id];
+                const r = purge.rolls?.[p.id];
+                const lostP = purge.lost.includes(p.id);
+                const out = lostP || ps.finished;
+                const on = following === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    disabled={out}
+                    className={`pg-roster-row${out ? " is-out" : ""}${p.id === youId ? " is-me" : ""}${on ? " is-on" : ""}`}
+                    style={{ "--c": p.color || "#fff" }}
+                    onClick={() => follow(p.id)}
+                  >
+                    <span className="pg-roster-dot" />
+                    <span className="pg-roster-name">{p.name}</span>
+                    <span className="pg-roster-st">
+                      {ps.finished ? `อันดับ ${ps.rank}` : lostP ? "LOST" : !rolling ? "" : ps.done && !r ? "⛓️" : ps.choices ? "เลือกทาง" : r ? `🎲 ${r.total}` : "…"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {purge.finished?.length > 0 && (
+            <div className="pg-rank">
+              {purge.finished.map((id, i) => (
+                <div key={id} className={`pg-rank-row${id === youId ? " is-me" : ""}`}>
+                  <b>{i + 1}</b><span>{nameOf(id)}</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* บันทึกเหตุการณ์ล่าสุด (ช่องกิจกรรม / ไอเทม) */}
-        {purge.log?.length > 0 && (
-          <div className="pg-log">
-            {purge.log.map((m, i) => <div key={`${purge.turn}-${i}-${m}`} className="pg-log-row">{m}</div>)}
+        {/* ขวา: แผงบันทึกเหตุการณ์ สไลด์เปิด/ปิด */}
+        <div className={`pg-logbox${logOpen ? " is-open" : ""}`}>
+          <button type="button" className="pg-logtab" onClick={toggleLog}>
+            <span>{logOpen ? "▶" : "◀"}</span>
+            <span className="pg-logtab-t">บันทึก</span>
+            {!logOpen && lastLogId > seenLog && <i className="pg-logdot" />}
+          </button>
+          <div className="pg-logpanel">
+            <div className="pg-logh">บันทึก</div>
+            <div className="pg-loglist">
+              {logList.length === 0 && <div className="pg-logempty">—</div>}
+              {[...logList].reverse().map((e) => (
+                <div key={e.id} className="pg-logrow"><b>{e.turn}</b><span>{e.msg}</span></div>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {viewChanged && !hidden && (
+          <button type="button" className="pg-viewreset" onClick={() => { clickSound(); sceneRef.current?.resetView(); setFollowing(null); }}>มุมเดิม</button>
         )}
 
         {/* ปุ่มเลือกทางแยก */}

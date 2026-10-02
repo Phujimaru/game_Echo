@@ -219,7 +219,7 @@ export function createPurgeScene(canvas, opts = {}) {
   const skyCol = REG[0].sky.clone();
   scene.background = skyCol;
   scene.fog = new T.Fog(skyCol, 200, 600);
-  const camera = new T.PerspectiveCamera(22, 16 / 9, 1, 3000);
+  const camera = new T.PerspectiveCamera(34, 16 / 9, 1, 3000);
 
   scene.add(new T.HemisphereLight(0xf2f8ff, 0x4a4234, 1.35));
   const sun = new T.DirectionalLight(0xfff1dc, 2.0);
@@ -1123,17 +1123,30 @@ export function createPurgeScene(canvas, opts = {}) {
   let camDist = 40, camMode = "follow";
   const tmpV = new T.Vector3();
   function pointAt(th, z, lift = 0) { return surfPoint(th, z, lift); } // lift บวก = ขึ้นจากพื้น (เข้าหาแกนท่อ)
+  // กล้องต้องอยู่ในรางหรือเหนือรอยตัด — ห้ามจมเข้าผนัง/ไปนอกท่อ (หมุนกล้องเอง/ซูมออกไกล)
+  function insideTrough(p) {
+    if (p.y > CUT + 3) return Math.abs(p.x) < R * 0.8; // เหนือรอยตัดได้ แต่ต้องไม่ออกนอกความกว้างราง (จะมองทะลุผนังด้านนอก)
+    const th = Math.atan2(p.y, p.x), z = Math.min(Z1, Math.max(Z0, p.z));
+    return Math.hypot(p.x, p.y) < R - heightAt(th, z) - 3;
+  }
   function poseLook(look, el, az, dist) {
     const a = az * Math.PI / 180;
     // ใกล้ปากท่อ: กล้องห้ามถอยไปหลังฝาปิดท่อ — ยกมุมกล้องขึ้นแทน
     for (; ;) {
       const e = el * Math.PI / 180;
       const off = new T.Vector3(Math.cos(e) * Math.cos(a), Math.sin(e), Math.cos(e) * Math.sin(a)).multiplyScalar(dist);
-      if (look.z + off.z >= Z0 + 4 || el >= 84) return { pos: look.clone().add(off), look: look.clone(), dist };
+      const pos = look.clone().add(off);
+      if (el >= 84 || (pos.z >= Z0 + 4 && insideTrough(pos))) return { pos, look: look.clone(), dist };
       el += 2;
     }
   }
+  // มุมกล้องที่ผู้เล่นปรับเอง (ลากซ้าย = หมุน · ล้อ = ซูม · ลากขวา = เลื่อนตามท่อ · ดับเบิลคลิก = คืนค่า) + เลือกคนที่จะตามดู
+  const user = { az: 0, el: 0, zoom: 1, pan: 0 };
+  let followId = null;
+  const userChanged = () => user.az !== 0 || user.el !== 0 || user.zoom !== 1 || user.pan !== 0 || followId != null;
   function focusPlayer() {
+    const pick = followId && players[followId];
+    if (pick && !pick.lostShown && !pick.finished) return pick;
     const me = state.me && players[state.me];
     if (me && !me.lostShown && !me.finished) return me;
     // เราตกรอบ/เข้าเส้นชัยแล้ว: ตามคนที่ยังเล่นอยู่ที่นำหน้าสุด
@@ -1145,11 +1158,17 @@ export function createPurgeScene(canvas, opts = {}) {
     const P = focusPlayer();
     if (!P) return poseLook(new T.Vector3(0, -R + 4, zOf(0)), 50, 200, 120);
     // ทางแยก: ยกกล้องขึ้นให้เห็นทุกเส้นทาง · กำลังเดิน: มุมบุคคลที่สามหลังหมาก · ยืนนิ่ง: ใกล้หมาก เยื้องข้างเล็กน้อย
-    if (P.data.choices && !P.seg && !P.queue.length) return poseLook(pointAt(P.th, P.z + 26, 1), 48, 252, 125);
-    if (P.seg && P.seg.kind !== "dice") return poseLook(pointAt(P.th, P.z + 12, 2.4), 21, 264, 56);
-    return poseLook(pointAt(P.th, P.z + 8, 2.2), 31, 252, 72);
+    let b;
+    if (P.data.choices && !P.seg && !P.queue.length) b = { ahead: 24, lift: 1, el: 46, az: 252, dist: 100 };
+    else if (P.seg && P.seg.kind !== "dice") b = { ahead: 11, lift: 2.4, el: 22, az: 264, dist: 46 };
+    else b = { ahead: 8, lift: 2.2, el: 32, az: 252, dist: 58 };
+    // + มุมที่ผู้เล่นปรับเอง
+    const lz = Math.min(Z1 - 20, Math.max(Z0 + 6, P.z + b.ahead + user.pan));
+    const th = Math.abs(user.pan) > 1 ? pathCenter(lz) + (P.th - pathCenter(P.z)) : P.th;
+    const el = Math.min(80, Math.max(10, b.el + user.el));
+    return poseLook(pointAt(th, lz, b.lift), el, b.az + user.az, b.dist * user.zoom);
   }
-  function nodeView(nodeId) { const n = nodeWorld(nodeId); return poseLook(pointAt(n.th, n.z, 1), 50, 222, 60); }
+  function nodeView(nodeId) { const n = nodeWorld(nodeId); return poseLook(pointAt(n.th, n.z, 1), 50, 222, 48); }
   function camTo(target, dur, lift = 0) {
     const from = { pos: cam.pos.clone(), look: cam.look.clone(), dist: camDist };
     return animate(dur, (u) => {
@@ -1287,6 +1306,7 @@ export function createPurgeScene(canvas, opts = {}) {
     return chain.then(go(() => wait(T_END)))
       .then(() => { if (my === token) { busy = false; camMode = "follow"; sync(latest); } });
   }
+  const ortTop = () => ortSpr.position.y + ortSpr.scale.y * 0.62 + 3;
   // ลูกเต๋าของ ORT (ลอยเหนือ ORT ให้ทุกคนเห็นแต้ม)
   function showOrtDice(die) {
     const spr = new T.Sprite(new T.SpriteMaterial({ map: diceTex[1], depthWrite: false, depthTest: false, transparent: true }));
@@ -1300,13 +1320,13 @@ export function createPurgeScene(canvas, opts = {}) {
         flip += dt;
         if (flip > 0.07) { flip = 0; spr.material.map = diceTex[1 + ((Math.random() * 6) | 0)]; }
         spr.material.rotation = (1 - tt) * 10;
-        spr.position.y = 16 + Math.sin(tt * Math.PI * 3) * (1 - tt) * 3;
-        spr.scale.setScalar(4 + Math.sin(tt * Math.PI) * 1.2);
+        spr.position.y = ortTop() + Math.sin(tt * Math.PI * 3) * (1 - tt) * 3;
+        spr.scale.setScalar(5.5 + Math.sin(tt * Math.PI) * 1.5);
       } else {
         spr.material.map = diceTex[face];
         spr.material.rotation = 0;
-        spr.position.y = 16;
-        spr.scale.setScalar(5);
+        spr.position.y = ortTop();
+        spr.scale.setScalar(7);
         spr.material.opacity = tt > T_ORT_DICE + 0.6 ? 1 - (tt - T_ORT_DICE - 0.6) / 0.6 : 1;
       }
     }, () => { ort.remove(spr); spr.material.dispose(); });
@@ -1361,10 +1381,12 @@ export function createPurgeScene(canvas, opts = {}) {
       const oz = zOf(ortCur) - 3;
       placeOn(ort, pathCenter(oz), oz, 0);
       ort.position.y += ortHop;
-      const ko = Math.min(1.9, Math.max(0.6, camDist / 120));
-      ortSpr.scale.set(9 * ko, 10.4 * ko, 1);
-      ortSpr.position.y = 6.4 * ko + Math.sin(time * 2.2) * 0.25;
-      ortRing.scale.setScalar(1 + 0.06 * Math.sin(time * 4));
+      // ORT ตัวใหญ่กว่าหมากชัดเจนทุกระยะกล้อง (ใกล้สุดไม่ต่ำกว่า 0.95)
+      const ko = Math.min(2.1, Math.max(0.95, camDist / 80));
+      ortSpr.scale.set(14 * ko, 16.2 * ko, 1);
+      ortSpr.position.y = 9.6 * ko + Math.sin(time * 2.2) * 0.3;
+      ortAura.scale.setScalar(30 * ko); ortAura.position.y = 9 * ko;
+      ortRing.scale.setScalar(1.35 + 0.08 * Math.sin(time * 4));
     }
     U.uCrystal.value = crystalZ;
     updateRift(dt);
@@ -1395,7 +1417,7 @@ export function createPurgeScene(canvas, opts = {}) {
     fireflies.material.opacity = (0.6 + 0.4 * Math.sin(time * 3)) * (0.5 + nightK * 0.5);
     for (const m of waterMats) m.map.offset.y -= dt * 1.4;
     if (camMode === "follow" && !busy) {
-      const t = followPose(), k = 1 - Math.exp(-dt * 3.2);
+      const t = followPose(), k = 1 - Math.exp(-dt * (dragging ? 12 : 3.2));
       cam.pos.lerp(t.pos, k); cam.look.lerp(t.look, k); camDist = lerp(camDist, t.dist, k);
     }
     // กันพลาด: ค่ากล้อง/สีฟ้าเพี้ยน (NaN) → กลับมุมตามหมาก ไม่ปล่อยจอว่าง
@@ -1429,6 +1451,45 @@ export function createPurgeScene(canvas, opts = {}) {
   snapTo(followPose());
   raf = requestAnimationFrame(frame);
 
+  // ---------- ผู้เล่นคุมกล้องเอง ----------
+  let drag = null, dragging = false;
+  const notifyView = () => opts.onView?.(userChanged());
+  function onDown(e) {
+    if (busy) return;
+    drag = { x: e.clientX, y: e.clientY, btn: e.button };
+    dragging = true;
+    canvas.setPointerCapture?.(e.pointerId);
+  }
+  function onMove(e) {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (drag.btn === 2 || e.shiftKey) {
+      // เลื่อนไปตามท่อ (ลากขึ้น = ไปข้างหน้า)
+      user.pan = Math.max(-260, Math.min(260, user.pan + dy * 0.12 * user.zoom));
+    } else {
+      user.az = Math.max(-150, Math.min(150, user.az - dx * 0.22));
+      user.el = Math.max(-25, Math.min(50, user.el + dy * 0.18));
+    }
+    dirty = true; notifyView();
+  }
+  function onUp(e) { drag = null; dragging = false; canvas.releasePointerCapture?.(e.pointerId); }
+  function onWheel(e) {
+    e.preventDefault();
+    if (busy) return;
+    user.zoom = Math.max(0.45, Math.min(2.4, user.zoom * Math.exp(e.deltaY * 0.0012)));
+    dirty = true; notifyView();
+  }
+  function resetView() { user.az = 0; user.el = 0; user.zoom = 1; user.pan = 0; followId = null; dirty = true; notifyView(); }
+  const onCtx = (e) => e.preventDefault();
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", onUp);
+  canvas.addEventListener("wheel", onWheel, { passive: false });
+  canvas.addEventListener("contextmenu", onCtx);
+  canvas.addEventListener("dblclick", resetView);
+
   return {
     setBoard,
     sync(s) { latest = s; if (!busy) sync(s); },
@@ -1440,8 +1501,18 @@ export function createPurgeScene(canvas, opts = {}) {
     playIntro, playOrt, playFight, returnFromFight, setNight, resize, project,
     setPaused(v) { paused = !!v; if (!paused) { dirty = true; last = performance.now(); } },
     isBusy: () => busy,
+    resetView,
+    // ตามดูผู้เล่นคนอื่น (null = กลับมาตามหมากของเรา)
+    setFollow(id) { followId = id && id !== state.me ? id : null; user.pan = 0; dirty = true; notifyView(); },
     dispose() {
       dead = true; cancelAnimationFrame(raf); cancelAll();
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointercancel", onUp);
+      canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("contextmenu", onCtx);
+      canvas.removeEventListener("dblclick", resetView);
       removeMissing([]);
       scene.traverse((o) => { if (o.isInstancedMesh) o.dispose(); });
       for (const d of disposables) d.dispose?.();

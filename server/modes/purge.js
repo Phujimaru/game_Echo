@@ -43,6 +43,7 @@ function fresh() {
   return {
     pl: {}, ort: null, ortBonus: 0, lost: [], finished: [], turn: 0, scene: null, seq: 0, walkSeq: 0,
     walks: {}, rolls: {}, traps: {}, fights: [], fightIdx: -1, fight: null, result: null, winnerId: null, itemSeq: 0,
+    history: [], logSeq: 0, // บันทึกเหตุการณ์ทั้งเกม (แผงบันทึกด้านขวาของ client)
   };
 }
 function state() { return match.purge || (match.purge = fresh()); }
@@ -87,7 +88,12 @@ function hold(seconds, then, gameState = "CUTSCENE") {
   timers.startPhaseTimer(Math.max(1, Math.ceil(seconds)), then);
   view.broadcastState();
 }
-function log(msg) { match.lastLog.push(msg); }
+function log(msg) {
+  match.lastLog.push(msg);
+  const s = state();
+  s.history.push({ id: ++s.logSeq, turn: s.turn, msg });
+  if (s.history.length > 80) s.history.shift();
+}
 
 // ---------- จบเกม ----------
 function finishGame() {
@@ -548,6 +554,6 @@ function purgeStateFor(viewerId) {
     scene: s.scene ? { ...s.scene } : null,
     result: s.result,
     winnerId: s.winnerId,
-    log: match.lastLog.slice(-6),
+    log: s.history.slice(-50),
   };
 }

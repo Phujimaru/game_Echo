@@ -1,5 +1,6 @@
 /* โหมด Purge — ฉากอุโมงค์ท่อ + HUD ของโหมด (ห้ามใส่ letter-spacing/uppercase กับข้อความไทย) */
-.pg-stage { position: absolute; inset: 0; z-index: -10; pointer-events: none; background: #dde9ee; }
+.pg-stage { position: absolute; inset: 0; z-index: -10; background: #dde9ee; cursor: grab; touch-action: none; }
+.pg-stage:active { cursor: grabbing; }
 .pg-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 .pg-hud { position: absolute; inset: 0; z-index: 40; pointer-events: none; font-family: "IBM Plex Sans Thai", sans-serif; color: #f2f7ff; }
@@ -144,29 +145,23 @@
 .pg-fork-long { background: #3f9a62; }
 .pg-fork-secret { background: #7a5cd6; }
 
-.pg-roster {
-  position: absolute; left: 18px; top: 110px; display: flex; flex-direction: column; gap: 6px;
-}
+.pg-side { position: absolute; left: 18px; top: 110px; display: flex; flex-direction: column; gap: 14px; pointer-events: auto; }
+.pg-roster { display: flex; flex-direction: column; gap: 6px; }
 .pg-roster-row {
   display: flex; align-items: center; gap: 8px; min-width: 190px; padding: 6px 12px; border-radius: 10px;
-  background: rgba(8, 16, 30, .66); font-size: 14px; font-weight: 600;
+  background: rgba(8, 16, 30, .66); font-family: inherit; font-size: 14px; font-weight: 600; color: inherit;
+  border: 1px solid transparent; text-align: left; cursor: pointer;
 }
+.pg-roster-row:hover:not(:disabled) { border-color: rgba(255, 255, 255, .35); }
+.pg-roster-row:disabled { cursor: default; }
+.pg-roster-row.is-on { border-color: #ffd98a; background: rgba(60, 44, 8, .78); }
 .pg-roster-row.is-me { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); }
 .pg-roster-row.is-out { opacity: .5; }
 .pg-roster-dot { width: 10px; height: 12px; background: var(--c); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .pg-roster-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg-roster-st { color: #ffd98a; }
 
-.pg-log {
-  position: absolute; right: 18px; bottom: 34px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 360px;
-}
-@keyframes pgLogIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-.pg-log-row {
-  padding: 5px 12px; border-radius: 8px; background: rgba(8, 16, 30, .66); font-size: 14px; font-weight: 500;
-  animation: pgLogIn .3s ease-out both;
-}
-
-.pg-rank { position: absolute; right: 18px; top: 110px; display: flex; flex-direction: column; gap: 6px; }
+.pg-rank { display: flex; flex-direction: column; gap: 6px; }
 .pg-rank-row {
   display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 10px;
   background: rgba(60, 44, 8, .78); border: 1px solid rgba(255, 217, 138, .5); font-size: 15px; font-weight: 600;
@@ -184,3 +179,36 @@
 .pg-ortdice-t { font-family: "Chakra Petch", sans-serif; font-weight: 700; font-size: 30px; color: #ffc2cd; }
 .pg-ortdice-n { font-family: "Chakra Petch", sans-serif; font-weight: 700; font-size: 64px; line-height: 1; color: #fff; }
 .pg-hud.is-over { display: none; }
+
+/* ---------- แผงบันทึกด้านขวา (สไลด์เปิด/ปิด) ---------- */
+.pg-logbox {
+  position: absolute; right: 0; top: 110px; bottom: 120px; width: 340px; pointer-events: auto;
+  transform: translateX(100%); transition: transform .32s cubic-bezier(.3, .7, .2, 1);
+}
+.pg-logbox.is-open { transform: none; }
+.pg-logtab {
+  position: absolute; right: 100%; top: 0; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 8px; border-radius: 10px 0 0 10px; cursor: pointer;
+  background: rgba(8, 16, 30, .8); border: 1px solid rgba(255, 255, 255, .18); border-right: 0;
+  color: #dbe7f7; font-family: inherit; font-size: 14px; font-weight: 600;
+}
+.pg-logtab:hover { background: rgba(20, 34, 58, .9); }
+.pg-logtab-t { writing-mode: vertical-rl; }
+.pg-logdot { width: 8px; height: 8px; border-radius: 50%; background: #ffd98a; box-shadow: 0 0 8px #ffd98a; }
+.pg-logpanel {
+  height: 100%; display: flex; flex-direction: column;
+  background: rgba(8, 16, 30, .86); border: 1px solid rgba(255, 255, 255, .16); border-right: 0; border-radius: 0 0 0 12px;
+}
+.pg-logh { padding: 10px 14px; font-size: 16px; font-weight: 700; border-bottom: 1px solid rgba(255, 255, 255, .12); }
+.pg-loglist { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.pg-logrow { display: flex; gap: 10px; padding: 5px 6px; border-radius: 6px; font-size: 14px; line-height: 1.45; }
+.pg-logrow:nth-child(odd) { background: rgba(255, 255, 255, .04); }
+.pg-logrow b { flex: none; min-width: 22px; color: #8fa6c4; font-family: "Chakra Petch", sans-serif; font-weight: 600; text-align: right; }
+.pg-logempty { color: #8fa6c4; padding: 6px; }
+
+.pg-viewreset {
+  position: absolute; right: 24px; bottom: 40px; pointer-events: auto; cursor: pointer;
+  padding: 8px 18px; border-radius: 999px; background: rgba(8, 16, 30, .8); border: 1px solid rgba(255, 255, 255, .25);
+  color: #dbe7f7; font-family: inherit; font-size: 15px; font-weight: 600;
+}
+.pg-viewreset:hover { border-color: #ffd98a; }
