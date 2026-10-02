@@ -38,6 +38,12 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
   return { name: "main_home" };
 }
 
+// เฟสที่นับว่า "อยู่ในแมตช์" — ข้ามขอบนี้เมื่อไหร่ App รีเซ็ตตำแหน่งเพลงทั้งหมด (เพลงเริ่มจากต้น)
+//  PURGE_ROLL ต้องอยู่ในนี้ ไม่งั้นทุกเทิร์นของ Purge (ทอยเต๋า ↔ ฉาก ORT) เพลงด่านจะเริ่มใหม่
+export function isMatchPhase(phase) {
+  return ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE", "PURGE_ROLL"].includes(phase);
+}
+
 // Purge: เพลงด่านตามสถานการณ์ในท่อ (ลำดับความสำคัญจากบนลงล่าง)
 //  เหลือ 2 คนสุดท้าย (เกมที่เริ่ม 3 คนขึ้นไป) → ORT ห่างผู้เล่นที่ยังรอดคนใดคนหนึ่งไม่เกิน 3 ช่อง → ORT โผล่แล้ว → ก่อน ORT โผล่
 export function purgeMusic(state) {

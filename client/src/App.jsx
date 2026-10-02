@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { publishTick, getTickSeconds } from "./tickStore";
 import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
-import { musicForState, createPhaseSoundTracker, purgeMusic } from "./audioPolicy";
+import { musicForState, createPhaseSoundTracker, purgeMusic, isMatchPhase } from "./audioPolicy";
 import { WARP_MS } from "./purge/warpGalaxy";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
@@ -283,8 +283,7 @@ export default function App() {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: เพลงกลางวัน/กลางคืน | อื่นๆ: main_home
     const seraphMode = stage === "connected" && !!state?.seraph && !["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(phase);
-    const battle = phase === "PLAYING" || phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" || phase === "TRANSITION";
-    const inMatch = battle || phase === "CUTSCENE";
+    const inMatch = isMatchPhase(phase);
 
     // ขอบเขตแมตช์: เริ่มเกมใหม่ / จบเกม -> รีเซ็ตตำแหน่งเพลงทั้งหมด เริ่มเพลงใหม่จากต้น
     // (การเล่นต่อจากจุดเดิมนับเฉพาะภายในแมตช์เดียวกันเท่านั้น)

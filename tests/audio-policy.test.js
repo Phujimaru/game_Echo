@@ -86,3 +86,10 @@ test('Purge: เพลงด่านตาม ORT / ระยะห่าง / 
   // กลับเข้าสนาม: เพลงท่าไม้ตายเล่นตามปกติ
   assert.equal(musicForState(base({ gameState: 'PLAYING', skillMusic: 'some_ult' })).name, 'some_ult');
 });
+
+// Purge: ทอยเต๋า ↔ ฉาก ORT ↔ ปะทะ อยู่ในแมตช์ทั้งหมด — ตำแหน่งเพลงด่านไม่ถูกรีเซ็ต (เพลง ORT ไม่เริ่มใหม่ทุกเทิร์น)
+test('Purge: เฟสทอยเต๋านับว่าอยู่ในแมตช์', async () => {
+  const { isMatchPhase } = await import('../client/src/audioPolicy.js');
+  for (const ph of ['PURGE_ROLL', 'CUTSCENE', 'PLAYING', 'SUMMARY', 'ATTACK', 'ATTACKING', 'TRANSITION']) assert.equal(isMatchPhase(ph), true, ph);
+  for (const ph of ['LOBBY', 'TEAM_MODE', 'GAMEOVER', undefined]) assert.equal(isMatchPhase(ph), false, String(ph));
+});
