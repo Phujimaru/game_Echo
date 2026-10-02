@@ -12,6 +12,7 @@ export default function ArenaPreview() {
   const n = Math.min(6, Math.max(0, Number(q.get("n") ?? 6)));
   const night = q.get("night") === "1";
   const lowQ = q.get("lowq") === "1";
+  const bare = q.get("bare") === "1"; // ฉากเปล่า ไม่มีกล่องจำลอง (ไว้ถ่ายภาพไปทำดีไซน์)
   const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
     const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
@@ -23,7 +24,7 @@ export default function ArenaPreview() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#000" }}>
       <ArenaScene area={area} night={night} lowQ={lowQ} W={vp.w} H={vp.h} seats={seats} />
-      {lay.others.map((o, i) => (
+      {!bare && lay.others.map((o, i) => (
         <div
           key={i}
           style={{
@@ -37,8 +38,8 @@ export default function ArenaPreview() {
           ผู้เล่น {i + 2}
         </div>
       ))}
-      <div style={{ position: "absolute", left: lay.center.x, top: lay.center.y, width: 90, height: 124, transform: "translate(-50%, -92%)", background: "#12264a", border: "2px solid #f0c868" }} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 270, background: "linear-gradient(0deg, rgba(10,24,50,0.85), rgba(10,24,50,0.35))", borderTop: "1px dashed rgba(255,255,255,0.4)" }} />
+      {!bare && <div style={{ position: "absolute", left: lay.center.x, top: lay.center.y, width: 90, height: 124, transform: "translate(-50%, -92%)", background: "#12264a", border: "2px solid #f0c868" }} />}
+      {!bare && <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 270, background: "linear-gradient(0deg, rgba(10,24,50,0.85), rgba(10,24,50,0.35))", borderTop: "1px dashed rgba(255,255,255,0.4)" }} />}
     </div>
   );
 }
