@@ -149,7 +149,7 @@ test('Maestro: คอนดักเตอร์โชคลาภ 1 · คอ�
   assert.equal(cos.canUseSkill(engine, C, 'secondary'), true);
 });
 
-test('Destiny: หารแต้มกับคอนดักเตอร์ · ยิงโดนแล้วค่อยสูบเลือด (I 1 / II 2) · I ×1.5 ผกผัน · II ลบบัฟ ×2', () => {
+test('Destiny: หารแต้มกับคอนดักเตอร์ · ยิงโดนแล้วค่อยสูบเลือด 2 · I ×1.5 ผกผัน · II ลบบัฟ ×2', () => {
   const { K, C, T } = setup();
   bond(K, C); song(K, C);
   C.skillPoints = 5; K.skillPoints = 8; K.hp = 5; C.hp = 5;
@@ -170,8 +170,8 @@ test('Destiny: หารแต้มกับคอนดักเตอร์ �
   assert.equal(T.hp, 5);
   assert.equal(T.statuses.invert, 2);
   assert.ok(cutscenes.includes('cosetteDestinyI'));
-  assert.equal(K.hp, 5, 'ยิงโดนแล้วสูบ 1 แล้วมิวสิคคาร์ทฟื้นคืน 1');
-  assert.equal(C.hp, 7, 'สูบ 1 + มิวสิคคาร์ทฟื้น 1');
+  assert.equal(K.hp, 4, 'ยิงโดนแล้วสูบ 2 แล้วมิวสิคคาร์ทฟื้นคืน 1');
+  assert.equal(C.hp, 7, 'สูบ 2 + มิวสิคคาร์ทฟื้น 1 (เต็ม 7)');
   // II สูบ 2
   C.skillPoints = 8; K.skillPoints = 8; C.skillUsedRound = false; K.hp = 5; C.hp = 3;
   engine.setGameState('PLAYING');

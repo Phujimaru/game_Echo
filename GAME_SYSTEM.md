@@ -574,7 +574,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · สกิลของร่างปกติ "ไม่ทำงานซ้อน" ระหว่างบทเพลง (ทิ่มแทงที่ค้างรอไว้หลังกลับร่าง) · Destiny จ่ายร่วมกับทักต์ผ่านช่องเดียวกับ Triumphant
   · ความเสียหายที่ลงทักต์ (สูบเลือด/พรมลิขิต) ห่อ `withEffectSource(ทักต์)` — ถ้าต้นตอเป็นคอเซ็ตต์ `friendlyEffectBlocked` จะกันไว้
 - **บทเพลงพัง**: ทักต์เลือดเหลือ 1 หรือตาย -> `takt.revertCarts` (บทเพลงหาย + สตั้น 2 + `onSongLost` ของมิวสิคคาร์ท) · ตรวจที่
-  `flushOrtCounters()` ท้ายลูปต้นเทิร์นของ `dealRound` และ `takt.onDeath` · ทักต์เลือด 1 มอบบทเพลงไม่ได้ · Destiny กดได้เมื่อทักต์เลือด 2+ และสูบเลือดทักต์ (I 1 / II 2 · ค้างที่ 1) ตอน**ยิงโดน**เท่านั้น
+  `flushOrtCounters()` ท้ายลูปต้นเทิร์นของ `dealRound` และ `takt.onDeath` · ทักต์เลือด 1 มอบบทเพลงไม่ได้ · Destiny กดได้เมื่อทักต์เลือด 2+ และสูบเลือดทักต์ 2 (ทั้ง I/II · ค้างที่ 1) ตอน**ยิงโดน**เท่านั้น
   · บทเพลงหมดเวลา = Destiny/Maestro ที่ค้างหายที่ต้นเทิร์น (`cosette.onRoundStartTick`) · บทเพลงพังเล่นคลิป low ทุกครั้ง (`cosetteLow` / `titanLow`)
 - **เปิดม่าน (ทักต์ สกิลติดตัว 3)**: พันธะไททัน + คอเซ็ตต์ (ไม่ซ้ำแบบ) -> socket `taktPerform {cmd, targetId}` คำสั่งละคูลดาวน์ 5
   · สั่งไททัน = `titanTauntRound` -> `titan.findTaunters` (คิว taunter ของ doAttack) + `titan.skillTargetBlocked` (ด่านแรกของ useSkill)
