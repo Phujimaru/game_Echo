@@ -55,6 +55,7 @@ const recruit = require("./recruit"); // Recruit (ยาก · QTE)
 const striker = require("./striker"); // สไตรเกอร์ ยูเรก้า (พิเศษ · ผู้เล่น 2 คนบังคับร่วมกัน)
 const takt = require("./takt"); // อาซาฮินะ ทักต์ (พิเศษ · unique · คอนดักเตอร์ — ระบบพันธะของมิวสิคคาร์ท)
 const titan = require("./titan"); // ไททัน (ง่าย · มิวสิคคาร์ท)
+const cosette = require("./cosette"); // คอเซ็ตต์ ชไนเดอร์ (กลาง · มิวสิคคาร์ท)
 const ort = require("./ort"); // บอสมหันตภัย (บอตเท่านั้น — โหมด Type Mercury)
 
 const CHARACTER_MODULES = [
@@ -109,6 +110,7 @@ const CHARACTER_MODULES = [
   striker,
   takt,
   titan,
+  cosette,
   ort,
 ];
 

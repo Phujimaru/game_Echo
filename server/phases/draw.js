@@ -282,6 +282,7 @@ function dealRound() {
     // อาซาฮินะ ทักต์: เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2 · ไททัน: ล้างชุดตี/คิวสวนที่ค้าง
     CHAR_HOOKS.takt.onRoundStartTick(engine, p);
     CHAR_HOOKS.titan.onRoundStartTick(engine, p);
+    CHAR_HOOKS.cosette.onRoundStartTick(engine, p); // คอเซ็ตต์: ร่างมนุษย์ฟื้น 1 / พรมลิขิตเสีย 2 (หรือลงคอนดักเตอร์ 1)
     // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
     CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);
     // ---------- ไบรอัน (characters/brian.js): รถกินน้ำมัน (แปลงเป็นเลือด) หรือเติมน้ำมันประจำเทิร์น ----------
@@ -323,6 +324,8 @@ function dealRound() {
   //  ต้องแปะ "หลัง" ลูปต้นเทิร์นจบทั้งวง เพราะ tickBurn ของแต่ละคนอยู่ในลูปด้านบน — ถ้าแปะในลูป
   //  คนที่ยังวนไม่ถึงจะถูกกินหน่วยที่เพิ่งได้ทิ้งในเทิร์นเดียวกัน (ผลไม่เท่ากันตามลำดับที่นั่ง)
   CHAR_HOOKS.escanor.flushPendingBurn(engine);
+  // อาซาฮินะ ทักต์: เลือดเหลือ 1 หลังผลต้นเทิร์น (เช่นพรมลิขิตของคอเซ็ตต์) -> บทเพลงของมิวสิคคาร์ทพัง
+  CHAR_HOOKS.takt.checkLowRevert(engine);
   // ORT: ไม่ต้องกดเปิดไพ่ — จั่วเองผ่าน characters/ort.js (checkAllLocked ไม่รอ ORT อยู่แล้ว)
   if (mercury.ortBoss()) mercury.ortBoss().locked = true;
 
@@ -418,6 +421,7 @@ function hit(id) {
     }
   }
   CHAR_HOOKS.andersen.onPlayerDraw(engine, p, drewCount);
+  CHAR_HOOKS.cosette.onPlayerDraw(engine, p, drewCount); // มิวสิคคาร์ท: จั่วครบ 5 ใบ 20% โชคลาภ
   // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): การจั่วไพ่ทำให้เครียด +1 — นับครั้งเดียวต่อเทิร์นไม่ว่าจะจั่วกี่ใบ
   //  นับเฉพาะตอนได้ไพ่จริง (กองหมดกลางคัน = ไม่นับ)
   // โปรดิวเซอร์ (โคฮารุ): ไพ่ใบแรกของเทิร์นถูกพลิกเครื่องหมายเป็นลบ — ต้องทำ "ก่อน" onCardDrawn
@@ -484,7 +488,9 @@ function flushOrtCounters() {
   const kim = CHAR_HOOKS.kim.flushCounters(engine);
   // ไททัน "คล่องตัวสูง": สวนกลับที่จองไว้จากสกิล / หมัดที่ถูกหลบ
   const titan = CHAR_HOOKS.titan.flushCounters(engine, false).length;
-  if (ort || kim || titan) view.broadcastState();
+  // อาซาฮินะ ทักต์: เลือดเหลือ 1 หลังการกระทำ -> บทเพลงของมิวสิคคาร์ทพัง (จุดนี้ถูกเรียกหลังสกิล/ไอเทม/คลิป/จบเทิร์น)
+  const reverted = CHAR_HOOKS.takt.checkLowRevert(engine);
+  if (ort || kim || titan || reverted) view.broadcastState();
 }
 function checkAllLocked() {
   if (match.gameState !== "PLAYING") return;

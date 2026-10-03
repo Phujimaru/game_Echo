@@ -90,6 +90,9 @@ function isTargetable(p, iAmAttacker, c) {
   //  anyone = เลือกศัตรูได้แม้โหมดทีม (โอเบรอนใช้ผลเสียของท่ากับศัตรูได้) · ไม่งั้นโหมดทีมเลือกได้เฉพาะเพื่อน (server กันซ้ำ)
   //  onlyIds = จำกัดเฉพาะบางคน (ทักต์: มิวสิคคาร์ทในพันธะที่เข้าเงื่อนไข)
   const giftTarget = !!c.giftSel && (!c.giftSel.onlyIds || c.giftSel.onlyIds.includes(p.id)) && (c.giftSel.anyone || !c.teamModeActive || friendly || c.raid);
+  // ไททันล่อเป้า (เปิดม่านของทักต์): ศัตรูคนอื่นของเราเล็งไม่ได้ทั้งตีปกติและสกิล/ปืน — ตัวเอง/พวกเดียวกันยังเลือกได้ (server กันซ้ำ)
+  const tauntBlocked = (c.tauntIds || []).length > 0 && !self && !friendly && !bondAlly && !raidMate && !c.tauntIds.includes(p.id);
+  if (tauntBlocked) return false;
   return (normalAttackTarget || giftTarget || !!c.anataSel || c.appleSel || c.skSel || c.doomSel || c.saObSel || escanorSkillTarget || c.ignisSel || c.ignisImpactSel || !!c.bardPending || c.nanayaSel || c.tpSel || c.kaiCreateSel || c.kaiPunishSel || c.msMarkSel || c.msRuptureSel || c.psSealSel || connorTarget || usagiTarget || recruitTarget || danTarget || supTarget || brianTarget || gunTarget) && p.alive;
 }
 // แตะ/คลิกการ์ดคู่ต่อสู้แล้วต้องทำอะไร — ไล่ตามโหมดเลือกเป้าหมายที่เปิดอยู่ ไม่มีเลยก็โจมตีปกติ
@@ -1676,6 +1679,20 @@ function statusEntries(p, full) {
     out.push({ key: "titanSnack", v: 1, icon: "🍙", label: `ของว่าง เหลือ ${t.snacksLeft ?? 0}`, cls: (t.snacksLeft ?? 0) > 0 ? "bg-white/20" : "bg-echo-hp", desc: "ของว่าง: ฟื้นพลังชีวิต 2 · แต้มสกิล +3" });
     if (t.sun) out.push({ key: "titanSun", v: 1, icon: "☀️", label: "Vigorous Rising Sun", cls: "bg-echo-hp", desc: "Vigorous Rising Sun: การโจมตีชุดถัดไปตีได้ 2 ครั้ง หมัดละลุกไหม้ 1" });
     if (t.set && t.set.total > 1) out.push({ key: "titanSet", v: 1, icon: "🥁", label: `หมัด ${t.set.n}/${t.set.total}`, cls: "bg-echo-magenta", desc: "ชุดหมัดของไททัน" });
+    if (t.taunt) out.push({ key: "titanTaunt", v: 1, icon: "🎯", label: "ล่อเป้า", cls: "bg-echo-hp", desc: "ล่อเป้า: เทิร์นนี้ศัตรูต้องเล็งไททัน ทั้งตีปกติและสกิล" });
+  }
+  // คอเซ็ตต์ ชไนเดอร์: ร่าง / มิวสิคคาร์ทที่แท้จริง / ทิ่มแทง / Maestro / Destiny / จั่วระหว่างบทเพลง
+  if (p.cosette) {
+    const c = p.cosette;
+    out.push(c.form === "destiny"
+      ? { key: "cosForm", v: 1, icon: "🗡️", label: "ร่างพรมลิขิต", cls: "bg-echo-hp", desc: "ร่างพรมลิขิต: พลังโจมตี +2 · ต้นเทิร์นเสียพลังชีวิต 2" }
+      : { key: "cosForm", v: 1, icon: "🌸", label: "ร่างมนุษย์", cls: "bg-white/20", desc: "ร่างมนุษย์: ต้นเทิร์นฟื้นพลังชีวิต 1 · พลังโจมตี -1" });
+    if (c.trueStacks > 0) out.push({ key: "cosTrue", v: 1, icon: "🎵", label: `มิวสิคคาร์ทที่แท้จริง ${c.trueStacks}/3`, cls: "bg-echo-magenta", desc: `เทิร์นนี้: ตีโดนลุกไหม้ +${c.trueStacks} · หลบ ${c.trueStacks * 5}%` });
+    if (c.pierce) out.push({ key: "cosPierce", v: 1, icon: "🗡️", label: "ทิ่มแทง", cls: "bg-echo-hp", desc: "ทิ่มแทง: ตีปกติครั้งถัดไปคัดลอกบัฟของเป้า · ลบต้านสถานะ · ภาระเวท 2" });
+    if (c.follow > 0) out.push({ key: "cosFollow", v: 1, icon: "🎼", label: `Maestro ${c.follow} เทิร์น`, cls: "bg-echo-ice text-gray-900", desc: "Maestro: คอนดักเตอร์ออกหมัดแล้วตามตีอีก 1 ครั้ง" });
+    if (c.destiny) out.push({ key: "cosDestiny", v: 1, icon: "🌌", label: `Destiny ${c.destiny}`, cls: "bg-purple-700 text-white",
+      desc: c.destiny === "II" ? "Destiny II: ตีปกติครั้งถัดไปลบบัฟทั้งหมดของเป้า · ดาเมจ ×2" : "Destiny I: ตีปกติครั้งถัดไปดาเมจ ×1.5 · ลบต้านสถานะ · ผกผัน 2 เทิร์น" });
+    if (c.unlocked) out.push({ key: "cosDraws", v: 1, icon: "🃏", label: `จั่ว ${c.draws || 0}/5`, cls: "bg-white/20", desc: "จั่วครบ 5 ใบ: โอกาส 20% ได้โชคลาภ 1" });
   }
   // โทโนะ ชิกิ: โหมด / สถานะที่รอ / ชุดเชือดเฉือน — ข้อมูลสาธารณะ
   if (p.tohno) {
@@ -1987,7 +2004,11 @@ function GutsVideoPreloader({ me, players }) {
   const preloadTakt = (players || []).some((p) => p.character?.id === "takt" && p.alive);
   const preloadTitan = (players || []).some((p) => p.character?.id === "titan" && p.alive);
   const preloadTaktTitan = preloadTakt && preloadTitan;
-  if (!ammoTypes.length && !preloadImpact && !preloadConnorIntro && !preloadMuimi && !preloadTohno && !preloadTakt && !preloadTitan) return null;
+  // คอเซ็ตต์: คลิปทิ่มแทง · กับทักต์ = คลิปบทเพลง/Maestro/Destiny · ทักต์+ไททัน+คอเซ็ตต์ = คลิปเปิดม่าน/คำสั่งบรรเลง
+  const preloadCosette = (players || []).some((p) => p.character?.id === "cosette" && p.alive);
+  const preloadTaktCosette = preloadTakt && preloadCosette;
+  const preloadCurtain = preloadTakt && preloadTitan && preloadCosette;
+  if (!ammoTypes.length && !preloadImpact && !preloadConnorIntro && !preloadMuimi && !preloadTohno && !preloadTakt && !preloadTitan && !preloadCosette) return null;
   return (
     <div aria-hidden className="hidden">
       {ammoTypes.map((a) => GUTS_AMMO_INFO[a] && (
@@ -2004,6 +2025,16 @@ function GutsVideoPreloader({ me, players }) {
       {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill2.mp4" preload="auto" muted playsInline />}
       {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill3.mp4" preload="auto" muted playsInline />}
       {preloadTitan && <video src="/characters/titan/titan_skill3.mp4" preload="auto" muted playsInline />}
+      {preloadCosette && <video src="/characters/destiny/destiny_skill3.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && !preloadTaktTitan && <video src="/characters/takt/takt_ac.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_low.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill2.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill3_I.mp4" preload="auto" muted playsInline />}
+      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill3_II.mp4" preload="auto" muted playsInline />}
+      {preloadCurtain && <video src="/characters/takt/takt_passive3.mp4" preload="auto" muted playsInline />}
+      {preloadCurtain && <video src="/characters/takt/takt_passive3-titan.mp4" preload="auto" muted playsInline />}
+      {preloadCurtain && <video src="/characters/takt/takt_passive3-destiny.mp4" preload="auto" muted playsInline />}
     </div>
   );
 }
@@ -3100,6 +3131,64 @@ function TaktBondModal({ me, onInvite, onClose }) {
   );
 }
 
+// ---------- อาซาฮินะ ทักต์ (เปิดม่าน): บรรเลง — สั่งไททันล่อเป้า / สั่งเดสตินี่โจมตี ----------
+//  perform.<cmd>.block = เหตุผลที่สั่งไม่ได้ (รวมคูลดาวน์ "อีก N เทิร์น") · destiny ต้องมีเป้าใน taktPerformTargets
+function TaktPerformModal({ me, onCmd, onClose }) {
+  const t = me?.takt || {};
+  const perf = t.perform || {};
+  const bonds = t.bonds || [];
+  const targets = me?.taktPerformTargets || [];
+  const cmds = [
+    { key: "titan", icon: "🎯", label: "สั่งไททัน — ล่อเป้า", block: perf.titan?.block || null },
+    { key: "destiny", icon: "🗡️", label: "สั่งเดสตินี่ — โจมตี 2", block: perf.destiny?.block || (targets.length ? null : "ไม่มีเป้า") },
+  ];
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-cyan text-center">🎭 บรรเลง</div>
+        {bonds.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {bonds.map((b) => (
+              <div key={b.id} className="rounded-lg px-4 py-2 bg-echo-cyan/15 border border-echo-cyan flex items-center justify-between gap-2">
+                <span className="font-black">🔗 {b.name}</span>
+                <span className="text-xs opacity-85">{b.song > 0 ? `🎵 ${TAKT_MODE_LABEL[b.mode] || ""} · ${b.song} เทิร์น` : "ยังไม่มีบทเพลง"}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {cmds.map((c) => (
+          <button key={c.key} disabled={!!c.block} onClick={() => onCmd(c.key)}
+            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
+            <span className="font-black">{c.icon} {c.label}</span>
+            <span className="text-xs opacity-80">{c.block || "พร้อม"}</span>
+          </button>
+        ))}
+        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ปิด</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- คอเซ็ตต์ ชไนเดอร์ (ระหว่างบทเพลง): ท่าไม้ตาย Destiny — เลือกระดับ I / II ----------
+//  options = me.cosetteDestiny [{ tier, cost, own, need, ok }] · need = ส่วนที่คอนดักเตอร์จ่ายให้
+function CosetteDestinyModal({ options, onPick, onClose }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-cyan text-center">🌌 Destiny</div>
+        {(options || []).map((o) => (
+          <button key={o.tier} disabled={!o.ok} onClick={() => onPick(o.tier)}
+            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
+            <span className="font-black">Destiny {o.tier}</span>
+            <span className="text-xs opacity-80">💎 {o.cost}{o.need > 0 ? ` · คอนดักเตอร์ช่วย ${o.need}` : ""}</span>
+          </button>
+        ))}
+        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ยกเลิก</button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- มิวสิคคาร์ท: คำเชิญพันธะสัญญา — ไม่มีปุ่มปิดเฉยๆ ต้องตอบ (ไม่ตอบก่อนเปิดไพ่ = ปฏิเสธ) ----------
 function TaktInviteModal({ invite }) {
   const answer = (accept) => { clickSound(); socket.emit("taktInviteAnswer", { accept }); };
@@ -3874,6 +3963,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [recruitPrepOpen, setRecruitPrepOpen] = useState(false); // Recruit: หน้าต่างสกิลพิเศษ "เตรียมตัว"
   const [taktModeOpen, setTaktModeOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างเลือกโหมดของบรรเลงเสียงสวรรค์
   const [taktBondOpen, setTaktBondOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างพันธะสัญญา (เชิญมิวสิคคาร์ท)
+  const [taktPerformOpen, setTaktPerformOpen] = useState(false); // อาซาฮินะ ทักต์ (เปิดม่าน): หน้าต่างบรรเลง
+  const [cosetteDestinyOpen, setCosetteDestinyOpen] = useState(false); // คอเซ็ตต์: หน้าต่างเลือก Destiny I / II
   const [usagiSel, setUsagiSel] = useState(false);   // อุซากิ: โหมดเลือกเป้าหมาย "ปรุ้ต....."
   const [usagiItemOpen, setUsagiItemOpen] = useState(false); // อุซากิ: หน้าต่างเลือกไอเทมที่จะกิน
   const [connorSel, setConnorSel] = useState(null);                 // คอนเนอร์: โหมดเลือกเป้าหมาย ("secondary" | "ultimate" | null)
@@ -4120,6 +4211,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     }
     return [];
   })();
+  // ไททันล่อเป้า: ไททันฝั่งศัตรูที่กำลังล่อเป้าเทิร์นนี้ (ไม่ใช่เรา/เพื่อนร่วมทีม/พวกเดียวกันในพันธะ)
+  const tauntIds = state.mercury ? [] : state.players
+    .filter((x) => x.titan?.taunt && x.alive && x.id !== me?.id && !bondAllyIds.includes(x.id)
+      && !((state.gameMode === "duo" || state.gameMode === "trio") && me?.teamId && x.teamId === me.teamId))
+    .map((x) => x.id);
   // นกจาบยามเช้าไม่กินโควตาสกิลของเทิร์น — ท่าอื่นยังกดได้หลังใช้ (server ไม่ตั้ง skillUsed ให้อยู่แล้ว)
   // Recruit: คูลดาวน์รายช่อง · กระสุนไม่พอ · กำลังเล่น QTE/เลือกเป้าอยู่ = กดสกิลอื่นไม่ได้
   const isRecruit = ch?.id === "recruit";
@@ -4340,6 +4436,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       if (ids.length === 1) { socket.emit("useSkill", { tier, targets: ids }); return; }
       setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
     }
+    // คอเซ็ตต์: ระหว่างบทเพลง ท่าไม้ตาย = Destiny เลือกระดับก่อน
+    if (ch?.id === "cosette" && tier === "ultimate" && me?.cosette?.unlocked) { setCosetteDestinyOpen(true); return; }
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); return; }
     // โทโนะ ชิกิ: สกิลพื้นฐานเปิดเมนูเลือกระดับมีดพับประจำตระกูล (1-5)
     if (tier === "basic" && ch?.id === "tohno") { setTohnoOpen(true); return; }
@@ -4483,8 +4581,24 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     setGiftSel({ tier: "secondary", anyone: true, onlyIds: ids, item: mode, name: `${ch?.secondary?.name} · ${TAKT_MODE_LABEL[mode]}` });
   };
   const pickGift = (id) => {
-    socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
+    // ทักต์ (เปิดม่าน) สั่งเดสตินี่: ส่งคำสั่งบรรเลงแทนการใช้สกิล
+    if (giftSel.perform) socket.emit("taktPerform", { cmd: giftSel.perform, targetId: id });
+    else socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
     setGiftSel(null);
+  };
+  // ทักต์ (เปิดม่าน): สั่งไททันส่งเลย · สั่งเดสตินี่เลือกเป้าบนกระดาน (เฉพาะคนที่คอเซ็ตต์เล็งได้)
+  const pickTaktPerform = (cmd) => {
+    clickSound();
+    setTaktPerformOpen(false);
+    if (cmd === "titan") { socket.emit("taktPerform", { cmd: "titan" }); return; }
+    const ids = me?.taktPerformTargets || [];
+    if (!ids.length) return;
+    setGiftSel({ tier: null, perform: "destiny", anyone: true, onlyIds: ids, name: "สั่งเดสตินี่ — โจมตี 2" });
+  };
+  const pickCosetteDestiny = (item) => {
+    clickSound();
+    setCosetteDestinyOpen(false);
+    socket.emit("useSkill", { tier: "ultimate", item });
   };
   const pickSup = (id) => {
     socket.emit("useSkill", { tier: supSel, targets: [id] });
@@ -4706,10 +4820,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (recruitPrepOpen && (phase !== "PLAYING" || done)) setRecruitPrepOpen(false);
     if (taktModeOpen && (phase !== "PLAYING" || done)) setTaktModeOpen(false);
     if (taktBondOpen && (phase !== "PLAYING" || done)) setTaktBondOpen(false);
+    if (taktPerformOpen && (phase !== "PLAYING" || done || !me?.takt?.curtain)) setTaktPerformOpen(false);
+    if (cosetteDestinyOpen && (phase !== "PLAYING" || done || !me?.cosette?.unlocked)) setCosetteDestinyOpen(false);
     if (strikerMissileOpen && (phase !== "PLAYING" || done)) setStrikerMissileOpen(false);
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
-  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, taktPerformOpen, cosetteDestinyOpen, me?.takt?.curtain, me?.cosette?.unlocked, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -4762,6 +4878,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     pickKaiCreate, pickKaiPunish, pickMsMark, pickMsRupture,
     kaiRivalId,
     allyIds: bondAllyIds,
+    tauntIds,
     myId: me?.id,
     myTeamId: me?.teamId,
     teamModeActive: state.gameMode === "duo" || state.gameMode === "trio",
@@ -4950,6 +5067,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
         {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
         {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
+        {taktPerformOpen && me && <TaktPerformModal me={me} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktPerformOpen(false); }} />}
+        {cosetteDestinyOpen && me && <CosetteDestinyModal options={me.cosetteDestiny} onPick={pickCosetteDestiny} onClose={() => { clickSound(); setCosetteDestinyOpen(false); }} />}
         {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
         {/* ---------- แผงตัวเรา (ล่างสุด กดง่ายด้วยนิ้วโป้ง) ----------
@@ -5274,6 +5393,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
       {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
       {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
+      {taktPerformOpen && me && <TaktPerformModal me={me} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktPerformOpen(false); }} />}
+      {cosetteDestinyOpen && me && <CosetteDestinyModal options={me.cosetteDestiny} onPick={pickCosetteDestiny} onClose={() => { clickSound(); setCosetteDestinyOpen(false); }} />}
       {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
       {/* แถบซ้ายบน: กลางวัน/คืน · รอบ · เวลา · ภูมิภาค (รวมกล่อง "รอบที่" กับป้ายการเดินทางเดิมเป็นแถบเดียว — แตะภูมิภาคเปิดหน้าต่างผลสนาม) */}
@@ -5668,12 +5789,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   )}
                   {isTakt && phase === "PLAYING" && me.alive && !done && (
                     <button
-                      onClick={() => { clickSound(); setTaktBondOpen(true); }}
+                      onClick={() => { clickSound(); if (me.takt?.curtain) setTaktPerformOpen(true); else setTaktBondOpen(true); }}
                       disabled={frozenByClockUp}
                       className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
-                      title="พันธะสัญญา"
+                      title={me.takt?.curtain ? "บรรเลง" : "พันธะสัญญา"}
                     >
-                      🎼 พันธะสัญญา {taktBonds.length}/{me.takt?.maxBonds || 2}
+                      {me.takt?.curtain ? "🎭 บรรเลง" : `🎼 พันธะสัญญา ${taktBonds.length}/${me.takt?.maxBonds || 2}`}
                     </button>
                   )}
                 </>

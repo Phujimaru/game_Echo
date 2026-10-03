@@ -260,6 +260,11 @@ const LOUDNESS_GAIN = {
   "/characters/andersen/andersen_skill3.mp4": 0.64,
   "/characters/takt/titan/takt_titan_skill2.mp4": 0.79, // ไททัน: วีดีโอ Vigorous Rising Sun (เป้าวีดีโอ -16)
   "/characters/takt/titan/takt_titan_skill3.mp4": 0.71, // ไททัน: วีดีโอ Triumphant (เป้าวีดีโอ -16)
+  "/characters/destiny/destiny_skill3.mp4": 0.89, // คอเซ็ตต์: วีดีโอทิ่มแทง (เป้าวีดีโอ -16)
+  "/characters/takt/destiny/takt_destiny.mp4": 0.97, // คอเซ็ตต์: วีดีโอได้บทเพลง (เป้าวีดีโอ -16)
+  "/characters/takt/destiny/takt_destiny_skill3_I.mp4": 0.76, // คอเซ็ตต์: วีดีโอ Destiny I (เป้าวีดีโอ -16)
+  "/characters/takt/takt_passive3-titan.mp4": 0.98, // ทักต์: วีดีโอสั่งไททัน (เป้าวีดีโอ -16)
+  "/characters/takt/takt_passive3-destiny.mp4": 0.68, // ทักต์: วีดีโอสั่งเดสตินี่ (เป้าวีดีโอ -16)
   "/characters/titan/titan_hit.mp3": 0.64, // ไททัน: เสียงตีปกติ (เป้าเอฟเฟกต์ -14)
   "/characters/escanor/New Last Stand.mp4": 0.58, // เอสคานอร์: วีดีโอ Last Stand ใหม่ -11.3 dBFS (เป้าวีดีโอ -16) // แอนเดอร์เซน: วีดีโอท่าไม้ตาย -12.1 dBFS (เป้าวีดีโอ -16)
   "/characters/Recruit/โจมตีปกติ/โจมตีปกติ.mov": 0.66,

@@ -1,0 +1,261 @@
+// คอเซ็ตต์ ชไนเดอร์ + เปิดม่าน/บทเพลงพังของทักต์ — characters/cosette.js · characters/takt.js ผ่าน engine จริง
+process.env.JOURNEY_START_SECONDS = '0';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { engine } = require('../../server.js');
+const takt = require('../../characters/takt.js');
+const titan = require('../../characters/titan.js');
+const cos = require('../../characters/cosette.js');
+const CHARACTERS = require('../../characters.js');
+
+const realRandom = Math.random;
+const blank = (id, characterId, position) => ({
+  id, name: id, position, characterId, alive: true, connected: true, cards: [], statuses: {}, statusAmt: {},
+  seen: {}, cutsceneShown: {}, inventory: [], teamId: null,
+});
+function setup() {
+  for (const id of Object.keys(engine.players)) delete engine.players[id];
+  engine.players.K = blank('K', 'takt', 1);
+  engine.players.C = blank('C', 'cosette', 2);
+  engine.players.N = blank('N', 'titan', 3);
+  engine.players.T = blank('T', 'temari', 4);
+  engine.players.M = blank('M', 'kai', 5);
+  engine.setGameMode('ffa');
+  engine.startMatch();
+  engine.clearPhaseTimer();
+  engine.setGameState('PLAYING');
+  for (const p of Object.values(engine.players)) {
+    p.locked = false; p.skillPoints = 8; p.skillUsedRound = false;
+    p.hp = engine.maxHpOf(p); p.armor = engine.maxArmorOf(p); p.shield = 0; p.statuses = {}; p.statusAmt = {}; p.evadeStacks = [];
+  }
+  return engine.players;
+}
+function bond(K, c) { takt.invite(engine, K, c.id); takt.answerInvite(engine, c, true); }
+function song(K, c) { c.statuses.taktSong = 5; c.taktSongMode = 'low'; }
+function attack(byId, targetId) {
+  engine.setGameState('ATTACK');
+  engine.setAttackerId(byId);
+  engine.doAttack(byId, targetId);
+  engine.clearPhaseTimer();
+}
+const saved = { triggerCutscene: engine.triggerCutscene, queueCutscene: engine.queueCutscene, skillFlash: engine.skillFlash, sfx: engine.sfx };
+const cutscenes = [];
+test.before(() => {
+  engine.triggerCutscene = (p, k) => cutscenes.push(k);
+  engine.queueCutscene = (p, k) => cutscenes.push(k);
+  engine.skillFlash = () => {};
+  engine.sfx = () => {};
+});
+test.after(() => { Object.assign(engine, saved); for (const id of Object.keys(engine.players)) delete engine.players[id]; });
+test.afterEach(() => { Math.random = realRandom; engine.clearPhaseTimer(); cutscenes.length = 0; });
+
+test('ข้อมูล: ระดับกลาง · ราคา 0/1/4 · ชุดบทเพลง 3/8 · ทักต์มีสกิลติดตัว 3', () => {
+  const c = CHARACTERS.CHAR_BY_ID.cosette;
+  assert.equal(c.difficulty, 'medium');
+  assert.deepEqual([c.basic.cost, c.secondary.cost, c.ultimate.cost, c.secondary2.cost, c.ultimate2.cost], [0, 1, 4, 3, 8]);
+  assert.equal(CHARACTERS.CHAR_BY_ID.takt.passive3.name, 'เปิดม่าน');
+});
+
+test('เปลี่ยนร่าง: ไม่กินโควตา · 1 ครั้ง/เทิร์น · มนุษย์ -1 พรมลิขิต +2 · ต้นเทิร์นฟื้น 1 / เสีย 2 ลดเกราะก่อน', () => {
+  const { C, T } = setup();
+  assert.equal(engine.attackPowerAgainst(C, T), 0, 'มนุษย์ 1-1');
+  engine.useSkill('C', 'basic');
+  assert.equal(C.cosette.form, 'destiny');
+  assert.equal(C.skillUsedRound, false);
+  engine.useSkill('C', 'basic');
+  assert.equal(C.cosette.form, 'destiny', 'สลับได้เทิร์นละครั้ง');
+  assert.equal(engine.attackPowerAgainst(C, T), 3);
+  C.hp = 7; C.armor = 1;
+  cos.onRoundStartTick(engine, C);
+  assert.equal(C.armor, 0); assert.equal(C.hp, 6);
+  C.hp = 2; C.armor = 0;
+  cos.onRoundStartTick(engine, C);
+  assert.equal(C.hp, 1, 'หยุดที่ 1');
+  assert.equal(C.cosette.form, 'human', 'กลับร่างมนุษย์เอง');
+  cos.onRoundStartTick(engine, C);
+  assert.equal(C.hp, 2);
+});
+
+test('มิวสิคคาร์ทที่แท้จริง: 3 ขั้น ไม่กินโควตา · ตีโดนลุกไหม้ตามขั้น · หลบ 5%/ขั้น', () => {
+  const { C, T } = setup();
+  for (let i = 0; i < 4; i++) engine.useSkill('C', 'secondary');
+  assert.equal(C.cosette.trueStacks, 3);
+  assert.equal(C.skillPoints, 5);
+  engine.useSkill('C', 'basic'); // พรมลิขิต
+  Math.random = () => 0.9;
+  attack('C', 'T');
+  assert.equal(T.statuses.hburn, 3);
+  Math.random = () => 0.1; // 10% < 15%
+  const hp = C.hp;
+  attack('T', 'C');
+  assert.equal(engine.lastAttack.dodge, true);
+  assert.equal(C.hp, hp);
+});
+
+test('ทิ่มแทง: คัดลอกบัฟ · ลบต้านสถานะ · ภาระเวท 2 · ถูกหลบท่ายังอยู่', () => {
+  const { C, T } = setup();
+  engine.useSkill('C', 'ultimate');
+  assert.equal(C.cosette.pierce, true);
+  assert.equal(cos.canUseSkill(engine, C, 'ultimate'), false);
+  T.statuses.resist = 2; T.statuses.guard = 3; T.statusAmt.guard = 1; T.statuses.fortune = 2;
+  // ถูกหลบ (เทมาริไม่มีหลบ -> ใส่หลบหลีกให้)
+  engine.grantEvadeStack(T, 2);
+  Math.random = () => 0.1;
+  attack('C', 'T');
+  assert.equal(C.cosette.pierce, true, 'พลาด ท่ายังอยู่');
+  assert.ok(!cutscenes.includes('cosettePierce'));
+  Math.random = () => 0.9;
+  attack('C', 'T');
+  assert.equal(C.cosette.pierce, false);
+  assert.ok(cutscenes.includes('cosettePierce'));
+  assert.equal(C.statuses.guard, 3); assert.equal(C.statuses.fortune, 2);
+  assert.equal(T.statuses.guard, 3, 'เป้าไม่เสียบัฟ');
+  assert.equal(T.statuses.resist, undefined);
+  assert.equal(T.statusAmt.spellburden, 2);
+});
+
+test('ระหว่างบทเพลง: ทิ่มแทงที่ค้างไม่ทำงาน · มิวสิคคาร์ท ตีโดนฟื้นคอนดักเตอร์ 1 + ตัวเอง 1', () => {
+  const { K, C, T } = setup();
+  bond(K, C);
+  engine.useSkill('C', 'ultimate'); // ทิ่มแทง (ก่อนได้บทเพลง)
+  song(K, C);
+  K.hp = 3; C.hp = 4;
+  Math.random = () => 0.9;
+  attack('C', 'T');
+  assert.equal(C.cosette.pierce, true, 'ทิ่มแทงรอไว้');
+  assert.equal(K.hp, 4);
+  assert.equal(C.hp, 5);
+});
+
+test('Maestro: คอนดักเตอร์โชคลาภ 1 · คอนดักเตอร์ออกหมัดแล้วตามตี · อยู่ 2 เทิร์น · คูลดาวน์ 4', () => {
+  const { K, C, T } = setup();
+  bond(K, C); song(K, C);
+  const r = engine.roundNumber;
+  engine.useSkill('C', 'secondary');
+  assert.equal(K.statuses.fortune, 1);
+  assert.equal(C.skillUsedRound, true);
+  Math.random = () => 0.9;
+  attack('K', 'T');
+  assert.equal(C.cosette.followPending, true);
+  assert.equal(cos.continueFollow(engine), true);
+  engine.clearPhaseTimer();
+  assert.ok(cutscenes.includes('cosetteMaestro'));
+  assert.equal(engine.attackerId, 'C');
+  assert.equal(C.cosette.follow, 0, 'ใช้แล้ว');
+  C.skillUsedRound = false;
+  engine.setRoundNumber(r + 3);
+  assert.equal(cos.canUseSkill(engine, C, 'secondary'), false);
+  engine.setRoundNumber(r + 4);
+  assert.equal(cos.canUseSkill(engine, C, 'secondary'), true);
+});
+
+test('Destiny: หารแต้มกับคอนดักเตอร์ · สูบเลือด 1 · ต้องเลือด 3+ · I ×1.5 ผกผัน · II ลบบัฟ ×2', () => {
+  const { K, C, T } = setup();
+  bond(K, C); song(K, C);
+  C.skillPoints = 5; K.skillPoints = 8; K.hp = 5; C.hp = 5;
+  engine.useSkill('C', 'ultimate', [], 'I');
+  assert.equal(C.skillPoints, 0); assert.equal(K.skillPoints, 5);
+  assert.equal(C.hp, 6); assert.equal(K.hp, 4);
+  assert.equal(C.cosette.destiny, 'I');
+  T.hp = 7; T.armor = 0; T.statuses.resist = 2;
+  Math.random = () => 0.9;
+  attack('C', 'T'); // ฐาน 1-1 (มนุษย์) +1 บทเพลง = 1 -> ×1.5 = 2
+  assert.equal(T.hp, 5);
+  assert.equal(T.statuses.invert, 2);
+  assert.ok(cutscenes.includes('cosetteDestinyI'));
+  // II
+  C.skillPoints = 8; K.skillPoints = 8; C.skillUsedRound = false;
+  engine.setGameState('PLAYING');
+  engine.useSkill('C', 'ultimate', [], 'II');
+  assert.equal(C.cosette.destiny, 'II');
+  T.statuses = { guard: 2 }; T.statusAmt = { guard: 1 }; T.hp = 7;
+  attack('C', 'T');
+  assert.equal(T.statuses.guard, undefined);
+  assert.equal(T.hp, 5, '1 ×2 (คุ้มครองถูกลบก่อน)');
+  // คอนดักเตอร์เลือด 2 = กดไม่ได้
+  K.hp = 2;
+  assert.equal(cos.destinySplit(engine, C, 'I').ok, false);
+});
+
+test('บทเพลงพัง: คอนดักเตอร์เลือดเหลือ 1 -> มิวสิคคาร์ททุกคนเสียบทเพลง + สตั้น 2 · คอเซ็ตต์กลับร่างมนุษย์', () => {
+  const { K, C, N } = setup();
+  bond(K, C); bond(K, N);
+  song(K, C); song(K, N);
+  C.cosette.form = 'destiny'; C.cosette.destiny = 'II';
+  K.hp = 1;
+  assert.equal(takt.checkLowRevert(engine), 2);
+  assert.equal(C.statuses.taktSong, undefined);
+  assert.equal(N.statuses.taktSong, undefined);
+  assert.equal(C.statuses.stun, 2); assert.equal(N.statuses.stun, 2);
+  assert.equal(C.cosette.form, 'human');
+  assert.equal(C.cosette.destiny, null);
+  assert.ok(cutscenes.includes('cosetteLow'));
+  assert.equal(takt.canUseSkill(engine, K, 'ultimate', ['C']), false, 'เลือด 1 มอบบทเพลงไม่ได้');
+});
+
+test('บทเพลงพังเมื่อคอนดักเตอร์ตาย · พรมลิขิตระหว่างบทเพลงลงที่คอนดักเตอร์ 1 ไม่ตาย', () => {
+  const { K, C } = setup();
+  bond(K, C); song(K, C);
+  C.cosette.form = 'destiny';
+  K.hp = 2;
+  const hp = C.hp;
+  cos.onRoundStartTick(engine, C);
+  assert.equal(C.hp, hp);
+  assert.equal(K.hp, 1);
+  cos.onRoundStartTick(engine, C);
+  assert.equal(K.hp, 1, 'ไม่ตาย');
+  K.hp = 3;
+  engine.instantDeath(K, true);
+  assert.equal(C.statuses.taktSong, undefined);
+  assert.equal(C.statuses.stun, 2);
+});
+
+test('มิวสิคคาร์ท: จั่วเองครบ 5 ใบ 20% โชคลาภ (นับข้ามเทิร์น)', () => {
+  const { K, C } = setup();
+  bond(K, C); song(K, C);
+  Math.random = () => 0.1;
+  cos.onPlayerDraw(engine, C, 3);
+  assert.equal(C.statuses.fortune, undefined);
+  cos.onPlayerDraw(engine, C, 2);
+  assert.equal(C.statuses.fortune, 1);
+  assert.equal(C.cosette.draws, 0);
+});
+
+test('เปิดม่าน: ไททัน+คอเซ็ตต์เท่านั้น · สั่งไททันล่อเป้าทั้งตีปกติและสกิล · สั่งเดสตินี่ตี 2 · คูลดาวน์ 5', () => {
+  const { K, C, N, T, M } = setup();
+  bond(K, N);
+  assert.equal(takt.curtainActive(engine, K), false);
+  bond(K, C);
+  assert.equal(takt.curtainActive(engine, K), true);
+  assert.ok(cutscenes.includes('taktCurtain'));
+  const r = engine.roundNumber;
+  assert.ok(takt.perform(engine, K, 'titan'));
+  assert.equal(titan.tauntActive(engine, N), true);
+  // สกิลที่เล็งศัตรูคนอื่นถูกปิด — เล็งไททันได้
+  assert.equal(titan.skillTargetBlocked(engine, M, ['T']), true);
+  assert.equal(titan.skillTargetBlocked(engine, M, ['N']), false);
+  assert.equal(titan.skillTargetBlocked(engine, M, ['M']), false);
+  Math.random = () => 0.9;
+  N.hp = 7; N.armor = 0;
+  attack('M', 'T');
+  assert.equal(N.hp < 7, true, 'ตีปกติถูกดึงไปที่ไททัน');
+  assert.equal(takt.perform(engine, K, 'titan'), null, 'คูลดาวน์');
+  // สั่งเดสตินี่
+  T.hp = 7; T.armor = 0;
+  const res = takt.perform(engine, K, 'destiny', 'T');
+  assert.ok(res && res.after);
+  res.after();
+  assert.equal(T.hp, 5);
+  engine.setRoundNumber(r + 5);
+  C.statuses.stun = 1;
+  assert.equal(takt.perform(engine, K, 'destiny', 'T'), null, 'คู่พันธะติดสตั้นสั่งไม่ได้');
+});
+
+test('เปิดม่าน: มิวสิคคาร์ทซ้ำแบบ (ไททัน 2 คน) ไม่ทำงาน', () => {
+  const { K, N } = setup();
+  engine.players.N2 = blank('N2', 'titan', 6);
+  const N2 = engine.players.N2;
+  N2.statuses = {}; N2.statusAmt = {}; N2.hp = 7; N2.armor = 3; titan.resetCombat(N2); takt.resetCombat(N2); cos.resetCombat(N2);
+  bond(K, N); bond(K, N2);
+  assert.equal(takt.curtainActive(engine, K), false);
+});

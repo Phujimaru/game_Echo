@@ -42,6 +42,7 @@ function displayImg(p, unmasked) {
   // อาซาฮินะ ทักต์: มีพันธะ = takt_with.jpg · ไททัน: ระหว่างบทเพลง = takt_titan.jpg
   if (p.characterId === "takt") { const timg = CHAR_HOOKS.takt.displayImg(engine, p); if (timg) return timg; }
   if (p.characterId === "titan") { const timg = CHAR_HOOKS.titan.displayImg(p); if (timg) return timg; }
+  if (p.characterId === "cosette") { const cimg = CHAR_HOOKS.cosette.displayImg(p); if (cimg) return cimg; } // พรมลิขิต / บทเพลง
   // ฟุจิตะ โคโตเนะ: ระหว่างร่าง [พร้อมลุย] = ภาพ Kotone.png (null = ใช้ภาพปกติ)
   if (p.characterId === "kotone") { const kimg = CHAR_HOOKS.kotone.displayImg(p); if (kimg) return kimg; }
   // เอจิ: ระหว่างท่าไม้ตาย ไม่ว่ายังก็ตาม ทำงาน = ภาพ eiji_change.jpg (null = ใช้ภาพปกติ)
@@ -529,6 +530,11 @@ function buildStateFor(viewerId) {
         secondaryPub = pub(CHAR_HOOKS.titan.dynamicSkillFor(p, ch, "secondary"));
         ultimatePub = pub(CHAR_HOOKS.titan.dynamicSkillFor(p, ch, "ultimate"));
       }
+      if (ch.id === "cosette") {
+        basicPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "basic"));
+        secondaryPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "secondary"));
+        ultimatePub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "ultimate"));
+      }
       // สึงาชิ ทาคุโตะ (patch 2.2 new): Apprivoise! ทำงานแล้ว — สกิลพื้นฐานเปลี่ยนเป็น Star Sword Emeraude ถาวร
       // patch 2.2.5: กันตาย (สกิลติดตัว 1) เคยทำงานไปแล้ว — ท่าไม้ตายเปลี่ยนเป็นร่วมเดินทางไปกับฉันเถอะถาวร (แทนพิชิตแสงดาว)
       if (ch.id === "takuto") {
@@ -587,6 +593,9 @@ function buildStateFor(viewerId) {
       // ไททัน Triumphant: ราคาบนปุ่ม = ส่วนที่ไททันจ่ายเอง (ทักต์จ่ายส่วนที่ขาด) · รวมกันไม่ถึง = โชว์ราคาเต็ม 12
       { const split = ch.id === "titan" && ultimatePub ? CHAR_HOOKS.titan.triumphSplit(engine, p) : null;
         if (split) ultimatePub.cost = split.ok ? split.own : CHAR_HOOKS.titan.TRIUMPH_COST; }
+      // คอเซ็ตต์ Destiny: ราคาบนปุ่ม = ส่วนของคอเซ็ตต์สำหรับ Destiny I (หน้าต่างเลือกระดับโชว์ราคาจริงทั้งสองระดับ)
+      { const split = ch.id === "cosette" && ultimatePub ? CHAR_HOOKS.cosette.destinySplit(engine, p, "I") : null;
+        if (split) ultimatePub.cost = split.ok ? split.own : split.cost; }
       // สไตรเกอร์ ยูเรก้า: ระหว่างนับถอยหลัง ปุ่มท่าไม้ตาย = "ระเบิดทันที" ไม่เสียแต้ม (จ่าย 12 ไปแล้วตอนเปิดใช้)
       //  ต้องโชว์ราคา 0 ด้วย ไม่งั้นปุ่มฝั่ง client เช็คแต้มจากราคา 12 แล้วกดไม่ได้ (server ไม่หักอยู่แล้ว — striker.skillCost)
       if (ch.id === "striker" && ultimatePub && CHAR_HOOKS.striker.honorOn(p)) {
@@ -623,9 +632,14 @@ function buildStateFor(viewerId) {
         // อาซาฮินะ ทักต์: พันธะ (คอนดักเตอร์) / พันธะ+บทเพลง (มิวสิคคาร์ท) — เห็นทุกคน · คำเชิญ/รายชื่อที่เชิญได้ เห็นเจ้าตัว
         takt: CHAR_HOOKS.takt.publicState(engine, p),
         ...(mine ? CHAR_HOOKS.takt.privateState(engine, p) : {}),
-        titan: p.characterId === "titan" ? CHAR_HOOKS.titan.publicState(engine, p) : undefined, // ของว่าง/Vigorous Rising Sun/ชุดตี
+        titan: p.characterId === "titan" ? CHAR_HOOKS.titan.publicState(engine, p) : undefined, // ของว่าง/Vigorous Rising Sun/ชุดตี/ล่อเป้า
+        cosette: p.characterId === "cosette" ? CHAR_HOOKS.cosette.publicState(engine, p) : undefined, // ร่าง/ขั้น/ทิ่มแทง/Maestro/Destiny
+        // คอเซ็ตต์ Destiny: ราคาจริงของแต่ละระดับ (หน้าต่างเลือก I/II) — เห็นเจ้าตัว
+        cosetteDestiny: mine && p.characterId === "cosette" && CHAR_HOOKS.cosette.unlocked(p)
+          ? ["I", "II"].map((t) => { const s = CHAR_HOOKS.cosette.destinySplit(engine, p, t); return { tier: t, cost: s.cost, own: s.own, need: s.need, ok: s.ok }; })
+          : undefined,
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)

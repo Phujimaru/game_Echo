@@ -24,6 +24,12 @@
 //    วีดีโอของมิวสิคคาร์ทแต่ละตัว (takt/<id>/takt_<id>.mp4) เต็มครั้งแรก ครั้งต่อไปขึ้นการ์ดแจ้งเตือน
 //    ความสามารถที่ปลดล็อกเป็นของตัวมิวสิคคาร์ทเอง (เช่น characters/titan.js อ่าน songActive)
 //
+//  สกิลติดตัว 3 เปิดม่าน: ผูกพันธะกับมิวสิคคาร์ท 2 คน "ไม่ซ้ำแบบ" (ไททัน + คอเซ็ตต์) -> takt_passive3.mp4 (ครั้งแรกต่อเกม)
+//    ปุ่มพันธะเปลี่ยนเป็นปุ่มบรรเลง (socket taktPerform · ไม่เสียแต้ม · ไม่นับเป็นการใช้สกิล · คำสั่งละคูลดาวน์ 5)
+//    สั่งไททัน: ล่อเป้าทั้งโจมตีปกติและสกิลที่เล็งศัตรูไปที่ไททันจนจบเทิร์น (titan.titanTauntRound)
+//    สั่งเดสตินี่: คอเซ็ตต์ทำดาเมจสกิล 2 ใส่เป้าที่เลือก (วีดีโอก่อน) · คู่พันธะที่ถูกสั่งต้องไม่ติดสตั้น
+//  บทเพลงพัง: ทักต์เลือดเหลือ 1 หรือตาย -> มิวสิคคาร์ททุกคนที่มีบทเพลงเสียบทเพลง + สตั้น 2 (ต้านไม่ได้)
+//    (checkLowRevert ที่ flushOrtCounters / ต้นเทิร์น / onDeath) · ผลเฉพาะตัวผ่าน onSongLost ของมิวสิคคาร์ท
 //  สถานะของพันธะอยู่บนตัวผู้เล่นทั้งหมด (ย้อนได้ผ่านสแนปช็อต Overload Force/ชิโด):
 //    ทักต์: taktBonds (id ของมิวสิคคาร์ท) · taktBasicReady (เลขรอบ)
 //    มิวสิคคาร์ท: taktBondBy · taktInvite { fromId } · taktDeclinedRound · taktSongMode · taktModeRound
@@ -39,10 +45,15 @@ const IMG = {
   skill2: `${DIR}/takt_skill2.jpg`,
   skill3: `${DIR}/takt_skill3.avif`,
 };
-const VIDEO = { accept: `${DIR}/takt_ac.mp4` };
+const VIDEO = {
+  accept: `${DIR}/takt_ac.mp4`,
+  curtain: `${DIR}/takt_passive3.mp4`,
+  cmdTitan: `${DIR}/takt_passive3-titan.mp4`,
+  cmdDestiny: `${DIR}/takt_passive3-destiny.mp4`,
+};
 
 // ตัวละครที่มีสกิลติดตัว "มิวสิคคาร์ท" -> คีย์คัตซีนตอนได้บทเพลง (characters/_transforms.js)
-const MUSIC_CARTS = { titan: { songKey: "taktSongTitan" } };
+const MUSIC_CARTS = { titan: { songKey: "taktSongTitan" }, cosette: { songKey: "taktSongCosette" } };
 
 const MAX_BONDS = 2;
 const TAKT_HP = 5;
@@ -65,6 +76,10 @@ const MODES = {
   fierce: { label: "แข็งกร้าว", crit: 20 },
 };
 const DEFAULT_MODE = "low";
+const PERFORM_COOLDOWN = 5;
+const PERFORM_DMG = 2;
+const LOW_STUN = 2;
+const CURTAIN_TYPES = ["titan", "cosette"]; // เปิดม่าน: ต้องมีมิวสิคคาร์ทครบทั้งสองแบบ
 
 const isTakt = (p) => !!p && p.characterId === ID;
 const isMusicCart = (p) => !!p && !!MUSIC_CARTS[p.characterId];
@@ -102,6 +117,23 @@ function inviteBlock(engine, takt, cart) {
   if (engine.teamModeActive() && !engine.isAlly(takt, cart)) return "ต่างทีม";
   return null;
 }
+// เปิดม่าน: พันธะครบ 2 คนและไม่ซ้ำแบบ (ไททัน 1 + คอเซ็ตต์ 1)
+function curtainActive(engine, takt) {
+  const types = bondedCarts(engine, takt).filter(alive).map((c) => c.characterId);
+  return CURTAIN_TYPES.every((t) => types.includes(t));
+}
+function cartOfType(engine, takt, type) {
+  return bondedCarts(engine, takt).find((c) => alive(c) && c.characterId === type) || null;
+}
+function performBlock(engine, takt, cmd) {
+  if (!curtainActive(engine, takt)) return "ยังไม่เปิดม่าน";
+  const cart = cartOfType(engine, takt, cmd === "titan" ? "titan" : "cosette");
+  if (!cart) return "ไม่มีคู่พันธะ";
+  const ready = (takt.taktPerformReady || {})[cmd] || 0;
+  if (engine.roundNumber < ready) return `อีก ${ready - engine.roundNumber} เทิร์น`;
+  if ((cart.statuses.stun || 0) > 0) return "ติดสตั้น";
+  return null;
+}
 function unbond(engine, takt, cart) {
   if (takt) takt.taktBonds = (takt.taktBonds || []).filter((id) => !cart || id !== cart.id);
   if (cart) cart.taktBondBy = null;
@@ -110,8 +142,8 @@ function unbond(engine, takt, cart) {
 module.exports = {
   id: ID,
   IMG, VIDEO, MUSIC_CARTS, MODES, MAX_BONDS, TAKT_HP, TAKT_ARMOR, BOND_DODGE, INNATE_DODGE, REGEN_EVERY, REGEN_HP,
-  BASIC_COOLDOWN, SONG_TURNS, SONG_ATK,
-  isTakt, isMusicCart, taktOf, groupOf, songActive, modeOf,
+  BASIC_COOLDOWN, SONG_TURNS, SONG_ATK, PERFORM_COOLDOWN, PERFORM_DMG, LOW_STUN,
+  isTakt, isMusicCart, taktOf, groupOf, songActive, modeOf, curtainActive, bondedCarts,
 
   maxHp() { return TAKT_HP; },
   maxArmor() { return TAKT_ARMOR; },
@@ -124,6 +156,7 @@ module.exports = {
     p.taktDeclinedRound = 0;   // มิวสิคคาร์ท: เทิร์นที่ปฏิเสธ (เชิญซ้ำได้เทิร์นถัดไป)
     p.taktSongMode = DEFAULT_MODE; // มิวสิคคาร์ท: โหมดของบทเพลง
     p.taktModeRound = 0;       // มิวสิคคาร์ท: เทิร์นที่ถูกสลับโหมดล่าสุด (1 ครั้ง/เทิร์น)
+    p.taktPerformReady = { titan: 0, destiny: 0 }; // ทักต์ (เปิดม่าน): คำสั่งบรรเลงกดได้อีกเมื่อ roundNumber >= ค่านี้
   },
 
   // ---------- พวกเดียวกัน (โหมดอิสระ) ----------
@@ -168,7 +201,66 @@ module.exports = {
     cart.taktSongMode = cart.taktSongMode || DEFAULT_MODE;
     engine.log(`🎼 ${cart.name} ตอบรับพันธะสัญญากับ ${takt.name} — ผูกพันธะแล้ว ${takt.taktBonds.length}/${MAX_BONDS}`);
     engine.queueCutscene(takt, "taktAccept");
+    if (curtainActive(engine, takt)) {
+      engine.triggerCutscene(takt, "taktCurtain"); // เปิดม่าน: เต็มครั้งแรกต่อเกม
+      engine.log(`🎭 ${takt.name} เปิดม่าน — มิวสิคคาร์ทครบทั้งสองแบบ ปุ่มพันธะเปลี่ยนเป็นปุ่มบรรเลง`);
+    }
     return true;
+  },
+
+  // ---------- เปิดม่าน: คำสั่งบรรเลง ----------
+  //  คืน null = สั่งไม่ได้ · { after } = ผลที่ต้องลงหลังวีดีโอ (ผู้เรียกส่งเข้า pausePlayingForCutscene)
+  perform(engine, takt, cmd, targetId) {
+    if (!alive(takt) || !isTakt(takt) || (cmd !== "titan" && cmd !== "destiny") || performBlock(engine, takt, cmd)) return null;
+    if (cmd === "titan") {
+      const titan = cartOfType(engine, takt, "titan");
+      takt.taktPerformReady = { ...(takt.taktPerformReady || {}), titan: engine.roundNumber + PERFORM_COOLDOWN };
+      titan.titanTauntRound = engine.roundNumber;
+      engine.triggerCutscene(takt, "taktCmdTitan");
+      engine.log(`🎭 ${takt.name} บรรเลง — สั่ง ${titan.name} ล่อเป้าศัตรูทุกคนจนจบเทิร์นนี้`);
+      engine.skillFlash({ name: `บรรเลง — ${titan.name} ล่อเป้า`, img: IMG.skill2, by: takt.name, color: engine.colorOf(takt) });
+      return { after: null };
+    }
+    const cos = cartOfType(engine, takt, "cosette");
+    const t = engine.attackableTargets(cos.id).find((o) => o.id === targetId);
+    if (!t) return null;
+    takt.taktPerformReady = { ...(takt.taktPerformReady || {}), destiny: engine.roundNumber + PERFORM_COOLDOWN };
+    engine.triggerCutscene(takt, "taktCmdDestiny");
+    engine.log(`🎭 ${takt.name} บรรเลง — สั่ง ${cos.name} โจมตี ${t.name}`);
+    engine.skillFlash({ name: `บรรเลง — ${cos.name} โจมตี ${t.name}`, img: IMG.skill2, by: takt.name, color: engine.colorOf(takt) });
+    return {
+      after: () => {
+        if (!cos.alive || !t.alive) return;
+        engine.withEffectSource(cos, () => {
+          engine.dealMixed(t, PERFORM_DMG);
+          t.wasAttacked = true;
+          engine.resolveDamageAftermath(t);
+        });
+        engine.log(`🗡️ ${cos.name} โจมตีตามคำสั่ง — ${t.name} -${PERFORM_DMG}${t.alive ? "" : " — ตกรอบ!"}`);
+      },
+    };
+  },
+
+  // ---------- บทเพลงพัง: ทักต์เลือดเหลือ 1 หรือตาย ----------
+  revertCarts(engine, takt) {
+    let n = 0;
+    for (const c of bondedCarts(engine, takt)) {
+      if (!alive(c) || !songActive(c)) continue;
+      delete c.statuses.taktSong;
+      c.statuses.stun = Math.max(c.statuses.stun || 0, LOW_STUN);
+      const hook = engine.CHAR_HOOKS[c.characterId];
+      if (hook && hook.onSongLost) hook.onSongLost(engine, c);
+      engine.log(`💔 ${takt.name} ${takt.alive ? "พลังชีวิตเหลือ 1" : "ตกรอบ"} — บทเพลงของ ${c.name} ขาดหาย คืนร่างเดิม และติดสตั้น ${LOW_STUN} เทิร์น`);
+      n++;
+    }
+    return n;
+  },
+  checkLowRevert(engine) {
+    let n = 0;
+    for (const p of Object.values(engine.players)) {
+      if (isTakt(p) && p.alive && p.hp <= 1) n += this.revertCarts(engine, p);
+    }
+    return n;
   },
   // คำเชิญที่ยังไม่ตอบ — checkAllLocked รอคำตอบก่อนสรุปรอบ (หมดเวลาเฟส = ปฏิเสธ)
   invitePending(engine) {
@@ -191,6 +283,7 @@ module.exports = {
   onDeath(engine, victim) {
     if (!victim) return;
     if (isTakt(victim)) {
+      this.revertCarts(engine, victim); // ทักต์ตาย = บทเพลงของทุกคนพัง (ก่อนพันธะหลุด)
       for (const c of bondedCarts(engine, victim)) {
         c.taktBondBy = null;
         if (c.alive) engine.log(`🎼 ${victim.name} ตกรอบ — พันธะสัญญากับ ${c.name} สิ้นสุดลง`);
@@ -292,7 +385,7 @@ module.exports = {
       const t = this.pickCart(engine, p, targets, true);
       return !!t && !!MODES[item] && t.taktModeRound !== engine.roundNumber;
     }
-    if (tier === "ultimate") return !!this.pickCart(engine, p, targets, false);
+    if (tier === "ultimate") return p.hp > 1 && !!this.pickCart(engine, p, targets, false); // เลือด 1 = บทเพลงพังทันที
     return true;
   },
   skipsTurnQuota(p, tier) { return isTakt(p) && tier === "secondary"; },
@@ -339,6 +432,11 @@ module.exports = {
         bonds: bondedCarts(engine, p).map((c) => ({ id: c.id, name: c.name, song: songActive(c) ? (c.statuses.taktSong || 0) : 0, mode: modeOf(c) })),
         maxBonds: MAX_BONDS,
         dodge: bondedCarts(engine, p).length ? BOND_DODGE : INNATE_DODGE,
+        curtain: curtainActive(engine, p),
+        perform: curtainActive(engine, p) ? {
+          titan: { block: performBlock(engine, p, "titan"), cd: Math.max(0, ((p.taktPerformReady || {}).titan || 0) - engine.roundNumber) },
+          destiny: { block: performBlock(engine, p, "destiny"), cd: Math.max(0, ((p.taktPerformReady || {}).destiny || 0) - engine.roundNumber) },
+        } : null,
       };
     }
     if (isMusicCart(p)) {
@@ -362,7 +460,12 @@ module.exports = {
     }
     if (isTakt(p)) {
       const carts = Object.values(engine.players).filter((c) => isMusicCart(c) && c.alive && !engine.isOrt(c));
-      return { taktCandidates: carts.map((c) => ({ id: c.id, name: c.name, block: inviteBlock(engine, p, c) })) };
+      const cos = curtainActive(engine, p) ? cartOfType(engine, p, "cosette") : null;
+      return {
+        taktCandidates: carts.map((c) => ({ id: c.id, name: c.name, block: inviteBlock(engine, p, c) })),
+        // สั่งเดสตินี่: เป้าที่คอเซ็ตต์เล็งได้
+        taktPerformTargets: cos ? engine.attackableTargets(cos.id).map((o) => o.id) : [],
+      };
     }
     return {};
   },
@@ -372,7 +475,7 @@ module.exports = {
     return {
       basic: { cd: Math.max(0, (p.taktBasicReady || 0) - engine.roundNumber) },
       secondary: { locked: !carts.some((c) => songActive(c) && c.taktModeRound !== engine.roundNumber), free: true },
-      ultimate: { locked: !carts.some((c) => !songActive(c)) },
+      ultimate: { locked: p.hp <= 1 || !carts.some((c) => !songActive(c)) },
     };
   },
 };

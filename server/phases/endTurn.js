@@ -38,6 +38,8 @@ function endTurn() {
   if (CHAR_HOOKS.tsurugi.continueSlash(engine)) return;
   // ไททัน: ชุดตีหลายครั้ง (Vigorous Rising Sun / มิวสิคคาร์ท) ยังไม่ครบ — ถูกหลบก็ตีต่อ (เหตุผลเดียวกับคาเยนน์)
   if (CHAR_HOOKS.titan.continueAttack(engine)) return;
+  // คอเซ็ตต์ Maestro: คอนดักเตอร์ออกหมัดไปแล้ว -> ตามตีอีก 1 ครั้ง (วีดีโอก่อน)
+  if (CHAR_HOOKS.cosette.continueFollow(engine)) return;
   // โปรดิวเซอร์ (luminous burst): ตาข่ายสำรอง — ถ้าหมัดที่ทำให้ครบ "ถูกหลบ" doAttack จะ return
   //  ตั้งแต่ด่านหลบ ไม่ผ่าน postAttackFollowup เลย รางวัลจึงไม่มีวันจ่าย (และ luminous มีการหลบ 40%
   //  ของคาโฮะติดมาด้วย จึงเกิดบ่อยมาก) · flushBurst เป็น idempotent เรียกซ้ำไม่มีผลข้างเคียง

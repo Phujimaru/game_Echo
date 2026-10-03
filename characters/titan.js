@@ -23,6 +23,8 @@
 //    + ตีปกติโดนฟื้นพลังชีวิต 1 ทุกหมัด (ชุดหลายหมัดได้ทุกหมัด) + หลบการโจมตีปกติ 5%
 //    + ชุดที่ตีได้ครั้งเดียว 50% ได้ตีครั้งที่ 2 (ชุดที่มีหลายหมัดอยู่แล้วไม่เพิ่ม — สูงสุดยังเป็น 3)
 //
+//  เปิดม่าน (คำสั่งของทักต์): p.titanTauntRound = เทิร์นนี้ล่อเป้าทั้งโจมตีปกติ (findTaunters) และสกิลที่เล็งศัตรู
+//    (skillTargetBlocked) ไปที่ไททัน · บทเพลงพัง (takt.revertCarts) -> onSongLost ล้าง Vigorous Rising Sun/ชุดตี
 //  ชุดตีหลายครั้ง: p.titan.set { left, n, total, sun } สร้างที่หมัดแรก · หมัดต่อไปเปิดจากหัว endTurn
 //    (continueAttack — ถูกหลบก็ตีต่อ แบบเดียวกับคาเยนน์/โทโนะ) · เลือกเป้าใหม่ได้ทุกหมัด
 //  สถานะทั้งหมดของตัวละครอยู่ที่ p.titan (ไม่ใช่ p.statuses) ยกเว้น titanTwin / titanAgile ที่นับเทิร์นปกติ
@@ -103,7 +105,32 @@ module.exports = {
   TRIUMPH_COST, TRIUMPH_DMG, TRIUMPH_STUN, TRIUMPH_FRAGILE, THIRD_HIT_PCT, SHOT_HEAL, SHOT_EXTRA_PCT, SHOT_PCT, SHOT_BONUS, DODGE_PCT,
   isTitan, unlocked,
 
-  resetCombat(p) { p.titan = isTitan(p) ? fresh() : null; },
+  resetCombat(p) {
+    p.titan = isTitan(p) ? fresh() : null;
+    p.titanTauntRound = 0; // เปิดม่าน: เทิร์นที่ถูกสั่งล่อเป้า
+  },
+  onSongLost(engine, p) {
+    const s = st(p);
+    s.sun = false;
+    s.sunVideo = false;
+  },
+
+  // ---------- เปิดม่าน: ล่อเป้า ----------
+  tauntActive(engine, p) { return isTitan(p) && p.alive && p.titanTauntRound === engine.roundNumber && !engine.sealActive(p); },
+  // คิว taunter เดียวกับยุย/ริต้า/แบทแมน/Kim
+  findTaunters(engine, attacker) {
+    return engine.alivePlayers().filter((t) => t.id !== attacker.id && this.tauntActive(engine, t) && !engine.sameTeam(attacker, t));
+  },
+  // สกิลที่เล็งศัตรูของผู้ใช้ ต้องเล็งไททันที่กำลังล่อเป้าเท่านั้น (เล็งตัวเอง/พวกเดียวกันได้ตามปกติ)
+  skillTargetBlocked(engine, p, targets) {
+    if (!p || !Array.isArray(targets) || !targets.length) return false;
+    const taunters = this.findTaunters(engine, p);
+    if (!taunters.length) return false;
+    return targets.some((id) => {
+      const t = engine.players[id];
+      return t && t.id !== p.id && !engine.sameTeam(p, t) && !taunters.some((x) => x.id === t.id);
+    });
+  },
 
   // ---------- ชุดสกิลสลับระหว่างบทเพลง (useSkill + buildStateFor ใช้สูตรเดียวกัน) ----------
   dynamicSkillFor(p, ch, tier) {
@@ -374,6 +401,7 @@ module.exports = {
       sun: !!s.sun,
       unlocked: unlocked(p),
       set: s.set ? { n: s.set.n, total: s.set.total } : null,
+      taunt: this.tauntActive(engine, p),
     };
   },
   skillLocks(engine, p) {

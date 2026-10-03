@@ -739,7 +739,8 @@ function resetCombat(p) {
   CHAR_HOOKS.recruit.resetCombat(p); // Recruit: กระสุน / โควตาเตรียมตัว / ตัวนับเกราะ / คูลดาวน์ / QTE ที่ค้าง
   CHAR_HOOKS.striker.resetCombat(p);
   CHAR_HOOKS.takt.resetCombat(p);  // อาซาฮินะ ทักต์: พันธะ/คำเชิญ/โหมดบทเพลง (ฟิลด์ฝั่งมิวสิคคาร์ทอยู่ที่ทุกคน)
-  CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ
+  CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ/ล่อเป้า
+  CHAR_HOOKS.cosette.resetCombat(p); // คอเซ็ตต์: ร่าง/ขั้นมิวสิคคาร์ท/ทิ่มแทง/Maestro/Destiny/ตัวนับจั่ว
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน
   CHAR_HOOKS.brian.resetCombat(p);

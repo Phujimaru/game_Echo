@@ -320,6 +320,7 @@ function doAttack(byId, targetId) {
   CHAR_HOOKS.dan.onChasedAttacked(engine, attacker, target);
   CHAR_HOOKS.usagi.onAttack(engine, attacker);
   CHAR_HOOKS.artoria_caster.onAttack(engine, attacker); // ความหวัง: ออกหมัด (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
+  CHAR_HOOKS.cosette.onAttack(engine, attacker); // คอเซ็ตต์: ล้างผลหมัดก่อน · คอนดักเตอร์ออกหมัด -> Maestro จองตามตี
   CHAR_HOOKS.reines.onAttack(engine, attacker); // คุณนายใหญ่: ผู้ติดคำสั่งขั้นเด็ดขาดออกหมัด -> ไรเนสฟื้นแต้มสกิล +2
   // Bamboo-Hatted Kim: จำว่าออกหมัด (ก่อนด่านหลบทั้งหมด) — ถูกหลบ = ฝักดาบ +10 ตัดสินที่หมัดถัดไป/endTurn
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
@@ -338,6 +339,7 @@ function doAttack(byId, targetId) {
     ...CHAR_HOOKS.bat_ben.findTaunters(engine, attacker),
     ...CHAR_HOOKS.yui.findTaunters(engine, attacker), // ยุย: ปากแจ๋ว
     ...CHAR_HOOKS.kim.findTaunters(engine, attacker), // Bamboo-Hatted Kim: Yield My Flesh To Claim Their Bones
+    ...CHAR_HOOKS.titan.findTaunters(engine, attacker), // ไททัน: เปิดม่าน (คำสั่งของทักต์)
   ].filter((t) => !combat.sameTeam(attacker, t)).sort((a, b) => a.position - b.position);
   if (taunters.length) {
     const taunter = taunters[Math.max(0, (attacker.position || 1) - 1) % taunters.length];
@@ -347,7 +349,8 @@ function doAttack(byId, targetId) {
       phenexTaunted = taunter.characterId === "phenex";
       batTaunted = taunter.characterId === "bat_ben";
       const label = phenexTaunted ? "🥺 ไม่อยากให้ใครต้องเจ็บปวด"
-        : taunter.characterId === "kim" ? "⚔️ Yield My Flesh To Claim Their Bones" : "🦇 เข้ามาเลย";
+        : taunter.characterId === "kim" ? "⚔️ Yield My Flesh To Claim Their Bones"
+        : taunter.characterId === "titan" ? "🎭 บรรเลง" : "🦇 เข้ามาเลย";
       match.lastLog.push(`${label} — ${taunter.name} ล่อเป้า! การโจมตีของ ${attacker.name} ถูกดึงจาก ${oldTarget.name} มาที่ตัวเอง`);
     }
   }
@@ -495,6 +498,7 @@ function doAttack(byId, targetId) {
   // อาซาฮินะ ทักต์: คอนดักเตอร์มีพันธะหลบ 35% · มิวสิคคาร์ทโหมดทุ้มต่ำหลบ 5% · ไททัน (ช็อตกัน) หลบ 5%
   if (!accurate && CHAR_HOOKS.takt.tryAttackDodge(engine, attacker, target)) return;
   if (!accurate && CHAR_HOOKS.titan.tryAttackDodge(engine, attacker, target)) return;
+  if (!accurate && CHAR_HOOKS.cosette.tryAttackDodge(engine, attacker, target)) return; // มิวสิคคาร์ทที่แท้จริง 5-15%
   // การเดินทาง (ป่าไม้ต้องสาป กลางวัน): โจมตีพลาด 40% — ฝั่งผู้ตีพลาดเอง แต่ "แม่นยำ" ก็เจาะได้เหมือนด่านหลบ
   if (!accurate && Journey.tryAttackMiss(engine, attacker, target)) return;
   // เอจิ สกิลติดตัว 1 (ผู้เล่นอันดับ 2): ผู้ชนะไปตีคนอื่นที่ไม่ใช่เอจิ -> 25% ขัดจังหวะแล้วสวนคืน
@@ -525,6 +529,8 @@ function doAttack(byId, targetId) {
     // ลบล้างติดคูลดาวน์อยู่ — การโจมตีดำเนินต่อ (Wonder of U อาจสวนกลับไปแล้วใน satoruOnTargeted)
   }
 
+  // คอเซ็ตต์: ผ่านด่านหลบแล้ว = ทิ่มแทง (คัดลอกบัฟ/ภาระเวท) หรือ Destiny II (ลบบัฟเป้า) ลงก่อนคิดดาเมจ + คิววีดีโอ
+  const cosetteFx = CHAR_HOOKS.cosette.prepareOnAttack(engine, attacker, target);
   // สูตรพลังโจมตีพื้นฐาน — ย้าย body ไป computeAttackBase() แล้ว (ดูก่อนหน้า doAttack ในไฟล์นี้)
   let {
     base,
@@ -602,6 +608,8 @@ function doAttack(byId, targetId) {
   if (CHAR_HOOKS.escanor.adjustOutgoingDamage) dmg = CHAR_HOOKS.escanor.adjustOutgoingDamage(engine, attacker, target, dmg);
   if (attacker.characterId === "satoru") dmg = 0; // ซาโตรุ: โจมตีธรรมดาดาเมจ 0 แล้วติด ObLa หลังโจมตี
   // เอจิ (characters/eiji.js): ดาบแห่งความทรงจำ — โอกาสคูณดาเมจ 2 เท่า (คิดท้ายสุดเพื่อให้คูณยอดสุทธิจริง)
+  // คอเซ็ตต์ Destiny: ×1.5 (ปัดขึ้น) / ×2 — ก่อนคริติคอลทุกตัว (คริซ้อนได้)
+  dmg = CHAR_HOOKS.cosette.damageMultiplier(attacker, dmg);
   const eijiSwordFx = {};
   dmg = CHAR_HOOKS.eiji.applySwordDouble(engine, attacker, dmg, eijiSwordFx);
   // ORT: คริติคอล 75% คูณยอดสุทธิ ×2 (คิดท้ายสุดเหมือนดาบของเอจิ)
@@ -720,6 +728,8 @@ function doAttack(byId, targetId) {
   const taktGentleHeal = attacker.characterId !== "titan" ? CHAR_HOOKS.takt.songHealOnHit(engine, attacker) : 0;
   // ไททัน "คล่องตัวสูง": สวนผู้โจมตีทันทีในการ์ดสรุปเดียวกัน (จองไว้ตอนถูกเลือกเป็นเป้า)
   const titanCounterFx = CHAR_HOOKS.titan.flushCounters(engine, true);
+  // คอเซ็ตต์: ลุกไหม้ (มิวสิคคาร์ทที่แท้จริง) · โชคชะตา · มิวสิคคาร์ท (ฟื้นคอนดักเตอร์+ตัวเอง) · ผกผันของ Destiny I
+  const cosetteAtkFx = CHAR_HOOKS.cosette.onAttackLanded(engine, attacker, target);
   // แบทแมน (characters/bat_ben.js): ปืนติดรถ — ใช้แล้วหมดกระสุน (ดาเมจถูกบวกไปแล้วที่ computeAttackBase)
   const batGunFired = CHAR_HOOKS.bat_ben.consumeGun(engine, attacker);
   // อิปโป (characters/ippo.js): Uper Cut ลงผลตามว่าเป้าหมาย "มีเกราะก่อนโดนหมัดนี้" หรือไม่
@@ -856,6 +866,7 @@ function doAttack(byId, targetId) {
   if (strikerBleed > 0) addFx({ name: `มือมีด — เลือดไหล +${strikerBleed}`, img: CHAR_HOOKS.striker.IMG.skill1, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (strikerCounterFx) addFx({ name: `เตาปฏิกรณ์ — แทงสวน -${strikerCounterFx.dmg}`, img: CHAR_HOOKS.striker.IMG.base, by: target.name, color: lobby.colorOf(target) }, "def");
   if (kimCounterFx) addFx({ name: kimCounterFx.name, img: kimCounterFx.img, by: target.name, color: lobby.colorOf(target) }, "def");
+  for (const name of cosetteAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   for (const name of titanAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   for (const name of CHAR_HOOKS.takt.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.takt.IMG.skill3, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (taktGentleHeal > 0) addFx({ name: `อ่อนโยน ฟื้นพลังชีวิต +${taktGentleHeal}`, img: CHAR_HOOKS.takt.IMG.skill2, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
@@ -952,6 +963,6 @@ function doAttack(byId, targetId) {
   //  / อย่าอยู่เลย แกน่ะ! (ริต้า เบอร์นัล patch 2.1.6) / ฉันยัง...มองเห็นอยู่!!! กันตาย + อย่างนายน่ะ จะไปเข้าใจอะไร (สึงาชิ ทาคุโตะ patch 2.2.4):
   //  เล่นวีดีโอที่ค้างคิวก่อน แล้วค่อยขึ้นสรุปความเสียหาย
   //  (ปกติทุกท่าอื่นจะขึ้นสรุปความเสียหายก่อนแล้วค่อยเล่นวีดีโอค้างคิวตอนจบ — ท่าเหล่านี้กลับลำดับเฉพาะตัว)
-  if ((storiumAtk || phenexPurgeAtk || miyakoUltAtk || triggerMultiAtk || triggerZeperionAtk || escanorAttackVideoQueued || (beatSaveFired && target.characterId === "takuto") || takutoUlt2VideoQueued || eijiSwordFx.videoQueued || harukaPunishFx.videoQueued || (harukaCounterFx && harukaCounterFx.videoQueued) || (danCounterFx && danCounterFx.videoQueued) || (yuiCounterFx && yuiCounterFx.videoQueued) || batGunFired || daisukeRiderFired || yagurumaStingFired || kagamiKickFired || tsurugiSlashFired || strikerFistFx || strikerCounterFx || tohnoBurstFx.videoQueued) && match.cutsceneQueue.length) cutscene.runCutsceneQueue(showAttackFx);
+  if ((storiumAtk || phenexPurgeAtk || miyakoUltAtk || triggerMultiAtk || triggerZeperionAtk || escanorAttackVideoQueued || (beatSaveFired && target.characterId === "takuto") || takutoUlt2VideoQueued || eijiSwordFx.videoQueued || harukaPunishFx.videoQueued || (harukaCounterFx && harukaCounterFx.videoQueued) || (danCounterFx && danCounterFx.videoQueued) || (yuiCounterFx && yuiCounterFx.videoQueued) || batGunFired || daisukeRiderFired || yagurumaStingFired || kagamiKickFired || tsurugiSlashFired || strikerFistFx || strikerCounterFx || tohnoBurstFx.videoQueued || (cosetteFx && cosetteFx.videoQueued)) && match.cutsceneQueue.length) cutscene.runCutsceneQueue(showAttackFx);
   else showAttackFx();
 }

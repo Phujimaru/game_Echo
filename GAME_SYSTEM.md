@@ -545,7 +545,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 - อาศัยจังหวะเรียกท้ายสุดของ `postAttackFollowup` (หลังตีเพิ่มทุกแบบของฝั่งตรงข้ามจบ) · งานช่างกันโจมตีที่ `afterSummary`
 - เทสต์: [tests/characters/striker.test.js](tests/characters/striker.test.js) · [tests/striker-pair.integration.test.js](tests/striker-pair.integration.test.js)
 
-**อาซาฮินะ ทักต์ (พิเศษ · unique) + ไททัน (ง่าย · มิวสิคคาร์ท)** — `characters/takt.js` · `characters/titan.js`
+**อาซาฮินะ ทักต์ (พิเศษ · unique) + ไททัน (ง่าย) + คอเซ็ตต์ (กลาง) — มิวสิคคาร์ท** — `characters/takt.js` · `characters/titan.js`
 - **ระบบพันธะเป็นของกลางของ "มิวสิคคาร์ท"** (`takt.MUSIC_CARTS` = characterId -> คีย์คัตซีนตอนได้บทเพลง) — มิวสิคคาร์ทตัวใหม่แค่เพิ่มในตารางนี้
   แล้วอ่าน `takt.songActive(p)` เพื่อปลดล็อกความสามารถของตัวเอง · ฟิลด์ทั้งหมดอยู่บนตัวผู้เล่น (ย้อนได้ผ่านสแนปช็อต):
   ทักต์ `taktBonds` · มิวสิคคาร์ท `taktBondBy` / `taktInvite` / `taktSongMode` / `taktModeRound` · บทเพลง = `statuses.taktSong` (นับเทิร์นปกติ)
@@ -566,6 +566,19 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · **สวนกลับ (คล่องตัวสูง)**: จองที่ `onTargeted` (หัว doAttack ก่อนด่านหลบ) / `onSkillTargeted` (useSkill) / `adjustIncomingDamage` (ดาเมจสกิล)
     -> หมัดลง = สวนในการ์ดเดียวกัน (`flushCounters(engine, true)`) · ที่เหลือ flush ใน `flushOrtCounters()` · ดาเมจสวนตั้ง `_counterDamage` กันสวนกันไปมา
 เทสต์: [tests/characters/takt-titan.test.js](tests/characters/takt-titan.test.js)
+- **คอเซ็ตต์ ชไนเดอร์ (กลาง · มิวสิคคาร์ทตัวที่ 2)** `characters/cosette.js` — สถานะทั้งหมดที่ `p.cosette`
+  · ร่างมนุษย์/พรมลิขิตปรับพลังโจมตีผ่าน `damageBonus` (มนุษย์ -1 = ตีปกติ 0) · ผลต้นเทิร์นที่ `onRoundStartTick`
+  · ทิ่มแทง/Destiny ลงผลที่ `prepareOnAttack` (หลังด่านหลบทั้งหมด ก่อน `computeAttackBase` — ถูกหลบ = ไม่เล่นวีดีโอ ท่ายังค้าง)
+    แล้ววีดีโอเล่นก่อนการ์ดสรุป (`cosetteFx.videoQueued` ในชุดเงื่อนไขท้าย doAttack) · ตัวคูณ Destiny อยู่ก่อนคริติคอลทุกตัว
+  · Maestro: `onAttack` (หัว doAttack) จองเมื่อทักต์ออกหมัด -> `continueFollow` ที่หัว `endTurn` เปิดเฟสโจมตีให้คอเซ็ตต์
+  · สกิลของร่างปกติ "ไม่ทำงานซ้อน" ระหว่างบทเพลง (ทิ่มแทงที่ค้างรอไว้หลังกลับร่าง) · Destiny จ่ายร่วมกับทักต์ผ่านช่องเดียวกับ Triumphant
+  · ความเสียหายที่ลงทักต์ (สูบเลือด/พรมลิขิต) ห่อ `withEffectSource(ทักต์)` — ถ้าต้นตอเป็นคอเซ็ตต์ `friendlyEffectBlocked` จะกันไว้
+- **บทเพลงพัง**: ทักต์เลือดเหลือ 1 หรือตาย -> `takt.revertCarts` (บทเพลงหาย + สตั้น 2 + `onSongLost` ของมิวสิคคาร์ท) · ตรวจที่
+  `flushOrtCounters()` ท้ายลูปต้นเทิร์นของ `dealRound` และ `takt.onDeath` · ทักต์เลือด 1 มอบบทเพลงไม่ได้ · Destiny ต้องให้ทักต์เลือด 3+
+- **เปิดม่าน (ทักต์ สกิลติดตัว 3)**: พันธะไททัน + คอเซ็ตต์ (ไม่ซ้ำแบบ) -> socket `taktPerform {cmd, targetId}` คำสั่งละคูลดาวน์ 5
+  · สั่งไททัน = `titanTauntRound` -> `titan.findTaunters` (คิว taunter ของ doAttack) + `titan.skillTargetBlocked` (ด่านแรกของ useSkill)
+  · สั่งเดสตินี่ = ดาเมจสกิล 2 จากคอเซ็ตต์หลังวีดีโอ (`pausePlayingForCutscene(after)`)
+เทสต์: [tests/characters/cosette.test.js](tests/characters/cosette.test.js)
 
 **คูลดาวน์ท่าไม้ตายที่วัดเป็น "เลขรอบ" (ชิโด · เอจิ)** — คูลดาวน์ที่กินเวลาข้ามเทิร์นห้ามเก็บเป็นตัวนับใน
 `p.statuses` ถ้าไม่อยากให้มันไปโผล่ในรายการสถานะให้ทุกคนเห็น จึงเก็บเป็น **เลขรอบที่ล็อกถึง**

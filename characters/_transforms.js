@@ -26,6 +26,7 @@ const reinesChar = require("./reines"); // ไรเนส เอลเมลล
 const andersenChar = require("./andersen"); // แอนเดอร์เซน: วีดีโอท่าไม้ตาย
 const taktChar = require("./takt");   // อาซาฮินะ ทักต์: วีดีโอตอบรับพันธะ
 const titanChar = require("./titan"); // ไททัน: วีดีโอสกิล + ร่างบทเพลง
+const cosetteChar = require("./cosette"); // คอเซ็ตต์ ชไนเดอร์: วีดีโอสกิล + ร่างบทเพลง
 const mark42 = require("./_mark42"); // เกราะ Mark 42 (ไอเทมร้านค้า): path วีดีโอชุดเดียวกับไฟล์ระบบ
 const strikerChar = require("./striker"); // สไตรเกอร์ ยูเรก้า: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const recruitChar = require("./recruit"); // Recruit: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
@@ -184,6 +185,17 @@ module.exports = function buildTransforms(img) {
     taktSongTitan: { img: titanChar.IMG.song, video: titanChar.VIDEO.song, title: "บทเพลงที่ไม่อาจลืม", label: "ไททัน", seconds: 13, music: null, afterReveal: false },
     titanAgile:    { img: titanChar.IMG.skill3, video: titanChar.VIDEO.agile, title: "คล่องตัวสูง", label: "หลบหลีก + สวนกลับ", seconds: 4, music: null, afterReveal: false },
     titanSun:      { img: titanChar.IMG.sun, video: titanChar.VIDEO.sun, title: "Vigorous Rising Sun", label: "โจมตี 2 ครั้ง", seconds: 3, music: null, afterReveal: false, noIntro: true },
+    //  คอเซ็ตต์: ทุกคลิปเต็มครั้งแรกต่อเกม (triggerCutscene) ยกเว้น Destiny I/II ที่เล่นทุกครั้ง (queueCutscene)
+    //  taktCurtain/taktCmd*: เปิดม่านและคำสั่งบรรเลงของทักต์ (ครั้งแรกต่อเกม)
+    taktSongCosette:   { img: cosetteChar.IMG.song, video: cosetteChar.VIDEO.song, title: "บทเพลงที่ไม่อาจลืม", label: "เดสตินี่", seconds: 4, music: null, afterReveal: false },
+    cosettePierce:     { img: cosetteChar.IMG.skill3, video: cosetteChar.VIDEO.pierce, title: "ทิ่มแทง", label: "คัดลอกบัฟ + ภาระเวท", seconds: 10, music: null, afterReveal: false },
+    cosetteMaestro:    { img: cosetteChar.IMG.maestro, video: cosetteChar.VIDEO.maestro, title: "Maestro", label: "ตามตี", seconds: 15, music: null, afterReveal: false },
+    cosetteDestinyI:   { img: cosetteChar.IMG.destinyUlt, video: cosetteChar.VIDEO.destinyI, title: "Destiny I", label: "ความเสียหาย ×1.5 + ผกผัน", seconds: 10, music: null, afterReveal: false },
+    cosetteDestinyII:  { img: cosetteChar.IMG.destinyUlt, video: cosetteChar.VIDEO.destinyII, title: "Destiny II", label: "ลบบัฟ + ความเสียหาย ×2", seconds: 11, music: null, afterReveal: false },
+    cosetteLow:        { img: cosetteChar.IMG.base, video: cosetteChar.VIDEO.low, title: "บทเพลงขาดหาย", label: "คืนร่าง", seconds: 11, music: null, afterReveal: false },
+    taktCurtain:       { img: taktChar.IMG.bonded, video: taktChar.VIDEO.curtain, title: "เปิดม่าน", label: "มิวสิคคาร์ทครบ", seconds: 7, music: null, afterReveal: false },
+    taktCmdTitan:      { img: titanChar.IMG.base, video: taktChar.VIDEO.cmdTitan, title: "บรรเลง", label: "ไททันล่อเป้า", seconds: 7, music: null, afterReveal: false },
+    taktCmdDestiny:    { img: cosetteChar.IMG.base, video: taktChar.VIDEO.cmdDestiny, title: "บรรเลง", label: "เดสตินี่โจมตี", seconds: 6, music: null, afterReveal: false },
     titanTriumph:  { img: titanChar.IMG.triumph, video: titanChar.VIDEO.triumph, title: "Triumphant", label: "ความเสียหาย 4 ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     reinesUlt:   { img: reinesChar.IMG.skill3, video: reinesChar.VIDEO.ult, title: "แผนการลับสุดยอดชั้นครู", label: "เปราะบาง + อ่อนแอ ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     yuiSongFail: { img: yuiImg.skill3, video: "/characters/yui/skill3/yui_skill3_false.mp4", title: "เสียงเพี้ยน",    label: "บรรเลงล้มเหลว",   seconds: 4, music: null, afterReveal: false },
