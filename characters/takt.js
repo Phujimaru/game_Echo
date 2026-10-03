@@ -135,6 +135,9 @@ function performBlock(engine, takt, cmd) {
   if ((cart.statuses.stun || 0) > 0) return "ติดสตั้น";
   return null;
 }
+// เพลง takt_theme: เล่นตลอดที่มีมิวสิคคาร์ทคนใดคนหนึ่งมีบทเพลง — ได้บทเพลงเพิ่มอีกคนไม่เริ่มเพลงใหม่
+//  (ค่า at ล็อกไว้ตั้งแต่คนแรก) จนกว่าบทเพลงจะดับหมดทุกคน แล้วรอบหน้าค่อยนับใหม่
+let musicAt = null;
 function unbond(engine, takt, cart) {
   if (takt) takt.taktBonds = (takt.taktBonds || []).filter((id) => !cart || id !== cart.id);
   if (cart) cart.taktBondBy = null;
@@ -158,6 +161,14 @@ module.exports = {
     p.taktSongMode = DEFAULT_MODE; // มิวสิคคาร์ท: โหมดของบทเพลง
     p.taktModeRound = 0;       // มิวสิคคาร์ท: เทิร์นที่ถูกสลับโหมดล่าสุด (1 ครั้ง/เทิร์น)
     p.taktPerformReady = { titan: 0, destiny: 0 }; // ทักต์ (เปิดม่าน): คำสั่งบรรเลงกดได้อีกเมื่อ roundNumber >= ค่านี้
+  },
+
+  // ---------- เพลงประจำบทเพลง (view.activeSkillMusic) ----------
+  activeMusic(engine) {
+    const on = Object.values(engine.players).filter((p) => alive(p) && isMusicCart(p) && songActive(p));
+    if (!on.length) { musicAt = null; return null; }
+    if (musicAt == null) musicAt = Math.max(...on.map((p) => p.transformAt || 0));
+    return { music: "takt_theme", at: musicAt };
   },
 
   // ---------- พวกเดียวกัน (โหมดอิสระ) ----------

@@ -137,6 +137,9 @@ function activeSkillMusic() {
     }
   }
   if (bestHisakawa) return bestHisakawa;
+  // อาซาฮินะ ทักต์: takt_theme ตลอดที่มีมิวสิคคาร์ทมีบทเพลง (ได้เพิ่มอีกคนไม่เริ่มใหม่ จนกว่าจะดับหมด)
+  const bestTakt = CHAR_HOOKS.takt.activeMusic(engine);
+  if (bestTakt) return bestTakt;
   // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ ทำงานอยู่ — เพลง forever เล่นค้าง (priority สูงกว่าเพลงตามเกียร์ ต่ำกว่า Beat Mode)
   let bestTakumiBlackout = null;
   for (const p of combat.alivePlayers()) {

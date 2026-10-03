@@ -263,3 +263,18 @@ test('เปิดม่าน: มิวสิคคาร์ทซ้ำแบ
   bond(K, N); bond(K, N2);
   assert.equal(takt.curtainActive(engine, K), false);
 });
+
+test('เพลง takt_theme: เล่นระหว่างมีบทเพลง · ได้บทเพลงเพิ่มอีกคนไม่เริ่มใหม่ · ดับหมดแล้วหยุด', () => {
+  const { K, C, N } = setup();
+  bond(K, C); bond(K, N);
+  assert.equal(takt.activeMusic(engine), null);
+  song(K, C); C.transformAt = 10;
+  const m1 = takt.activeMusic(engine);
+  assert.equal(m1.music, 'takt_theme');
+  song(K, N); N.transformAt = 20;
+  assert.equal(takt.activeMusic(engine).at, m1.at, 'ไม่เริ่มเพลงใหม่');
+  delete C.statuses.taktSong;
+  assert.equal(takt.activeMusic(engine).at, m1.at, 'ยังมีอีกคน เพลงต่อเนื่อง');
+  delete N.statuses.taktSong;
+  assert.equal(takt.activeMusic(engine), null);
+});

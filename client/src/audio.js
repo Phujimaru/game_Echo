@@ -67,6 +67,7 @@ const FILES = {
   purge_final: "/purge/playerjust2.mp3",
   // อุซากิ: เพลงตลอดช่วงท่าไม้ตาย (โจทย์คณิต 3 เทิร์น)
   usagi_theme: "/characters/usagi/usagi_theme.mp3",
+  takt_theme: "/characters/takt/takt_theme.mp3", // อาซาฮินะ ทักต์: ระหว่างมิวสิคคาร์ทมีบทเพลง
   // Bamboo-Hatted Kim: เสียงกดสกิล / เสียงสวนกลับ / เพลงร่าง Awake (เล่นค้างถาวรหลังเข้าร่าง)
   kim_draw: "/characters/Bamboo-Hatted Kim/สกิลพื้นฐาน/สกิลพื้นฐาน ชักดาบ.mp3",
   // โอเบรอน (ฤดูร้อน): เสียงตอนกดสกิลแต่ละช่อง (ส่งชื่อมากับ skillFlash)
@@ -403,6 +404,7 @@ const LOUDNESS_GAIN = {
   "/characters/ultraman_trigger/skill3/trigger_skill3.mp4": 0.92,
   "/characters/ultraman_trigger/trigger_theme.mp3": 0.86,
   "/characters/usagi/usagi_theme.mp3": 0.85,
+  "/characters/takt/takt_theme.mp3": 0.92, // อาซาฮินะ ทักต์: -13.3 dBFS (เป้าเพลง -14)
   "/characters/yaguruma/yaguruma.mp4": 0.68,
   "/characters/yaguruma/yaguruma_skill1.mp4": 0.66,
   "/characters/yaguruma/yaguruma_skill3.mp4": 0.65,
