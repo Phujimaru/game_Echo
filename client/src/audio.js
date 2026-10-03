@@ -118,6 +118,8 @@ const FILES = {
   tohno_hit: "/characters/tohno/tohno_update/tohno_hit.mp3",
   // ไททัน: เสียงตีปกติ / หมัดสวนกลับของคล่องตัวสูง
   titan_hit: "/characters/titan/titan_hit.mp3",
+  // คอเซ็ตต์: เสียงตีปกติ (ทุกร่าง)
+  destiny_hit: "/characters/destiny/destiny_hit.mp3",
   tohno_voice_hit1: "/characters/tohno/tohno_update/hit_sound/tohno_hit.m4a",
   tohno_voice_hit2: "/characters/tohno/tohno_update/hit_sound/tohno_hit2.m4a",
   tohno_voice_hit3: "/characters/tohno/tohno_update/hit_sound/tohno_hit3.m4a",
@@ -279,6 +281,7 @@ const LOUDNESS_GAIN = {
   "/characters/takt/takt_passive3-titan.mp4": 0.98, // ทักต์: วีดีโอสั่งไททัน (เป้าวีดีโอ -16)
   "/characters/takt/takt_passive3-destiny.mp4": 0.68, // ทักต์: วีดีโอสั่งเดสตินี่ (เป้าวีดีโอ -16)
   "/characters/titan/titan_hit.mp3": 0.64, // ไททัน: เสียงตีปกติ (เป้าเอฟเฟกต์ -14)
+  "/characters/destiny/destiny_hit.mp3": 0.71, // คอเซ็ตต์: เสียงตีปกติ -11.0 dBFS (เป้าเอฟเฟกต์ -14)
   "/characters/johnny/johnny_theme.mp3": 0.61,   // จอห์นนี่: เพลง Act 4 -9.7 dBFS (เป้าเพลง -14)
   "/characters/johnny/johnny_nail.mp3": 0.81,    // -12.2 dBFS (เป้าเอฟเฟกต์ -14)
   "/characters/johnny/johnny_chumimi.mp3": 0.94, // -13.5 dBFS
