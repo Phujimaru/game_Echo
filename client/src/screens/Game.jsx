@@ -2024,12 +2024,12 @@ function GutsVideoPreloader({ me, players }) {
       {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan.mp4" preload="auto" muted playsInline />}
       {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill2.mp4" preload="auto" muted playsInline />}
       {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_skill3.mp4" preload="auto" muted playsInline />}
+      {preloadTaktTitan && <video src="/characters/takt/titan/takt_titan_low.mp4" preload="auto" muted playsInline />}
       {preloadTitan && <video src="/characters/titan/titan_skill3.mp4" preload="auto" muted playsInline />}
       {preloadCosette && <video src="/characters/destiny/destiny_skill3.mp4" preload="auto" muted playsInline />}
       {preloadTaktCosette && !preloadTaktTitan && <video src="/characters/takt/takt_ac.mp4" preload="auto" muted playsInline />}
       {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny.mp4" preload="auto" muted playsInline />}
       {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_low.mp4" preload="auto" muted playsInline />}
-      {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill2.mp4" preload="auto" muted playsInline />}
       {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill3_I.mp4" preload="auto" muted playsInline />}
       {preloadTaktCosette && <video src="/characters/takt/destiny/takt_destiny_skill3_II.mp4" preload="auto" muted playsInline />}
       {preloadCurtain && <video src="/characters/takt/takt_passive3.mp4" preload="auto" muted playsInline />}

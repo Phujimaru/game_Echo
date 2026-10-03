@@ -139,7 +139,7 @@ test('Maestro: คอนดักเตอร์โชคลาภ 1 · คอ�
   assert.equal(C.cosette.followPending, true);
   assert.equal(cos.continueFollow(engine), true);
   engine.clearPhaseTimer();
-  assert.ok(cutscenes.includes('cosetteMaestro'));
+  assert.ok(!cutscenes.some((k) => /maestro/i.test(k)), 'ตามตีไม่มีวีดีโอ');
   assert.equal(engine.attackerId, 'C');
   assert.equal(C.cosette.follow, 0, 'ใช้แล้ว');
   C.skillUsedRound = false;
@@ -149,22 +149,31 @@ test('Maestro: คอนดักเตอร์โชคลาภ 1 · คอ�
   assert.equal(cos.canUseSkill(engine, C, 'secondary'), true);
 });
 
-test('Destiny: หารแต้มกับคอนดักเตอร์ · สูบเลือด 1 · ต้องเลือด 3+ · I ×1.5 ผกผัน · II ลบบัฟ ×2', () => {
+test('Destiny: หารแต้มกับคอนดักเตอร์ · ยิงโดนแล้วค่อยสูบเลือด (I 1 / II 2) · I ×1.5 ผกผัน · II ลบบัฟ ×2', () => {
   const { K, C, T } = setup();
   bond(K, C); song(K, C);
   C.skillPoints = 5; K.skillPoints = 8; K.hp = 5; C.hp = 5;
   engine.useSkill('C', 'ultimate', [], 'I');
   assert.equal(C.skillPoints, 0); assert.equal(K.skillPoints, 5);
-  assert.equal(C.hp, 6); assert.equal(K.hp, 4);
+  assert.equal(K.hp, 5, 'กดแล้วยังไม่สูบ');
+  assert.equal(C.hp, 5);
   assert.equal(C.cosette.destiny, 'I');
+  // ถูกหลบ = ไม่สูบ บัฟยังอยู่
   T.hp = 7; T.armor = 0; T.statuses.resist = 2;
+  engine.grantEvadeStack(T, 2);
+  Math.random = () => 0.1;
+  attack('C', 'T');
+  assert.equal(C.cosette.destiny, 'I');
+  assert.equal(K.hp, 5);
   Math.random = () => 0.9;
   attack('C', 'T'); // ฐาน 1-1 (มนุษย์) +1 บทเพลง = 1 -> ×1.5 = 2
   assert.equal(T.hp, 5);
   assert.equal(T.statuses.invert, 2);
   assert.ok(cutscenes.includes('cosetteDestinyI'));
-  // II
-  C.skillPoints = 8; K.skillPoints = 8; C.skillUsedRound = false;
+  assert.equal(K.hp, 5, 'ยิงโดนแล้วสูบ 1 แล้วมิวสิคคาร์ทฟื้นคืน 1');
+  assert.equal(C.hp, 7, 'สูบ 1 + มิวสิคคาร์ทฟื้น 1');
+  // II สูบ 2
+  C.skillPoints = 8; K.skillPoints = 8; C.skillUsedRound = false; K.hp = 5; C.hp = 3;
   engine.setGameState('PLAYING');
   engine.useSkill('C', 'ultimate', [], 'II');
   assert.equal(C.cosette.destiny, 'II');
@@ -172,9 +181,36 @@ test('Destiny: หารแต้มกับคอนดักเตอร์ �
   attack('C', 'T');
   assert.equal(T.statuses.guard, undefined);
   assert.equal(T.hp, 5, '1 ×2 (คุ้มครองถูกลบก่อน)');
-  // คอนดักเตอร์เลือด 2 = กดไม่ได้
-  K.hp = 2;
+  assert.equal(K.hp, 4, 'สูบ 2 แล้วมิวสิคคาร์ทฟื้นคืน 1');
+  assert.equal(C.hp, 6, 'สูบ 2 + ฟื้น 1');
+  // คอนดักเตอร์เลือด 2 ยังกดได้ · เลือด 1 กดไม่ได้
+  K.hp = 2; C.skillPoints = 8; K.skillPoints = 8;
+  assert.equal(cos.destinySplit(engine, C, 'I').ok, true);
+  K.hp = 1;
   assert.equal(cos.destinySplit(engine, C, 'I').ok, false);
+});
+
+test('Destiny สูบเลือดคอนดักเตอร์ไม่ทำให้ตาย (ค้างที่ 1)', () => {
+  const { K, C, T } = setup();
+  bond(K, C); song(K, C);
+  K.hp = 2; C.skillPoints = 8; K.skillPoints = 8;
+  engine.useSkill('C', 'ultimate', [], 'II');
+  Math.random = () => 0.9;
+  T.hp = 7; T.armor = 0;
+  attack('C', 'T');
+  assert.equal(K.alive, true);
+  assert.ok(K.hp >= 1);
+});
+
+test('บทเพลงหมดเวลา: Destiny/Maestro ที่ค้างหายไปด้วย (ไม่ค้างไปบทเพลงรอบหน้า)', () => {
+  const { K, C } = setup();
+  bond(K, C); song(K, C);
+  C.cosette.destiny = 'II'; C.cosette.follow = engine.roundNumber + 1;
+  delete C.statuses.taktSong; // หมดเวลา (ไม่ได้พัง)
+  cos.onRoundStartTick(engine, C);
+  assert.equal(C.cosette.destiny, null);
+  assert.equal(C.cosette.follow, 0);
+  assert.equal(cos.publicState(engine, C).destiny, null);
 });
 
 test('บทเพลงพัง: คอนดักเตอร์เลือดเหลือ 1 -> มิวสิคคาร์ททุกคนเสียบทเพลง + สตั้น 2 · คอเซ็ตต์กลับร่างมนุษย์', () => {
@@ -190,6 +226,7 @@ test('บทเพลงพัง: คอนดักเตอร์เลือ
   assert.equal(C.cosette.form, 'human');
   assert.equal(C.cosette.destiny, null);
   assert.ok(cutscenes.includes('cosetteLow'));
+  assert.ok(cutscenes.includes('titanLow'), 'ไททันมีวีดีโอบทเพลงพัง');
   assert.equal(takt.canUseSkill(engine, K, 'ultimate', ['C']), false, 'เลือด 1 มอบบทเพลงไม่ได้');
 });
 

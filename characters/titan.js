@@ -50,6 +50,7 @@ const VIDEO = {
   song: `${TDIR}/takt_titan.mp4`,
   sun: `${TDIR}/takt_titan_skill2.mp4`,
   triumph: `${TDIR}/takt_titan_skill3.mp4`,
+  low: `${TDIR}/takt_titan_low.mp4`, // บทเพลงพัง (คอนดักเตอร์เลือดเหลือ 1/ตาย) — ทุกครั้ง
 };
 const HIT_SOUND = "titan_hit"; // คีย์ใน client/src/audio.js
 
@@ -113,6 +114,7 @@ module.exports = {
     const s = st(p);
     s.sun = false;
     s.sunVideo = false;
+    engine.queueCutscene(p, "titanLow"); // ทุกครั้งที่บทเพลงพัง
   },
 
   // ---------- เปิดม่าน: ล่อเป้า ----------

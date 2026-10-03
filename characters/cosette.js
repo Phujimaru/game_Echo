@@ -13,10 +13,11 @@
 //    (ทิ่มแทงที่ค้างอยู่ รอไว้ใช้หลังกลับร่างปกติ · มิวสิคคาร์ทที่แท้จริงไม่ทำงาน)
 //    สกิลรอง 2 Maestro (3 · คูลดาวน์ 4 นับจากตอนกด): คอนดักเตอร์ได้โชคลาภ 1 · 2 เทิร์น (หรือจนใช้):
 //      คอนดักเตอร์ออกหมัดโจมตีปกติ (ถูกหลบก็นับ) -> คอเซ็ตต์ตามตีอีก 1 ครั้ง (เลือกเป้าเอง · เปิดจากหัว endTurn)
-//      วีดีโอ takt_destiny_skill2.mp4 ก่อนตามตี (เต็มครั้งแรกต่อเกม)
+//      ไม่มีวีดีโอ (เลิกใช้ takt_destiny_skill2.mp4 — ซ้อนกับคลิป Destiny แล้วยาวเกินไป)
 //    ท่าไม้ตาย 2 Destiny (เลือก I = 8 / II = 12 · item) — คอเซ็ตต์จ่ายแต้มที่มีก่อน คอนดักเตอร์จ่ายส่วนที่ขาด
-//      กดได้เมื่อคอนดักเตอร์เลือดมากกว่า 2 · ตอนกด: คอเซ็ตต์ฟื้น 1 แล้วคอนดักเตอร์เสีย 1
-//      ค้างจนตีปกติโดน 1 ครั้ง (ถูกหลบ = พลาด บัฟยังอยู่) · วีดีโอทุกครั้งก่อนการ์ดสรุป
+//      กดได้เมื่อคอนดักเตอร์เลือดมากกว่า 1 · ค้างจนตีปกติโดน 1 ครั้ง (ถูกหลบ = พลาด บัฟยังอยู่) · วีดีโอทุกครั้งก่อนการ์ดสรุป
+//      ยิงโดนแล้วเท่านั้นถึงสูบพลังชีวิตคอนดักเตอร์ (I: 1 · II: 2 · ค้างที่ 1 ไม่ตาย) เข้าตัวคอเซ็ตต์
+//      บทเพลงหาย (หมดเวลา/พัง) = Destiny/Maestro ที่ค้างหายด้วย (ต้นเทิร์น/onSongLost)
 //      I: ดาเมจ ×1.5 ปัดขึ้น + ลบต้านสถานะเป้าแล้วติดผกผัน 2 เทิร์น · II: ลบบัฟกลางทั้งหมดของเป้าก่อน แล้วดาเมจ ×2
 //      ตัวคูณคิดก่อนคริติคอล (คริซ้อนได้) · บทเพลงหาย = บัฟ Maestro/Destiny ที่ค้างหายด้วย
 //  สกิลติดตัว มิวสิคคาร์ท (ปลดล็อกระหว่างบทเพลง)
@@ -51,7 +52,6 @@ const VIDEO = {
   pierce: `${DIR}/destiny_skill3.mp4`,
   song: `${TDIR}/takt_destiny.mp4`,
   low: `${TDIR}/takt_destiny_low.mp4`,
-  maestro: `${TDIR}/takt_destiny_skill2.mp4`,
   destinyI: `${TDIR}/takt_destiny_skill3_I.mp4`,
   destinyII: `${TDIR}/takt_destiny_skill3_II.mp4`,
 };
@@ -71,7 +71,8 @@ const MAESTRO_COOLDOWN = 4;
 const MAESTRO_TURNS = 2;
 const MAESTRO_FORTUNE = 1;
 const DESTINY_COST = { I: 8, II: 12 };
-const DESTINY_MIN_TAKT_HP = 3; // คอนดักเตอร์ต้องเลือดมากกว่า 2 (สูบ 1 แล้วไม่ทำให้บทเพลงพัง)
+const DESTINY_MIN_TAKT_HP = 2; // คอนดักเตอร์ต้องเลือดมากกว่า 1 (เลือด 1 = บทเพลงพังอยู่แล้ว)
+const DESTINY_DRAIN = { I: 1, II: 2 }; // สูบพลังชีวิตคอนดักเตอร์ตอนยิงโดน
 const INVERT_TURNS = 2;
 const DRAW_EVERY = 5;
 const DRAW_FORTUNE_PCT = 20;
@@ -144,7 +145,7 @@ module.exports = {
   id: ID,
   IMG, VIDEO,
   HUMAN_HEAL, HUMAN_ATK, FATE_ATK, FATE_SELF_DMG, FATE_TAKT_DMG, FATE_HEAL, TRUE_MAX, TRUE_BURN, TRUE_DODGE,
-  PIERCE_BURDEN, PIERCE_BURDEN_TURNS, MAESTRO_COOLDOWN, MAESTRO_TURNS, DESTINY_COST, DESTINY_MIN_TAKT_HP,
+  PIERCE_BURDEN, PIERCE_BURDEN_TURNS, MAESTRO_COOLDOWN, MAESTRO_TURNS, DESTINY_COST, DESTINY_MIN_TAKT_HP, DESTINY_DRAIN,
   INVERT_TURNS, DRAW_EVERY, DRAW_FORTUNE_PCT, CART_HEAL,
   isCos, unlocked,
 
@@ -209,10 +210,7 @@ module.exports = {
       const t = engine.players[split && split.taktId];
       if (t && split.need > 0) t.skillPoints = Math.max(0, (t.skillPoints || 0) - split.need);
       s.destiny = split.tier;
-      const healed = engine.healHp(p, 1); // ฟื้นก่อน แล้วคอนดักเตอร์ค่อยเสีย
-      // ต้นตอเป็นตัวคอนดักเตอร์เอง — ถ้าปล่อยเป็นคอเซ็ตต์ friendlyEffectBlocked (พวกเดียวกัน) จะกันไว้
-      if (t && t.alive && t.hp > 1) engine.withEffectSource(t, () => engine.loseHp(t));
-      engine.log(`🌌 ${p.name} Destiny ${split.tier} — จ่าย ${split.own}${t && split.need > 0 ? ` · ${t.name} จ่าย ${split.need}` : ""} · สูบพลังชีวิตจาก ${t ? t.name : "คอนดักเตอร์"} 1 (+${healed})`);
+      engine.log(`🌌 ${p.name} Destiny ${split.tier} — จ่าย ${split.own}${t && split.need > 0 ? ` · ${t.name} จ่าย ${split.need}` : ""} · ตีปกติโดนครั้งถัดไปสูบพลังชีวิตคอนดักเตอร์ ${DESTINY_DRAIN[split.tier]}`);
       return ` ${split.tier}`;
     }
     if (tier === "ultimate") {
@@ -229,6 +227,8 @@ module.exports = {
     const s = st(p);
     s.fx = null;
     if (s.follow && engine.roundNumber > s.follow) { s.follow = 0; s.followPending = false; }
+    // บทเพลงหมดเวลา (ไม่ได้พัง) = บัฟของชุดบทเพลงที่ยังไม่ได้ใช้ต้องหายด้วย ไม่งั้นค้างไปโผล่ตอนได้บทเพลงรอบหน้า
+    if (!unlocked(p)) { s.destiny = null; s.follow = 0; s.followPending = false; }
     if (!p.alive) return;
     if (s.form === "human") {
       const h = engine.healHp(p, HUMAN_HEAL);
@@ -362,6 +362,17 @@ module.exports = {
           if (engine.applyDebuff(target, "invert", null, INVERT_TURNS)) out.push(`ผกผัน ${INVERT_TURNS} เทิร์น`);
         });
       }
+      // ยิงโดนแล้วจึงสูบพลังชีวิตคอนดักเตอร์ (ไม่ตาย ค้างที่ 1) — ต้นตอเป็นตัวคอนดักเตอร์เอง
+      //  (ถ้าเป็นคอเซ็ตต์ friendlyEffectBlocked จะกันไว้เพราะเป็นพวกเดียวกัน) · เลือดเหลือ 1 = บทเพลงพังหลังหมัดนี้
+      const t = takt.taktOf(engine, attacker);
+      let drained = 0;
+      if (t && t.alive) {
+        engine.withEffectSource(t, () => {
+          for (let i = 0; i < (DESTINY_DRAIN[fx.destiny] || 0) && t.hp > 1; i++) { engine.loseHp(t); drained++; }
+        });
+      }
+      const healed = drained > 0 ? engine.healHp(attacker, drained) : 0;
+      if (drained > 0) out.push(`สูบพลังชีวิต ${t.name} -${drained} · ตัวเอง +${healed}`);
     }
     if (unlocked(attacker)) {
       const t = takt.taktOf(engine, attacker);
@@ -381,7 +392,7 @@ module.exports = {
     s.fx = null;
     return out;
   },
-  // หัว endTurn: คอนดักเตอร์ออกหมัดไปแล้ว -> Maestro ตามตี (วีดีโอก่อน) · คืน true = เปิดแล้ว ผู้เรียกต้อง return
+  // หัว endTurn: คอนดักเตอร์ออกหมัดไปแล้ว -> Maestro ตามตี (ไม่มีวีดีโอ) · คืน true = เปิดแล้ว ผู้เรียกต้อง return
   continueFollow(engine) {
     for (const p of Object.values(engine.players)) {
       if (!isCos(p) || !p.cosette || !p.cosette.followPending) continue;
@@ -389,19 +400,16 @@ module.exports = {
       s.followPending = false;
       if (!p.alive || !unlocked(p) || (p.statuses.stun || 0) > 0 || !engine.attackableTargets(p.id).length) continue;
       s.follow = 0; // ใช้แล้ว
-      const open = () => {
-        engine.log(`🎼 ${p.name} Maestro — ตามตีต่อจากคอนดักเตอร์`);
-        engine.setAttackerId(p.id);
-        engine.setGameState("ATTACK");
-        engine.startPhaseTimer(engine.ATTACK_TIME, () => {
-          const t = engine.attackableTargets(engine.attackerId);
-          if (t.length) engine.doAttack(engine.attackerId, t[Math.floor(Math.random() * t.length)].id);
-          if (engine.gameState === "ATTACK") engine.endTurn();
-        });
-        engine.broadcastState();
-      };
-      engine.triggerCutscene(p, "cosetteMaestro"); // เต็มครั้งแรกต่อเกม
-      engine.runCutsceneQueue(open);
+      engine.log(`🎼 ${p.name} Maestro — ตามตีต่อจากคอนดักเตอร์`);
+      engine.skillFlash({ name: "Maestro — ตามตี", img: IMG.maestro, by: p.name, color: engine.colorOf(p) });
+      engine.setAttackerId(p.id);
+      engine.setGameState("ATTACK");
+      engine.startPhaseTimer(engine.ATTACK_TIME, () => {
+        const t = engine.attackableTargets(engine.attackerId);
+        if (t.length) engine.doAttack(engine.attackerId, t[Math.floor(Math.random() * t.length)].id);
+        if (engine.gameState === "ATTACK") engine.endTurn();
+      });
+      engine.broadcastState();
       return true;
     }
     return false;
