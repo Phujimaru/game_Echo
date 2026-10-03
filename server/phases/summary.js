@@ -29,6 +29,15 @@ const view = require("../view");
 // ---- สรุปผล ----
 function resolveRound() {
   timers.clearPhaseTimer();
+  // ดิโอ THE WORLD: ครบ 10 วิ (ตัวจับเวลาของ THE WORLD หมด) ไม่ใช่การเปิดไพ่ — ปิด THE WORLD แล้วคืนเวลา
+  //  เฟสจั่วไพ่ที่เหลือตอนกดให้ทุกคน (endWorld ตั้ง timeLeft ไว้แล้ว) · checkAllLocked ไม่สรุปรอบระหว่างนี้อยู่แล้ว
+  if (CHAR_HOOKS.dio.endWorldOnTimeout(engine)) {
+    match.gameState = "PLAYING";
+    timers.startPhaseTimer(match.timeLeft, resolveRound);
+    view.broadcastState();
+    draw.checkAllLocked();
+    return;
+  }
   match.explicitTargetIds = null; match.explicitActorId = null; // ข้อยกเว้นของการกระทำที่เพิ่งจบ ไม่ลามมาถึงผลหลังเปิดไพ่
   for (const p of combat.alivePlayers()) p.locked = true;
   match.anataMusicSeq = 0; // เพลง ANATA WAAAAAAAA จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
@@ -112,6 +121,15 @@ function resolveRound() {
   CHAR_HOOKS.kotone.resolveFormUlts(engine);
   // Bamboo-Hatted Kim (จักเฉือนเลือดเนื้อตน): หัว = แต้ม 0 · ก้อย = แต้ม 20 — ต้องอยู่ก่อนหาผู้ชนะด้วยเหตุผลเดียวกัน
   CHAR_HOOKS.kim.resolveUltScores(engine);
+  // ดิโอ: เกจเวลาคิดจากแต้มสุดท้ายของเทิร์น (หลังทุกผลที่เปลี่ยนแต้ม · ก่อน Overload Force ที่ย้อนเทิร์นจะย้อนค่านี้ให้เอง)
+  CHAR_HOOKS.dio.onRoundResolved(engine);
+  // ---------- ดิโอ (Last stand, characters/dio.js) — ดวลแต้ม 1 รอบ เหตุผลเดียวกับการแข่งของไบรอันด้านล่างทุกประการ ----------
+  if (CHAR_HOOKS.dio.duelResolveRound(engine)) {
+    match.roundWinnerId = null;
+    match.roundTiedWin = false;
+    cutscene.runCutsceneQueue(goSummary);
+    return;
+  }
 
   // ---------- คอนเนอร์ RK800 (สกิลติดตัว 2 จับกุมขั้นเด็ดขาด, characters/conner.js) ----------
   //  ระหว่างการไล่ล่า: ไม่มีผู้ชนะ/ผู้แพ้ ไม่มีดาเมจแพ้จั่ว/ไพ่แตก ไม่มี Overload Force — นับแค่แต้มดวลกัน

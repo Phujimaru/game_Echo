@@ -26,7 +26,9 @@ const reinesChar = require("./reines"); // ไรเนส เอลเมลล
 const andersenChar = require("./andersen"); // แอนเดอร์เซน: วีดีโอท่าไม้ตาย
 const taktChar = require("./takt");   // อาซาฮินะ ทักต์: วีดีโอตอบรับพันธะ
 const titanChar = require("./titan"); // ไททัน: วีดีโอสกิล + ร่างบทเพลง
+const dioChar = require("./dio"); // ดิโอ แบรนโด: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const cosetteChar = require("./cosette"); // คอเซ็ตต์ ชไนเดอร์: วีดีโอสกิล + ร่างบทเพลง
+const johnnyChar = require("./johnny"); // จอห์นนี่ โจสตาร์: วีดีโอ Act 4 / Ora / Lesson Five
 const mark42 = require("./_mark42"); // เกราะ Mark 42 (ไอเทมร้านค้า): path วีดีโอชุดเดียวกับไฟล์ระบบ
 const strikerChar = require("./striker"); // สไตรเกอร์ ยูเรก้า: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const recruitChar = require("./recruit"); // Recruit: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
@@ -191,10 +193,31 @@ module.exports = function buildTransforms(img) {
     cosettePierce:     { img: cosetteChar.IMG.skill3, video: cosetteChar.VIDEO.pierce, title: "ทิ่มแทง", label: "คัดลอกบัฟ + ภาระเวท", seconds: 10, music: null, afterReveal: false },
     cosetteDestinyI:   { img: cosetteChar.IMG.destinyUlt, video: cosetteChar.VIDEO.destinyI, title: "Destiny I", label: "ความเสียหาย ×1.5 + ผกผัน", seconds: 10, music: null, afterReveal: false },
     cosetteDestinyII:  { img: cosetteChar.IMG.destinyUlt, video: cosetteChar.VIDEO.destinyII, title: "Destiny II", label: "ลบบัฟ + ความเสียหาย ×2", seconds: 11, music: null, afterReveal: false },
+    // จอห์นนี่: ทุกคลิปเรียกผ่าน queueCutscene = เล่นทุกครั้ง (5.5 / 6.0 / 24.0 วิ + เผื่อตัดฉาก)
+    //  เพลง Act 4 ไม่ผูกที่นี่ — johnny.activeMusic เล่นค้างตลอดที่ยังอยู่ร่าง Awakening
+    johnnyEvo:    { img: johnnyChar.IMG.act4, video: johnnyChar.VIDEO.evo, title: "Tusk Act 4", label: "Awakening", seconds: 6, music: null, afterReveal: false },
+    johnnyOra:    { img: johnnyChar.IMG.ora, video: johnnyChar.VIDEO.ora, title: "Ora Ora Ora Ora! BeatDown", label: "หมุนวนระเบิด", seconds: 7, music: null, afterReveal: false },
+    johnnyLesson: { img: johnnyChar.IMG.lesson, video: johnnyChar.VIDEO.lesson, title: "Lesson Five", label: "การหมุนที่ไร้ขีดจำกัด", seconds: 25, music: null, afterReveal: false },
     cosetteLow:        { img: cosetteChar.IMG.base, video: cosetteChar.VIDEO.low, title: "บทเพลงขาดหาย", label: "คืนร่าง", seconds: 11, music: null, afterReveal: false },
     taktCurtain:       { img: taktChar.IMG.bonded, video: taktChar.VIDEO.curtain, title: "เปิดม่าน", label: "มิวสิคคาร์ทครบ", seconds: 7, music: null, afterReveal: false },
     taktCmdTitan:      { img: titanChar.IMG.base, video: taktChar.VIDEO.cmdTitan, title: "บรรเลง", label: "ไททันล่อเป้า", seconds: 7, music: null, afterReveal: false },
     taktCmdDestiny:    { img: cosetteChar.IMG.base, video: taktChar.VIDEO.cmdDestiny, title: "บรรเลง", label: "เดสตินี่โจมตี", seconds: 6, music: null, afterReveal: false },
+    // ---------- ดิโอ แบรนโด (Stardust) ----------
+    //  ทุกคลิปเรียกผ่าน queueCutscene = เล่นทุกครั้ง · seconds = ความยาวจริงปัดขึ้น (+1 ให้คลิปแรกที่มีการ์ดเปิดตัว)
+    //  คลิปที่เล่นต่อกันเป็นชุด (Barrage 2 · Za warudo 2-3 · ขว้างมีด) ใช้ noIntro ให้ต่อเนื่องไม่มีการ์ดคั่น
+    //  ความยาวจริง: skill1 3.48 / skill1_after 5.33 / skill2 4.76 / skill2_x2 5.06 / ult1 5.93 / ult2 4.35 / ult3 3.75
+    //   shine 3.52 / roadroller 4.97 / laststand 6.19 / laststand_fail 7.51 วิ
+    dioKnifeAim:      { img: dioChar.IMG.knife,      video: dioChar.VIDEO.knifeAim,      title: "Throwing knife", label: "ง้างมีด",          seconds: 5, music: null, afterReveal: false },
+    dioKnifeThrow:    { img: dioChar.IMG.knife,      video: dioChar.VIDEO.knifeThrow,    title: "Throwing knife", label: "ขว้างมีด",         seconds: 6, music: null, afterReveal: false, noIntro: true },
+    dioBarrage:       { img: dioChar.IMG.barrage,    video: dioChar.VIDEO.barrage,       title: "Barrage",        label: "หมัดต่อเนื่อง",     seconds: 6, music: null, afterReveal: false },
+    dioBarrage2:      { img: dioChar.IMG.barrage,    video: dioChar.VIDEO.barrage2,      title: "Barrage",        label: "หมัดต่อเนื่อง",     seconds: 6, music: null, afterReveal: false, noIntro: true },
+    dioWorld1:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult1,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 7, music: null, afterReveal: false },
+    dioWorld2:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult2,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 5, music: null, afterReveal: false, noIntro: true },
+    dioWorld3:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult3,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 4, music: null, afterReveal: false, noIntro: true },
+    dioShine:         { img: dioChar.IMG.shine,      video: dioChar.VIDEO.shine,         title: "SHINEI!",        label: "ร่างหยุดเวลา",      seconds: 5, music: null, afterReveal: false },
+    dioRoadRoller:    { img: dioChar.IMG.roadroller, video: dioChar.VIDEO.roadroller,    title: "Road Roller",    label: "ร่างหยุดเวลา",      seconds: 6, music: null, afterReveal: false },
+    dioLastStand:     { img: dioChar.IMG.base,       video: dioChar.VIDEO.lastStand,     title: "Last stand",     label: "ดวลเดิมพันชีวิต",   seconds: 8, music: null, afterReveal: false },
+    dioLastStandFail: { img: dioChar.IMG.base,       video: dioChar.VIDEO.lastStandFail, title: "Last stand",     label: "พ่ายแพ้",           seconds: 9, music: null, afterReveal: false },
     titanLow:      { img: titanChar.IMG.base, video: titanChar.VIDEO.low, title: "บทเพลงขาดหาย", label: "คืนร่าง", seconds: 5, music: null, afterReveal: false },
     titanTriumph:  { img: titanChar.IMG.triumph, video: titanChar.VIDEO.triumph, title: "Triumphant", label: "ความเสียหาย 4 ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     reinesUlt:   { img: reinesChar.IMG.skill3, video: reinesChar.VIDEO.ult, title: "แผนการลับสุดยอดชั้นครู", label: "เปราะบาง + อ่อนแอ ทั้งสนาม", seconds: 17, music: null, afterReveal: false },

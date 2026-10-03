@@ -93,10 +93,14 @@ function bardPerform(p, pattern, targets, live) {
 }
 //  ท่าที่ "เล่นวีดีโอก่อน แล้วค่อยลงผล" (เข้าเฟส CUTSCENE) ยังไม่สวนตอนนี้ — pausePlayingForCutscene สวนให้หลังผลลงจริง
 function useSkill(id, tier, targets, item) {
-  const res = combat.withExplicitTargets(id, Array.isArray(targets) ? targets : [], () => useSkillCore(id, tier, targets, item));
-  if (match.gameState !== "CUTSCENE") draw.flushOrtCounters();
-  mercury.checkOrtEarlyWin();
-  return res;
+  // จอห์นนี่: บริบทของการกด 1 ครั้ง — หมุนวนทอย "การหมุนย้อนกลับ" + Slow Dancer ที่กันสกิลนี้ (ปิดใน finally)
+  const johnnyCtx = CHAR_HOOKS.johnny.beginUse(engine, match.players[id], targets);
+  try {
+    const res = combat.withExplicitTargets(id, Array.isArray(targets) ? targets : [], () => useSkillCore(id, tier, targets, item));
+    if (match.gameState !== "CUTSCENE") draw.flushOrtCounters();
+    mercury.checkOrtEarlyWin();
+    return res;
+  } finally { CHAR_HOOKS.johnny.endUse(johnnyCtx); }
 }
 function useSkillCore(id, tier, targets, item) {
   const p = match.players[id];
@@ -131,6 +135,8 @@ function useSkillCore(id, tier, targets, item) {
   if (CHAR_HOOKS.brian.skillBlocked(engine, p, tier)) return;
   // Clock Up: คนอื่นกดสกิลไม่ไ้ด — ยกเว้นไรเดอร์ด้วยกันที่กด Clock Up ของตัวเองสวน (สกิลติดตัว Zect ข้อ 3)
   if (CHAR_HOOKS.daisuke.skillBlocked(engine, p, tier)) return;
+  // ดิโอ: ระหว่าง THE WORLD กดได้แค่เจ้าของท่า · ระหว่าง Last stand ไม่มีใครกดสกิลได้ (แบบการแข่งของไบรอัน)
+  if (CHAR_HOOKS.dio.skillBlocked(engine, p, tier)) return;
   if ((p.statuses.phenexTaunt || 0) > 0) return; // ไม่อยากให้ใครต้องเจ็บปวด (ริต้า เบอร์นัล): ระหว่างล่อเป้ากดสกิลไม่ได้เลย
   if (tier === "ultimate" && (p.statuses.phenexBanUlt || 0) > 0) return; // อย่าอยู่เลย แกน่ะ! (ริต้า เบอร์นัล): ถูกแบนท่าไม้ตายชั่วคราว
   // ---------- Bard : คีตกวี — เติมโน้ตประพันธ์เพลง (ช่องที่ 3 ไม่ใช่สกิล กดใช้ไม่ได้) ----------
@@ -236,6 +242,10 @@ function useSkillCore(id, tier, targets, item) {
   if (ch && ch.id === "titan") skill = CHAR_HOOKS.titan.dynamicSkillFor(p, ch, tier);
   // คอเซ็ตต์: ปุ่มเปลี่ยนร่างสลับภาพตามร่าง · ระหว่างบทเพลง สกิลรอง/ไม้ตายเป็น Maestro / Destiny
   if (ch && ch.id === "cosette") skill = CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, tier);
+  // จอห์นนี่: สกิลรอง/ท่าไม้ตายตามร่าง Act 1-4 · ราคา Tusk Evo +1 ต่อ Pre-Awaken (buildStateFor คิดสูตรเดียวกัน)
+  if (ch && ch.id === "johnny") skill = CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, tier);
+  // ดิโอ: ระหว่าง THE WORLD ปุ่มทั้งสามเป็นชุดร่างหยุดเวลา (buildStateFor คิดสูตรเดียวกัน)
+  if (ch && ch.id === "dio") skill = CHAR_HOOKS.dio.dynamicSkillFor(p, ch, tier);
   if (!skill) return;
   const isEscanorSkill = p.characterId === "escanor";
   const isHisakawaSkill = p.characterId === "hisakawa_sister";
@@ -314,6 +324,8 @@ function useSkillCore(id, tier, targets, item) {
   //  คอเซ็ตต์ Destiny (8/12 ตาม item) จ่ายร่วมแบบเดียวกัน
   const titanSplit = p.characterId === "titan" && tier === "ultimate" ? CHAR_HOOKS.titan.triumphSplit(engine, p)
     : p.characterId === "cosette" && tier === "ultimate" ? CHAR_HOOKS.cosette.destinySplit(engine, p, item) : null;
+  // ดิโอ: Za warudo ไม่ใช้แต้มสกิล · ชุดร่างหยุดเวลาจ่ายด้วยแอคชัน — ทับตัวปรับราคาทุกตัว (ต้องตรงกับ buildStateFor)
+  if (CHAR_HOOKS.dio.freeCost(p, tier)) cost = 0;
   if (titanSplit && !titanSplit.ok) return;
   if (titanSplit) cost = titanSplit.own;
   // การ์ดราชินี: ใช้สกิลไม่เสียแต้ม 1 ครั้ง — ใช้กับสกิลที่มีค่าใช้จ่ายเท่านั้น (ไม่ใช้กับ Triumphant ที่จ่ายร่วมกับทักต์)
@@ -376,7 +388,7 @@ function useSkillCore(id, tier, targets, item) {
   const isUsagiBasic = isUsagiPick && tier === "basic";
   if (isHarukaBasic && (p.harukaBasicUses || 0) >= CHAR_HOOKS.haruka.BASIC_USES_PER_TURN) return;
   if (isSupPick && (p.supSkillUsesRound || 0) >= CHAR_HOOKS.the_supplicant.SKILL_USES_PER_TURN) return;
-  if (p.skillUsedRound && !isUsagiBasic && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !isSupPick && !isHarukaBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHisakawaFreeAction && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier) && !CHAR_HOOKS.cosette.skipsTurnQuota(p, tier)) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
+  if (p.skillUsedRound && !isUsagiBasic && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !isSupPick && !isHarukaBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHisakawaFreeAction && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier) && !CHAR_HOOKS.cosette.skipsTurnQuota(p, tier) && !CHAR_HOOKS.dio.skipsTurnQuota(p, tier)) return; // ใช้สกิลได้เพียง 1 อันต่อเทิร์น (ซ้ำ/ซ้อนไม่ได้)
   // Beat Mode (ประกายเขี้ยว): ท่าไม้ตายใช้ไม่ได้เสมอ / สกิลพื้นฐานใช้ไม่ได้เฉพาะหลังกันตายทำงานแล้ว (patch 2.2 alpha)
   if (tier === "ultimate" && combat.beatActive(p)) return;
   // ท่าไม้ตาย: กดซ้ำไม่ได้จนกว่าผลจะหมดเวลา (สวมเกราะราชันคงอยู่ถาวร = กดซ้ำไม่ได้อีกเลยตลอดเกม)
@@ -521,6 +533,19 @@ function useSkillCore(id, tier, targets, item) {
   if (isTitanPick && !CHAR_HOOKS.titan.canUseSkill(engine, p, tier)) return;
   const isCosettePick = p.characterId === "cosette";
   if (isCosettePick && !CHAR_HOOKS.cosette.canUseSkill(engine, p, tier, item)) return;
+  const isJohnnyPick = p.characterId === "johnny"; // คูลดาวน์รายท่า · กระสุนเล็บ · Golden Ratio · เป้าของ Snipe Shot
+  if (isJohnnyPick && !CHAR_HOOKS.johnny.canUseSkill(engine, p, tier, targets, item)) return;
+  // ---------- ดิโอ แบรนโด (characters/dio.js) ----------
+  //  คูลดาวน์/เกจเวลา (ร่างปกติ) หรือแอคชันพอ (THE WORLD) · ทุกท่าเล็งศัตรู 1 คน ยกเว้น Za warudo
+  const isDioPick = p.characterId === "dio";
+  let dioTarget = null;
+  if (isDioPick) {
+    if (!CHAR_HOOKS.dio.canUseSkill(engine, p, tier)) return;
+    if (CHAR_HOOKS.dio.needsTarget(p, tier)) {
+      dioTarget = CHAR_HOOKS.dio.prepareTarget(engine, p, targets);
+      if (!dioTarget) return;
+    }
+  }
   // ---------- Recruit (characters/recruit.js) ----------
   //  คูลดาวน์ · กระสุนพอ · ไม่มี QTE/การเลือกเป้าค้าง · Desert Eagle / Barrett ต้องเลือกเป้าก่อนกด
   const isRecruitPick = p.characterId === "recruit";
@@ -657,12 +682,14 @@ function useSkillCore(id, tier, targets, item) {
   if (Array.isArray(targets) && targets.includes(ORT_ID)) CHAR_HOOKS.ort.queueCounter(engine, p.id);
   // ไททัน "คล่องตัวสูง": ถูกเลือกเป็นเป้าของสกิล (แม้เป็นบัฟ) -> สวนกลับผู้ใช้ (ลงท้าย useSkill ผ่าน flushOrtCounters)
   CHAR_HOOKS.titan.onSkillTargeted(engine, p, targets);
+  // จอห์นนี่ Slow Dancer: ศัตรูเล็งจอห์นนี่ด้วยสกิล -> ใช้ 1 ครั้ง สกิลนี้ไม่มีผลกับเขา (ดาเมจ/ดีบัฟถูกกันจนจบการกด)
+  CHAR_HOOKS.johnny.onSkillFired(engine, p, targets);
   if (blessFree) {
     p.statuses.freecast--;
     if (p.statuses.freecast <= 0) delete p.statuses.freecast;
     match.lastLog.push(`👸 ${p.name} การ์ดราชินี — ใช้สกิลนี้โดยไม่เสียแต้มสกิล`);
   }
-  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.oberon_summer.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier) && !CHAR_HOOKS.cosette.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
+  if (!CHAR_HOOKS.daisuke.skipsTurnQuota(p, tier) && !isUsagiBasic && !isApplePick && !isMuimiBasic && !isTohnoPick && !isDoomguyPick && !isKaiPick && !isTakumiPick && !isHarukaBasic && !isHisakawaFreeAction && !isYuiBasic && !isSupPick && !isBrianKey && !isBrianN2O && !isLumiBasic && !isCayBasic && !isDaichiBasic && !CHAR_HOOKS.striker.skipsTurnQuota(p, tier) && !CHAR_HOOKS.oberon_summer.skipsTurnQuota(p, tier) && !CHAR_HOOKS.takt.skipsTurnQuota(p, tier) && !CHAR_HOOKS.titan.skipsTurnQuota(p, tier) && !CHAR_HOOKS.cosette.skipsTurnQuota(p, tier) && !CHAR_HOOKS.dio.skipsTurnQuota(p, tier)) p.skillUsedRound = true; // สกิลเลือก/สลับและเสบียงฉุกเฉินไม่นับโควตาสกิลหลัก
   if (isKaiPick) p.kaiSkillUsesRound = (p.kaiSkillUsesRound || 0) + 1;
   if (isTakumiPick) p.takumiSkillUsesRound = (p.takumiSkillUsesRound || 0) + 1;
   // "คำสาป" (สถานะ Universal): กดสกิลสำเร็จแล้ว = เสียพลังชีวิต 1 หน่วย (1 ครั้ง/เทิร์น)
@@ -830,6 +857,9 @@ function useSkillCore(id, tier, targets, item) {
   if (isTaktPick) flashSuffix = CHAR_HOOKS.takt.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
   if (isTitanPick) flashSuffix = CHAR_HOOKS.titan.applyInstantSkill(engine, p, tier, titanSplit) || flashSuffix;
   if (isCosettePick) flashSuffix = CHAR_HOOKS.cosette.applyInstantSkill(engine, p, tier, item, titanSplit) || flashSuffix;
+  if (isJohnnyPick) flashSuffix = CHAR_HOOKS.johnny.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
+  // ดิโอ: ลงผลทันที (วีดีโอคิวไว้เล่นท้าย useSkill) · Za warudo/จบ THE WORLD แก้ timeLeft ก่อน pausePlayingForCutscene อ่าน
+  if (isDioPick) flashSuffix = CHAR_HOOKS.dio.applyInstantSkill(engine, p, tier, dioTarget) || flashSuffix;
   // ผลที่ลง "หลังวีดีโอ": ขีปนาวุธของยูเรก้า · Triumphant ของไททัน
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : isTitanPick ? CHAR_HOOKS.titan.takeAfter(p) : null;
   // ---------- ผู้วิงวอน (patch 3.4) ----------
@@ -1045,6 +1075,7 @@ function kaiOverhaul(id) {
   if (!p || !p.alive || p.characterId !== "kai") return;
   if (match.gameState !== "PLAYING" || p.locked) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: ปุ่มเฉพาะตัวก็กดไม่ได้ — เวลาหยุดหมายถึงทุกอย่าง
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // THE WORLD / นอกวง Last stand (ดิโอ)
   const ownSlots = match.kaiOverhaulSlots.filter((slot) => slot.ownerId === p.id);
   if (ownSlots.length < 2) return;
   const [a, b] = ownSlots.slice(0, 2);

@@ -58,6 +58,14 @@ const BUFF_LABEL = {
 };
 // ตัวนับลำดับ — เดินหน้าอย่างเดียวทั้งเกม จึงเทียบข้ามผู้เล่นได้
 let buffSeq = 0;
+// ให้บัฟเฉพาะตัวที่เก็บนอก p.statuses ประทับตราเวลาจากตัวนับเดียวกัน (เทียบ "ล่าสุด" กับบัฟกลางได้)
+function nextBuffSeq() { return ++buffSeq; }
+
+// แหล่งบัฟเฉพาะตัวละครที่ "ถูกปาดได้" แต่ไม่ได้อยู่ใน p.statuses (เช่น บัฟของจอห์นนี่ใน p.johnny)
+//  src = { latest(p) -> { key, at, turns, label } | null, strip(p, key) -> label | null }
+//  ตัวละครลงทะเบียนตอน require — ไฟล์นี้ไม่ต้องรู้จักตัวละครใดเลย
+const BUFF_SOURCES = [];
+function registerBuffSource(src) { if (src && !BUFF_SOURCES.includes(src)) BUFF_SOURCES.push(src); }
 
 // ปาด "บัฟล่าสุด" ทิ้งหนึ่งตัว — คืน { key, label } หรือ null ถ้าไม่มีบัฟเลย
 //  ลำดับตัดสิน: ตราเวลามากสุดก่อน -> เทิร์นเหลือมากสุด -> ชื่อคีย์ (กันผลสุ่มระหว่างเทสต์)
@@ -73,6 +81,15 @@ function stripLatestBuff(p) {
       || (at === best.at && (turns > best.turns || (turns === best.turns && k < best.key)))) {
       best = { key: k, at, turns };
     }
+  }
+  // บัฟเฉพาะตัวจากแหล่งที่ลงทะเบียนไว้ — ใหม่กว่าบัฟกลางเมื่อไหร่ ปาดตัวนั้นแทน
+  for (const src of BUFF_SOURCES) {
+    const c = src.latest(p);
+    if (c && (!best || c.at > best.at)) best = { ...c, src };
+  }
+  if (best && best.src) {
+    const label = best.src.strip(p, best.key);
+    return { key: best.key, label: label || best.label || best.key };
   }
   if (!best) return null;
   delete p.statuses[best.key];
@@ -158,6 +175,7 @@ const BASIC_DEBUFF_CLEAR = ["discord", "sleep", "stun", "nodraw", "noskill", "we
   "promo",        // เปิดแต้ม: แต้มการ์ดถูกเปิดให้ทุกคนเห็น
   "energy",       // เครื่องดื่มชูกำลัง: เสียพลัง 1 หน่วยต่อเทิร์น
   "harukaPunish", // จงไปสู่สุขติ (ฮารุกะ): เป้าหมายที่เลือดไหล >= 3 โดนระเบิดเลือดไหลใส่
+  "johnnyWhirl",  // หมุนวน (จอห์นนี่): ล้างทั้งก้อน · ต้านได้
   "numb"];        // เหน็บชา (Bamboo-Hatted Kim): กดสกิลมีโอกาส 30% ไม่ทำงาน
 // ดีบัฟที่ยังไม่เกิดผลทันที (ยามฟ้าสาง / เส้นชีวิต): โดนล้าง = ลดลงทีละ 1 หน่วย ไม่หายทั้งหมด
 const SOFT_DEBUFF_STEP = ["deathline", "curse", "shock"];
@@ -564,6 +582,8 @@ module.exports = {
   BUFF_KEYS,
   accurateActive,
   stripLatestBuff,
+  nextBuffSeq,
+  registerBuffSource,
   applyDebuff,
   setTurnsNoRefresh,
   applySpellburden,

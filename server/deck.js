@@ -152,6 +152,7 @@ function bustedOf(p) {
   //  (ดาเมจไพ่แตก/ดาเมจแพ้ถูกระงับทั้งหมดในเทิร์นไล่ล่าอยู่แล้ว — ดู CHAR_HOOKS.conner.chaseResolveRound)
   if (p && p.connorFrozen) return true;
   if (p && p.brianFrozen) return true; // ไบรอัน: คนนอกวง "การแข่งที่มีเดิมพัน" ถูกบังคับไพ่แตก (แต่ไม่รับความเสียหาย)
+  if (p && p.dioFrozen) return true;   // ดิโอ: คนนอกวง Last stand ถูกบังคับไพ่แตก (แต่ไม่รับความเสียหาย)
   // มิซึซาว่า ฮารุกะ (characters/haruka.js): New Omega ระเบิดแต้มการ์ด — บังคับแตกทันทีต่อให้เปิดไพ่ไปแล้ว
   //  ต้องอยู่ก่อน overloadForceActive เพราะเป็นการ "สั่งให้แตก" ตรงๆ ไม่ใช่ผลการคิดแต้มที่สนามปลดเพดานได้
   if (CHAR_HOOKS.haruka.forcedBust(p)) return true;

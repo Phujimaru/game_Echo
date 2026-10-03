@@ -581,6 +581,57 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · สั่งเดสตินี่ = ดาเมจสกิล 2 จากคอเซ็ตต์หลังวีดีโอ (`pausePlayingForCutscene(after)`)
 เทสต์: [tests/characters/cosette.test.js](tests/characters/cosette.test.js)
 
+**จอห์นนี่ โจสตาร์ (Tusk · ยาก)** — `characters/johnny.js` (กติกาเต็มอยู่หัวไฟล์) · สถานะเฉพาะตัวทั้งหมดที่ `p.johnny`
+- **ร่างไม่ได้เก็บแยก** — `formOf(p)` อ่านจาก Pre-Awaken (0/1/2 = Act 1/2/3) และ Awakening (= Act 4) · `dynamicSkillFor`
+  เลือก `secondary`..`secondary4` / `ultimate`|`ultimate2` (ราคา Tusk Evo = `ultimate.cost` + Pre-Awaken) — `publicRoster` มี `secondary4` แล้ว
+- **คูลดาวน์เป็น "เลขรอบที่กดได้"** (`p.johnny.cd.*` · แยกรายท่า) · ท่าหลังเปิดไพ่ (Rapid/Ora/Lesson) ค้างเป็นธงจนตีที่ผ่านด่านหลบ
+  แล้วคูลดาวน์เริ่มนับตอนนั้น · Snipe ยิงที่ `afterSummary` (ก่อนเปิดเฟส ATTACK ของผู้ชนะ) แยกจากการตีปกติ
+- **Rapid Shot นัดที่ 2** เปิดจากหัว `endTurn` (`continueRapid`) แพทเทิร์นเดียวกับคาเยนน์ — พลาดเอง 25% อยู่ใน `johnny.tryAttackDodge`
+- **Lesson Five + Chumimi ไม่สนการลดดาเมจ**: `doAttack` ปิดคุ้มครอง/Smile for You/เต็มอิ่มด้วย `johnnyPierce` และ
+  `combat.adjustIncomingDamage` ใช้ `johnny.pierceFloor` (ฮุคตัวละครยังทำงาน แต่ลดต่ำกว่าค่าเดิมไม่ได้)
+- **บริบทการกด** `johnny.beginUse/endUse` ห่อ `useSkill()` และ `useInventoryItem()` (ชั้นนอกสุดเท่านั้น):
+  · หมุนวน: ทอย 15% ครั้งเดียว -> `redirectTarget` ที่หัว `dealMixed/dealDirect/dealArmorOnly` ย้ายดาเมจไปลงผู้ใช้
+    (ไม่ใช่ตีปกติ) · หลังย้อนครั้งแรก `redirectEffect` ย้ายดีบัฟใน `applyDebuff`/`applySpellburden`/`engine.applyBleed` ด้วย
+    · **ไม่ครอบคลุม**: ดาเมจที่ลงหลังวีดีโอ (`pausePlayingForCutscene(after)`) / หลังเปิดไพ่ และสถานะที่สกิลเขียน `p.statuses` ตรงๆ
+  · Slow Dancer: `onSkillFired` (หลังหักแต้มใน `useSkillCore`) ใช้ 1 ครั้งเมื่อศัตรูเล็งจอห์นนี่ แล้วกันดาเมจ/ดีบัฟจากผู้ใช้นั้นจนจบการกด ·
+    ดีบัฟจากศัตรูนอกบริบทนี้กันที่ `blocksDebuff` (applyDebuff/applySpellburden/applyBleed — ต้องมี `effectSourceId`)
+- **ปาดบัฟเฉพาะตัว**: `_universal_status.registerBuffSource` — `stripLatestBuff` เทียบตราเวลา (`nextBuffSeq`) กับบัฟกลาง
+  ปาด Slow Dancer / Spin / Golden Ratio / Spin Mastery ได้ (ทั้งก้อน) · Pre-Awaken/Awakening ไม่อยู่ในรายการ ·
+  Golden Ratio ถูกปาดใน Act 4 + Spin 15 = แปลงเป็น Golden Ratio 1 (ครั้งเดียวต่อการเข้า Act 4)
+- ดีบัฟ `johnnyWhirl` (หมุนวน: เทิร์นที่ statuses · สแตคที่ statusAmt) อยู่ใน `BASIC_DEBUFF_CLEAR` · มาร์ก `johnnyChumimi` ไม่อยู่ (ต้าน/ล้างไม่ได้)
+  · ทั้งสองลดเทิร์นตามลูปกลางของ `endTurn` (ไม่ใช่ NO_TICK) · สตั้นของ Lesson Five จองที่ `p.johnnyStunPending` เริ่มต้นเทิร์นหน้า
+- สื่อ: `client/public/characters/johnny/` (แปลงวีดีโอตามมาตรฐานสตรีมแล้ว) · เพลง `johnny_theme` ผ่าน `johnny.activeMusic` (Act 4)
+  · เสียง `johnny_nail` (ตีปกติ/ยิงเล็บ) `johnny_chumimi` (ลบ Chumimi) `johnny_tusk` (Tusk Evo) · หน้าต่างเลือกสกิลพื้นฐานมีเฉพาะกระดานจอคอม
+เทสต์: [tests/characters/johnny.test.js](tests/characters/johnny.test.js)
+
+**ดิโอ แบรนโด (Stardust · กลาง)** — `characters/dio.js` (กติกาเต็มอยู่หัวไฟล์) · สถานะเฉพาะตัวทั้งหมดที่ `p.dio` · พลังชีวิต 6 / เกราะ 4
+- **เกจเวลา 0-6** (`p.dio.meter`) คิดที่ `dio.onRoundResolved` ใน `resolveRound()` (หลัง kotone/kim เปลี่ยนแต้ม · ก่อนดวล/ไล่ล่า/Overload Force)
+  ไม่แตก +1 · 21 พอดี +1 เพิ่ม · แตก -2 · เทิร์นที่ถูกแช่นอกวงดวล (`dioFrozen`/`brianFrozen`/`connorFrozen`) ไม่นับ
+- **Vampire** = `dio.adjustIncomingDamage`: ต้นตอเป็นศัตรู (`effectSourceId` ≠ ดิโอ · ไม่ใช่ `_statusDamage`/`_itemDamage`) และ n > 0 ->
+  กลางวัน +1 / กลางคืน -1 ทุกหมัด · ดาเมจแพ้รอบไม่ผ่าน hook นี้อยู่แล้ว (`damageSoft`) · ดูดเลือด +1: ตีปกติ (`dio.onAttackLanded` ใน `doAttack`)
+  และสกิลที่ทำความเสียหายได้จริง 1 ครั้งต่อการกด (`dio.hit` เทียบเลือด+เกราะ+โล่ก่อน/หลัง)
+- **Last stand**: ตัดสินใน `adjustIncomingDamage` (จะตาย หรือโดนตอนเลือด 1) แล้ว **ตัดดาเมจให้เหลือพอดีค้างที่ 1** (เกราะ/โล่ยังรับก่อน)
+  · ตาข่ายอีก 2 ชั้น: `combat.instantDeath` เรียก `dio.tryLastStandOnDeath` (สังหารทันทีจากศัตรู) และ `dio.tryDeathSave` ผ่าน `maybeBeatSave`
+  — เทิร์นที่ Last stand ทำงาน (`lastStand.trigRound`) ดิโอค้างที่ 1 จนจบเทิร์นเสมอ (กันหมัดที่ไม่สนการลดดาเมจของจอห์นนี่ทะลุเพดาน)
+  · ดวลเริ่มที่ `dio.onRoundStartAfterLoop` (หลังลูปต้นเทิร์นของ `dealRound` ข้างคอนเนอร์) ยืมโครงการแข่งของไบรอันทั้งดุ้น:
+  `dioFrozen` ที่ `bustedOf` · `dio.duelResolveRound` เข้าคุม `resolveRound` แล้ว `return` (ข้าม afterResolve) · `skillBlocked`/`itemBlocked` ทุกคน
+  · มีดวลไบรอัน/ไล่ล่าคอนเนอร์ค้างอยู่ = เลื่อนไปเทิร์นถัดไป · แพ้ = `instantDeath(dio, true)` หลังคิวคลิป `dioLastStandFail`
+- **THE WORLD** (`p.dio.world = { actions, resume }`): Za warudo จำ `engine.timeLeft` ไว้ที่ `resume` แล้ว `engine.setTimeLeft(10)` ก่อน
+  `pausePlayingForCutscene()` ท้าย useSkill อ่านค่า -> นาฬิกา 10 วิเริ่มหลังคลิป 3 ตัวจบ และหยุดนับระหว่างคลิปของท่าในร่างหยุดเวลาเอง
+  · ครบ 10 วิ = ตัวจับเวลาเรียก `summary.resolveRound` -> ดักที่หัวฟังก์ชันด้วย `dio.endWorldOnTimeout` แล้วตั้งเวลาเฟสจั่วไพ่ที่เหลือคืน
+    (ตัวจับเวลา 10 วิคือตาข่ายกันห้องค้างในตัว ดิโอหลุดเน็ตก็จบเอง) · `checkAllLocked` ไม่สรุปรอบระหว่างนี้ (`dio.pendingResolve`)
+  · แอคชันเหลือไม่ถึง 2 / Road Roller / ดิโอตกรอบ / จบเทิร์น = `endWorld` คืน `timeLeft` ทันที
+  · แช่ทุกคน (รวมไรเดอร์ Clock Up) ด้วย `dio.actionBlocked` ข้างๆ `daisuke.actionBlocked` ทุกจุด (hit/lock/ร้าน/ไอเทม/ปุ่มเฉพาะตัว)
+    — ดิโอเองก็จั่ว/เปิดไพ่/ใช้ไอเทมไม่ได้ ทำได้แค่ชุดหยุดเวลา (`dio.skillBlocked` ปล่อยเฉพาะเจ้าของท่า)
+  · ชุดหยุดเวลา = `basic2/secondary2/ultimate2` ผ่าน `dio.dynamicSkillFor` (useSkill + buildStateFor) · ราคาแต้มสกิลถูกทับเป็น 0 ที่
+    `dio.freeCost` (Za warudo ด้วย) · ไม่กินโควตาสกิล (`dio.skipsTurnQuota`) · ปุ่มฝั่ง client ใช้ `skillLocks` + `costLabel` (ป้ายราคาเป็นแอคชัน)
+- **Throwing knife สองคลิป**: กดปุ่ม -> socket `dioKnifeAim` (`dio.aimKnife` เช็คว่ากดได้จริง · 1 ครั้ง/เทิร์น) เล่นคลิปง้าง ->
+  client ค้างโหมดเลือกเป้าผ่าน CUTSCENE (`giftSel.keep`) -> useSkill เล่นคลิปขว้าง · ไม่มี aim ในเทิร์นนั้น = เล่นสองคลิปต่อกันหลังเลือกเป้า
+- คูลดาวน์เป็น "เลขรอบ" แบบ `ippo.setCooldown` (`p.dio.cd.*`) · ผลของสกิลลงทันทีตอนกด แล้วคลิปเล่นตาม (ไม่ใช่วีดีโอก่อนดาเมจ)
+- สื่อ: `client/public/characters/dio_brando/` (โฟลเดอร์ `Dio/` ต้นฉบับชื่อซ้ำแบบไม่สนตัวพิมพ์บน Windows จึงใช้ชื่อนี้)
+  · วีดีโอแปลงตามมาตรฐานสตรีมแล้ว และขยายเสียงที่ตัวไฟล์ให้ใกล้ -16 dBFS (ต้นฉบับเบา -28 ถึง -35) · `dio_laststand_fail.mp4` ลดใน `LOUDNESS_GAIN`
+เทสต์: [tests/characters/dio.test.js](tests/characters/dio.test.js)
+
 **คูลดาวน์ท่าไม้ตายที่วัดเป็น "เลขรอบ" (ชิโด · เอจิ)** — คูลดาวน์ที่กินเวลาข้ามเทิร์นห้ามเก็บเป็นตัวนับใน
 `p.statuses` ถ้าไม่อยากให้มันไปโผล่ในรายการสถานะให้ทุกคนเห็น จึงเก็บเป็น **เลขรอบที่ล็อกถึง**
 (`p.shidoRewindLock` / `p.eijiUltLock`) แล้วเทียบกับ `engine.roundNumber` — ไม่ต้องมีใครลดเทิร์นให้

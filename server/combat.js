@@ -63,6 +63,8 @@ function maxHpOf(p) {
   if (p && p.characterId === "takt") return Math.max(1, CHAR_HOOKS.takt.maxHp() - ((p.maxHpPenalty) || 0));
   // สไตรเกอร์ ยูเรก้า: พลังชีวิตพื้นฐาน 12 หน่วย
   if (p && p.characterId === "striker") return Math.max(1, CHAR_HOOKS.striker.maxHp() - ((p.maxHpPenalty) || 0));
+  // ดิโอ แบรนโด: พลังชีวิตพื้นฐาน 6 หน่วย
+  if (p && p.characterId === "dio") return Math.max(1, CHAR_HOOKS.dio.maxHp() - ((p.maxHpPenalty) || 0));
   return Math.max(1, MAX_HP - ((p && p.maxHpPenalty) || 0));
 }
 // ฟื้นเลือดจริงแบบเคารพสถานะ "ไม่ใช้งานต่อ" / "ไร้ทางเยียวยา" — คืนจำนวนที่ฟื้นได้จริง
@@ -186,7 +188,9 @@ function applyBuff(p, key, amount, turns) {
   hisakawaSyncOut(p);
 }
 function applyDebuff(p, key, amount, turns) {
+  p = CHAR_HOOKS.johnny.redirectEffect(engine, p); // หมุนวน: การหมุนย้อนกลับ — ดีบัฟของสกิลนั้นลงผู้ใช้เอง
   if (friendlyEffectBlocked(p)) return false;
+  if (CHAR_HOOKS.johnny.blocksDebuff(engine, p, key)) return false; // จอห์นนี่ Slow Dancer: กันดีบัฟจากศัตรู
   hisakawaSyncIn(p);
   const ok = rawApplyDebuff(p, key, amount, turns);
   hisakawaSyncOut(p);
@@ -197,8 +201,10 @@ function applyDebuff(p, key, amount, turns) {
 //  ต่างจาก applyDebuff() ตรงที่กันเฉพาะ "เพื่อนร่วมทีมคนอื่น" ไม่กันการใส่ตัวเอง — เพราะมีสกิลที่
 //  จงใจแลกภาระเวทของตัวเองเป็นพลัง (Dance Lession กลางคืนของโคโตเนะ) ต้องทำงานได้ในโหมดทีมด้วย
 function applySpellburden(p, turns) {
+  p = CHAR_HOOKS.johnny.redirectEffect(engine, p); // หมุนวน: การหมุนย้อนกลับ
   const source = match.effectSourceId && match.players[match.effectSourceId];
   if (source && p && source.id !== p.id && sameTeam(source, p)) return false;
+  if (CHAR_HOOKS.johnny.blocksDebuff(engine, p, "spellburden")) return false; // จอห์นนี่ Slow Dancer
   hisakawaSyncIn(p);
   const ok = rawApplySpellburden(p, turns);
   hisakawaSyncOut(p);
@@ -232,7 +238,8 @@ const TEMARI_ANATA_DRAWS = 3;    // ANATA WAAAAAAAA: บังคับจั่
 const DEBUFF_KEYS = ["discord", "sleep", "stun", "nodraw", "noskill",
   "energy", "nohealing", "weak", "fragile", "spellburden",
   "oblada", "hburn", "phenexBanUlt", "nanayaSeal", "miyakoSeal", "invert", "manaSeal", "manaRupture", "manaLeech", "mageslayerMark",
-  "numb"]; // เหน็บชา (Bamboo-Hatted Kim)
+  "numb", // เหน็บชา (Bamboo-Hatted Kim)
+  "johnnyWhirl"]; // หมุนวน (จอห์นนี่)
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
 function maxArmorOf(p) {
   if (mercury.isOrt(p)) return CHAR_HOOKS.ort.maxArmor();
@@ -253,6 +260,7 @@ function maxArmorOf(p) {
     : (p && p.characterId === "recruit") ? CHAR_HOOKS.recruit.maxArmor() // Recruit: เกราะ 2
     : (p && p.characterId === "striker") ? CHAR_HOOKS.striker.maxArmor() // สไตรเกอร์ ยูเรก้า: เกราะ 3
     : (p && p.characterId === "takt") ? CHAR_HOOKS.takt.maxArmor() // อาซาฮินะ ทักต์: ไม่มีเกราะ
+    : (p && p.characterId === "dio") ? CHAR_HOOKS.dio.maxArmor() // ดิโอ แบรนโด: เกราะ 4
     : MAX_ARMOR;
   return armorBase
     + (characterRules.oguriGoldStacks(p) >= OGURI_GOLD_ARMOR_AT ? 1 : 0) // ยุคทอง (โอกูริ Rework): ครบ 2 แต้มขึ้นไป เพดานเกราะ +1
@@ -295,6 +303,8 @@ function instantDeath(p, force) {
   if (!force && Mark42.suited(p)) { Mark42.breakSuit(engine, p, "combat"); return; }
   // Bamboo-Hatted Kim (Resentment): เลือดหมดจากความเสียหายครั้งแรก -> ค้างที่ 1 (สังหารทันทีตอนเลือดยังเหลือไม่นับ)
   if (!force && CHAR_HOOKS.kim.tryResentment(engine, p)) return;
+  // ดิโอ (Last stand): ศัตรูสังหารทันที/ตีจนตายผ่านทางที่ไม่ผ่าน adjustIncomingDamage -> ค้างที่ 1 แล้วจองดวล
+  if (!force && CHAR_HOOKS.dio.tryLastStandOnDeath(engine, p)) return;
   if (!force && p.characterId === "escanor" && CHAR_HOOKS.escanor.tryNoonRevive(engine, p)) return;
   if (!force && p.characterId === "hisakawa_sister" && resolveHisakawaTwinDeath(p)) return;
   // Ultraman Trigger: ตายในร่างพิเศษถือว่าตายจริง ไม่คืนร่างแทน
@@ -324,6 +334,8 @@ function instantDeath(p, force) {
   CHAR_HOOKS.the_supplicant.onDeath(engine, p);
   // ไบรอัน (characters/brian.js): คนขับหรือคู่แข่งตกรอบ -> ลงจากรถ / ยกเลิกการแข่ง
   CHAR_HOOKS.brian.onDeath(engine, p);
+  // ดิโอ (characters/dio.js): ดิโอตกรอบ -> ปิด THE WORLD / ยกเลิก Last stand · คู่ดวลตกรอบ -> ยกเลิกดวล
+  CHAR_HOOKS.dio.onDeath(engine, p);
   // อาซาฮินะ ทักต์ (characters/takt.js): ทักต์หรือมิวสิคคาร์ทตกรอบ -> พันธะสัญญาหลุด
   CHAR_HOOKS.takt.onDeath(engine, p);
   // มหาเทพ อรชุน (สกิลติดตัว หัวใจที่เที่ยงธรรม): จำไว้ว่าใครเคยสังหารผู้เล่นอื่น — ธงถาวรทั้งเกม
@@ -489,6 +501,8 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   else if (p && !match.effectSourceId && n > 0) p.lastDamageSourceId = null;
   // เกราะ Mark 42: ชุดรับความเสียหายทุกชนิดแทนตัวจริงทั้งก้อน (ส่วนเกินหายไปพร้อมชุด = แค่กลับร่างเดิม)
   if (n > 0 && Mark42.absorb(engine, p, n)) return 0;
+  // จอห์นนี่ Lesson Five + Chumimi: หมัดนี้ไม่สนการลดดาเมจทุกชนิด — ฮุคยังทำงาน (ผลข้างเคียง) แต่ลดต่ำกว่าค่าเดิมไม่ได้
+  const pierceFloor = CHAR_HOOKS.johnny.pierceFloor(engine, n, isNormalAttack);
   // SE.RA.PH Matrix ระดับ 2: ลง 2 แต้มบนใคร = รับความเสียหายจากคนนั้นน้อยลง 1 หน่วย (§6)
   //  ต้นตอของดาเมจอ่านจาก effectSourceId (จุดเดียวกับที่ friendly-fire/ตราล่าเวทใช้)
   if (Seraph.active() && match.effectSourceId && match.effectSourceId !== p.id) {
@@ -499,7 +513,8 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   //  ตรรกะจริงอยู่ characters/_universal_status.js (coolReduction)
   if (n > 0) n = Math.max(0, n - coolReduction(p, isNormalAttack));
   const hook = CHAR_HOOKS[p && p.characterId];
-  return hook && hook.adjustIncomingDamage ? hook.adjustIncomingDamage(engine, p, n, isNormalAttack, kind) : n;
+  const out = hook && hook.adjustIncomingDamage ? hook.adjustIncomingDamage(engine, p, n, isNormalAttack, kind) : n;
+  return pierceFloor != null ? Math.max(out, pierceFloor) : out;
 }
 function tryYunaLongingForTwin(p) {
   if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
@@ -515,6 +530,7 @@ function resolveHisakawaTwinDeath(p) {
 }
 // ดาเมจทะลุเกราะ: ข้ามทั้งเกราะหลักและ "เกราะศรัทธา" (ข้อยกเว้นเดียวของเกราะศรัทธาตามสเปค)
 function dealDirect(p, n, isNormalAttack) {
+  p = CHAR_HOOKS.johnny.redirectTarget(engine, p, isNormalAttack); // หมุนวน: การหมุนย้อนกลับ — ดาเมจลงผู้ใช้สกิลเอง
   if (sealActive(p) || friendlyEffectBlocked(p)) return;
   n = adjustIncomingDamage(p, n, isNormalAttack, "direct");
   if (n <= 0) return;
@@ -527,6 +543,7 @@ function dealDirect(p, n, isNormalAttack) {
   resolveHisakawaTwinDeath(p);
 }
 function dealArmorOnly(p, n, isNormalAttack) {
+  p = CHAR_HOOKS.johnny.redirectTarget(engine, p, isNormalAttack); // หมุนวน: การหมุนย้อนกลับ
   if (sealActive(p) || friendlyEffectBlocked(p)) return;
   n = adjustIncomingDamage(p, n, isNormalAttack, "armor");
   if (n <= 0) return;
@@ -538,6 +555,7 @@ function dealArmorOnly(p, n, isNormalAttack) {
   mageslayerMarkSteal(p, n);
 }
 function dealMixed(p, n, isNormalAttack) { // เกราะก่อนแล้วเลือด
+  p = CHAR_HOOKS.johnny.redirectTarget(engine, p, isNormalAttack); // หมุนวน: การหมุนย้อนกลับ
   if (sealActive(p) || friendlyEffectBlocked(p)) return;
   n = adjustIncomingDamage(p, n, isNormalAttack, "mixed");
   if (n <= 0) return;
@@ -741,6 +759,8 @@ function resetCombat(p) {
   CHAR_HOOKS.takt.resetCombat(p);  // อาซาฮินะ ทักต์: พันธะ/คำเชิญ/โหมดบทเพลง (ฟิลด์ฝั่งมิวสิคคาร์ทอยู่ที่ทุกคน)
   CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ/ล่อเป้า
   CHAR_HOOKS.cosette.resetCombat(p); // คอเซ็ตต์: ร่าง/ขั้นมิวสิคคาร์ท/ทิ่มแทง/Maestro/Destiny/ตัวนับจั่ว
+  CHAR_HOOKS.johnny.resetCombat(p); // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว/คูลดาวน์ + สตั้น Lesson Five ที่ค้าง (ติดที่ทุกคน)
+  CHAR_HOOKS.dio.resetCombat(p); // ดิโอ: เกจเวลา/คูลดาวน์/THE WORLD/Last stand + ธง "ถูกแช่" ของ Last stand (อยู่ที่ทุกคน)
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน
   CHAR_HOOKS.brian.resetCombat(p);

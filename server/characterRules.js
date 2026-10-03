@@ -287,7 +287,7 @@ function mark42Run(p, plan, onUsed) {
 function mark42Control(id, action) {
   const p = match.players[id];
   if (!p || !p.alive || match.gameState !== "PLAYING" || shop.asleep(p)) return;
-  if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.itemBlocked(engine) || CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return;
+  if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.itemBlocked(engine) || CHAR_HOOKS.daisuke.actionBlocked(engine, p) || CHAR_HOOKS.dio.itemBlocked(engine)) return;
   const plan = Mark42.planControl(engine, p, action);
   if (!plan) { view.broadcastState(); return; }
   mark42Run(p, plan, null);
@@ -323,7 +323,7 @@ function recruitPrep(id, kind) {
   const p = match.players[id];
   if (!p || !p.alive || match.gameState !== "PLAYING" || p.locked || Seraph.active()) return;
   if ((p.statuses.noskill || 0) > 0 || (p.statuses.phenexTaunt || 0) > 0) return;
-  if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.skillBlocked(engine, p, "basic") || CHAR_HOOKS.daisuke.skillBlocked(engine, p, "basic")) return;
+  if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.skillBlocked(engine, p, "basic") || CHAR_HOOKS.daisuke.skillBlocked(engine, p, "basic") || CHAR_HOOKS.dio.skillBlocked(engine, p, "basic")) return;
   if (!CHAR_HOOKS.recruit.canPrep(engine, p, kind)) return;
   p.skillPoints -= 1;
   const prep = CHAR_HOOKS.recruit.PREP[kind];

@@ -56,6 +56,8 @@ const striker = require("./striker"); // สไตรเกอร์ ยูเ�
 const takt = require("./takt"); // อาซาฮินะ ทักต์ (พิเศษ · unique · คอนดักเตอร์ — ระบบพันธะของมิวสิคคาร์ท)
 const titan = require("./titan"); // ไททัน (ง่าย · มิวสิคคาร์ท)
 const cosette = require("./cosette"); // คอเซ็ตต์ ชไนเดอร์ (กลาง · มิวสิคคาร์ท)
+const johnny = require("./johnny"); // จอห์นนี่ โจสตาร์ (ยาก · Tusk Act 1-4)
+const dio = require("./dio"); // ดิโอ แบรนโด (Stardust) (กลาง · เกจเวลา / THE WORLD)
 const ort = require("./ort"); // บอสมหันตภัย (บอตเท่านั้น — โหมด Type Mercury)
 
 const CHARACTER_MODULES = [
@@ -111,6 +113,8 @@ const CHARACTER_MODULES = [
   takt,
   titan,
   cosette,
+  johnny,
+  dio,
   ort,
 ];
 

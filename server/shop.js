@@ -194,6 +194,7 @@ function buyShopItem(id, itemId) {
   if (!p || !p.alive) return;
   if (asleep(p)) return; // หลับไหล: ซื้อของไม่ได้
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นซื้อของไม่ได้
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD / นอกวง Last stand ซื้อของไม่ได้
   if (Seraph.active() && (match.gameState !== "SERAPH_PLACE" || !Seraph.canShop(p))) return;
   const item = match.shopItems.find((it) => it.id === itemId);
   if (!item || item.sold) return;
@@ -222,10 +223,14 @@ function cardLabel(c) {
   return String(c.value);
 }
 function useInventoryItem(id, uid, opts = {}) {
-  const res = combat.withExplicitTargets(id, opts && opts.targetId ? [opts.targetId] : [], () => useInventoryItemCore(id, uid, opts));
-  if (match.gameState !== "CUTSCENE") draw.flushOrtCounters();
-  mercury.checkOrtEarlyWin();
-  return res;
+  // จอห์นนี่ "หมุนวน": ใช้ไอเทมก็ทอยการหมุนย้อนกลับ 1 ครั้งต่อการใช้ (ปิดบริบทใน finally)
+  const johnnyCtx = CHAR_HOOKS.johnny.beginUse(engine, match.players[id], opts && opts.targetId ? [opts.targetId] : []);
+  try {
+    const res = combat.withExplicitTargets(id, opts && opts.targetId ? [opts.targetId] : [], () => useInventoryItemCore(id, uid, opts));
+    if (match.gameState !== "CUTSCENE") draw.flushOrtCounters();
+    mercury.checkOrtEarlyWin();
+    return res;
+  } finally { CHAR_HOOKS.johnny.endUse(johnnyCtx); }
 }
 function useInventoryItemCore(id, uid, opts = {}) {
   const p = match.players[id];
@@ -234,6 +239,7 @@ function useInventoryItemCore(id, uid, opts = {}) {
   if (asleep(p)) return; // หลับไหล: ใช้ไอเทมไม่ได้เลย (ยาโชคลาภ/ต้านสถานะ/แต้มสกิล/เกราะ เดิมไม่เช็ค p.locked จึงรั่ว)
   if (CHAR_HOOKS.conner.skillBlocked(engine, p)) return; // คอนเนอร์: ระหว่างการไล่ล่า ทุกคนใช้ไอเทมไม่ได้ (รวมคอนเนอร์กับเป้าหมาย)
   if (CHAR_HOOKS.brian.itemBlocked(engine)) return;      // ไบรอัน: ระหว่างการแข่ง ทุกคนใช้ไอเทมไม่ได้
+  if (CHAR_HOOKS.dio.itemBlocked(engine)) return;        // ดิโอ: ระหว่าง THE WORLD / Last stand ทุกคนใช้ไอเทมไม่ได้
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นใช้ไอเทมไม่ได้
   // ผู้วิงวอน (patch 3.4): "ลูกแกะน้อยรู้แจ้ง" กันการเล็งผู้วิงวอนด้วยไอเทมด้วย (เช่นกระสุน GUTS Select)
   if (opts && opts.targetId && CHAR_HOOKS.the_supplicant.targetBlocked(p, match.players[opts.targetId])) return;

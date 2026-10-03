@@ -273,7 +273,12 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   invertActive,
   HBLEED_MAX,
   bleedActive,
-  applyBleed, // "เลือดไหล" (สถานะ Universal): จุดเดียวที่ทุกตัวละครใช้ใส่สถานะนี้ (เคารพต้านสถานะ + เพดาน)
+  // "เลือดไหล" (สถานะ Universal): จุดเดียวที่ทุกตัวละครใช้ใส่สถานะนี้ (เคารพต้านสถานะ + เพดาน)
+  //  ห่อไว้ให้ "การหมุนย้อนกลับ" (หมุนวน) และ Slow Dancer ของจอห์นนี่ทำงานกับเลือดไหลด้วย
+  applyBleed: (p, n) => {
+    const t = CHAR_HOOKS.johnny.redirectEffect(engine, p);
+    return CHAR_HOOKS.johnny.blocksDebuff(engine, t, "hbleed") ? 0 : applyBleed(t, n);
+  },
   EVADE_STACK_MAX,
   EVADE_STACK_TURNS,
   grantEvadeStack,
@@ -313,6 +318,10 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   startPhaseTimer: timers.startPhaseTimer,
   clearPhaseTimer: timers.clearPhaseTimer,
   reduceCardTimer: timers.reduceCardTimer, // เอจิ สกิลติดตัว 1: บีบเวลาที่เหลือของเฟสจั่วการ์ด
+  // ดิโอ (THE WORLD): จำเวลาที่เหลือของเฟสจั่วไพ่ แล้วตั้งนาฬิกา 10 วิแทน — คืนค่าเดิมตอนจบ
+  //  ตัวจับเวลา (setInterval) อ่าน match.timeLeft ทุกวินาที จึงแก้ค่านี้ตรงๆ ได้ (แพทเทิร์นเดียวกับ reduceCardTimer)
+  get timeLeft() { return match.timeLeft; },
+  setTimeLeft(v) { match.timeLeft = Math.max(1, Number(v) || 1); },
   broadcastState: view.broadcastState,
   checkAllLocked: draw.checkAllLocked,
 }));

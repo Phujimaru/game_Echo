@@ -43,6 +43,8 @@ function displayImg(p, unmasked) {
   if (p.characterId === "takt") { const timg = CHAR_HOOKS.takt.displayImg(engine, p); if (timg) return timg; }
   if (p.characterId === "titan") { const timg = CHAR_HOOKS.titan.displayImg(p); if (timg) return timg; }
   if (p.characterId === "cosette") { const cimg = CHAR_HOOKS.cosette.displayImg(p); if (cimg) return cimg; } // พรมลิขิต / บทเพลง
+  if (p.characterId === "johnny") { const jimg = CHAR_HOOKS.johnny.displayImg(p); if (jimg) return jimg; } // จอห์นนี่: ภาพตามร่าง Tusk Act 1-4
+  if (p.characterId === "dio") { const dimg = CHAR_HOOKS.dio.displayImg(p); if (dimg) return dimg; } // ดิโอ: ร่างหยุดเวลา (THE WORLD)
   // ฟุจิตะ โคโตเนะ: ระหว่างร่าง [พร้อมลุย] = ภาพ Kotone.png (null = ใช้ภาพปกติ)
   if (p.characterId === "kotone") { const kimg = CHAR_HOOKS.kotone.displayImg(p); if (kimg) return kimg; }
   // เอจิ: ระหว่างท่าไม้ตาย ไม่ว่ายังก็ตาม ทำงาน = ภาพ eiji_change.jpg (null = ใช้ภาพปกติ)
@@ -140,6 +142,9 @@ function activeSkillMusic() {
   // อาซาฮินะ ทักต์: takt_theme ตลอดที่มีมิวสิคคาร์ทมีบทเพลง (ได้เพิ่มอีกคนไม่เริ่มใหม่ จนกว่าจะดับหมด)
   const bestTakt = CHAR_HOOKS.takt.activeMusic(engine);
   if (bestTakt) return bestTakt;
+  // จอห์นนี่: johnny_theme ทับเพลงสนามตลอดที่อยู่ Tusk Act 4 (Golden Ratio หมด = กลับเพลงปกติ)
+  const bestJohnny = CHAR_HOOKS.johnny.activeMusic(engine);
+  if (bestJohnny) return bestJohnny;
   // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ ทำงานอยู่ — เพลง forever เล่นค้าง (priority สูงกว่าเพลงตามเกียร์ ต่ำกว่า Beat Mode)
   let bestTakumiBlackout = null;
   for (const p of combat.alivePlayers()) {
@@ -425,6 +430,9 @@ function buildStateFor(viewerId) {
     // คอนเนอร์ RK800: ออร่าขอบจอแดงระหว่างการไล่ล่า + สกอร์ดวลให้ทุกคนเห็น (เกตเดียวกับผลจริงของโหมดไล่ล่า)
     connorFieldFx: CHAR_HOOKS.conner.fieldFx(engine),
     brianFieldFx: CHAR_HOOKS.brian.fieldFx(engine), // ไบรอัน: ออร่าสนามระหว่างการแข่งที่มีเดิมพัน
+    // ดิโอ: THE WORLD (frozen = ผู้ชมคนนี้ถูกแช่ไหม · เจ้าของท่าเห็นแอคชันที่เหลือ) / ดวล Last stand
+    dioWorld: CHAR_HOOKS.dio.worldInfo(engine, viewerId),
+    dioDuel: CHAR_HOOKS.dio.duelInfo(engine),
     connorChase: (() => {
       const owner = CHAR_HOOKS.conner.chaseOwner(engine);
       if (!owner) return null;
@@ -533,6 +541,16 @@ function buildStateFor(viewerId) {
         secondaryPub = pub(CHAR_HOOKS.titan.dynamicSkillFor(p, ch, "secondary"));
         ultimatePub = pub(CHAR_HOOKS.titan.dynamicSkillFor(p, ch, "ultimate"));
       }
+      // ดิโอ: ระหว่าง THE WORLD ปุ่มทั้งสามเป็นชุดร่างหยุดเวลา (สูตรเดียวกับ useSkill)
+      if (ch.id === "dio") {
+        basicPub = pub(CHAR_HOOKS.dio.dynamicSkillFor(p, ch, "basic"));
+        secondaryPub = pub(CHAR_HOOKS.dio.dynamicSkillFor(p, ch, "secondary"));
+        ultimatePub = pub(CHAR_HOOKS.dio.dynamicSkillFor(p, ch, "ultimate"));
+      }
+      if (ch.id === "johnny") { // จอห์นนี่: สกิลรอง/ท่าไม้ตายตามร่าง (สูตรเดียวกับ useSkill)
+        secondaryPub = pub(CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, "secondary"));
+        ultimatePub = pub(CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, "ultimate"));
+      }
       if (ch.id === "cosette") {
         basicPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "basic"));
         secondaryPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "secondary"));
@@ -593,6 +611,15 @@ function buildStateFor(viewerId) {
       if (basicPub) basicPub.cost = showCost(basicPub, "basic");
       if (secondaryPub) secondaryPub.cost = showCost(secondaryPub, "secondary");
       if (ultimatePub) ultimatePub.cost = showCost(ultimatePub, "ultimate");
+      // ดิโอ: Za warudo / ชุดร่างหยุดเวลาไม่ใช้แต้มสกิล (ต้องตรงกับ dio.freeCost ใน useSkill) + ป้ายราคาเป็นแอคชัน/เกจเวลา
+      if (ch.id === "dio") {
+        for (const [tierName, sp] of [["basic", basicPub], ["secondary", secondaryPub], ["ultimate", ultimatePub]]) {
+          if (!sp) continue;
+          if (CHAR_HOOKS.dio.freeCost(p, tierName)) sp.cost = 0;
+          const label = CHAR_HOOKS.dio.costLabel(p, tierName);
+          if (label) sp.costLabel = label;
+        }
+      }
       // ไททัน Triumphant: ราคาบนปุ่ม = ส่วนที่ไททันจ่ายเอง (ทักต์จ่ายส่วนที่ขาด) · รวมกันไม่ถึง = โชว์ราคาเต็ม 12
       { const split = ch.id === "titan" && ultimatePub ? CHAR_HOOKS.titan.triumphSplit(engine, p) : null;
         if (split) ultimatePub.cost = split.ok ? split.own : CHAR_HOOKS.titan.TRIUMPH_COST; }
@@ -637,12 +664,16 @@ function buildStateFor(viewerId) {
         ...(mine ? CHAR_HOOKS.takt.privateState(engine, p) : {}),
         titan: p.characterId === "titan" ? CHAR_HOOKS.titan.publicState(engine, p) : undefined, // ของว่าง/Vigorous Rising Sun/ชุดตี/ล่อเป้า
         cosette: p.characterId === "cosette" ? CHAR_HOOKS.cosette.publicState(engine, p) : undefined, // ร่าง/ขั้น/ทิ่มแทง/Maestro/Destiny
+        // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว (เห็นทุกคน) · ท่าหลังเปิดไพ่ที่ค้างรอ (เห็นเจ้าตัว)
+        johnny: p.characterId === "johnny" ? CHAR_HOOKS.johnny.publicState(engine, p) : undefined,
+        ...(mine && p.characterId === "johnny" ? CHAR_HOOKS.johnny.privateState(engine, p) : {}),
+        dio: p.characterId === "dio" ? CHAR_HOOKS.dio.publicState(engine, p) : undefined, // ดิโอ: เกจเวลา / THE WORLD / Last stand (ข้อมูลสาธารณะ)
         // คอเซ็ตต์ Destiny: ราคาจริงของแต่ละระดับ (หน้าต่างเลือก I/II) — เห็นเจ้าตัว
         cosetteDestiny: mine && p.characterId === "cosette" && CHAR_HOOKS.cosette.unlocked(p)
           ? ["I", "II"].map((t) => { const s = CHAR_HOOKS.cosette.destinySplit(engine, p, t); return { tier: t, cost: s.cost, own: s.own, need: s.need, ok: s.ok }; })
           : undefined,
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette" || p.characterId === "dio" || p.characterId === "johnny")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)

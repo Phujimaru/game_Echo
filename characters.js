@@ -2474,7 +2474,7 @@ const CHARACTERS = [
     },
     basic: {
       name: "เปลี่ยนร่าง",
-      desc: "ก่อนเปิดไพ่ (ไม่นับเป็นการใช้สกิล · 1 ครั้ง/เทิร์น): สลับร่าง · มนุษย์ (เริ่มต้น): ต้นเทิร์นฟื้นพลังชีวิต 1 พลังโจมตี -1 · พรมลิขิต: พลังโจมตี +2 ต้นเทิร์นเสียพลังชีวิต 2 (ลดเกราะก่อน · เหลือ 1 แล้วหยุดและกลับร่างมนุษย์)",
+      desc: "ก่อนเปิดไพ่ (ไม่นับเป็นการใช้สกิล · 1 ครั้ง/เทิร์น): สลับร่าง · มนุษย์ (เริ่มต้น): ต้นเทิร์นฟื้นพลังชีวิต 1 พลังโจมตี -1 · พรมลิขิต: พลังโจมตี +2 ต้นเทิร์นเสียพลังชีวิต 2 (ลดเกราะก่อน · เหลือ 1 แล้วหยุดและกลับร่างมนุษย์) · ได้บทเพลงจากทักต์ = เปลี่ยนเป็นพรมลิขิตทันที สลับไม่ได้จนบทเพลงหมด",
       cost: 0,
       img: "/characters/destiny/destiny_skill1.webp",
       instant: true,
@@ -2482,7 +2482,7 @@ const CHARACTERS = [
     },
     basic2: {
       name: "เปลี่ยนร่าง",
-      desc: "ก่อนเปิดไพ่ (ไม่นับเป็นการใช้สกิล · 1 ครั้ง/เทิร์น): กลับร่างมนุษย์ · ต้นเทิร์นฟื้นพลังชีวิต 1 พลังโจมตี -1",
+      desc: "ก่อนเปิดไพ่ (ไม่นับเป็นการใช้สกิล · 1 ครั้ง/เทิร์น): กลับร่างมนุษย์ · ต้นเทิร์นฟื้นพลังชีวิต 1 พลังโจมตี -1 (กดไม่ได้ระหว่างมีบทเพลง)",
       cost: 0,
       img: "/characters/destiny/destiny_skill1_back.webp",
       instant: true,
@@ -2518,6 +2518,147 @@ const CHARACTERS = [
       cost: 8,
       img: "/characters/takt/destiny/takt_destiny_skill3.jpg",
       instant: true,
+      effect: null,
+    },
+  },
+  {
+    // ---------- ดิโอ แบรนโด (Stardust) — กลาง — ดู characters/dio.js ----------
+    //  พลังชีวิต 6 / เกราะ 4 (dio.maxHp/maxArmor) · เกจเวลา 0-6 อยู่ที่ p.dio.meter
+    //  basic2/secondary2/ultimate2 = ชุดร่างหยุดเวลาระหว่าง THE WORLD (dio.dynamicSkillFor) จ่ายด้วยแอคชัน
+    //  ultimate.cost 0 = Za warudo ไม่ใช้แต้มสกิล (useSkill/buildStateFor ทับราคาเป็น 0 ผ่าน dio.freeCost)
+    id: "dio",
+    name: "ดิโอ แบรนโด (Stardust)",
+    avatar: 0,
+    difficulty: "medium",
+    img: "/characters/dio_brando/dio.webp",
+    passive: {
+      name: "Vampire",
+      desc: "ทำความเสียหายใส่ศัตรู (ตีปกติโดน / สกิลที่ทำดาเมจ 1 ครั้งต่อการกด) ฟื้นพลังชีวิต 1 · กลางวัน: โดนตีปกติหรือสกิลของศัตรู ความเสียหาย +1 ทุกครั้ง · กลางคืน: -1 (ไม่นับดาเมจจากสถานะ/ไอเทม/แพ้รอบ) · Last stand (1 ครั้ง/เกม): ตีปกติ/สกิลของศัตรูที่จะทำให้ตาย หรือโดนตอนพลังชีวิตเหลือ 1 = ไม่ตาย ค้างที่ 1 แล้วลากผู้โจมตีมาดวลแต้มตอนจั่วไพ่เทิร์นหน้า (คนอื่นถูกแช่) · แต้มสูงกว่าแบบไม่แตก = สูบพลังชีวิตผู้โจมตี 2 · เสมอหรือแตกทั้งคู่ = ดิโอแพ้และตายทันที",
+    },
+    passive2: {
+      name: "เกจเวลา",
+      desc: "สรุปแต้มทุกเทิร์น: ไพ่ไม่แตก +1 · ได้ 21 พอดี +1 เพิ่ม · ไพ่แตก -2 (เก็บได้ 0-6) · ใช้เปิด Za warudo!!!!!!",
+    },
+    basic: {
+      name: "Throwing knife",
+      desc: "ก่อนเปิดไพ่ (คูลดาวน์ 2 เทิร์น): ศัตรู 1 คน รับความเสียหาย 1 (ลดเกราะก่อน) และติดเลือดไหล 1 (ต้านได้)",
+      cost: 3,
+      img: "/characters/dio_brando/dio_knife.jpg",
+      instant: true,
+      effect: null, // จัดการใน characters/dio.js
+    },
+    secondary: {
+      name: "Barrage",
+      desc: "ก่อนเปิดไพ่ (คูลดาวน์ 3 เทิร์น): ศัตรู 1 คน รับความเสียหาย 1 × 2 ครั้ง (ลดเกราะก่อน) และติดผุพัง 2 เทิร์น (ต้านได้)",
+      cost: 3,
+      img: "/characters/dio_brando/dio_barrage.jpg",
+      instant: true,
+      effect: null,
+    },
+    ultimate: {
+      name: "Za warudo!!!!!!",
+      desc: "ก่อนเปิดไพ่ (ไม่ใช้แต้มสกิล · ต้องมีเกจเวลา 1 ขึ้นไป · คูลดาวน์ 4 เทิร์น): ใช้เกจเวลาทั้งหมดเป็นแอคชัน แล้วเปิด [THE WORLD] คนอื่นทุกคนถูกแช่ · ดิโอเข้าร่างหยุดเวลา สกิลทั้งสามเปลี่ยนเป็นชุดหยุดเวลา (จ่ายด้วยแอคชัน · ไม่นับเป็นการใช้สกิล) · จบเมื่อแอคชันไม่พอ ใช้ Road Roller หรือครบ 10 วิ แล้วเวลาจั่วไพ่เดินต่อจากที่เหลือ",
+      cost: 0,
+      img: "/characters/dio_brando/dio_timestop.jpg",
+      instant: true,
+      effect: null,
+    },
+    basic2: {
+      name: "SHINEI!",
+      desc: "ร่างหยุดเวลา (2 แอคชัน): ศัตรู 1 คน รับความเสียหาย 2 (ลดเกราะก่อน) และติดไร้ทางเยียวยา 2 เทิร์น (ต้านได้)",
+      cost: 0,
+      img: "/characters/dio_brando/dio_shine.jpg",
+      instant: true,
+      effect: null,
+    },
+    secondary2: {
+      name: "Barrage",
+      desc: "ร่างหยุดเวลา (3 แอคชัน): ศัตรู 1 คน รับความเสียหาย 1 × 3 ครั้ง (ลดเกราะก่อน) และติดผุพัง 2 เทิร์น (ต้านได้)",
+      cost: 0,
+      img: "/characters/dio_brando/dio_barrage.jpg",
+      instant: true,
+      effect: null,
+    },
+    ultimate2: {
+      name: "Road Roller",
+      desc: "ร่างหยุดเวลา (ต้องมี 4 แอคชัน · ใช้ที่เหลือทั้งหมด): ศัตรู 1 คน รับความเสียหาย 2 × 2 ครั้ง (ลดเกราะก่อน) แล้ว THE WORLD จบทันที",
+      cost: 0,
+      img: "/characters/dio_brando/dio_roadroller.jpg",
+      instant: true,
+      effect: null,
+    },
+  },
+  {
+    // ---------- จอห์นนี่ โจสตาร์ (Tusk) — ยาก · 4 ร่าง — ดู characters/johnny.js ----------
+    //  secondary..secondary4 = สกิลรองของ Act 1-4 · ultimate2 = Lesson Five (Act 4) · johnny.dynamicSkillFor เลือกตามร่าง
+    //  ultimate.cost = ราคาฐานของ Tusk Evo Experience (+1 ต่อ Pre-Awaken ที่ถือ — คิดใน dynamicSkillFor)
+    id: "johnny",
+    name: "จอห์นนี่ โจสตาร์",
+    avatar: 0,
+    difficulty: "hard",
+    img: "/characters/johnny/johnny_act1.png",
+    passive: {
+      name: "Tusk",
+      desc: "เริ่มเกมเป็น Act 1 · กระสุนเล็บ 5/5 (ตีปกติไม่ใช้) · Act 2: คริติคอล 10% · Act 3: หลบการโจมตีปกติ 15% · Act 4: พลังโจมตี +1 · ตีโดนแต้มสกิล +1 · ได้ Golden Ratio 2 (หมด = กลับ Act 1) · Pre-Awaken: สแตคละคริติคอล +12.5% · ทำดาเมจได้คูลดาวน์ Tusk Evo Experience -1 · Pre-Awaken/Awakening ถูกปาดไม่ได้",
+    },
+    passive2: {
+      name: "Slow Dancer · Spin",
+      desc: "Slow Dancer (ได้ตอนเริ่มเกม): กันดีบัฟหรือสกิลที่ศัตรูเล็งใส่ 2 ครั้ง · Spin (สูงสุด 15): 7 ขึ้นไป ต้นเทิร์นแต้มสกิล +1 · ครบ 15 ดาเมจที่ได้รับ -1 สองครั้งแล้วคูลดาวน์ 3 เทิร์น · Act 4: Golden Ratio ถูกปาด ใช้ Spin 15 แลก Golden Ratio 1 (ครั้งเดียว) · Spin Mastery (5 เทิร์น): Spin Rotation ได้ Spin +1-2 เพิ่ม · บัฟเหล่านี้ถูกปาดได้",
+    },
+    passive3: {
+      name: "หมุนวน · Chumimi",
+      desc: "หมุนวน (สูงสุด 9 · 8 เทิร์น ได้เพิ่มต่ออายุ · ต้าน/ล้างได้): ผู้ติดใช้สกิลหรือไอเทมที่ทำดาเมจ 15% ผลย้อนกลับเข้าตัวเอง และหมุนวน -2 · Chumimi (5 เทิร์น · ต้าน/ล้างไม่ได้): Lesson Five ลบทิ้ง = ดาเมจ +2 · Rapid Shot/Snipe Shot/Wormhole Multi Shot ลบทิ้ง = ดาเมจ +1",
+    },
+    basic: {
+      name: "Herbal Tea Time / Spin Rotation",
+      desc: "ก่อนเปิดไพ่: เลือก 1 อย่าง · Herbal Tea Time: ฟื้นพลังชีวิต 1 · กระสุนเล็บ +3-5 · Spin Rotation: Spin +1-3 (Spin Mastery +1-2 เพิ่ม) · 20% ได้ Spin Mastery 5 เทิร์น",
+      cost: 2,
+      img: "/characters/johnny/johnny_skill1.jpg",
+      instant: true,
+      effect: null, // จัดการใน characters/johnny.js
+    },
+    secondary: {
+      name: "Rapid Shot",
+      desc: "Act 1 · หลังเปิดไพ่ (กระสุนเล็บ 2 · คูลดาวน์ 3 เทิร์นนับจากได้ตี): ตีปกติครั้งถัดไปยิง 2 นัด (นัดที่ 2 เลือกเป้าใหม่ได้) · แต่ละนัดพลาด 25% (พลาดก็ยิงต่อ) · โดนแล้วเป้าติดหมุนวน +1-2",
+      cost: 3,
+      img: "/characters/johnny/johnny_rapid.webp",
+      effect: null,
+    },
+    secondary2: {
+      name: "Snipe Shot",
+      desc: "Act 2 · หลังเปิดไพ่ (กระสุนเล็บ 2 · คูลดาวน์ 4 เทิร์นนับจากยิง): เลือกเป้า 1 คน · ชนะการเปิดไพ่แล้วยิงแยกจากตีปกติ ดาเมจ 2 (ลดเกราะก่อน) · หมุนวน +2-3 · ยังตีปกติได้ตามเดิม",
+      cost: 4,
+      img: "/characters/johnny/johnny_snipe.jpg",
+      effect: null,
+    },
+    secondary3: {
+      name: "Wormhole Multi Shot",
+      desc: "Act 3 · ก่อนเปิดไพ่ (กระสุนเล็บ 3 · คูลดาวน์ 5 เทิร์น): สุ่มยิงศัตรู 3 นัด นัดละ 1 (ลดเกราะก่อน · คนละไม่เกิน 2 นัด) · นัดละหมุนวน +1-2",
+      cost: 5,
+      img: "/characters/johnny/johnny_wormhole.png",
+      instant: true,
+      effect: null,
+    },
+    secondary4: {
+      name: "Ora Ora Ora Ora! BeatDown",
+      desc: "Act 4 · หลังเปิดไพ่ (คูลดาวน์ 5 เทิร์นนับจากได้ตี): เสีย Golden Ratio 1 และกระสุนเล็บทั้งหมด · ตีปกติครั้งถัดไป พลังโจมตี +1 ต่อหมุนวน 3 สแตคบนเป้า และมอบ Chumimi",
+      cost: 6,
+      img: "/characters/johnny/johnny_ora.jpg",
+      effect: null,
+    },
+    ultimate: {
+      name: "Tusk Evo Experience",
+      desc: "ก่อนเปิดไพ่ (คูลดาวน์ 5 เทิร์น · ราคาและคูลดาวน์ +1 ต่อ Pre-Awaken ที่มี): Pre-Awaken +1 (1 = Act 2 · 2 = Act 3) · มี Pre-Awaken 2 แล้ว = ได้ Awakening เข้าสู่ Act 4",
+      cost: 4,
+      img: "/characters/johnny/johnny_tusk_evo.jpg",
+      instant: true,
+      effect: null,
+    },
+    ultimate2: {
+      name: "Lesson Five",
+      desc: "Act 4 · หลังเปิดไพ่ (7 แต้ม + Golden Ratio 1): เสียกระสุนเล็บ 1 · ตีปกติครั้งถัดไป พลังโจมตี +1 · เป้ามี Chumimi: ลบทิ้ง ดาเมจ +2 สตั้น 1 เทิร์น (เทิร์นหน้า) และไม่สนการลดดาเมจทุกชนิด",
+      cost: 7,
+      img: "/characters/johnny/johnny_lesson5.jpg",
       effect: null,
     },
   },
@@ -2597,6 +2738,7 @@ function publicRoster() {
     ultimate2: pub(c.ultimate2),
     basic3: pub(c.basic3),
     secondary3: pub(c.secondary3),
+    secondary4: pub(c.secondary4), // จอห์นนี่: สกิลรอง Act 4 — ตัวอื่นเป็น null
     ultimate3: pub(c.ultimate3),
     // อควาเรียน: สกิลรอง "คืนร่าง" + ท่าไม้ตาย 4 แบบ (โซล่า/มาร์/ลูน่า/ปีกแห่งสุริยัน) — ตัวอื่นเป็น null
     secondaryRevert: pub(c.secondaryRevert),

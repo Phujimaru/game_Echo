@@ -68,6 +68,11 @@ const FILES = {
   // อุซากิ: เพลงตลอดช่วงท่าไม้ตาย (โจทย์คณิต 3 เทิร์น)
   usagi_theme: "/characters/usagi/usagi_theme.mp3",
   takt_theme: "/characters/takt/takt_theme_first.m4a", // อาซาฮินะ ทักต์: ระหว่างมิวสิคคาร์ทมีบทเพลง (ต่อด้วย loop — MUSIC_SEQUENCES)
+  // จอห์นนี่ โจสตาร์: เพลงตลอด Tusk Act 4 · เสียงโจมตีปกติ/ยิงเล็บ · เสียงลบ Chumimi · เสียงกด Tusk Evo Experience
+  johnny_theme: "/characters/johnny/johnny_theme.mp3",
+  johnny_nail: "/characters/johnny/johnny_nail.mp3",
+  johnny_chumimi: "/characters/johnny/johnny_chumimi.mp3",
+  johnny_tusk: "/characters/johnny/johnny_tusk.mp3",
   // Bamboo-Hatted Kim: เสียงกดสกิล / เสียงสวนกลับ / เพลงร่าง Awake (เล่นค้างถาวรหลังเข้าร่าง)
   kim_draw: "/characters/Bamboo-Hatted Kim/สกิลพื้นฐาน/สกิลพื้นฐาน ชักดาบ.mp3",
   // โอเบรอน (ฤดูร้อน): เสียงตอนกดสกิลแต่ละช่อง (ส่งชื่อมากับ skillFlash)
@@ -268,11 +273,18 @@ const LOUDNESS_GAIN = {
   "/characters/takt/titan/takt_titan_skill2.mp4": 0.79, // ไททัน: วีดีโอ Vigorous Rising Sun (เป้าวีดีโอ -16)
   "/characters/takt/titan/takt_titan_skill3.mp4": 0.71, // ไททัน: วีดีโอ Triumphant (เป้าวีดีโอ -16)
   "/characters/destiny/destiny_skill3.mp4": 0.89, // คอเซ็ตต์: วีดีโอทิ่มแทง (เป้าวีดีโอ -16)
+  "/characters/dio_brando/dio_laststand_fail.mp4": 0.76, // ดิโอ: วีดีโอ Last stand แพ้ -13.6 dBFS (เป้าวีดีโอ -16 · คลิปอื่นของดิโอเบาเกินจึงขยายที่ตัวไฟล์แล้ว)
   "/characters/takt/destiny/takt_destiny.mp4": 0.97, // คอเซ็ตต์: วีดีโอได้บทเพลง (เป้าวีดีโอ -16)
   "/characters/takt/destiny/takt_destiny_skill3_I.mp4": 0.76, // คอเซ็ตต์: วีดีโอ Destiny I (เป้าวีดีโอ -16)
   "/characters/takt/takt_passive3-titan.mp4": 0.98, // ทักต์: วีดีโอสั่งไททัน (เป้าวีดีโอ -16)
   "/characters/takt/takt_passive3-destiny.mp4": 0.68, // ทักต์: วีดีโอสั่งเดสตินี่ (เป้าวีดีโอ -16)
   "/characters/titan/titan_hit.mp3": 0.64, // ไททัน: เสียงตีปกติ (เป้าเอฟเฟกต์ -14)
+  "/characters/johnny/johnny_theme.mp3": 0.61,   // จอห์นนี่: เพลง Act 4 -9.7 dBFS (เป้าเพลง -14)
+  "/characters/johnny/johnny_nail.mp3": 0.81,    // -12.2 dBFS (เป้าเอฟเฟกต์ -14)
+  "/characters/johnny/johnny_chumimi.mp3": 0.94, // -13.5 dBFS
+  "/characters/johnny/johnny_ora.mp4": 0.6,      // วีดีโอ Ora -11.6 dBFS (เป้าวีดีโอ -16)
+  "/characters/johnny/johnny_act4_evo.mp4": 0.92, // -15.3 dBFS
+  "/characters/johnny/johnny_lesson5.mp4": 0.92,  // -15.3 dBFS
   "/characters/escanor/New Last Stand.mp4": 0.58, // เอสคานอร์: วีดีโอ Last Stand ใหม่ -11.3 dBFS (เป้าวีดีโอ -16) // แอนเดอร์เซน: วีดีโอท่าไม้ตาย -12.1 dBFS (เป้าวีดีโอ -16)
   "/characters/Recruit/โจมตีปกติ/โจมตีปกติ.mov": 0.66,
   "/characters/appleguy/appleguy_final.mp4": 0.4,

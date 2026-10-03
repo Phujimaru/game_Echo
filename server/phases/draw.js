@@ -283,10 +283,13 @@ function dealRound() {
     CHAR_HOOKS.takt.onRoundStartTick(engine, p);
     CHAR_HOOKS.titan.onRoundStartTick(engine, p);
     CHAR_HOOKS.cosette.onRoundStartTick(engine, p); // คอเซ็ตต์: ร่างมนุษย์ฟื้น 1 / พรมลิขิตเสีย 2 (หรือลงคอนดักเตอร์ 1)
+    // จอห์นนี่: สตั้นของ Lesson Five เริ่มมีผล (ทุกคน · ก่อนบล็อกเช็คสตั้น) · Spin Energy แต้มสกิล +1 · Spin Mastery นับถอยหลัง
+    CHAR_HOOKS.johnny.onRoundStartTick(engine, p);
     // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
     CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);
     // ---------- ไบรอัน (characters/brian.js): รถกินน้ำมัน (แปลงเป็นเลือด) หรือเติมน้ำมันประจำเทิร์น ----------
     CHAR_HOOKS.brian.onRoundStartTick(engine, p);
+    CHAR_HOOKS.dio.onRoundStartTick(engine, p); // ดิโอ: ล้างผลค้างของเทิร์นก่อน (THE WORLD ไม่ข้ามเทิร์น)
     // ---------- โปรดิวเซอร์: ผลติดตัวรายไอดอล + ฝึกซ้อม + ดาเมจที่หน่วงไว้จากเทิร์นก่อน ----------
     CHAR_HOOKS.producer_lumi.onRoundStartTick(engine, p);
     // ---------- คาเยนน์ ทหารผ่านศึก: ความเสียหายที่เลื่อนไว้เมื่อเทิร์นก่อนลงผลตอนนี้ ----------
@@ -333,6 +336,8 @@ function dealRound() {
   //  ต้องอยู่หลังลูปต้นเทิร์น เพราะในลูปเพิ่งตั้ง p.locked = false และแจกไพ่ใบแรกให้ทุกคนไปแล้ว
   CHAR_HOOKS.producer_lumi.onRoundStartAfterLoop(engine); // โปรดิวเซอร์: รีเซ็ตโควตาหมัดที่ 2 ของ All star 765
   CHAR_HOOKS.conner.onRoundStartAfterLoop(engine);
+  // ดิโอ (Last stand): ถึงเทิร์นดวลที่จองไว้ -> แช่คนนอกวง (หลังลูปเพราะลูปเพิ่งปลดล็อก/แจกไพ่ใบแรกให้ทุกคน)
+  CHAR_HOOKS.dio.onRoundStartAfterLoop(engine);
   // ---------- ยุย (characters/yui.js): girl don't cry — คนแต้มสกิลน้อยสุดในวงได้ +1 ----------
   //  ต้องอยู่หลังลูปต้นเทิร์น ไม่งั้นการเทียบ "ใครแต้มน้อยสุด" จะใช้ค่าคนละเทิร์นกันตามลำดับที่นั่ง
   CHAR_HOOKS.yui.onRoundStartAfterLoop(engine);
@@ -374,6 +379,7 @@ function hit(id) {
   //  เพราะทั้งท่าคือการดวลแต้มกันตัวต่อตัว (สเปคล็อกแค่สกิล/ไอเทมของคู่แข่งทั้งสอง ไม่ได้ล็อกการจั่ว)
   if (CHAR_HOOKS.brian.actionBlocked(engine, p)) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นจั่วไม่ได้
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD (ทุกคนรวมดิโอ) / นอกวง Last stand
   if (cardDeck.scoreOf(p) >= cardDeck.scoreCap(p)) return; // แต้มเต็มเพดาน (เช่น 21 พอดี) = จั่วไม่ได้ รอผู้ใช้ใช้สกิล/เปิดไพ่เอง
   // โชคลาภ (patch 2.2 new): จั่วปุ๊ป ถ้ามีบัฟสะสมอยู่ ใช้ 1 หน่วยทันทีแล้วหน่วยนั้นหายไป
   //  ปรับไพ่ที่จั่วให้แต้มรวมตกอยู่ 19-21 (สุ่มถ่วงน้ำหนัก มีเคสพิเศษถ้าแต้มปัจจุบันเป็น 19/20 อยู่แล้ว)
@@ -445,6 +451,7 @@ function lock(id) {
   const p = match.players[id];
   if (match.gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นกดเปิดไพ่ไม่ได้
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD — ไม่มีใครเปิดไพ่ได้จนเวลากลับมาเดิน
   cardDeck.applyLockColorTriggers(p);
   p.locked = true;
   // คาซามะ ไดสุเกะ (Clock Up): เจ้าของท่ากดเปิดไพ่ = เวลากลับมาเดิน เหลือให้คนอื่นแค่ 10 วิ
@@ -458,6 +465,7 @@ function nanayaToggleEye(id) {
   const p = match.players[id];
   if (match.gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: ปุ่มเฉพาะตัวก็กดไม่ได้ — เวลาหยุดหมายถึงทุกอย่าง
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // THE WORLD (ดิโอ)
   if (p.characterId !== "nanaya") return;
   if (!CHAR_HOOKS.nanaya.toggleEye(engine, p)) return;
   io.emit("skillFlash", {
@@ -472,6 +480,7 @@ function eijiOrdinalScale(id) {
   const p = match.players[id];
   if (match.gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: ปุ่มเฉพาะตัวก็กดไม่ได้ — เวลาหยุดหมายถึงทุกอย่าง
+  if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // THE WORLD (ดิโอ)
   if (p.characterId !== "eiji") return;
   if (!CHAR_HOOKS.eiji.pressOrdinal(engine, p)) return;
   io.emit("skillFlash", {
@@ -511,7 +520,9 @@ function checkAllLocked() {
     // สไตรเกอร์ ยูเรก้า: รอคู่หูอนุมัติท่าไม้ตาย 2 / กำลังต่อสายไฟ
     CHAR_HOOKS.striker.approvalPending(engine) ||
     // อาซาฮินะ ทักต์: มิวสิคคาร์ทยังไม่ตอบคำเชิญพันธะสัญญา
-    CHAR_HOOKS.takt.invitePending(engine);
+    CHAR_HOOKS.takt.invitePending(engine) ||
+    // ดิโอ: THE WORLD — ทุกคนถูกแช่ ไม่ใช่ "เปิดไพ่ครบ" (เวลาหมด 10 วิแล้วค่อยเดินต่อ)
+    CHAR_HOOKS.dio.pendingResolve(engine);
   // ถ้าไม่เหลือใครรอดเลย (เช่น ทาคุโตะระเบิดใส่ทุกคนตายหมดรวมถึงตัวเอง) ก็ต้องสรุปผลด้วยเช่นกัน ไม่งั้นเกมค้าง
   // ORT ไม่ต้องกดเปิดไพ่ — รอเฉพาะผู้เล่นจริง (บอสจั่วรอบสุดท้ายใน resolveRound)
   if (c.filter((p) => !mercury.isOrt(p)).every((p) => p.locked) && !pendingAnswer) summary.resolveRound();

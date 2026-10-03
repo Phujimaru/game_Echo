@@ -29,8 +29,8 @@ const mix = (a, b, e) => a + (b - a) * e;
 
 const DIFFICULTY_GROUPS = [
   { key: "easy", label: "ง่าย", color: "#2E9E4B", order: ["hikaru", "mageslayer", "ignis", "daichi", "artoria_caster", "satoru", "titan"] },
-  { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines", "cosette"] },
-  { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen"] },
+  { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines", "cosette", "dio"] },
+  { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen", "johnny"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["appleguy", "dan", "usagi"] },
   { key: "special", label: "พิเศษ", color: "#0e7490", order: ["ultraman_trigger", "yui", "shido", "brian", "producer_lumi", "kim", "striker", "takt"] },
   // หมวดตามสังกัด ไม่ใช่ระดับความยาก — ไรเดอร์ทุกคนที่มี Clock Up (แกนร่วม characters/_zect.js)
@@ -136,6 +136,8 @@ function skillRows(sel) {
   if (sel.id === "cayenne") push("ติดตัว 2", sel.passive2);
   if (sel.pair) { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
   if (sel.id === "ort") { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
+  // จอห์นนี่: สกิลติดตัว 3 ข้อ + สกิลรอง/ท่าไม้ตายของแต่ละ Act (ต่อท้ายรายการด้านล่าง)
+  if (sel.id === "johnny") { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
   push(sel.basicNight ? "สกิลพื้นฐาน (กลางวัน)" : "สกิลพื้นฐาน", sel.basic);
   if (sel.basicNight) push("สกิลพื้นฐาน (กลางคืน)", sel.basicNight);
   if (sel.id === "hisakawa_sister") push("สกิลพื้นฐาน 2 (เมื่อแฝดล้ม)", sel.basic2);
@@ -145,6 +147,12 @@ function skillRows(sel) {
   if (!sel.ultimateSolar) push(sel.ultimateNight ? "ท่าไม้ตาย (กลางวัน)" : sel.id === "shiki" ? "ท่าไม้ตาย 1" : "ท่าไม้ตาย", sel.ultimate);
   if (sel.id === "hisakawa_sister") { push("ท่าไม้ตาย 2 (ฮายาเตะ)", sel.ultimate2); push("ท่าไม้ตาย 3 (รวมพลัง)", sel.ultimate3); }
   if (sel.id === "shiki") push("ท่าไม้ตาย 2", sel.ultimate2);
+  if (sel.id === "johnny") {
+    push("สกิลรอง (Act 2)", sel.secondary2);
+    push("สกิลรอง (Act 3)", sel.secondary3);
+    push("สกิลรอง (Act 4)", sel.secondary4);
+    push("ท่าไม้ตาย (Act 4)", sel.ultimate2);
+  }
   if (sel.pair) push("ท่าไม้ตาย 2", sel.ultimate2);
   if (sel.ultimateNight) push("ท่าไม้ตาย (กลางคืน)", sel.ultimateNight);
   if (sel.secondaryRevert) push("สกิลรอง (คืนร่าง)", sel.secondaryRevert);

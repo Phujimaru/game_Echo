@@ -805,3 +805,74 @@
   .full-force-speed::before,
   .full-force-speed::after { animation: none; }
 }
+
+/* ============================================================
+   THE WORLD (ดิโอ แบรนโด) — โดมเวลาหยุดทับกระดาน
+   เลเยอร์สีอำพันจางๆ ขอบมืด ขยายออกครั้งเดียวด้วย transform/opacity แล้วนิ่ง
+   ไม่มี filter/backdrop-filter และไม่มีอนิเมชันวนซ้ำ (งบ GPU ของตัวเกม exe)
+   โหมดประหยัด/ลดการเคลื่อนไหว = โผล่นิ่งๆ ไม่มีจังหวะขยาย
+   ============================================================ */
+.dio-world {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.dio-world-dome {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150vmax;
+  height: 150vmax;
+  margin: -75vmax 0 0 -75vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 120, 0.08) 0%, rgba(150, 110, 40, 0.18) 45%, rgba(46, 22, 70, 0.42) 100%);
+  will-change: transform, opacity;
+  animation: dioWorldExpand 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes dioWorldExpand {
+  from { transform: scale(0.04); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.dio-world-tag {
+  position: relative;
+  transform: translateY(-20vh);
+  font-weight: 900;
+  color: #ffe7a3;
+  text-shadow: 0 2px 0 #140a02;
+  background: rgba(20, 12, 4, 0.66);
+  border: 1px solid rgba(255, 214, 120, 0.55);
+  border-radius: 999px;
+  padding: 0.35rem 1.25rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.35rem);
+  white-space: nowrap;
+}
+.dio-world[data-lowq="true"] .dio-world-dome { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dio-world-dome { animation: none; }
+}
+/* Last stand (ดิโอ) — ขอบจอแดงเข้มนิ่งๆ ระหว่างดวล + ป้ายคู่ดวล */
+.dio-duel {
+  position: absolute;
+  inset: 0;
+  z-index: 34;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(120, 8, 24, 0.42) 100%);
+}
+.dio-duel span {
+  transform: translateY(-20vh);
+  font-weight: 900;
+  color: #ffd0d6;
+  text-shadow: 0 2px 0 #1a0206;
+  background: rgba(26, 4, 8, 0.66);
+  border: 1px solid rgba(255, 120, 140, 0.5);
+  border-radius: 999px;
+  padding: 0.35rem 1.25rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.35rem);
+  white-space: nowrap;
+}

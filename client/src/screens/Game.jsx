@@ -1518,6 +1518,9 @@ const STATUS_INFO = {
   hisakawaTempo: { icon: "💨", label: "จังหวะนี้แหละ", cls: "bg-echo-cyan text-gray-900", desc: "แฝดที่กำลังคุมอยู่จะได้โจมตีหลังผู้ชนะ หากแต้มตัวเองต่ำที่สุดแบบไม่เสมอและไม่ไพ่แตก (มีผลกับทั้งสองคน คงอยู่จนกว่าจะใช้)" },
   hisakawaStage: { icon: "🎤", label: "เวทีของพวกเรา", cls: "bg-echo-magenta", desc: "แต้มสกิลฟื้นเพิ่ม +1 ทุกเทิร์น" },
   hisakawaTalent: { icon: "✨", label: "พรสวรรค์ของพวกเรา", cls: "bg-echo-ice text-gray-900", desc: "พลังโจมตี +2" },
+  // จอห์นนี่ โจสตาร์: ดีบัฟ/มาร์กบนตัวศัตรู (จำนวนสแตคของหมุนวนอยู่ที่ statusAmt)
+  johnnyWhirl: { icon: "🌀", label: "หมุนวน", cls: "bg-purple-700 text-white", desc: "หมุนวน (สูงสุด 9 สแตค · 8 เทิร์น ได้เพิ่มต่ออายุ): ใช้สกิลหรือไอเทมที่ทำดาเมจ 15% ผลย้อนกลับเข้าตัวเอง และหมุนวน -2 · ต้าน/ล้างได้" },
+  johnnyChumimi: { icon: "🐾", label: "Chumimi", cls: "bg-echo-hp", desc: "Chumimi: Lesson Five ลบทิ้ง = ดาเมจ +2 สตั้น และไม่สนการลดดาเมจ · Rapid Shot/Snipe Shot/Wormhole Multi Shot ลบทิ้ง = ดาเมจ +1 · ต้าน/ล้างไม่ได้" },
   hisakawaDream: { icon: "🎁", label: "ฝันของเหล่าฝาแฝด", cls: "bg-echo-ice text-gray-900", desc: "แต้มสกิล +1, โจมตี +2, โชคลาภ +1 ทุกเทิร์น และทุกครั้งที่ได้โจมตีแฝดอีกคนจะออกมาโจมตีเป็นครั้งที่ 2 (100%) ดาเมจ 2 (ต้องมีแฝดครบทั้งคู่)" },
 };
 // อาซาฮินะ ทักต์: โหมดของบทเพลง (บรรเลงเสียงสวรรค์) — key ตรงกับ characters/takt.js MODES
@@ -1693,6 +1696,38 @@ function statusEntries(p, full) {
     if (c.destiny) out.push({ key: "cosDestiny", v: 1, icon: "🌌", label: `Destiny ${c.destiny}`, cls: "bg-purple-700 text-white",
       desc: c.destiny === "II" ? "Destiny II: ตีปกติครั้งถัดไปลบบัฟทั้งหมดของเป้า · ดาเมจ ×2" : "Destiny I: ตีปกติครั้งถัดไปดาเมจ ×1.5 · ลบต้านสถานะ · ผกผัน 2 เทิร์น" });
     if (c.unlocked) out.push({ key: "cosDraws", v: 1, icon: "🃏", label: `จั่ว ${c.draws || 0}/5`, cls: "bg-white/20", desc: "จั่วครบ 5 ใบ: โอกาส 20% ได้โชคลาภ 1" });
+  }
+  // ดิโอ แบรนโด: เกจเวลา / THE WORLD / Last stand — ข้อมูลสาธารณะ
+  if (p.dio) {
+    const d = p.dio;
+    out.push({ key: "dioMeter", v: 1, icon: "⏳", label: `เกจเวลา ${d.meter}/${d.meterMax}`, cls: d.meter > 0 ? "bg-echo-ice text-gray-900" : "bg-white/20",
+      desc: "ไพ่ไม่แตก +1 · 21 พอดี +1 · ไพ่แตก -2 · ใช้เปิด Za warudo!!!!!!" });
+    if (d.world) out.push({ key: "dioWorld", v: 1, icon: "⏱️", label: `THE WORLD · ${d.world.actions} แอคชัน`, cls: "bg-amber-400 text-gray-900", desc: "เวลาหยุดนิ่ง: คนอื่นขยับไม่ได้ · ร่างหยุดเวลาใช้แอคชันแทนแต้มสกิล" });
+    if (d.lastStand) out.push({ key: "dioLastStand", v: 1, icon: "🩸", label: d.lastStand.active ? `Last stand vs ${d.lastStand.foe}` : `Last stand เทิร์นหน้า · ${d.lastStand.foe}`, cls: "bg-echo-hp", desc: "ดวลแต้ม 1 รอบ: แต้มสูงกว่า (ไม่แตก) ชนะ สูบพลังชีวิต 2 · เสมอหรือแพ้ = ดิโอตาย" });
+    else if (!d.lastStandUsed) out.push({ key: "dioLastStandReady", v: 1, icon: "🧛", label: "Last stand", cls: "bg-echo-armor", desc: "ครั้งแรกที่จะตายจากตีปกติ/สกิลของศัตรู หรือโดนตอนพลังชีวิตเหลือ 1: ค้างที่ 1 แล้วลากผู้โจมตีมาดวลเทิร์นหน้า" });
+  }
+  // จอห์นนี่ โจสตาร์: กระสุนเล็บ / Spin (ทรัพยากร x/y ขึ้นแถบใต้แผงตัวละคร) + บัฟเฉพาะตัว + ท่าที่ค้าง (เห็นเจ้าตัว)
+  if (p.johnny) {
+    const j = p.johnny;
+    out.push({ key: "johnnyNails", v: 1, icon: "💅", label: `กระสุนเล็บ ${j.nails}/${j.nailMax}`, cls: j.nails > 0 ? "bg-echo-ice text-gray-900" : "bg-echo-hp", desc: "กระสุนเล็บ: Rapid Shot/Snipe Shot ใช้ 2 · Wormhole Multi Shot ใช้ 3 · Herbal Tea Time เติม 3-5 · ตีปกติไม่ใช้" });
+    out.push({ key: "johnnySpin", v: 1, icon: "🌀", label: `Spin ${j.spin}/${j.spinMax}`, cls: "bg-echo-cyan text-gray-900", desc: "Spin: 7 ขึ้นไป = Spin Energy · ครบ 15 = Spinning Skin · Act 4 ใช้ Spin 15 แลก Golden Ratio 1 เมื่อ Golden Ratio ถูกปาด (ครั้งเดียว)" });
+    out.push({ key: "johnnyAct", v: 1, icon: "🐎", label: `Tusk Act ${j.form}${j.crit ? ` · คริติคอล ${j.crit}%` : ""}${j.dodge ? ` · หลบ ${j.dodge}%` : ""}`, cls: j.form === 4 ? "bg-echo-hp" : "bg-white/20",
+      desc: ["", "Act 1: สกิลรอง Rapid Shot", "Act 2: คริติคอล 10% · สกิลรอง Snipe Shot", "Act 3: หลบการโจมตีปกติ 15% · สกิลรอง Wormhole Multi Shot", "Act 4: พลังโจมตี +1 · ตีโดนแต้มสกิล +1 · สกิลรอง Ora Ora Ora Ora! BeatDown · ท่าไม้ตาย Lesson Five"][j.form] || "" });
+    if (j.goldenRatio > 0) out.push({ key: "johnnyGR", v: j.goldenRatio, icon: "🌟", label: `Golden Ratio ×${j.goldenRatio}`, cls: "bg-echo-ice text-gray-900", desc: "Golden Ratio (สูงสุด 2): หมดเมื่อไหร่กลับ Act 1 · ถูกปาดได้" });
+    if (j.preAwaken > 0) out.push({ key: "johnnyPA", v: j.preAwaken, icon: "✨", label: `Pre-Awaken ×${j.preAwaken}`, cls: "bg-echo-magenta", desc: "Pre-Awaken (สูงสุด 2): สแตคละคริติคอล +12.5% · ทำดาเมจได้คูลดาวน์ Tusk Evo Experience -1 · ถูกปาดไม่ได้" });
+    if (j.awakening) out.push({ key: "johnnyAwake", v: 1, icon: "🐎", label: "Awakening", cls: "bg-echo-hp", desc: "Awakening: พลังโจมตี +1 · ตีโดนแต้มสกิล +1 · ถูกปาดไม่ได้" });
+    if (j.slowDancer > 0) out.push({ key: "johnnySlow", v: j.slowDancer, icon: "💃", label: `Slow Dancer ×${j.slowDancer}`, cls: "bg-echo-armor", desc: "Slow Dancer: กันดีบัฟหรือสกิลที่ศัตรูเล็งใส่ (นับครั้งละ 1) · ถูกปาดได้" });
+    if (j.energy) out.push({ key: "johnnyEnergy", v: 1, icon: "⚡", label: "Spin Energy", cls: "bg-echo-cyan text-gray-900", desc: "Spin Energy (Spin 7 ขึ้นไป): ต้นเทิร์นแต้มสกิล +1" });
+    if (j.skin) out.push({ key: "johnnySkin", v: 1, icon: "🛡️", label: j.skin.cd > 0 ? `Spinning Skin · อีก ${j.skin.cd} เทิร์น` : `Spinning Skin ×${j.skin.uses}`, cls: "bg-echo-armor", desc: "Spinning Skin (Spin 15): ดาเมจที่ได้รับ -1 สองครั้ง แล้วคูลดาวน์ 3 เทิร์น" });
+    if (j.mastery > 0) out.push({ key: "johnnyMastery", v: j.mastery, icon: "🌀", label: `Spin Mastery ${j.mastery} เทิร์น`, cls: "bg-echo-magenta", desc: "Spin Mastery: Spin Rotation ได้ Spin เพิ่ม +1-2" });
+    if (j.rapidShot > 0) out.push({ key: "johnnyRapidSeq", v: 1, icon: "💅", label: `Rapid Shot นัดที่ ${j.rapidShot}`, cls: "bg-echo-hp", desc: "Rapid Shot: กำลังยิงชุด 2 นัด" });
+  }
+  if (p.johnnyPending) {
+    const q = p.johnnyPending;
+    if (q.rapid) out.push({ key: "johnnyRapid", v: 1, icon: "💅", label: "Rapid Shot", cls: "bg-echo-hp", desc: "Rapid Shot: ตีปกติครั้งถัดไปยิง 2 นัด" });
+    if (q.snipe) out.push({ key: "johnnySnipe", v: 1, icon: "🎯", label: `Snipe Shot · ${q.snipe}`, cls: "bg-echo-hp", desc: "Snipe Shot: ชนะการเปิดไพ่แล้วยิงเป้าที่เล็งไว้ ดาเมจ 2" });
+    if (q.ora) out.push({ key: "johnnyOra", v: 1, icon: "👊", label: "Ora Ora Ora Ora!", cls: "bg-echo-hp", desc: "Ora Ora Ora Ora! BeatDown: ตีครั้งถัดไป +1 ต่อหมุนวน 3 สแตคบนเป้า และมอบ Chumimi" });
+    if (q.lesson) out.push({ key: "johnnyLesson", v: 1, icon: "🐎", label: "Lesson Five", cls: "bg-purple-700 text-white", desc: "Lesson Five: ตีครั้งถัดไป +1 · เป้ามี Chumimi: +2 สตั้น และไม่สนการลดดาเมจ" });
   }
   // โทโนะ ชิกิ: โหมด / สถานะที่รอ / ชุดเชือดเฉือน — ข้อมูลสาธารณะ
   if (p.tohno) {
@@ -3152,6 +3187,34 @@ function TaktBondModal({ me, onInvite, onCmd, onClose }) {
   );
 }
 
+// ---------- จอห์นนี่ โจสตาร์: สกิลพื้นฐาน — เลือก Herbal Tea Time / Spin Rotation ----------
+//  johnny = me.johnny (เล็บ/Spin ตอนนี้ — โชว์ไว้ช่วยตัดสินใจ)
+const JOHNNY_BASIC = [
+  { key: "tea", img: "/characters/johnny/johnny_tea.jpg", label: "Herbal Tea Time", desc: "ฟื้นพลังชีวิต 1 · กระสุนเล็บ +3-5" },
+  { key: "spin", img: "/characters/johnny/johnny_spin.jpg", label: "Spin Rotation", desc: "Spin +1-3 · 20% ได้ Spin Mastery" },
+];
+function JohnnyBasicModal({ johnny, onPick, onClose }) {
+  const now = { tea: johnny ? `เล็บ ${johnny.nails}/${johnny.nailMax}` : "", spin: johnny ? `Spin ${johnny.spin}/${johnny.spinMax}` : "" };
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
+      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-black text-echo-cyan text-center">🐎 Tusk</div>
+        {JOHNNY_BASIC.map((m) => (
+          <button key={m.key} onClick={() => onPick(m.key)}
+            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 flex items-center gap-3">
+            <img src={m.img} alt="" className="w-12 h-12 rounded-md object-cover shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="font-black flex items-center gap-2">{m.label}<span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-white/15">{now[m.key]}</span></span>
+              <span className="block text-xs opacity-80">{m.desc}</span>
+            </span>
+          </button>
+        ))}
+        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ยกเลิก</button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- คอเซ็ตต์ ชไนเดอร์ (ระหว่างบทเพลง): ท่าไม้ตาย Destiny — เลือกระดับ I / II ----------
 //  options = me.cosetteDestiny [{ tier, cost, own, need, ok }] · need = ส่วนที่คอนดักเตอร์จ่ายให้
 function CosetteDestinyModal({ options, onPick, onClose }) {
@@ -3947,6 +4010,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [taktModeOpen, setTaktModeOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างเลือกโหมดของบรรเลงเสียงสวรรค์
   const [taktBondOpen, setTaktBondOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างพันธะสัญญา (เชิญมิวสิคคาร์ท)
   const [cosetteDestinyOpen, setCosetteDestinyOpen] = useState(false); // คอเซ็ตต์: หน้าต่างเลือก Destiny I / II
+  const [johnnyBasicOpen, setJohnnyBasicOpen] = useState(false); // จอห์นนี่: หน้าต่างเลือก Herbal Tea Time / Spin Rotation
   const [usagiSel, setUsagiSel] = useState(false);   // อุซากิ: โหมดเลือกเป้าหมาย "ปรุ้ต....."
   const [usagiItemOpen, setUsagiItemOpen] = useState(false); // อุซากิ: หน้าต่างเลือกไอเทมที่จะกิน
   const [connorSel, setConnorSel] = useState(null);                 // คอนเนอร์: โหมดเลือกเป้าหมาย ("secondary" | "ultimate" | null)
@@ -4137,7 +4201,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   //  server ตัดสินมาให้เลยว่า "เราถูกแช่ไหม" — ห้ามคำนวณเองจาก id ของไรเดอร์
   //  เพราะมีไรเดอร์เปิด Clock Up พร้อมกันได้หลายคน การเทียบกับคนใดคนหนึ่งจะทำให้
   //  เจ้าของท่าอีกคนโดนม่านบังเองทั้งที่ตัวเองก็ขยับได้ (เคยพลาดมาแล้ว)
-  const frozenByClockUp = !!state.clockUpFrozen;
+  //  ดิโอ THE WORLD: คนที่ถูกแช่ใช้ธงเดียวกัน (ปุ่มจั่ว/เปิดไพ่/ไอเทม/ปุ่มเฉพาะตัวปิดหมด — server กันซ้ำที่ dio.actionBlocked)
+  //  ม่าน "CLOCK UP" ยังอ่าน state.clockUpFrozen ตรงๆ — THE WORLD มีม่านของตัวเอง (.dio-world)
+  const frozenByClockUp = !!state.clockUpFrozen || !!state.dioWorld?.frozen;
   // ---------- Apple guy ----------
   const isApple = ch?.id === "appleguy"; // สกิลพื้นฐานไม่นับเป็นการใช้สกิลของเทิร์น (ใช้แล้วยังใช้สกิลอื่นได้)
   const isMuimi = ch?.id === "muimi"; // เสบียงฉุกเฉินไม่นับเป็นการใช้สกิลหลักของเทิร์น
@@ -4418,8 +4484,25 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       if (ids.length === 1) { socket.emit("useSkill", { tier, targets: ids }); return; }
       setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
     }
+    // ดิโอ: ทุกท่าเล็งศัตรู 1 คน ยกเว้น Za warudo (ส่งตรง) · Throwing knife ส่ง dioKnifeAim ให้ server เล่นคลิปง้างมีดก่อน
+    //  แล้วค้างโหมดเลือกเป้าไว้ระหว่างคลิป (keep) — เลือกเป้าแล้วค่อยส่ง useSkill (คลิปขว้างเล่นต่อ)
+    if (ch?.id === "dio" && (me?.dio?.world || tier !== "ultimate")) {
+      const foes = others.filter((x) => x.alive && (state.mercury ? x.isBoss
+        : !((state.gameMode === "duo" || state.gameMode === "trio") && me?.teamId && x.teamId === me.teamId))).map((x) => x.id);
+      const knife = tier === "basic" && !me?.dio?.world;
+      if (knife) socket.emit("dioKnifeAim");
+      setGiftSel({ tier, anyone: true, onlyIds: foes, name: ch[tier]?.name, keep: knife });
+      return;
+    }
     // คอเซ็ตต์: ระหว่างบทเพลง ท่าไม้ตาย = Destiny เลือกระดับก่อน
     if (ch?.id === "cosette" && tier === "ultimate" && me?.cosette?.unlocked) { setCosetteDestinyOpen(true); return; }
+    // จอห์นนี่: สกิลพื้นฐานเลือกโหมด (ชา/หมุน) · Act 2 สกิลรอง Snipe Shot เลือกศัตรู 1 คน
+    if (ch?.id === "johnny" && tier === "basic") { setJohnnyBasicOpen(true); return; }
+    if (ch?.id === "johnny" && tier === "secondary" && me?.johnny?.form === 2) {
+      const ids = state.players.filter((x) => x.alive && x.id !== me.id
+        && !((state.gameMode === "duo" || state.gameMode === "trio") && me.teamId && x.teamId === me.teamId)).map((x) => x.id);
+      setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
+    }
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); return; }
     // โทโนะ ชิกิ: สกิลพื้นฐานเปิดเมนูเลือกระดับมีดพับประจำตระกูล (1-5)
     if (tier === "basic" && ch?.id === "tohno") { setTohnoOpen(true); return; }
@@ -4581,6 +4664,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     clickSound();
     setCosetteDestinyOpen(false);
     socket.emit("useSkill", { tier: "ultimate", item });
+  };
+  const pickJohnnyBasic = (item) => {
+    clickSound();
+    setJohnnyBasicOpen(false);
+    socket.emit("useSkill", { tier: "basic", item });
   };
   const pickSup = (id) => {
     socket.emit("useSkill", { tier: supSel, targets: [id] });
@@ -4796,17 +4884,19 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   }, [connorSel, phase, done]);
   useEffect(() => {
     if (usagiSel && (phase !== "PLAYING" || done)) setUsagiSel(false);
-    if (giftSel && (phase !== "PLAYING" || done)) setGiftSel(null);
+    // keep: โหมดเลือกเป้าที่ต้องค้างไว้ระหว่างคลิปที่ server เพิ่งสั่งเล่น (ดิโอ Throwing knife — คลิปง้างมีด)
+    if (giftSel && ((phase !== "PLAYING" && !(giftSel.keep && phase === "CUTSCENE")) || done)) setGiftSel(null);
     if (andersenColorOpen && (phase !== "PLAYING" || done)) setAndersenColorOpen(false);
     if (recruitSel && (phase !== "PLAYING" || done)) setRecruitSel(null);
     if (recruitPrepOpen && (phase !== "PLAYING" || done)) setRecruitPrepOpen(false);
     if (taktModeOpen && (phase !== "PLAYING" || done)) setTaktModeOpen(false);
     if (taktBondOpen && (phase !== "PLAYING" || done)) setTaktBondOpen(false);
     if (cosetteDestinyOpen && (phase !== "PLAYING" || done || !me?.cosette?.unlocked)) setCosetteDestinyOpen(false);
+    if (johnnyBasicOpen && (phase !== "PLAYING" || done)) setJohnnyBasicOpen(false);
     if (strikerMissileOpen && (phase !== "PLAYING" || done)) setStrikerMissileOpen(false);
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
-  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, cosetteDestinyOpen, me?.cosette?.unlocked, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, cosetteDestinyOpen, me?.cosette?.unlocked, johnnyBasicOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -5331,8 +5421,20 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}
-        {frozenByClockUp && (
+        {state.clockUpFrozen && (
           <div className="clockup-freeze"><span>⏱️ CLOCK UP — เวลาหยุดนิ่ง</span></div>
+        )}
+        {/* ดิโอ THE WORLD: โดมเวลาหยุด (ขยายครั้งเดียวด้วย transform/opacity แล้วนิ่ง) + นับถอยหลัง 10 วิ · เจ้าของท่าเห็นแอคชันที่เหลือ */}
+        {state.dioWorld && phase === "PLAYING" && (
+          <div className="dio-world" data-lowq={lowQ ? "true" : "false"} key={`dw-${state.roundNumber}`}>
+            <div className="dio-world-dome" />
+            <span className="dio-world-tag">
+              ⏱️ THE WORLD · {state.dioWorld.frozen ? "เวลาหยุดนิ่ง" : `เหลือ ${state.dioWorld.actions} แอคชัน`} · <TickSeconds /> วิ
+            </span>
+          </div>
+        )}
+        {state.dioDuel && phase === "PLAYING" && (
+          <div className="dio-duel"><span>🩸 Last stand — {state.dioDuel.by} vs {state.dioDuel.foe}</span></div>
         )}
       <div
         className="relative overflow-hidden"
@@ -5374,6 +5476,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
       {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
       {cosetteDestinyOpen && me && <CosetteDestinyModal options={me.cosetteDestiny} onPick={pickCosetteDestiny} onClose={() => { clickSound(); setCosetteDestinyOpen(false); }} />}
+      {/* จอห์นนี่: เฉพาะกระดานจอคอม (เลิกทำหน้าจอมือถือแล้ว — CLAUDE.md) */}
+      {johnnyBasicOpen && me && <JohnnyBasicModal johnny={me.johnny} onPick={pickJohnnyBasic} onClose={() => { clickSound(); setJohnnyBasicOpen(false); }} />}
       {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
       {/* แถบซ้ายบน: กลางวัน/คืน · รอบ · เวลา · ภูมิภาค (รวมกล่อง "รอบที่" กับป้ายการเดินทางเดิมเป็นแถบเดียว — แตะภูมิภาคเปิดหน้าต่างผลสนาม) */}
@@ -5718,11 +5822,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <span className="hud-hand-note">ยังไม่จั่วไพ่</span>
               )}
               draw={{
-                disabled: state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!me.kimNoDraw || !pairPilot,
+                disabled: state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!state.dioWorld || !!me.kimNoDraw || !pairPilot,
                 onClick: () => { clickSound(); socket.emit("hit"); },
               }}
               reveal={{
-                disabled: !(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || (!pairPilot && !pilotAway),
+                disabled: !(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || !!state.dioWorld || (!pairPilot && !pilotAway),
                 onClick: () => { clickSound(); socket.emit("lock"); },
               }}
             />

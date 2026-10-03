@@ -423,6 +423,15 @@ io.on('connection', (socket) => {
     if (match.gameState === 'SERAPH_PLACE') Seraph.readyPlace(engine, id);
   }, 4);
   onPlayerEvent(socket, 'nanayaToggleEye', (id) => draw.nanayaToggleEye(id), 4);
+  // ดิโอ Throwing knife: กดปุ่มแล้ว (ก่อนเลือกเป้า) เล่นคลิปง้างมีดให้ทุกคน — client เข้าโหมดเลือกเป้าค้างไว้ระหว่างคลิป
+  //  แล้วค่อยส่ง useSkill ตอนเลือกเป้า · คลิปเล่นเฉพาะตอนกดสกิลได้จริง และไม่เกิน 1 ครั้ง/เทิร์น (dio.aimKnife)
+  onPlayerEvent(socket, 'dioKnifeAim', (id) => {
+    const p = match.players[id];
+    if (!p || match.gameState !== 'PLAYING') return;
+    if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.skillBlocked(engine, p, 'basic') || CHAR_HOOKS.daisuke.skillBlocked(engine, p, 'basic')) return;
+    if (!CHAR_HOOKS.dio.aimKnife(engine, p)) return;
+    cutscene.pausePlayingForCutscene();
+  }, 2);
   onPlayerEvent(socket, 'eijiOrdinalScale', (id) => combat.withEffectSource(match.players[id], () => draw.eijiOrdinalScale(id)), 8);
   onPlayerEvent(socket, 'nanayaCancelReattack', (id) => attack.nanayaCancelReattack(id), 4);
   // QTE (ยุย: ทำนองเพลงร็อก) — กดปุ่มทีละตัว · limit สูงกว่าปกติเผื่อกดรัวตอนตื่นเต้น

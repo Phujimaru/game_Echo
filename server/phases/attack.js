@@ -127,6 +127,8 @@ function afterSummary() {
       return;
     }
   }
+  // จอห์นนี่ Snipe Shot: ชนะการเปิดไพ่ (ไม่เสมอ) = ยิงที่เล็งไว้ก่อนเฟสโจมตี — แยกจากตีปกติ ยังได้ตีต่อตามเดิม
+  if (winner && winner.alive && !match.roundTiedWin) CHAR_HOOKS.johnny.fireSnipe(engine, winner);
   const doomTieOverride = match.doomTieAttack && !!winner && winner.alive && winner.characterId === "doomguy";
   if (winner && winner.alive && (!match.roundTiedWin || doomTieOverride)) {
     const targets = attackableTargets(winner.id);
@@ -222,6 +224,7 @@ function attackSoundOf(attacker) {
   if (attacker.characterId === "recruit") return CHAR_HOOKS.recruit.attackSound(attacker); // เสียงปืน
   if (attacker.characterId === "striker") return CHAR_HOOKS.striker.attackSound(attacker);
   if (attacker.characterId === "cayenne") return CHAR_HOOKS.cayenne.attackSound(attacker);
+  if (attacker.characterId === "johnny") return CHAR_HOOKS.johnny.attackSound(attacker); // johnny_nail.mp3 (เสียงอย่างเดียว ไม่ใช้กระสุนเล็บ)
   if (attacker.characterId === "titan") return CHAR_HOOKS.titan.attackSound(attacker); // titan_hit.mp3 // ร่างเกพาร์ด: เสียงปืน           // BA.mp3
   if (attacker.characterId === "muimi") return CHAR_HOOKS.muimi.towerActive(attacker) ? "muimi_ub_hit" : "muimi_normal_hit";
   if (CHAR_HOOKS.haruka.omegaActive(attacker)) return "haruka_attack";             // hit_haruka.mp3
@@ -321,6 +324,7 @@ function doAttack(byId, targetId) {
   CHAR_HOOKS.usagi.onAttack(engine, attacker);
   CHAR_HOOKS.artoria_caster.onAttack(engine, attacker); // ความหวัง: ออกหมัด (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
   CHAR_HOOKS.cosette.onAttack(engine, attacker); // คอเซ็ตต์: ล้างผลหมัดก่อน · คอนดักเตอร์ออกหมัด -> Maestro จองตามตี
+  CHAR_HOOKS.johnny.onAttack(engine, attacker, target); // จอห์นนี่: ล้างผลหมัดก่อน · Rapid Shot ที่ค้างเริ่มชุดยิง 2 นัด
   CHAR_HOOKS.reines.onAttack(engine, attacker); // คุณนายใหญ่: ผู้ติดคำสั่งขั้นเด็ดขาดออกหมัด -> ไรเนสฟื้นแต้มสกิล +2
   // Bamboo-Hatted Kim: จำว่าออกหมัด (ก่อนด่านหลบทั้งหมด) — ถูกหลบ = ฝักดาบ +10 ตัดสินที่หมัดถัดไป/endTurn
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
@@ -499,6 +503,7 @@ function doAttack(byId, targetId) {
   if (!accurate && CHAR_HOOKS.takt.tryAttackDodge(engine, attacker, target)) return;
   if (!accurate && CHAR_HOOKS.titan.tryAttackDodge(engine, attacker, target)) return;
   if (!accurate && CHAR_HOOKS.cosette.tryAttackDodge(engine, attacker, target)) return; // มิวสิคคาร์ทที่แท้จริง 5-15%
+  if (!accurate && CHAR_HOOKS.johnny.tryAttackDodge(engine, attacker, target)) return; // จอห์นนี่: Rapid Shot พลาดเอง 25% · Tusk Act 3 หลบ 15%
   // การเดินทาง (ป่าไม้ต้องสาป กลางวัน): โจมตีพลาด 40% — ฝั่งผู้ตีพลาดเอง แต่ "แม่นยำ" ก็เจาะได้เหมือนด่านหลบ
   if (!accurate && Journey.tryAttackMiss(engine, attacker, target)) return;
   // เอจิ สกิลติดตัว 1 (ผู้เล่นอันดับ 2): ผู้ชนะไปตีคนอื่นที่ไม่ใช่เอจิ -> 25% ขัดจังหวะแล้วสวนคืน
@@ -531,6 +536,9 @@ function doAttack(byId, targetId) {
 
   // คอเซ็ตต์: ผ่านด่านหลบแล้ว = ทิ่มแทง (คัดลอกบัฟ/ภาระเวท) หรือ Destiny II (ลบบัฟเป้า) ลงก่อนคิดดาเมจ + คิววีดีโอ
   const cosetteFx = CHAR_HOOKS.cosette.prepareOnAttack(engine, attacker, target);
+  // จอห์นนี่: ผ่านด่านหลบแล้ว = ใช้ Lesson Five / Ora ที่ค้าง + ลบ Chumimi + คิววีดีโอ (ก่อนคิดพลังโจมตี — damageBonus อ่านผลนี้)
+  const johnnyFx = CHAR_HOOKS.johnny.prepareOnAttack(engine, attacker, target);
+  const johnnyPierce = CHAR_HOOKS.johnny.piercing(attacker); // Lesson Five + Chumimi: ไม่สนการลดดาเมจทุกชนิด
   // สูตรพลังโจมตีพื้นฐาน — ย้าย body ไป computeAttackBase() แล้ว (ดูก่อนหน้า doAttack ในไฟล์นี้)
   let {
     base,
@@ -580,7 +588,7 @@ function doAttack(byId, targetId) {
   }
   // คุ้มครอง (Harmony / สถานะพื้นฐาน): ความเสียหายที่ได้รับลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1)
   const bardGuard = (target.statuses.guard || 0) > 0;
-  const guardAmt = (bardGuard ? (statusAmtOf(target, "guard") || 1) : 0)
+  const guardAmt = johnnyPierce ? 0 : (bardGuard ? (statusAmtOf(target, "guard") || 1) : 0)
     + CHAR_HOOKS.the_supplicant.statusAmtBonus(target, "guard");
   if (guardAmt > 0) dmg = Math.max(0, dmg - guardAmt);
   // Discord (Bard): เป้าหมายติดขัดแย้ง — ความเสียหายที่ได้รับ +1
@@ -593,10 +601,10 @@ function doAttack(byId, targetId) {
   const yunaDeleteAmt = statusAmtOf(target, "yunaDelete");
   if (yunaDeleteAmt > 0) dmg += yunaDeleteAmt;
   //  เอจิ (เอฟเฟกต์เฉพาะตัว): โจมตีปกติของเอจิไม่สนบัฟลดความเสียหาย Smile for You ของเป้าหมาย
-  const yunaSmileAmt = CHAR_HOOKS.eiji.ignoresYunaSmile(attacker) ? 0 : statusAmtOf(target, "yunaSmile");
+  const yunaSmileAmt = CHAR_HOOKS.eiji.ignoresYunaSmile(attacker) || johnnyPierce ? 0 : statusAmtOf(target, "yunaSmile");
   if (yunaSmileAmt > 0) dmg = Math.max(0, dmg - yunaSmileAmt);
   // เต็มอิ่ม (Breakfast โอกูริ patch 2.0.8.1): ดาเมจที่ได้รับ -1 (หมดหลังจบเทิร์นที่กดใช้)
-  const fullBelly = (target.statuses.fullbelly || 0) > 0;
+  const fullBelly = !johnnyPierce && (target.statuses.fullbelly || 0) > 0;
   if (fullBelly) dmg = Math.max(0, dmg - 1);
   // MOON*CELL (คิชินามิ ฮาคุโนะ patch 2.2.1): ทุกคนยกเว้นเจ้าของท่า โจมตีด้วยพลังโจมตีพื้นฐาน 1 หน่วยเท่านั้น
   //  ไม่ว่าจะเสริมแกร่งอะไรมา (ทับค่าที่คำนวณไว้ทั้งหมดข้างบน — สกิลติดตัว/บัฟถาวรที่ไม่ใช่สถานะก็โดนด้วย)
@@ -623,7 +631,8 @@ function doAttack(byId, targetId) {
   //  ตัวละครที่มีอัตราคริเอง (อุซากิ/Kim) ได้อัตราเพิ่มบวกเข้าไปในการทอยของตัวเองด้านบนแล้ว (engine.critBonusFor)
   //  + บัฟอัตราคริของไรเนส (คำสั่งขั้นเด็ดขาด) ทอยรวมกับสนามครั้งเดียว
   const journeyCritFx = {};
-  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker) + CHAR_HOOKS.andersen.critBonus(attacker) + CHAR_HOOKS.takt.critBonus(attacker));
+  dmg = Journey.applyCrit(engine, attacker, dmg, journeyCritFx, CHAR_HOOKS.reines.critBonus(attacker) + CHAR_HOOKS.andersen.critBonus(attacker) + CHAR_HOOKS.takt.critBonus(attacker)
+    + CHAR_HOOKS.johnny.critBonus(attacker)); // จอห์นนี่: Act 2 10% + Pre-Awaken 12.5%/สแตค
   // โทโนะ ชิกิ (มองเห็นแล้ว!!): ผ่านด่านหลบแล้ว -> ระเบิดรอยร้าวบนเป้า ดาเมจ +จำนวนรอยร้าว (รอยร้าวถูกใช้หมดแม้โล่จะกัน)
   const tohnoBurstFx = {};
   dmg = CHAR_HOOKS.tohno.applyBurst(engine, attacker, target, dmg, tohnoBurstFx);
@@ -730,6 +739,10 @@ function doAttack(byId, targetId) {
   const titanCounterFx = CHAR_HOOKS.titan.flushCounters(engine, true);
   // คอเซ็ตต์: ลุกไหม้ (มิวสิคคาร์ทที่แท้จริง) · โชคชะตา · มิวสิคคาร์ท (ฟื้นคอนดักเตอร์+ตัวเอง) · ผกผันของ Destiny I
   const cosetteAtkFx = CHAR_HOOKS.cosette.onAttackLanded(engine, attacker, target);
+  // จอห์นนี่: หมุนวนของ Rapid Shot · Chumimi ของ Ora · สตั้นของ Lesson Five · Awakening แต้มสกิล · Pre-Awaken ลดคูลดาวน์
+  const johnnyAtkFx = CHAR_HOOKS.johnny.onAttackLanded(engine, attacker, target, dmg);
+  // ดิโอ (Vampire): ตีโดน = ดูดเลือด +1 · ดิโอถูกตี = ป้ายกลางวัน/กลางคืน + Last stand (ตัดสินไปแล้วที่ adjustIncomingDamage)
+  const dioAtkFx = CHAR_HOOKS.dio.onAttackLanded(engine, attacker, target, dmg);
   // แบทแมน (characters/bat_ben.js): ปืนติดรถ — ใช้แล้วหมดกระสุน (ดาเมจถูกบวกไปแล้วที่ computeAttackBase)
   const batGunFired = CHAR_HOOKS.bat_ben.consumeGun(engine, attacker);
   // อิปโป (characters/ippo.js): Uper Cut ลงผลตามว่าเป้าหมาย "มีเกราะก่อนโดนหมัดนี้" หรือไม่
@@ -867,6 +880,8 @@ function doAttack(byId, targetId) {
   if (strikerCounterFx) addFx({ name: `เตาปฏิกรณ์ — แทงสวน -${strikerCounterFx.dmg}`, img: CHAR_HOOKS.striker.IMG.base, by: target.name, color: lobby.colorOf(target) }, "def");
   if (kimCounterFx) addFx({ name: kimCounterFx.name, img: kimCounterFx.img, by: target.name, color: lobby.colorOf(target) }, "def");
   for (const name of cosetteAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
+  for (const name of johnnyAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
+  for (const fx of dioAtkFx) addFx({ name: fx.name, img: fx.img, by: fx.by, color: lobby.colorOf(fx.side === "def" ? target : attacker) }, fx.side);
   for (const name of titanAtkFx) addFx({ name, img: view.displayImg(attacker), by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   for (const name of CHAR_HOOKS.takt.atkFx(attacker)) addFx({ name, img: CHAR_HOOKS.takt.IMG.skill3, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (taktGentleHeal > 0) addFx({ name: `อ่อนโยน ฟื้นพลังชีวิต +${taktGentleHeal}`, img: CHAR_HOOKS.takt.IMG.skill2, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
@@ -963,6 +978,6 @@ function doAttack(byId, targetId) {
   //  / อย่าอยู่เลย แกน่ะ! (ริต้า เบอร์นัล patch 2.1.6) / ฉันยัง...มองเห็นอยู่!!! กันตาย + อย่างนายน่ะ จะไปเข้าใจอะไร (สึงาชิ ทาคุโตะ patch 2.2.4):
   //  เล่นวีดีโอที่ค้างคิวก่อน แล้วค่อยขึ้นสรุปความเสียหาย
   //  (ปกติทุกท่าอื่นจะขึ้นสรุปความเสียหายก่อนแล้วค่อยเล่นวีดีโอค้างคิวตอนจบ — ท่าเหล่านี้กลับลำดับเฉพาะตัว)
-  if ((storiumAtk || phenexPurgeAtk || miyakoUltAtk || triggerMultiAtk || triggerZeperionAtk || escanorAttackVideoQueued || (beatSaveFired && target.characterId === "takuto") || takutoUlt2VideoQueued || eijiSwordFx.videoQueued || harukaPunishFx.videoQueued || (harukaCounterFx && harukaCounterFx.videoQueued) || (danCounterFx && danCounterFx.videoQueued) || (yuiCounterFx && yuiCounterFx.videoQueued) || batGunFired || daisukeRiderFired || yagurumaStingFired || kagamiKickFired || tsurugiSlashFired || strikerFistFx || strikerCounterFx || tohnoBurstFx.videoQueued || (cosetteFx && cosetteFx.videoQueued)) && match.cutsceneQueue.length) cutscene.runCutsceneQueue(showAttackFx);
+  if ((storiumAtk || phenexPurgeAtk || miyakoUltAtk || triggerMultiAtk || triggerZeperionAtk || escanorAttackVideoQueued || (beatSaveFired && target.characterId === "takuto") || takutoUlt2VideoQueued || eijiSwordFx.videoQueued || harukaPunishFx.videoQueued || (harukaCounterFx && harukaCounterFx.videoQueued) || (danCounterFx && danCounterFx.videoQueued) || (yuiCounterFx && yuiCounterFx.videoQueued) || batGunFired || daisukeRiderFired || yagurumaStingFired || kagamiKickFired || tsurugiSlashFired || strikerFistFx || strikerCounterFx || tohnoBurstFx.videoQueued || (cosetteFx && cosetteFx.videoQueued) || (johnnyFx && johnnyFx.videoQueued)) && match.cutsceneQueue.length) cutscene.runCutsceneQueue(showAttackFx);
   else showAttackFx();
 }
