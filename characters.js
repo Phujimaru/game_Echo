@@ -2665,6 +2665,39 @@ const CHARACTERS = [
     },
   },
   {
+    // ---------- นักบินปริศนา (Silver Bullet) — ง่าย · unique — ดู characters/sliver_bullet.js ----------
+    //  id สะกด "sliver_bullet" ตามโฟลเดอร์สื่อเดิม · พลังชีวิต 3 / เกราะ 2 (sliver_bullet.maxHp/maxArmor)
+    //  basic.cost 2 = ราคาตอนไม่มีแขน · มีแขน = 3 (sliver_bullet.dynamicSkillFor — useSkill/buildStateFor สูตรเดียวกัน)
+    //  ไม่มีท่าไม้ตาย (ultimate: null แบบ ORT)
+    id: "sliver_bullet",
+    name: "นักบินปริศนา",
+    avatar: 0,
+    difficulty: "easy",
+    unique: true, // เลือกได้แค่ 1 คนต่อเกม (server.js กันซ้ำที่ handler "join")
+    img: "/characters/sliver_bullet/sliver_bullet_banagher.png",
+    passive: {
+      name: "ซุ่มโจมตี",
+      desc: "โหมดอิสระ (เหลือผู้เล่น 3 คนขึ้นไป รวมตัวเอง) หรือโหมดทีม (เพื่อนร่วมทีมรอด 2 คนขึ้นไป): ต้นเทิร์นซ่อนตัวและสิงผู้เล่นสุ่ม (โหมดทีม = เพื่อนร่วมทีม) · ระหว่างซ่อน: ศัตรูมองไม่เห็น ถูกเล็ง/โจมตีไม่ได้ ไม่ได้ไพ่ จั่วไม่ได้ ไม่แพ้ไม่ชนะรอบ กด \"เตรียมพร้อม\" แทนเปิดไพ่ · ปรากฏตัวจนจบเทิร์นเมื่อ: ใช้ Beam Magnum · ใช้ไอเทมใส่ผู้เล่นอื่น · ร่างที่สิงโดนสกิลหรือไอเทมโจมตีช่วงจั่วไพ่ · ร่างที่สิงตาย · เงื่อนไขหมดไป · ปรากฏตัวช่วงจั่วไพ่ = จั่วต่อจาก 0 ใบได้ (ถ้ากดเตรียมพร้อมไปแล้วไม่ร่วมตัดสินรอบนั้น)",
+    },
+    basic: {
+      name: "เปลี่ยนชิ้นส่วน",
+      desc: "ก่อนเปิดไพ่ (เริ่มเกมมีแขน · ไม่ทำให้ปรากฏตัว): ไม่มีแขน (2 แต้ม): ได้แขนใหม่ · ฟื้นพลังชีวิต 1 · มีแขน (3 แต้ม): ฟื้นพลังชีวิต 2",
+      cost: 2,
+      img: "/characters/sliver_bullet/sliver_bullet_skill1.png",
+      instant: true,
+      effect: null, // จัดการใน characters/sliver_bullet.js
+    },
+    secondary: {
+      name: "Beam Magnum",
+      desc: "ก่อนเปิดไพ่ (ต้องมีแขน · เสียแขน · ปรากฏตัว): เลือกศัตรู 1 คน · ความเสียหาย 4 แบบไอเทม (ลดเกราะก่อน · หลบด้วยสกิลไม่ได้)",
+      cost: 4,
+      img: "/characters/sliver_bullet/sliver_bullet_skill2.webp",
+      instant: true,
+      effect: null,
+    },
+    ultimate: null,
+  },
+  {
     // ---------- ORT — ประเภท "มหันตภัย" (บอตเท่านั้น) — ดู characters/ort.js ----------
     //  botOnly: ดูข้อมูลในหน้าเลือกตัวได้ แต่ผู้เล่นเลือกเล่นไม่ได้ (server กันที่ join / เลือกตัวใหม่ในโหมด Raid)
     id: "ort",

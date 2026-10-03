@@ -284,7 +284,7 @@ export function HudCenter({ score, busted, handRef, hand, draw, reveal }) {
       </div>
       <div className="hud-actions">
         <button type="button" className="hud-btn hud-btn-draw" disabled={draw.disabled} onClick={draw.onClick}>จั่ว</button>
-        <button type="button" className="hud-btn hud-btn-reveal" disabled={reveal.disabled} onClick={reveal.onClick}>เปิดไพ่</button>
+        <button type="button" className="hud-btn hud-btn-reveal" disabled={reveal.disabled} onClick={reveal.onClick}>{reveal.label || "เปิดไพ่"}</button>
       </div>
     </div>
   );

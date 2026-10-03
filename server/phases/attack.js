@@ -224,6 +224,7 @@ function attackSoundOf(attacker) {
   if (attacker.characterId === "cayenne") return CHAR_HOOKS.cayenne.attackSound(attacker);
   if (attacker.characterId === "johnny") return CHAR_HOOKS.johnny.attackSound(attacker); // johnny_nail.mp3 (เสียงอย่างเดียว — การใช้กระสุนเล็บคิดใน johnny.onAttack)
   if (attacker.characterId === "cosette") return "destiny_hit"; // destiny_hit.mp3 (ทุกร่าง)
+  if (attacker.characterId === "sliver_bullet") return CHAR_HOOKS.sliver_bullet.attackSound(attacker); // sliver_shot = sliver_bullet.m4a
   if (attacker.characterId === "titan") return CHAR_HOOKS.titan.attackSound(attacker); // titan_hit.mp3 // ร่างเกพาร์ด: เสียงปืน           // BA.mp3
   if (attacker.characterId === "muimi") return CHAR_HOOKS.muimi.towerActive(attacker) ? "muimi_ub_hit" : "muimi_normal_hit";
   if (CHAR_HOOKS.haruka.omegaActive(attacker)) return "haruka_attack";             // hit_haruka.mp3

@@ -5,6 +5,7 @@ Object.assign(module.exports, {
   clearTurnSnapshot, restoreTurnSnapshot, triggerOverloadForce,
 });
 
+const CHAR_HOOKS = require("../characters/index");
 const Seraph = require("../seraph");
 const { ORT_ID, OVERLOAD_FORCE_CHANCE, OVERLOAD_FORCE_CUTSCENE_SECONDS } = require("./constants");
 const match = require("./match");
@@ -154,7 +155,7 @@ function beginOverloadForceDraw() {
     p.statusAmt.cardAtkBonus = 0;
     delete p.statuses.freecast; // ไพ่ Queen จากมือเดิมถูกย้อนทิ้งไปพร้อมไพ่
     combat.resetOverloadDrawCounter(p, false);
-    const initial = cardDeck.drawInitialCard(p);
+    const initial = CHAR_HOOKS.sliver_bullet.noCards(p) ? null : cardDeck.drawInitialCard(p); // นักบินปริศนาซ่อนตัว: ไม่ได้ไพ่
     if (initial) {
       p.cards.push(initial);
       cardDeck.onCardDrawn(p, initial);

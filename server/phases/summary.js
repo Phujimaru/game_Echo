@@ -39,7 +39,9 @@ function resolveRound() {
     return;
   }
   match.explicitTargetIds = null; match.explicitActorId = null; // ข้อยกเว้นของการกระทำที่เพิ่งจบ ไม่ลามมาถึงผลหลังเปิดไพ่
-  for (const p of combat.alivePlayers()) p.locked = true;
+  for (const p of combat.livingPlayers()) p.locked = true;
+  // นักบินปริศนา: จบช่วงจั่วไพ่ของเทิร์นนี้ (ร่างที่สิงโดนดาเมจหลังจากนี้ไม่ทำให้ปรากฏตัว)
+  CHAR_HOOKS.sliver_bullet.onResolveRound(engine);
   match.anataMusicSeq = 0; // เพลง ANATA WAAAAAAAA จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
 
   // ข้อเสนอที่ยังไม่ตอบเมื่อถึงเวลาเปิดไพ่ = ถือว่าปฏิเสธ
@@ -159,7 +161,9 @@ function resolveRound() {
 
   // SE.RA.PH: วันที่ 1-6 = ทุกคน · วันที่ 7 = เฉพาะคู่ที่กำลังดวล (คนอื่นเป็นผู้ชม)
   // Purge: เฉพาะคนในจุดปะทะ (คนอื่นเป็นผู้ชม)
-  const combatants = Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers();
+  // นักบินปริศนา: ซ่อนตัวอยู่ (alivePlayers ไม่นับอยู่แล้ว) หรือปรากฏตัวหลังกดเตรียมพร้อม = ไม่ร่วมตัดสินรอบ
+  const combatants = (Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers())
+    .filter((p) => !CHAR_HOOKS.sliver_bullet.sitsOutRound(p));
   match.roundWinnerId = null;
 
   if (combatants.length < 2) {

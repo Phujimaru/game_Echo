@@ -268,14 +268,19 @@ function recruitPick(id, targets) {
 }
 // ---------- เกราะ Mark 42: เล่นวีดีโอก่อน แล้วค่อยเกิดผล (แพทเทิร์นเดียวกับกระสุน GUTS) ----------
 function mark42Run(p, plan, onUsed) {
-  io.emit("skillFlash", { name: plan.flash, img: Mark42.IMG.item, by: p.name, color: lobby.colorOf(p) });
+  // นักบินปริศนาที่ซ่อนตัว (ใส่ชุดเอง = ไม่ปรากฏตัว): ป้าย/คลิป/การ์ดแจ้งเตือนเห็นเฉพาะตัวเอง + เพื่อนร่วมทีม
+  const secret = CHAR_HOOKS.sliver_bullet.privateAudience(engine, p);
+  if (!secret) io.emit("skillFlash", { name: plan.flash, img: Mark42.IMG.item, by: p.name, color: lobby.colorOf(p) });
   if (onUsed) onUsed();
   const after = () => combat.withEffectSource(p, plan.after);
   if (plan.video && match.gameState === "PLAYING") {
     // ระเบิดเล่นทุกครั้ง · ใส่เอง/ใส่ให้/เรียกคืน เต็มครั้งแรกครั้งเดียว (ครั้งถัดไปแค่การ์ดแจ้งเตือน ไม่หยุดเกม)
     //  ผ่าน engine — เทสต์แทนที่ได้ (ในเกมจริงคือฟังก์ชันเดียวกัน)
     if (plan.video === "mark42Bomb") engine.queueCutscene(p, plan.video);
-    else engine.triggerCutscene(p, plan.video);
+    else if (secret) {
+      if (!p.cutsceneShown[plan.video]) { p.cutsceneShown[plan.video] = true; engine.queueCutscene(p, plan.video, secret); }
+      else engine.notifyTransform(p, plan.video, secret);
+    } else engine.triggerCutscene(p, plan.video);
     if (match.cutsceneQueue.length) { cutscene.pausePlayingForCutscene(after); return; }
   }
   after();
@@ -290,6 +295,8 @@ function mark42Control(id, action) {
   if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.itemBlocked(engine) || CHAR_HOOKS.daisuke.actionBlocked(engine, p) || CHAR_HOOKS.dio.itemBlocked(engine)) return;
   const plan = Mark42.planControl(engine, p, action);
   if (!plan) { view.broadcastState(); return; }
+  // นักบินปริศนา: คุมชุดที่อยู่บนตัวคนอื่น (เรียกคืน/ถอด/ระเบิด) = ใช้ไอเทมกับผู้เล่นอื่น -> ปรากฏตัว
+  if (p.mark42Owned) CHAR_HOOKS.sliver_bullet.onTargetedAction(engine, p, p.mark42Owned.wearerId);
   mark42Run(p, plan, null);
 }
 // ---------- สไตรเกอร์ ยูเรก้า: คำสั่งของนักบิน ----------

@@ -3,7 +3,7 @@
 Object.assign(module.exports, {
   maxHpOf, healHp, healArmor, maxSkillOf, linkedBuddyOf, withExplicitTargets, sameTeam,
   friendlyEffectBlocked, withEffectSource, hisakawaSyncOut, applyBuff, applyDebuff,
-  applySpellburden, alivePlayers, overloadCanSafelyDraw, resetOverloadDrawCounter, songActive,
+  applySpellburden, alivePlayers, livingPlayers, overloadCanSafelyDraw, resetOverloadDrawCounter, songActive,
   maxArmorOf, sealActive, beatActive, maybeBeatMode, maybeBeatSave, instantDeath,
   resolveDamageAftermath, healOverflow, loseHp, applyOverloadOverdrawPenalty, loseArmor,
   damageSoft, mageslayerMarkSteal, tryYunaLongingForTwin, dealDirect, dealArmorOnly, dealMixed,
@@ -65,6 +65,8 @@ function maxHpOf(p) {
   if (p && p.characterId === "striker") return Math.max(1, CHAR_HOOKS.striker.maxHp() - ((p.maxHpPenalty) || 0));
   // ดิโอ แบรนโด: พลังชีวิตพื้นฐาน 6 หน่วย
   if (p && p.characterId === "dio") return Math.max(1, CHAR_HOOKS.dio.maxHp() - ((p.maxHpPenalty) || 0));
+  // นักบินปริศนา: พลังชีวิตพื้นฐาน 3 หน่วย
+  if (p && p.characterId === "sliver_bullet") return Math.max(1, CHAR_HOOKS.sliver_bullet.maxHp() - ((p.maxHpPenalty) || 0));
   return Math.max(1, MAX_HP - ((p && p.maxHpPenalty) || 0));
 }
 // ฟื้นเลือดจริงแบบเคารพสถานะ "ไม่ใช้งานต่อ" / "ไร้ทางเยียวยา" — คืนจำนวนที่ฟื้นได้จริง
@@ -214,7 +216,11 @@ function applySpellburden(p, turns) {
 // ============================================================
 //  ต่อสู้ + เอฟเฟกต์สกิล
 // ============================================================
-function alivePlayers() { return Object.values(match.players).filter((p) => p.alive); }
+// ผู้เล่น "บนสนาม" ที่ยังรอด — นักบินปริศนาที่ซ่อนตัวอยู่ไม่นับ (โจมตี/สกิลหมู่/สุ่มเป้า/นับคนในสนามข้ามเขาเอง)
+function alivePlayers() { return Object.values(match.players).filter((p) => p.alive && !CHAR_HOOKS.sliver_bullet.offField(p)); }
+// ผู้เล่นที่ยังรอดทั้งหมด รวมคนที่อยู่นอกสนาม (นักบินปริศนาที่ซ่อนตัว) — ใช้กับระบบที่ต้องนับทุกคน
+//  (รอเปิดไพ่ · แต้มสกิล/เหรียญจบเทิร์น)
+function livingPlayers() { return Object.values(match.players).filter((p) => p.alive); }
 function overloadCanSafelyDraw(p) {
   if (!match.overloadForceActive) return true;
   const nextExtraDraw = (p.overloadExtraDraws || 0) + 1;
@@ -261,6 +267,7 @@ function maxArmorOf(p) {
     : (p && p.characterId === "striker") ? CHAR_HOOKS.striker.maxArmor() // สไตรเกอร์ ยูเรก้า: เกราะ 3
     : (p && p.characterId === "takt") ? CHAR_HOOKS.takt.maxArmor() // อาซาฮินะ ทักต์: ไม่มีเกราะ
     : (p && p.characterId === "dio") ? CHAR_HOOKS.dio.maxArmor() // ดิโอ แบรนโด: เกราะ 4
+    : (p && p.characterId === "sliver_bullet") ? CHAR_HOOKS.sliver_bullet.maxArmor() // นักบินปริศนา: เกราะ 2
     : MAX_ARMOR;
   return armorBase
     + (characterRules.oguriGoldStacks(p) >= OGURI_GOLD_ARMOR_AT ? 1 : 0) // ยุคทอง (โอกูริ Rework): ครบ 2 แต้มขึ้นไป เพดานเกราะ +1
@@ -338,6 +345,8 @@ function instantDeath(p, force) {
   CHAR_HOOKS.dio.onDeath(engine, p);
   // อาซาฮินะ ทักต์ (characters/takt.js): ทักต์หรือมิวสิคคาร์ทตกรอบ -> พันธะสัญญาหลุด
   CHAR_HOOKS.takt.onDeath(engine, p);
+  // นักบินปริศนา (characters/sliver_bullet.js): ร่างที่สิงตาย / เงื่อนไขซ่อนตัวหมดไป -> ปรากฏตัวทันที
+  CHAR_HOOKS.sliver_bullet.onDeath(engine, p);
   // มหาเทพ อรชุน (สกิลติดตัว หัวใจที่เที่ยงธรรม): จำไว้ว่าใครเคยสังหารผู้เล่นอื่น — ธงถาวรทั้งเกม
   //  อ่านจาก effectSourceId (ต้นตอของเอฟเฟกต์ที่กำลังทำงาน) เพราะ instantDeath ไม่มีพารามิเตอร์ผู้สังหาร
   const killer = match.players[match.effectSourceId];
@@ -514,7 +523,10 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   if (n > 0) n = Math.max(0, n - coolReduction(p, isNormalAttack));
   const hook = CHAR_HOOKS[p && p.characterId];
   const out = hook && hook.adjustIncomingDamage ? hook.adjustIncomingDamage(engine, p, n, isNormalAttack, kind) : n;
-  return pierceFloor != null ? Math.max(out, pierceFloor) : out;
+  const final = pierceFloor != null ? Math.max(out, pierceFloor) : out;
+  // นักบินปริศนา: ร่างที่สิงรับดาเมจจากสกิล/ไอเทมโจมตีช่วงจั่วไพ่ -> นักบินปรากฏตัว (ไม่นับสถานะ/ตีปกติ)
+  CHAR_HOOKS.sliver_bullet.onDamageTaken(engine, p, final, isNormalAttack);
+  return final;
 }
 function tryYunaLongingForTwin(p) {
   if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
@@ -760,6 +772,7 @@ function resetCombat(p) {
   CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ/ล่อเป้า
   CHAR_HOOKS.cosette.resetCombat(p); // คอเซ็ตต์: ร่าง/ขั้นมิวสิคคาร์ท/ทิ่มแทง/Maestro/Destiny/ตัวนับจั่ว
   CHAR_HOOKS.johnny.resetCombat(p); // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว/คูลดาวน์
+  CHAR_HOOKS.sliver_bullet.resetCombat(p); // นักบินปริศนา: แขน / ซ่อนตัว / ร่างที่สิง / เตรียมพร้อม
   CHAR_HOOKS.dio.resetCombat(p); // ดิโอ: เกจเวลา/คูลดาวน์/THE WORLD/Last stand + ธง "ถูกแช่" ของ Last stand (อยู่ที่ทุกคน)
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน

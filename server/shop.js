@@ -243,6 +243,8 @@ function useInventoryItemCore(id, uid, opts = {}) {
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นใช้ไอเทมไม่ได้
   // ผู้วิงวอน (patch 3.4): "ลูกแกะน้อยรู้แจ้ง" กันการเล็งผู้วิงวอนด้วยไอเทมด้วย (เช่นกระสุน GUTS Select)
   if (opts && opts.targetId && CHAR_HOOKS.the_supplicant.targetBlocked(p, match.players[opts.targetId])) return;
+  // นักบินปริศนา: ซ่อนตัวอยู่ = เล็งด้วยไอเทมไม่ได้ (ใช้ไอเทมกับตัวเองได้ตามปกติ)
+  if (opts && opts.targetId && CHAR_HOOKS.sliver_bullet.untargetable(p, match.players[opts.targetId])) return;
   const idx = (p.inventory || []).findIndex((it) => it.uid === uid);
   if (idx < 0) return;
   const item = p.inventory[idx];
@@ -251,6 +253,7 @@ function useInventoryItemCore(id, uid, opts = {}) {
     if (match.gameState !== "PLAYING") return;
     const plan = Mark42.planUse(engine, p, item, opts.mode, opts.targetId);
     if (!plan) return;
+    if (opts.mode !== "self") CHAR_HOOKS.sliver_bullet.onTargetedAction(engine, p, opts.targetId); // นักบินปริศนา: ใส่ให้คนอื่น = ปรากฏตัว
     p.inventory.splice(idx, 1);
     characterRules.mark42Run(p, plan, CHAR_HOOKS.conner.onItemUsed ? () => CHAR_HOOKS.conner.onItemUsed(engine, p) : null);
     return;
@@ -314,6 +317,7 @@ function useInventoryItemCore(id, uid, opts = {}) {
     }
     const target = gutsFireTargetOf(p, item, opts.targetId);
     if (!target) return; // ยิงไม่ได้ = ไม่เสียกระสุน
+    CHAR_HOOKS.sliver_bullet.onTargetedAction(engine, p, target.id); // นักบินปริศนา: ยิงใส่คนอื่น = ปรากฏตัวก่อนกระสุนทำงาน
     if (mercury.isOrt(target)) CHAR_HOOKS.ort.queueCounter(engine, p.id); // ORT สกิลติดตัว 2: ถูกยิงด้วยปืน -> สวนกลับ
     p.gutsShotTurn = match.roundNumber; // 1 นัดต่อเทิร์น — จองไว้ตั้งแต่ตอนกด กันยิงซ้ำระหว่างวีดีโอเล่นอยู่
     match.lastLog.push(`🔫 ${p.name} ยิง ${GUTS_AMMO[item.ammo].name} ใส่ ${target.name}!`);
@@ -350,6 +354,7 @@ function gutsFireTargetOf(p, item, targetId) {
   if (!GUTS_AMMO[item.ammo]) return null;
   const target = match.players[targetId];
   if (!target || !target.alive || target.id === p.id || combat.sameTeam(p, target)) return null;
+  if (CHAR_HOOKS.sliver_bullet.untargetable(p, target)) return null; // นักบินปริศนาซ่อนตัว: ยิงไม่ได้
   return target;
 }
 // ให้ผลของกระสุน — เรียกหลังวีดีโอจบเท่านั้น (ดู pausePlayingForCutscene)

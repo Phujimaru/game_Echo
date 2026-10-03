@@ -66,6 +66,9 @@ function dealRound() {
   CHAR_HOOKS.ort.onRoundStart(engine);
   // อาซาฮินะ ทักต์: คำเชิญพันธะที่ไม่ได้ตอบในเทิร์นที่แล้ว = ปฏิเสธ
   CHAR_HOOKS.takt.sweepInvites(engine);
+  // นักบินปริศนา (characters/sliver_bullet.js): ต้นเทิร์นตัดสินว่าซ่อนตัวไหม + สุ่มร่างที่สิงใหม่
+  //  ต้องอยู่ก่อนลูปแจกไพ่ (คนที่ซ่อนไม่ได้ไพ่ใบแรก)
+  CHAR_HOOKS.sliver_bullet.onRoundStart(engine);
 
   for (const p of Object.values(match.players)) {
     combat.resetRoundDisplay(p);
@@ -225,14 +228,15 @@ function dealRound() {
     p.colorTrigger = { red: 0, blue: 0, green: 0, yellow: 0 }; // นับจำนวนครั้งที่ทริกเกอร์สีนั้นทำงานไปแล้วในรอบนี้
     p.statusAmt.cardAtkBonus = 0; // พลังโจมตีจากการ์ดแดง — รีเซ็ตทุกรอบ
     combat.resetOverloadDrawCounter(p, false); // ไพ่ตั้งต้นไม่นับเป็นไพ่จั่วเพิ่มของ Overload Force
-    { const c = cardDeck.drawInitialCard(p); if (c) { p.cards.push(c); cardDeck.onCardDrawn(p, c); } }
+    // นักบินปริศนาที่ซ่อนตัว: ไม่ได้ไพ่ใบแรก (แต้ม 0)
+    { const c = CHAR_HOOKS.sliver_bullet.noCards(p) ? null : cardDeck.drawInitialCard(p); if (c) { p.cards.push(c); cardDeck.onCardDrawn(p, c); } }
     p.overloadDrawReady = match.overloadForceActive;
     p.locked = false;
     p.busted = false;
     p.result = null;
 
     // [Calamity] (ซาโตรุ patch 2.0.8.2): ถูกบังคับจั่วไพ่เพิ่มตามเลเวล ตอนเริ่มเทิร์นถัดจากที่โดน
-    if ((p.calamityDraw || 0) > 0) {
+    if ((p.calamityDraw || 0) > 0 && !CHAR_HOOKS.sliver_bullet.noCards(p)) { // ซ่อนตัว: ค้างไว้เทิร์นที่อยู่บนสนาม
       const n = p.calamityDraw;
       p.calamityDraw = 0;
       for (let i = 0; i < n; i++) { const c = cardDeck.drawCardFor(p); if (c) { p.cards.push(c); cardDeck.onCardDrawn(p, c); } }
@@ -338,6 +342,8 @@ function dealRound() {
   CHAR_HOOKS.conner.onRoundStartAfterLoop(engine);
   // ดิโอ (Last stand): ถึงเทิร์นดวลที่จองไว้ -> แช่คนนอกวง (หลังลูปเพราะลูปเพิ่งปลดล็อก/แจกไพ่ใบแรกให้ทุกคน)
   CHAR_HOOKS.dio.onRoundStartAfterLoop(engine);
+  // นักบินปริศนา: ร่างที่สิงตาย/เงื่อนไขหมดระหว่างผลต้นเทิร์น -> ปรากฏตัว · ติดสตั้น/หลับระหว่างซ่อน = เตรียมพร้อม
+  CHAR_HOOKS.sliver_bullet.onRoundStartAfterLoop(engine);
   // ---------- ยุย (characters/yui.js): girl don't cry — คนแต้มสกิลน้อยสุดในวงได้ +1 ----------
   //  ต้องอยู่หลังลูปต้นเทิร์น ไม่งั้นการเทียบ "ใครแต้มน้อยสุด" จะใช้ค่าคนละเทิร์นกันตามลำดับที่นั่ง
   CHAR_HOOKS.yui.onRoundStartAfterLoop(engine);
@@ -380,6 +386,7 @@ function hit(id) {
   if (CHAR_HOOKS.brian.actionBlocked(engine, p)) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นจั่วไม่ได้
   if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD (ทุกคนรวมดิโอ) / นอกวง Last stand
+  if (CHAR_HOOKS.sliver_bullet.noCards(p)) return; // นักบินปริศนา: ซ่อนตัวอยู่ = จั่วไม่ได้
   if (cardDeck.scoreOf(p) >= cardDeck.scoreCap(p)) return; // แต้มเต็มเพดาน (เช่น 21 พอดี) = จั่วไม่ได้ รอผู้ใช้ใช้สกิล/เปิดไพ่เอง
   // โชคลาภ (patch 2.2 new): จั่วปุ๊ป ถ้ามีบัฟสะสมอยู่ ใช้ 1 หน่วยทันทีแล้วหน่วยนั้นหายไป
   //  ปรับไพ่ที่จั่วให้แต้มรวมตกอยู่ 19-21 (สุ่มถ่วงน้ำหนัก มีเคสพิเศษถ้าแต้มปัจจุบันเป็น 19/20 อยู่แล้ว)
@@ -454,6 +461,8 @@ function lock(id) {
   if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD — ไม่มีใครเปิดไพ่ได้จนเวลากลับมาเดิน
   cardDeck.applyLockColorTriggers(p);
   p.locked = true;
+  // นักบินปริศนา: ปุ่ม "เตรียมพร้อม" ระหว่างซ่อนตัวส่ง event lock เดิม — นับเหมือนเปิดไพ่ (ห้องเดินต่อได้)
+  CHAR_HOOKS.sliver_bullet.onLock(engine, p);
   // คาซามะ ไดสุเกะ (Clock Up): เจ้าของท่ากดเปิดไพ่ = เวลากลับมาเดิน เหลือให้คนอื่นแค่ 10 วิ
   //  ต้องตั้งตัวจับเวลาใหม่ก่อน checkAllLocked() เผื่อกรณีคนอื่นล็อกครบพอดีแล้วเปิดไพ่ทันที
   if (CHAR_HOOKS.daisuke.onHostLockIn(engine, p)) timers.startPhaseTimer(timers.takeClockUpResume(), summary.resolveRound);
@@ -503,7 +512,8 @@ function flushOrtCounters() {
 }
 function checkAllLocked() {
   if (match.gameState !== "PLAYING") return;
-  const c = combat.alivePlayers();
+  // livingPlayers: นักบินปริศนาที่ซ่อนตัวต้องกด "เตรียมพร้อม" ก่อน (อยู่นอกสนามแต่ยังต้องรอ)
+  const c = combat.livingPlayers();
   // รอคำตอบข้อเสนอ (ซาโตรุ) / เป้าหมายบทเพลง (Bard) ก่อนเปิดไพ่อัตโนมัติ
   //  — หมดเวลาเฟสไพ่ = ถือว่าปฏิเสธ / สุ่มเป้าหมาย
   const pendingAnswer =

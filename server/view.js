@@ -45,6 +45,8 @@ function displayImg(p, unmasked) {
   if (p.characterId === "cosette") { const cimg = CHAR_HOOKS.cosette.displayImg(p); if (cimg) return cimg; } // พรมลิขิต / บทเพลง
   if (p.characterId === "johnny") { const jimg = CHAR_HOOKS.johnny.displayImg(p); if (jimg) return jimg; } // จอห์นนี่: ภาพตามร่าง Tusk Act 1-4
   if (p.characterId === "dio") { const dimg = CHAR_HOOKS.dio.displayImg(p); if (dimg) return dimg; } // ดิโอ: ร่างหยุดเวลา (THE WORLD)
+  // นักบินปริศนา: หน้าเลือกตัว/ล็อบบี้ใช้ภาพปก (sliver_bullet_banagher.png) · ลงสนามใช้ sliver_bullet.png
+  if (p.characterId === "sliver_bullet" && match.gameState !== "LOBBY") return CHAR_HOOKS.sliver_bullet.IMG.base;
   // ฟุจิตะ โคโตเนะ: ระหว่างร่าง [พร้อมลุย] = ภาพ Kotone.png (null = ใช้ภาพปกติ)
   if (p.characterId === "kotone") { const kimg = CHAR_HOOKS.kotone.displayImg(p); if (kimg) return kimg; }
   // เอจิ: ระหว่างท่าไม้ตาย ไม่ว่ายังก็ตาม ทำงาน = ภาพ eiji_change.jpg (null = ใช้ภาพปกติ)
@@ -449,10 +451,13 @@ function buildStateFor(viewerId) {
     cutscene: (match.gameState === "CUTSCENE" && match.cutsceneInfo && (!match.cutsceneInfo.onlyFor || match.cutsceneInfo.onlyFor.includes(viewerId)))
       ? match.cutsceneInfo : null,
     attack: match.gameState === "ATTACKING" ? match.lastAttack : null,
-    log: (match.gameState === "SUMMARY" || match.gameState === "TRANSITION" || match.gameState === "GAMEOVER") ? match.lastLog : [],
+    // นักบินปริศนา: บรรทัดที่มีชื่อเขาซึ่งเกิดระหว่างซ่อนตัว ไม่ส่งให้ผู้ชมที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
+    log: (match.gameState === "SUMMARY" || match.gameState === "TRANSITION" || match.gameState === "GAMEOVER")
+      ? CHAR_HOOKS.sliver_bullet.filterLog(engine, match.lastLog, viewer) : [],
     shop: match.shopItems, // ร้านค้ามายา (patch 2.3): สินค้าส่วนกลางร้านเดียว เห็นเหมือนกันทุกคน
     deckLedger, // สมุดการ์ด 43 ใบ + สถานะจั่วแล้ว/ยัง (ของรอบปัจจุบัน) — กดที่กองการ์ดกลางเพื่อดู
-    players: Object.values(match.players).map((p) => {
+    // นักบินปริศนา: ระหว่างซ่อนตัว ศัตรูไม่ได้รับข้อมูลของเขาเลย (ไม่มีที่นั่ง/ชื่อ/เลือด/สถานะ) — ตัวเอง + เพื่อนร่วมทีมเห็นปกติ
+    players: Object.values(match.players).filter((p) => !CHAR_HOOKS.sliver_bullet.hiddenFrom(engine, p, viewer)).map((p) => {
       const mine = p.id === viewerId;
       const show = mine || revealAll;
       // โหมดทีม (duo/trio) และ Type Mercury: เพื่อนร่วมทีมเห็นแต้มการ์ดกันตลอดเวลา — ศัตรู/ORT ยังถูกซ่อนตามปกติ
@@ -551,6 +556,8 @@ function buildStateFor(viewerId) {
         secondaryPub = pub(CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, "secondary"));
         ultimatePub = pub(CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, "ultimate"));
       }
+      // นักบินปริศนา: ราคาสกิลพื้นฐานตามแขน (ไม่มี 2 / มี 3) — สูตรเดียวกับ useSkill
+      if (ch.id === "sliver_bullet") basicPub = pub(CHAR_HOOKS.sliver_bullet.dynamicSkillFor(p, ch, "basic"));
       if (ch.id === "cosette") {
         basicPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "basic"));
         secondaryPub = pub(CHAR_HOOKS.cosette.dynamicSkillFor(p, ch, "secondary"));
@@ -667,13 +674,15 @@ function buildStateFor(viewerId) {
         // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว (เห็นทุกคน) · ท่าหลังเปิดไพ่ที่ค้างรอ (เห็นเจ้าตัว)
         johnny: p.characterId === "johnny" ? CHAR_HOOKS.johnny.publicState(engine, p) : undefined,
         ...(mine && p.characterId === "johnny" ? CHAR_HOOKS.johnny.privateState(engine, p) : {}),
+        // นักบินปริศนา: แขน/ซ่อนตัว/เตรียมพร้อม · ร่างที่สิง (hostId/hostName) เห็นเฉพาะตัวเอง + เพื่อนร่วมทีม
+        sliver_bullet: p.characterId === "sliver_bullet" ? CHAR_HOOKS.sliver_bullet.publicState(engine, p, viewer) : undefined,
         dio: p.characterId === "dio" ? CHAR_HOOKS.dio.publicState(engine, p) : undefined, // ดิโอ: เกจเวลา / THE WORLD / Last stand (ข้อมูลสาธารณะ)
         // คอเซ็ตต์ Destiny: ราคาจริงของแต่ละระดับ (หน้าต่างเลือก I/II) — เห็นเจ้าตัว
         cosetteDestiny: mine && p.characterId === "cosette" && CHAR_HOOKS.cosette.unlocked(p)
           ? ["I", "II"].map((t) => { const s = CHAR_HOOKS.cosette.destinySplit(engine, p, t); return { tier: t, cost: s.cost, own: s.own, need: s.need, ok: s.ok }; })
           : undefined,
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette" || p.characterId === "dio" || p.characterId === "johnny")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette" || p.characterId === "dio" || p.characterId === "johnny" || p.characterId === "sliver_bullet")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)

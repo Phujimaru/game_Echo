@@ -44,14 +44,17 @@ function queueCutscene(p, key, onlyFor) {
 }
 // การ์ดแจ้งเตือนเล็กๆ (ครั้งที่ 2 เป็นต้นไป): ส่งทันทีแบบเดียวกับ skillFlash — ไม่ตัดเข้าเฟส CUTSCENE
 // ไม่หยุดเวลา/กระดาน แค่บอกว่าใครใช้ท่าอะไรซ้ำ
-function notifyTransform(p, key) {
+//  onlyFor (ไม่บังคับ): array ของ playerId ที่เห็นการ์ดนี้ (แบบเดียวกับ queueCutscene) — คนอื่นไม่ได้รับ event เลย
+function notifyTransform(p, key, onlyFor) {
   const t = TRANSFORMS[key];
   if (!t) return;
-  io.emit("transformNotice", {
+  const payload = {
     playerId: p.id, name: p.name,
     img: t.img, color: lobby.colorOf(p),
     title: t.title, label: t.label,
-  });
+  };
+  if (Array.isArray(onlyFor)) { for (const id of onlyFor) io.to(id).emit("transformNotice", payload); return; }
+  io.emit("transformNotice", payload);
 }
 // พักช่วงจั่วการ์ดไว้ เล่น cutscene ให้จบ แล้วกลับมาจั่วต่อด้วยเวลาที่เหลือ
 // (ใช้กับสกิลที่แปลงร่างทันทีก่อนเปิดไพ่ เช่น MonsterLive)

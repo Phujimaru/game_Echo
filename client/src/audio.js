@@ -120,6 +120,9 @@ const FILES = {
   titan_hit: "/characters/titan/titan_hit.mp3",
   // คอเซ็ตต์: เสียงตีปกติ (ทุกร่าง)
   destiny_hit: "/characters/destiny/destiny_hit.mp3",
+  // นักบินปริศนา (Silver Bullet): เสียงเปลี่ยนแขน (สกิลพื้นฐาน) / เสียงยิง Beam Magnum (สกิลรอง)
+  sliver_reload: "/characters/sliver_bullet/sliver_bullet_reload_arm.m4a",
+  sliver_shot: "/characters/sliver_bullet/sliver_bullet.m4a",
   tohno_voice_hit1: "/characters/tohno/tohno_update/hit_sound/tohno_hit.m4a",
   tohno_voice_hit2: "/characters/tohno/tohno_update/hit_sound/tohno_hit2.m4a",
   tohno_voice_hit3: "/characters/tohno/tohno_update/hit_sound/tohno_hit3.m4a",
@@ -288,6 +291,10 @@ const LOUDNESS_GAIN = {
   "/characters/johnny/johnny_ora.mp4": 0.6,      // วีดีโอ Ora -11.6 dBFS (เป้าวีดีโอ -16)
   "/characters/johnny/johnny_act4_evo.mp4": 0.92, // -15.3 dBFS
   "/characters/johnny/johnny_lesson5.mp4": 0.92,  // -15.3 dBFS
+  "/characters/sliver_bullet/sliver_bullet_skill1.mp4": 0.95, // นักบินปริศนา: วีดีโอเปลี่ยนชิ้นส่วน -15.6 dBFS (เป้าวีดีโอ -16)
+  "/characters/sliver_bullet/sliver_bullet_skill2.mp4": 0.69, // วีดีโอ Beam Magnum -12.8 dBFS
+  "/characters/sliver_bullet/sliver_bullet.m4a": 0.94,        // เสียงยิง -13.5 dBFS (เป้าเอฟเฟกต์ -14)
+  "/characters/sliver_bullet/sliver_bullet_reload_arm.m4a": 0.97, // เสียงเปลี่ยนแขน -13.7 dBFS
   "/characters/escanor/New Last Stand.mp4": 0.58, // เอสคานอร์: วีดีโอ Last Stand ใหม่ -11.3 dBFS (เป้าวีดีโอ -16) // แอนเดอร์เซน: วีดีโอท่าไม้ตาย -12.1 dBFS (เป้าวีดีโอ -16)
   "/characters/Recruit/โจมตีปกติ/โจมตีปกติ.mov": 0.66,
   "/characters/appleguy/appleguy_final.mp4": 0.4,

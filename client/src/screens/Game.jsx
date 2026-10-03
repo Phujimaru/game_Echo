@@ -937,6 +937,11 @@ const APPLE_ITEM_NAME = Object.fromEntries(APPLE_ITEMS.map((it) => [it.key, it.n
 
 // ฉากสรุปผล: จัดผู้เล่นเป็นชั้นตามแต้ม (ไพ่แตก = -1) — ชั้นบนสุด (แต้มดีที่สุด) คือ "ผู้ชนะ" (เสมอกันได้หลายคน)
 //  ชั้นที่เหลือทั้งหมดถือเป็น "ผู้แพ้" กลุ่มเดียวกัน ไม่แยกอันดับย่อย — ไม่พึ่ง isWinner/isLoser/winnerId เพราะแคบเกินไป (สุ่มมาแค่ 1 คน)
+// นักบินปริศนา (sliver_bullet): กำลังซ่อนตัวสิงร่างคนอื่น และยังไม่ถูกเปิดเผยในเทิร์นนี้
+function sliverHiddenOf(p) {
+  return !!(p?.sliver_bullet?.hidden && !p.sliver_bullet.revealed);
+}
+
 function rankTiers(players) {
   const combatants = players.filter((p) => p.score != null);
   if (!combatants.length) return [];
@@ -2404,9 +2409,11 @@ function PlaqueCrest() {
 //  แบบแนวตั้งที่เกจขนาบสองข้างอ่านยาก (ต้องเทียบสีเอาเองว่าเสาไหนคือเลือด) — แถวมีไอคอนกับตัวเลขกำกับชัดกว่า
 // alwaysScore: Type Mercury — เพื่อนร่วมทีมเห็นแต้มการ์ดกันตลอดเวลา (server ส่ง score มาให้แล้ว)
 // slot[2] (ถ้ามี) = ย่อการ์ด — ผังที่นั่งของโหมด Raid วางเพื่อนร่วมทีมหลายคนเรียงแถวเดียว
-function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null }) {
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null }) {
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
+  // นักบินปริศนา (เห็นเฉพาะเพื่อนร่วมทีม): ซ่อนตัวสิงร่างอยู่ = การ์ดจางลง + ป้ายบอกว่าสิงใคร
+  const sliverGhost = sliverHiddenOf(p);
   const seatScale = slot[2];
   const fromBottom = slot[3] === "bottom"; // สนาม 2.5D: จุดยึด = ขอบล่างกลางการ์ด (ยืนบนเส้นแสงเหนือฐานที่นั่ง)
   return (
@@ -2417,7 +2424,7 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
       className={`absolute ${seatScale ? "" : "-translate-x-1/2"} flex flex-col items-center gap-1.5 ${twin ? "w-52 sm:w-60" : "w-[260px]"}`}
       style={{ top: `${slot[0]}%`, left: `${slot[1]}%`, ...(fromBottom ? { transform: `translate(-50%, -100%) scale(${seatScale})`, transformOrigin: "bottom center" } : seatScale ? { transform: `translateX(-50%) scale(${seatScale})`, transformOrigin: "top center" } : null), ...(enterDelay != null ? { animation: `arSeatIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2) ${enterDelay}s both` } : null) }}
     >
-      <div className={`relative ${twin ? "" : "w-full"}`}>
+      <div className={`relative ${twin ? "" : "w-full"}${p.sliver_bullet ? " sliver-fade" : ""}`} data-ghost={sliverGhost ? "true" : "false"}>
       <div
         onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
         className={`p-target-wrap relative ${twin ? "w-44 h-28 sm:w-52 sm:h-32" : `pc-card w-full${targetable ? " pc-targetable" : ""}`} ${p.alive && !twin ? "pc-card-live" : ""} ${!p.alive ? "opacity-40 grayscale" : ""} ${targetable ? "cursor-crosshair" : "cursor-pointer"}`}
@@ -2491,6 +2498,8 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
         </div>
       )}
       {!twin && <ConnorStressBar p={p} />}
+      {sliverGhost && <span className="sliver-tag">กำลังสิง {p.sliver_bullet.hostName || "?"}</span>}
+      {possessedBy && <span className="sliver-tag" data-host="true" title={possessedBy}>นักบินสิงอยู่</span>}
       {/* ใบโปรโมทสินค้า (Apple guy): แต้มการ์ดถูกเปิดเผยให้ทุกคนเห็นแม้ยังไม่เปิดไพ่ */}
       {/* connorScanned: คอนเนอร์กด "วิเคราะห์สถานการณ์" -> เห็นแต้มของคนนี้ตั้งแต่ยังไม่เปิดไพ่ (เห็นคนเดียว) */}
       {(summary || alwaysScore || (p.statuses?.promo || 0) > 0 || p.connorScanned) && p.score !== null && p.score !== undefined && (
@@ -2605,6 +2614,16 @@ function DoomChargeBadge({ me, ch }) {
       title="Crucible (ท่าไม้ตาย) — โจมตีสำเร็จมีโอกาส 35% ได้ชาร์จ +1 สะสมครบ 5 ปลดล็อก (ใช้ได้ 1 ครั้งในการโจมตีแล้วหายไป)"
     >
       🔥 Crucible {charge}/5{full ? " พร้อมใช้!" : ""}
+    </span>
+  );
+}
+// นักบินปริศนา: มีแขนอยู่ไหม (Beam Magnum ต้องมีแขน · ยิงแล้วแขนหาย)
+function SliverArmBadge({ me }) {
+  const sb = me?.sliver_bullet;
+  if (!sb) return null;
+  return (
+    <span className={`text-xs font-bold rounded-full px-2 py-0.5 whitespace-nowrap ${sb.arm ? "bg-echo-ice text-gray-900" : "bg-black/55 text-white/70"}`}>
+      🦾 {sb.arm ? "มีแขน" : "ไม่มีแขน"}
     </span>
   );
 }
@@ -4097,11 +4116,19 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const pilotAway = isPairChar && !!meRec.pair.pilot && !meRec.pair.pilot.connected; // นักบินหลุด: พลปืนเปิดการ์ดแทนได้
   const iAmAttacker = phase === "ATTACK" && state.attackerId === state.youId && pairPilot;
   const attacker = state.players.find((p) => p.id === state.attackerId);
-  const rankedTiers = rankTiers(state.players);
+  // นักบินปริศนา (sliver_bullet) ที่ยังซ่อนตัว/กดเตรียมพร้อมแล้วไม่ได้ลงแข่งรอบนี้ (sitOut) — ไม่นับในฉากสรุปผล
+  const rankedTiers = rankTiers(state.players.filter((p) => !sliverHiddenOf(p) && !p.sliver_bullet?.sitOut));
   const summaryWinners = rankedTiers[0]?.players || [];
   const summaryLosers = rankedTiers.slice(1).flatMap((t) => t.players);
   const done = me && (me.locked || !me.alive);
   const ch = me?.character;
+  // นักบินปริศนา: ซ่อนตัวสิงร่างคนอื่นอยู่ = ไม่มีไพ่ จั่วไม่ได้ ปุ่มเปิดไพ่กลายเป็น "เตรียมพร้อม" (ส่ง lock เดิม)
+  //  ข้อมูลนี้ส่งมาให้ตัวเขาและเพื่อนร่วมทีมเท่านั้น — ศัตรูไม่ได้รับตัวเขาใน players เลยระหว่างซ่อน
+  const sliverMe = me?.sliver_bullet || null;
+  const sliverHidden = sliverHiddenOf(me);
+  const sliverSecLocked = !!sliverMe && !sliverMe.arm; // Beam Magnum ต้องมีแขน (server กันซ้ำผ่าน skillLocks)
+  const sliverHosts = {}; // hostId -> ชื่อนักบินที่สิงอยู่ (เห็นเฉพาะฝั่งนักบิน/เพื่อนร่วมทีม)
+  for (const p of state.players) if (sliverHiddenOf(p) && p.sliver_bullet.hostId) sliverHosts[p.sliver_bullet.hostId] = p.name;
   const meStatuses = me ? statusEntries(me) : []; // รายการสถานะของตัวเอง — ใช้ในกล่อง "สถานะ" ของแผง HUD (เรียงลงล่างเรื่อยๆ ตามลำดับที่ติด)
   // นานายะ ชิกิ (patch 2.1.9): ชนะการจั่ว -> สุ่มเล่นเสียงพากย์ 1 เสียง (ครั้งเดียวต่อรอบ)
   const nanayaVoiceRound = useRef(null);
@@ -4501,6 +4528,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (ch?.id === "johnny" && ((tier === "secondary" && me?.johnny?.form === 2) || (tier === "ultimate" && me?.johnny?.form === 4))) {
       const ids = state.players.filter((x) => x.alive && x.id !== me.id
         && !((state.gameMode === "duo" || state.gameMode === "trio") && me.teamId && x.teamId === me.teamId)).map((x) => x.id);
+      setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
+    }
+    // นักบินปริศนา: Beam Magnum เล็งศัตรู 1 คน (ไม่ใช่ตัวเอง/เพื่อนร่วมทีม · Type Mercury เล็งได้แค่ ORT)
+    if (ch?.id === "sliver_bullet" && tier === "secondary") {
+      const ids = others.filter((x) => x.alive && (state.mercury ? x.isBoss
+        : !((state.gameMode === "duo" || state.gameMode === "trio") && me?.teamId && x.teamId === me.teamId))).map((x) => x.id);
       setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
     }
     if (tier === "secondary" && ch?.id === "appleguy") { setAppleSel(true); return; }
@@ -5548,6 +5581,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           onAttack={(id) => resolveAttackPick(id, targetChain)}
           onInspect={setStatusViewId}
           hostRef={(el) => registerOther(p.id, el)}
+          possessedBy={sliverHosts[p.id] || null}
         />
       ))}
 
@@ -5751,6 +5785,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <button type="button" onClick={() => { clickSound(); setShowChar(true); }} className="shrink-0" style={{ "--p-frame-color": me.color }} title="รายละเอียดตัวละคร">
                   <TwinPortraitCards p={me} size="sm" />
                 </button>
+              ) : sliverMe ? (
+                // นักบินปริศนา: ซ่อนตัวอยู่ = รูปจางลง (เฟดด้วย opacity อย่างเดียว)
+                <div className="w-full h-full sliver-fade" data-ghost={sliverHidden ? "true" : "false"}>
+                  <Portrait p={me} className="w-full h-full" rounded="" />
+                </div>
               ) : (
                 <Portrait p={me} className="w-full h-full" rounded="" />
               )}
@@ -5777,6 +5816,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   <EijiDodgeBadge me={me} ch={ch} />
                   <MuimiLoseBadge me={me} ch={ch} />
                   <ConnorStressBadge me={me} />
+                  <SliverArmBadge me={me} />
                   {isEiji && <EijiOrdinalButton me={me} usable={eijiOrdinalUsable} onPress={useEijiOrdinal} className="w-14 h-11 shrink-0" />}
                 </>
               }
@@ -5804,6 +5844,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               hand={me.cards === null ? (
                 // ทาคุมิ ฟุจิวาระ: ถึงจะมองไม่เห็น แต่ฉันยังอยู่ — การ์ด/แต้มของตัวเองก็ถูกซ่อน
                 <span className="hud-hand-note">🌑 ???</span>
+              ) : sliverHidden ? (
+                <span className="hud-hand-note sliver-hand-note">กำลังสิง {sliverMe.hostName || "?"}</span>
               ) : phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING" ? (
                 <span className="hud-hand-note" data-tone={me.busted ? "bad" : undefined}>{me.busted ? "แต้มเกิน" : "เปิดไพ่แล้ว"}</span>
               ) : me.cards && me.cards.length ? (
@@ -5838,12 +5880,14 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                 <span className="hud-hand-note">ยังไม่จั่วไพ่</span>
               )}
               draw={{
-                disabled: state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!state.dioWorld || !!me.kimNoDraw || !pairPilot,
+                disabled: state.deckEmpty || !(phase === "PLAYING" && me.alive && !done) || me.atCap || noDraw || phenexTaunting || tepeuPonderLocked || frozenByClockUp || !!state.dioWorld || !!me.kimNoDraw || !pairPilot || sliverHidden,
                 onClick: () => { clickSound(); socket.emit("hit"); },
               }}
               reveal={{
                 disabled: !(phase === "PLAYING" && me.alive && !done) || frozenByClockUp || !!state.dioWorld || (!pairPilot && !pilotAway),
                 onClick: () => { clickSound(); socket.emit("lock"); },
+                // นักบินปริศนาซ่อนตัวอยู่: ไม่มีไพ่ให้เปิด — ปุ่มเดิมกลายเป็น "เตรียมพร้อม" (ส่ง lock เหมือนกัน)
+                label: sliverHidden ? "เตรียมพร้อม" : undefined,
               }}
             />
           }
@@ -5907,7 +5951,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               skills={
                 <>
                   <SkillSlot variant="hud" label="พื้นฐาน" tier="basic" skill={ch?.basic} points={me.skillPoints} disabled={!me.alive || phase !== "PLAYING" || (!isHisakawa && (done || noSkill)) || hisakawaSwitchLocked || miyakoHealPending || phenexTaunting || bardNoteLocked || witchMarkCooldown || (me.skillUsed && !isHaruka && !isApple && !isMuimi && !isBard && !isTohno && !isDoomguy && !isKai && !isTakumi && !isHisakawa && !isSup && !isBrian && !isLumi && !isCay && !isDaichi && !isStriker && !giftFree("basic")) || harukaBasicLocked || muimiBasicLocked || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || daisukeBasicLocked || frozenByClockUp || ktBasicLocked || doomBasicLocked || takutoBasicPending || tepeuCookLocked || tepeuPonderLocked || psBladeLocked || ippoBasicCd > 0 || supBudgetLocked || connorPredictLocked || lumiBasicLocked || cayBasicLocked || daichiBasicLocked || kimBasicCd > 0 || giftLocked("basic") || recruitBasicLocked || strikerBasicLocked || !pairGunner} onUse={requestSkillUse} cooldown={witchMarkCd || ippoBasicCd || kimBasicCd || giftCd("basic") || recruitCd.basic} ammo={isMuimi ? me.muimiEmergencyUses : undefined} />
-                  <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup && !giftFree("secondary")) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
+                  <SkillSlot variant="hud" label="รอง" tier="secondary" skill={ch?.secondary} points={me.skillPoints} disabled={done || phase !== "PLAYING" || noSkill || miyakoComboPending || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || (me.skillUsed && !isBard && !isDoomguy && !isKai && !isTakumi && !isSup && !giftFree("secondary")) || (isKai && (me.kaiSkillUsesRound || 0) >= 2) || takumiBudgetLocked || phenexTaunting || bardNoteLocked || ktSecLocked || daisukeSecLocked || (frozenByClockUp && !dai) || skSecLocked || doomNoEffectLocked || takutoSecPending || takutoNotApprivoiseLocked || monsterMe || tepeuPonderLocked || tepeuCookLocked || batKarmaLocked || psSealLocked || harukaSecLocked || muimiSecLocked || burdenCooldown || ippoSecCd > 0 || supBudgetLocked || brianSecLocked || lumiSecLocked || caySecLocked || daichiSecLocked || kimSecCd > 0 || giftLocked("secondary") || recruitSecLocked || tohnoBusy || strikerSecLocked || sliverSecLocked || !pairGunner} onUse={requestSkillUse} cooldown={burdenCd || ippoSecCd || kimSecCd || giftCd("secondary") || recruitCd.secondary} ammo={isApple ? me.appleGiveUses : isCay ? cayState.ammo : undefined} />
                   {isBard ? <BardComposeSlot me={me} hud /> : isKai ? <KaiOverhaulSlot me={me} frozen={frozenByClockUp} hud /> : <SkillSlot variant="hud" label="ท่าไม้ตาย" tier="ultimate" skill={ch?.ultimate} points={me.skillPoints} disabled={(done || phase !== "PLAYING" || noSkill || (me.skillUsed && !isSup && !isBrianN2O && !giftFree("ultimate")) || ultimateActive || triggerCircleLocked || triggerMultiLocked || triggerZeperionLocked || takumiBudgetLocked || monsterMe || doomUltLocked || takutoUltLockedNow || tepeuCookLocked || tepeuPonderLocked || ktUltLocked || phenexTaunting || shidoUltLocked || daisukeUltLocked || frozenByClockUp || eijiUltLocked || muimiUltLocked || ippoUltLocked || supBudgetLocked || supUltCd > 0 || brianUltLocked || lumiUltLocked || cayUltLocked || daichiUltLocked || kimUltLocked || giftLocked("ultimate") || recruitUltLocked || tohnoBusy || strikerUltLocked || !pairGunner)} onUse={requestSkillUse} ammo={isCay ? cayState.ammo : undefined} cooldown={shidoUltCd || eijiUltCd || muimiUltCd || ippoUltCd || supUltCd || kimUltCd || giftCd("ultimate") || recruitCd.ultimate} cost={undefined} />}
                 </>
               }

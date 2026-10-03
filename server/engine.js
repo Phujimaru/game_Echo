@@ -188,9 +188,16 @@ Object.defineProperties(engine, Object.getOwnPropertyDescriptors({
   tryYunaLongingForTwin: combat.tryYunaLongingForTwin,
   pushCutsceneRaw(entry) { match.cutsceneQueue.push(entry); },
   log(msg) { match.lastLog.push(msg); },
+  get logLength() { return match.lastLog.length; }, // นักบินปริศนา: จำตำแหน่งบันทึกตอนปรากฏตัว (กรองบรรทัดช่วงซ่อนตัวจากศัตรู)
   // การ์ดสกิลเด้งบนกระดาน (ไม่หยุดเกม) — payload.sound = คีย์ใน client/src/audio.js ให้เล่นพร้อมการ์ด
   skillFlash(payload) { io.emit("skillFlash", payload); },
-  sfx(sound) { if (sound) io.emit("sfx", { sound }); }, // เสียงสั้นๆ ที่ทุกคนได้ยิน (ไม่มีป้าย) — เช่น โทโนะร้องตอนโดนตี
+  // เสียงสั้นๆ ที่ทุกคนได้ยิน (ไม่มีป้าย) — เช่น โทโนะร้องตอนโดนตี
+  //  onlyFor (ไม่บังคับ): array ของ playerId ที่ได้ยิน (นักบินปริศนาซ่อนตัว: เฉพาะตัวเอง + เพื่อนร่วมทีม)
+  sfx(sound, onlyFor) {
+    if (!sound) return;
+    if (Array.isArray(onlyFor)) { for (const id of onlyFor) io.to(id).emit("sfx", { sound }); return; }
+    io.emit("sfx", { sound });
+  },
   // ผู้ลงมือของดาเมจก้อนนี้ติด "แม่นยำ" ไหม — ด่านหลบดาเมจจากสกิลของตัวละครต่างๆ (อิปโป/เอจิ/luminous) ใช้เช็ค
   sourceAccurate() { return !!match.effectSourceId && accurateActive(match.players[match.effectSourceId]); },
   accurateActive,

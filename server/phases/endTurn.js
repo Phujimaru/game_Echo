@@ -194,7 +194,7 @@ function endTurn() {
   }
   for (const p of Object.values(match.players)) CHAR_HOOKS.hisakawa_sister.onEndTurnTick(engine, p);
   // Ultraman Trigger: หลังคืนร่างตามเวลา HP เหลือ 1 แล้วฟื้นเอง +1/เทิร์นจนถึง HP ตอนก่อนแปลงร่าง; ถ้าโดนตีระหว่างนี้ การฟื้นอัตโนมัติหยุดทันที
-  for (const p of combat.alivePlayers()) {
+  for (const p of combat.livingPlayers()) {
     const targetHp = p.triggerRecoveryTargetHp || 0;
     if (targetHp <= 0) continue;
     if (p.wasAttacked) {
@@ -212,7 +212,8 @@ function endTurn() {
   // จบเทิร์นรอบนั้น +1 — ช่วงกลางวันได้แต้มสกิลเพิ่มอีก +1 (ระบบกลางวัน/กลางคืน)
   //  การเดินทาง: โบนัสนี้มาจากภูมิภาคแทน (1 กลางวัน = จบเทิร์นเลขคู่ · 7 = ทุกเทิร์น) — Journey.skillBonus
   const dayBonus = Journey.skillBonus(engine, dayNight.morningBonusActive(match.roundNumber)); // patch 2.1.7: แจกเฉพาะเช้าที่ 2, 4, 6, ...
-  for (const p of combat.alivePlayers()) {
+  // livingPlayers: นักบินปริศนาที่ซ่อนตัว (นอกสนาม) ก็ได้แต้มสกิล/เหรียญจบเทิร์นตามปกติ
+  for (const p of combat.livingPlayers()) {
     let gain = 1 + dayBonus;
     // ซาโตรุ อาเคฟุ (patch 2.0.8.2): สกิลติดตัว — รีเจนแต้มสกิลเพิ่ม +1 ทุกเทิร์น (ปิดได้ เช่น MOON*CELL)
     if (p.characterId === "satoru" && !characterRules.passiveSealed(p)) gain += 1;
@@ -229,14 +230,14 @@ function endTurn() {
     ? `🗺️ ${Journey.AREAS[Journey.areaOf(match.roundNumber) - 1].name} — ทุกคนได้แต้มสกิลเพิ่ม +${dayBonus}`
     : "☀️ จบเทิร์นช่วงกลางวัน — ทุกคนได้แต้มสกิลเพิ่ม +1");
   // ระบบเหรียญ (patch 2.2 full): จบเทิร์น +1 เหรียญให้ทุกคน (เพดาน 30 — เต็มแล้วไม่ได้เพิ่มจน spending ลดลง)
-  if (!Seraph.active()) for (const p of combat.alivePlayers()) {
+  if (!Seraph.active()) for (const p of combat.livingPlayers()) {
     const goldGain = GOLD_PER_TURN + Journey.goldBonus(engine) + (p.characterId === "hisakawa_sister" ? CHAR_HOOKS.hisakawa_sister.extraGoldRegen(p) : 0) + (p.characterId === "ignis" ? CHAR_HOOKS.ignis.extraGoldRegen(engine, p) : 0);
     // เท็นโนจิ โคทาโร่ (สลับพลังงาน): กลืนเหรียญที่ควรได้ไปทำเป็นแต้มสกิลแทน
     shop.addGold(p, goldGain);
   }
 
   // ชิวๆครับน้องๆ (Apple guy): จบเทิร์นได้แต้มสกิลเพิ่ม +1 จนกว่าจะถูกโจมตี
-  for (const p of combat.alivePlayers()) {
+  for (const p of combat.livingPlayers()) {
     if ((p.statuses.chill || 0) > 0) {
       combat.addSkill(p, 1, "passive");
       match.lastLog.push(`🏖️ ${p.name} ชิวๆครับน้องๆ — จบเทิร์นได้แต้มสกิลเพิ่ม +1`);

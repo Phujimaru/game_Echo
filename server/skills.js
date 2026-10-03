@@ -122,6 +122,8 @@ function useSkillCore(id, tier, targets, item) {
   // ผู้วิงวอน (patch 3.4): คนที่ติด "ลูกแกะน้อยรู้แจ้ง" เล็งผู้วิงวอนด้วยสกิลไม่ได้เลย
   //  กันที่ปากทางจุดเดียว จึงครอบคลุมทุกท่าของทุกตัวละครที่ส่ง targets มา โดยไม่ต้องแก้ prepareXTarget ทีละตัว
   if (Array.isArray(targets) && targets.some((tid) => CHAR_HOOKS.the_supplicant.targetBlocked(p, match.players[tid]))) return;
+  // นักบินปริศนา: ซ่อนตัวอยู่ = เล็งด้วยสกิลไม่ได้เลย (ยกเว้นตัวเขาเอง) — ปัดที่ปากทางแบบเดียวกับผู้วิงวอน
+  if (Array.isArray(targets) && targets.some((tid) => CHAR_HOOKS.sliver_bullet.untargetable(p, match.players[tid]))) return;
   // ไททัน (เปิดม่าน): เทิร์นที่ล่อเป้า สกิลที่เล็งศัตรูต้องเล็งไททันเท่านั้น
   if (CHAR_HOOKS.titan.skillTargetBlocked(engine, p, targets)) return;
   // คู่แฝดฮิซากาว่า — สกิลพื้นฐาน 1 (สลับตัว/ชุบแฝด) คือ "ทางหนี" ประจำตัว: อะไรก็ตามที่ทำให้กดสกิลไม่ได้
@@ -246,6 +248,8 @@ function useSkillCore(id, tier, targets, item) {
   if (ch && ch.id === "johnny") skill = CHAR_HOOKS.johnny.dynamicSkillFor(p, ch, tier);
   // ดิโอ: ระหว่าง THE WORLD ปุ่มทั้งสามเป็นชุดร่างหยุดเวลา (buildStateFor คิดสูตรเดียวกัน)
   if (ch && ch.id === "dio") skill = CHAR_HOOKS.dio.dynamicSkillFor(p, ch, tier);
+  // นักบินปริศนา: ราคาสกิลพื้นฐานตามแขน (ไม่มี 2 / มี 3) — buildStateFor คิดสูตรเดียวกัน
+  if (ch && ch.id === "sliver_bullet") skill = CHAR_HOOKS.sliver_bullet.dynamicSkillFor(p, ch, tier);
   if (!skill) return;
   const isEscanorSkill = p.characterId === "escanor";
   const isHisakawaSkill = p.characterId === "hisakawa_sister";
@@ -535,6 +539,10 @@ function useSkillCore(id, tier, targets, item) {
   if (isCosettePick && !CHAR_HOOKS.cosette.canUseSkill(engine, p, tier, item)) return;
   const isJohnnyPick = p.characterId === "johnny"; // คูลดาวน์รายท่า · กระสุนเล็บ · Golden Ratio · เป้าของ Snipe Shot / Lesson Five
   if (isJohnnyPick && !CHAR_HOOKS.johnny.canUseSkill(engine, p, tier, targets, item)) return;
+  const isSliverPick = p.characterId === "sliver_bullet"; // นักบินปริศนา: Beam Magnum ต้องมีแขน + เป้าศัตรู 1 คน
+  if (isSliverPick && !CHAR_HOOKS.sliver_bullet.canUseSkill(engine, p, tier, targets)) return;
+  // กด Beam Magnum = ปรากฏตัวทันที (ก่อนด่านเหน็บชา/ป่าไม้ต้องสาปที่ขึ้นป้ายชื่อผู้ใช้ — ด่านที่เหลือด้านล่างเป็นของตัวละครอื่น)
+  if (isSliverPick && tier === "secondary") CHAR_HOOKS.sliver_bullet.reveal(engine, p);
   // ---------- ดิโอ แบรนโด (characters/dio.js) ----------
   //  คูลดาวน์/เกจเวลา (ร่างปกติ) หรือแอคชันพอ + ยังไม่ใช้ใน THE WORLD ครั้งนี้ · ทุกท่าเล็งศัตรู ยกเว้น Za warudo
   //  Barrage / Road Roller เลือกเป้ารายหมัด (targets ยาวเท่าจำนวนหมัด · คนเดิมซ้ำได้)
@@ -678,7 +686,8 @@ function useSkillCore(id, tier, targets, item) {
   p.skillPoints -= cost;
   // ORT สกิลติดตัว 1: สกิลแรกที่กดในเทิร์นนี้จะ "ข้อมูลสูญหาย" ในเทิร์นถัดไป
   //  ยกเว้นสกิลเงียบของชิโด — log "ท่าไม้ตายของชิโดข้อมูลสูญหาย" ที่ทุกคนเห็นคือการบอกว่าเขาเพิ่งวางกับดัก
-  if (!CHAR_HOOKS.shido.silentSkill(p, tier)) CHAR_HOOKS.ort.onSkillUsed(engine, p, tier);
+  //  นักบินปริศนา: สกิลพื้นฐานระหว่างซ่อนตัวก็เงียบแบบเดียวกัน (ไม่มีอะไรบอกศัตรูว่าเขาอยู่)
+  if (!CHAR_HOOKS.shido.silentSkill(p, tier) && !CHAR_HOOKS.sliver_bullet.silentSkill(p, tier)) CHAR_HOOKS.ort.onSkillUsed(engine, p, tier);
   // ORT สกิลติดตัว 2: ถูกเลือกเป็นเป้าของสกิล (แม้เป็นบัฟ/ดีบัฟ) -> สวนกลับผู้ใช้ (ลงท้าย useSkill)
   if (Array.isArray(targets) && targets.includes(ORT_ID)) CHAR_HOOKS.ort.queueCounter(engine, p.id);
   // ไททัน "คล่องตัวสูง": ถูกเลือกเป็นเป้าของสกิล (แม้เป็นบัฟ) -> สวนกลับผู้ใช้ (ลงท้าย useSkill ผ่าน flushOrtCounters)
@@ -699,7 +708,7 @@ function useSkillCore(id, tier, targets, item) {
   // "เหน็บชา" (สถานะ Universal — Bamboo-Hatted Kim): 30% สกิลไม่ทำงาน แต่แต้มสกิล/โควตาของเทิร์นถูกใช้ไปแล้วตามเดิม
   if (numbFizzles(p)) {
     match.lastLog.push(`🫨 ${p.name} เหน็บชา — ${skill.name} ไม่ทำงาน! (แต้มสกิลถูกหักไปแล้ว)`);
-    io.emit("skillFlash", { name: `${skill.name} — เหน็บชา สกิลไม่ทำงาน`, img: skill.img || null, by: p.name, color: lobby.colorOf(p) });
+    if (!CHAR_HOOKS.sliver_bullet.silentSkill(p, tier)) io.emit("skillFlash", { name: `${skill.name} — เหน็บชา สกิลไม่ทำงาน`, img: skill.img || null, by: p.name, color: lobby.colorOf(p) }); // นักบินปริศนาซ่อนตัว: ห้ามมีป้าย
     view.broadcastState();
     draw.checkAllLocked();
     return;
@@ -861,6 +870,8 @@ function useSkillCore(id, tier, targets, item) {
   if (isJohnnyPick) flashSuffix = CHAR_HOOKS.johnny.applyInstantSkill(engine, p, tier, targets, item) || flashSuffix;
   // ดิโอ: ลงผลทันที (วีดีโอคิวไว้เล่นท้าย useSkill) · Za warudo/จบ THE WORLD แก้ timeLeft ก่อน pausePlayingForCutscene อ่าน
   if (isDioPick) flashSuffix = CHAR_HOOKS.dio.applyInstantSkill(engine, p, tier, dioTarget) || flashSuffix;
+  // นักบินปริศนา: Beam Magnum ปรากฏตัวก่อนลงผล (ป้ายด้านล่างจึงเปิดเผยได้) · สกิลพื้นฐานมีคลิป/การ์ดของตัวเอง
+  if (isSliverPick) flashSuffix = CHAR_HOOKS.sliver_bullet.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
   // ผลที่ลง "หลังวีดีโอ": ขีปนาวุธของยูเรก้า · Triumphant ของไททัน
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : isTitanPick ? CHAR_HOOKS.titan.takeAfter(p) : null;
   // ---------- ผู้วิงวอน (patch 3.4) ----------
@@ -977,7 +988,8 @@ function useSkillCore(id, tier, targets, item) {
       : isOberonSummer ? CHAR_HOOKS.oberon_summer.skillSound(p, tier) // โอเบรอน (ฤดูร้อน): เสียงประจำแต่ละช่อง
       : isTohnoSkill ? CHAR_HOOKS.tohno.skillSound(p, tier) : null; // โทโนะ: เสียงพากย์สุ่มตอนกดสกิลรอง/ท่าไม้ตาย
     // อิสึกะ ชิโด "ฝากด้วยนะตัวฉัน": สกิลเงียบ — ห้ามมีแบนเนอร์ให้ใครเห็นว่าเขากดอะไรไป
-    if (!CHAR_HOOKS.shido.silentSkill(p, tier)) {
+    //  นักบินปริศนา: สกิลพื้นฐานไม่มีป้าย (คลิป/การ์ดแจ้งเตือนของตัวเอง — ระหว่างซ่อนส่งเฉพาะพวกเดียวกัน)
+    if (!CHAR_HOOKS.shido.silentSkill(p, tier) && !CHAR_HOOKS.sliver_bullet.ownNotice(p, tier)) {
       io.emit("skillFlash", { name: skill.name + flashSuffix, img: flashImg, by: p.name, color: lobby.colorOf(p), sound: flashSound });
     }
   }
@@ -986,7 +998,7 @@ function useSkillCore(id, tier, targets, item) {
   CHAR_HOOKS.conner.onSkillUsed(engine, p);
   //  สกิลเงียบของชิโดไม่เข้า roundSkills ด้วย — รายการนี้ถูกอ่านโดยหลักสูตร "พิเศษ" ของไบเลธ
   //  ซึ่งจะลงโทษ "คนที่กดสกิลในเทิร์นนี้" = เป็นเบาะแสว่าชิโดกดอะไรไป
-  if (!CHAR_HOOKS.shido.silentSkill(p, tier)) match.roundSkills.push({ playerId: id, tier, name: skill.name, img: skill.img || null, status: st }); // tier: หลักสูตร "พิเศษ" ของไบเลธอ่านว่าใครกดสกิลระดับไหนในเทิร์นนี้
+  if (!CHAR_HOOKS.shido.silentSkill(p, tier) && !CHAR_HOOKS.sliver_bullet.silentSkill(p, tier)) match.roundSkills.push({ playerId: id, tier, name: skill.name, img: skill.img || null, status: st }); // tier: หลักสูตร "พิเศษ" ของไบเลธอ่านว่าใครกดสกิลระดับไหนในเทิร์นนี้
 
   p.busted = cardDeck.bustedOf(p);
   if (p.busted) { combat.voidUltimateOnBust(p); CHAR_HOOKS.mageslayer.onBustOrLoseRoll(engine, p); }

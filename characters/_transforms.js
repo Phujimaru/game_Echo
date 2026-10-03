@@ -29,6 +29,7 @@ const titanChar = require("./titan"); // ไททัน: วีดีโอส�
 const dioChar = require("./dio"); // ดิโอ แบรนโด: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const cosetteChar = require("./cosette"); // คอเซ็ตต์ ชไนเดอร์: วีดีโอสกิล + ร่างบทเพลง
 const johnnyChar = require("./johnny"); // จอห์นนี่ โจสตาร์: วีดีโอ Act 4 / Ora / Lesson Five
+const sliverChar = require("./sliver_bullet"); // นักบินปริศนา: วีดีโอเปลี่ยนชิ้นส่วน / Beam Magnum
 const mark42 = require("./_mark42"); // เกราะ Mark 42 (ไอเทมร้านค้า): path วีดีโอชุดเดียวกับไฟล์ระบบ
 const strikerChar = require("./striker"); // สไตรเกอร์ ยูเรก้า: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
 const recruitChar = require("./recruit"); // Recruit: path รูป/วีดีโอชุดเดียวกับไฟล์ตัวละคร
@@ -220,6 +221,11 @@ module.exports = function buildTransforms(img) {
     dioRoadRoller:    { img: dioChar.IMG.roadroller, video: dioChar.VIDEO.roadroller,    title: "Road Roller",    label: "ร่างหยุดเวลา",      seconds: 6, music: null, afterReveal: false },
     dioLastStand:     { img: dioChar.IMG.base,       video: dioChar.VIDEO.lastStand,     title: "Last stand",     label: "ดวลเดิมพันชีวิต",   seconds: 8, music: null, afterReveal: false },
     dioLastStandFail: { img: dioChar.IMG.base,       video: dioChar.VIDEO.lastStandFail, title: "Last stand",     label: "พ่ายแพ้",           seconds: 9, music: null, afterReveal: false },
+    // ---------- นักบินปริศนา (Silver Bullet) ----------
+    //  ทั้งสองคลิปเต็มครั้งแรกต่อเกม (sliver_bullet.js ตั้ง cutsceneShown เอง) · ครั้งต่อไปเป็นเสียง/การ์ดแจ้งเตือน
+    //  sliverReload ระหว่างซ่อนตัวคิวแบบ onlyFor (นักบิน + เพื่อนร่วมทีม) · ความยาวจริง skill1 3.10 / skill2 5.07 วิ
+    sliverReload: { img: sliverChar.IMG.skill1, video: sliverChar.VIDEO.reload, title: "เปลี่ยนชิ้นส่วน", label: "ซ่อมแซม", seconds: 5, music: null, afterReveal: false },
+    sliverBeam:   { img: sliverChar.IMG.skill2, video: sliverChar.VIDEO.beam,   title: "Beam Magnum",     label: "ยิงทำลาย", seconds: 7, music: null, afterReveal: false },
     titanLow:      { img: titanChar.IMG.base, video: titanChar.VIDEO.low, title: "บทเพลงขาดหาย", label: "คืนร่าง", seconds: 5, music: null, afterReveal: false },
     titanTriumph:  { img: titanChar.IMG.triumph, video: titanChar.VIDEO.triumph, title: "Triumphant", label: "ความเสียหาย 4 ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
     reinesUlt:   { img: reinesChar.IMG.skill3, video: reinesChar.VIDEO.ult, title: "แผนการลับสุดยอดชั้นครู", label: "เปราะบาง + อ่อนแอ ทั้งสนาม", seconds: 17, music: null, afterReveal: false },
