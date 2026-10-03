@@ -445,6 +445,8 @@ module.exports = {
       t.transformAt = engine.nextTransformCounter();
       const key = MUSIC_CARTS[t.characterId].songKey;
       engine.triggerCutscene(t, key); // เต็มครั้งแรกต่อเกม ครั้งต่อไปเป็นการ์ดแจ้งเตือน
+      const hook = engine.CHAR_HOOKS[t.characterId];
+      if (hook && hook.onSongGained) hook.onSongGained(engine, t);
       engine.log(`🎼 ${p.name} ปลดปล่อยเสียงดนตรี — ${t.name} ได้ "บทเพลงที่ไม่อาจลืม" ${SONG_TURNS} เทิร์น (โหมด ${MODES[t.taktSongMode].label} · พลังโจมตี +${SONG_ATK}) · ปลดล็อกความสามารถของ${cartLabel(engine, t)}`);
       return ` → ${t.name}`;
     }

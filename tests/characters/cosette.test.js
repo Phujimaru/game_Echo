@@ -76,6 +76,24 @@ test('เปลี่ยนร่าง: ไม่กินโควตา · 1 
   assert.equal(C.hp, 2);
 });
 
+test('ทักต์มอบบทเพลง: เปลี่ยนเป็นพรมลิขิตทันที · สลับร่างไม่ได้จนบทเพลงหมด', () => {
+  const { K, C } = setup();
+  bond(K, C);
+  assert.equal(C.cosette.form, 'human');
+  engine.useSkill('K', 'ultimate', ['C']);
+  assert.equal(engine.players.C.statuses.taktSong > 0, true);
+  assert.equal(C.cosette.form, 'destiny');
+  engine.setRoundNumber(engine.roundNumber + 1);
+  assert.equal(cos.canUseSkill(engine, C, 'basic'), false, 'ล็อกระหว่างบทเพลง');
+  assert.equal(cos.skillLocks(engine, C).basic.locked, true);
+  engine.useSkill('C', 'basic');
+  assert.equal(C.cosette.form, 'destiny');
+  delete C.statuses.taktSong; // บทเพลงหมด
+  assert.equal(cos.canUseSkill(engine, C, 'basic'), true);
+  engine.useSkill('C', 'basic');
+  assert.equal(C.cosette.form, 'human');
+});
+
 test('มิวสิคคาร์ทที่แท้จริง: 3 ขั้น ไม่กินโควตา · ตีโดนลุกไหม้ตามขั้น · หลบ 5%/ขั้น', () => {
   const { C, T } = setup();
   for (let i = 0; i < 4; i++) engine.useSkill('C', 'secondary');

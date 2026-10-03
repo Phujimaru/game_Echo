@@ -4,6 +4,7 @@
 //  สกิลพื้นฐาน เปลี่ยนร่าง (0 · ไม่นับเป็นการใช้สกิล · สลับได้ 1 ครั้ง/เทิร์น) — ก่อนเปิดไพ่
 //    มนุษย์ (เริ่มต้น): ต้นเทิร์นฟื้นพลังชีวิต 1 · พลังโจมตี -1
 //    พรมลิขิต: พลังโจมตี +2 · ต้นเทิร์นเสียพลังชีวิต 2 (ลดเกราะก่อน · ลดได้ถึงเลือด 1 แล้วหยุด + กลับร่างมนุษย์เอง)
+//    ทักต์มอบบทเพลง -> เปลี่ยนเป็นพรมลิขิตทันที (takt -> onSongGained) และสลับร่างไม่ได้จนบทเพลงหมด/พัง
 //  สกิลรอง มิวสิคคาร์ทที่แท้จริง (1 · ไม่นับเป็นการใช้สกิล · กดซ้อนได้ 3 ขั้น · มีผลแค่เทิร์นที่กด)
 //    ขั้นละ: ตีปกติโดนแล้วเป้าติดลุกไหม้ +1 · หลบการโจมตีปกติ +5%
 //  ท่าไม้ตาย ทิ่มแทง (4 · ค้างไว้จนใช้ · กดซ้ำไม่ได้) — ก่อนเปิดไพ่
@@ -171,7 +172,7 @@ module.exports = {
   canUseSkill(engine, p, tier, item) {
     if (!isCos(p)) return true;
     const s = st(p);
-    if (tier === "basic") return s.formRound !== engine.roundNumber;
+    if (tier === "basic") return !unlocked(p) && s.formRound !== engine.roundNumber; // ระหว่างบทเพลง = ล็อกพรมลิขิต
     if (tier === "secondary") return unlocked(p) ? engine.roundNumber >= s.maestroReady && !followOn(engine, p) : trueStacks(engine, p) < TRUE_MAX;
     if (tier === "ultimate") return unlocked(p) ? this.destinySplit(engine, p, item).ok : !s.pierce;
     return true;
@@ -253,6 +254,14 @@ module.exports = {
   },
 
   // ---------- บทเพลงพัง (takt.revertCarts) ----------
+  // ทักต์มอบบทเพลง -> เปลี่ยนเป็นร่างพรมลิขิตทันที (ล็อกไว้จนบทเพลงหมด — canUseSkill/skillLocks)
+  onSongGained(engine, p) {
+    const s = st(p);
+    if (s.form === "destiny") return;
+    s.form = "destiny";
+    s.formRound = engine.roundNumber;
+    engine.log(`🗡️ ${p.name} ได้รับบทเพลง — เปลี่ยนเป็นร่างพรมลิขิต`);
+  },
   onSongLost(engine, p) {
     const s = st(p);
     s.form = "human";
@@ -441,7 +450,7 @@ module.exports = {
     const on = unlocked(p);
     const anyDestiny = on && (this.destinySplit(engine, p, "I").ok || this.destinySplit(engine, p, "II").ok);
     return {
-      basic: { locked: s.formRound === round, free: true },
+      basic: { locked: on || s.formRound === round, free: true },
       secondary: on
         ? { locked: followOn(engine, p), cd: Math.max(0, s.maestroReady - round) }
         : { locked: trueStacks(engine, p) >= TRUE_MAX, free: true },
