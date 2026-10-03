@@ -67,7 +67,7 @@ const FILES = {
   purge_final: "/purge/playerjust2.mp3",
   // อุซากิ: เพลงตลอดช่วงท่าไม้ตาย (โจทย์คณิต 3 เทิร์น)
   usagi_theme: "/characters/usagi/usagi_theme.mp3",
-  takt_theme: "/characters/takt/takt_theme.mp3", // อาซาฮินะ ทักต์: ระหว่างมิวสิคคาร์ทมีบทเพลง
+  takt_theme: "/characters/takt/takt_theme_first.m4a", // อาซาฮินะ ทักต์: ระหว่างมิวสิคคาร์ทมีบทเพลง (ต่อด้วย loop — MUSIC_SEQUENCES)
   // Bamboo-Hatted Kim: เสียงกดสกิล / เสียงสวนกลับ / เพลงร่าง Awake (เล่นค้างถาวรหลังเข้าร่าง)
   kim_draw: "/characters/Bamboo-Hatted Kim/สกิลพื้นฐาน/สกิลพื้นฐาน ชักดาบ.mp3",
   // โอเบรอน (ฤดูร้อน): เสียงตอนกดสกิลแต่ละช่อง (ส่งชื่อมากับ skillFlash)
@@ -227,6 +227,12 @@ const MUSIC_SEQUENCES = {
   eiji_ult: [
     "/characters/eiji/skill3/eiji_skill3_connect.m4a",
     "/characters/yuna/Break Beat Bark!.mp3",
+  ],
+  // อาซาฮินะ ทักต์: มอบบทเพลงครั้งแรก -> first ครั้งเดียว แล้ววน loop · ได้บทเพลงเพิ่มอีกคนไม่เริ่มใหม่ (seq เดิมจาก server)
+  //  บทเพลงหมดทุกคนแล้วมอบใหม่ = seq ใหม่ -> เริ่มที่ first อีกครั้ง
+  takt_theme: [
+    "/characters/takt/takt_theme_first.m4a",
+    "/characters/takt/takt_theme_loop.m4a",
   ],
 };
 
@@ -404,7 +410,8 @@ const LOUDNESS_GAIN = {
   "/characters/ultraman_trigger/skill3/trigger_skill3.mp4": 0.92,
   "/characters/ultraman_trigger/trigger_theme.mp3": 0.86,
   "/characters/usagi/usagi_theme.mp3": 0.85,
-  "/characters/takt/takt_theme.mp3": 0.92, // อาซาฮินะ ทักต์: -13.3 dBFS (เป้าเพลง -14)
+  "/characters/takt/takt_theme_first.m4a": 0.85, // อาซาฮินะ ทักต์: -12.6 dBFS (เป้าเพลง -14)
+  "/characters/takt/takt_theme_loop.m4a": 0.95,  // -13.6 dBFS
   "/characters/yaguruma/yaguruma.mp4": 0.68,
   "/characters/yaguruma/yaguruma_skill1.mp4": 0.66,
   "/characters/yaguruma/yaguruma_skill3.mp4": 0.65,
