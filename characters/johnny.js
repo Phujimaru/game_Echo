@@ -2,7 +2,9 @@
 //  จอห์นนี่ โจสตาร์ (Tusk) — ระดับยาก · 4 ร่าง (Act 1 -> Act 4)
 //
 //  ค่าพื้นฐาน: พลังชีวิต 7 · เกราะ 3 · แต้มสกิล 8 (เริ่ม 0) · พลังโจมตี 1
-//  ทรัพยากร "กระสุนเล็บ" 5/5 (เริ่มเต็ม) — โจมตีปกติไม่ใช้ (เสียง nail-shot เป็นแค่เอฟเฟกต์)
+//  ทรัพยากร "กระสุนเล็บ" 5/5 (เริ่มเต็ม) — ออกหมัดปกติทุกครั้ง (รวมแต่ละนัดของ Rapid Shot · พลาด/ถูกหลบก็เสีย) ใช้เล็บ 1
+//    ถ้ามี (onAttack) · หมัดที่ใช้เล็บแล้วลง (onAttackLanded) 50% เป้าติดหมุนวน +1 (ต้านได้) · เล็บ 0 ยังตีได้แต่ไม่มีโอกาสนี้
+//    (เสียง nail-shot เล่นทุกหมัดเหมือนเดิม ไม่ขึ้นกับเล็บ)
 //
 //  ร่าง (ดูจากสถานะ ไม่เก็บแยก): Pre-Awaken 0 = Act 1 · 1 = Act 2 · 2 = Act 3 · Awakening = Act 4
 //    Act 2: คริติคอล 10% (เฉพาะร่าง) · สกิลรอง = Snipe Shot
@@ -15,11 +17,11 @@
 //    Herbal Tea Time: ฟื้นพลังชีวิต 1 · กระสุนเล็บ +3-5 (เพดาน 5)
 //    Spin Rotation: Spin +1-3 (Spin Mastery +1-2 เพิ่ม) · 20% ได้ Spin Mastery
 //  สกิลรอง (คูลดาวน์แยกรายท่า เก็บเป็น "เลขรอบที่กดได้อีกครั้ง")
-//    Rapid Shot (Act 1 · 3 + เล็บ 2 · หลังเปิดไพ่ · คูลดาวน์ 3 นับจากตอนได้ตี) — ตีปกติครั้งถัดไปตี 2 ครั้ง
-//      (ครั้งที่ 2 เปิดจากหัว endTurn แบบคาเยนน์ — พลาด/ถูกหลบก็ตีต่อ) · แต่ละครั้งพลาดเอง 25%
-//      · โดน = หมุนวน +1-2 · ลบ Chumimi ได้ +1
-//    Snipe Shot (Act 2 · 4 + เล็บ 2 · เลือกเป้าตอนกด · คูลดาวน์ 4 นับจากตอนยิง) — ชนะการเปิดไพ่เมื่อไหร่
-//      ยิงแยกจากการโจมตีปกติที่หัว afterSummary: ดาเมจ 2 (ลดเกราะก่อน + เปราะบาง) · หมุนวน +2-3
+//    Rapid Shot (Act 1 · 3 แต้มเท่านั้น · หลังเปิดไพ่ · คูลดาวน์ 3 นับจากตอนได้ตี) — ตีปกติครั้งถัดไปตี 3 ครั้ง
+//      (ครั้งที่ 2-3 เปิดจากหัว endTurn แบบคาเยนน์ — พลาด/ถูกหลบก็ตีต่อ) · แต่ละครั้งพลาดเอง 25%
+//      · โดน = หมุนวน +1-2 · ลบ Chumimi ได้ +1 · แต่ละนัดนับเป็นตีปกติ (ใช้เล็บ 1 + ทอย 50% หมุนวน +1 ตามกติกาเล็บ)
+//    Snipe Shot (Act 2 · 4 + เล็บ 2 · ก่อนเปิดไพ่ · เลือกเป้าตอนกด · คูลดาวน์ 4) — ยิงทันที: ดาเมจ 2
+//      (ลดเกราะก่อน + เปราะบาง) · หมุนวน +2-3 · ตีปกติเทิร์นนี้ไม่เกี่ยว
 //    Wormhole Multi Shot (Act 3 · 5 + เล็บ 3 · ก่อนเปิดไพ่ · คูลดาวน์ 5) — สุ่มยิงศัตรู 3 นัด นัดละ 1
 //      (คนละไม่เกิน 2 นัด · ลดเกราะก่อน + เปราะบาง) · นัดละหมุนวน +1-2
 //    Ora Ora Ora Ora! BeatDown (Act 4 · 6 · หลังเปิดไพ่ · คูลดาวน์ 5 นับจากตอนได้ตี) — เสีย Golden Ratio 1
@@ -27,9 +29,13 @@
 //  ท่าไม้ตาย
 //    Tusk Evo Experience (Act 1-3 · 4 + Pre-Awaken ที่ถือ · คูลดาวน์ 5 + Pre-Awaken ที่ถือ · ก่อนเปิดไพ่)
 //      Pre-Awaken +1 · ถือครบ 2 แล้วกด = Awakening (Act 4) · เสียง tusk!
-//    Lesson Five (Act 4 · 7 + Golden Ratio 1 · หลังเปิดไพ่) — เสีย Golden Ratio 1 + เล็บ 1 · ตีครั้งถัดไป +1
-//      เป้ามี Chumimi: ลบทิ้ง +2 · สตั้น 1 เทิร์น (เทิร์นหน้า · ต้านได้) · ไม่สนการลดดาเมจทุกชนิด
-//      (คุ้มครอง/Smile for You/เต็มอิ่ม ที่ doAttack + ฮุคลดดาเมจของทุกตัวละครที่ adjustIncomingDamage) · วีดีโอทุกครั้ง
+//    Lesson Five (Act 4 · 7 + Golden Ratio 1 · ก่อนเปิดไพ่ · เลือกเป้าตอนกด) — เสีย Golden Ratio 1 + เล็บ 1 (ถ้ามี)
+//      · ดาเมจ 3 ทันที (ลดเกราะก่อน + เปราะบาง · ไม่ยุ่งกับตีปกติ) · วีดีโอทุกครั้ง (คิวไว้ เล่นท้าย useSkill)
+//      เป้ามี Chumimi: ลบทิ้ง +2 (รวม 5) · สตั้น 1 เทิร์นทันที (ต้านได้ · แบบ Barrett ของ Recruit: เปิดไพ่ให้ทันที
+//      เสียช่วงจั่วที่เหลือ + ชนะก็ตีไม่ได้ · หมดที่ endTurn เทิร์นนี้) · ดาเมจก้อนนี้ไม่สนการลดดาเมจทุกชนิด
+//      (pierceFloor ใน combat.adjustIncomingDamage: ฮุคลดดาเมจ/หลบของตัวละคร · SE.RA.PH · เย็นชื่นใจ ลดต่ำกว่าค่าเดิมไม่ได้)
+//      · ยังกันได้ตามเดิม: ชุด Mark 42 (ดูดก่อนถึงด่าน) · โล่ (shield) · ผนึก/กันพวกเดียวกัน · Slow Dancer ของจอห์นนี่ฝั่งตรงข้าม
+//      (คุ้มครอง/Smile for You/เต็มอิ่ม มีผลเฉพาะตีปกติใน doAttack อยู่แล้ว จึงไม่กระทบดาเมจสกิลนี้)
 //
 //  บัฟเฉพาะตัว (อยู่ที่ p.johnny ไม่ใช่ p.statuses) — ศัตรูปาดบัฟ (stripLatestBuff) ได้ทุกตัว ยกเว้น Pre-Awaken/Awakening
 //    (ลงทะเบียนผ่าน registerBuffSource · ตราเวลาจาก nextBuffSeq ตัวเดียวกับบัฟกลาง)
@@ -48,7 +54,7 @@
 //    dealArmorOnly) ลงผู้ใช้เองแทน และหมุนวน -2 · ดีบัฟที่ลงหลังดาเมจก้อนแรกย้อนกลับด้วย
 //    (ไม่ครอบคลุม: ดาเมจที่ลงหลังวีดีโอจบ/หลังเปิดไพ่ และสถานะที่สกิลเขียน p.statuses ตรงๆ)
 //  มาร์ก "Chumimi" (p.statuses.johnnyChumimi · 5 เทิร์น · ต้าน/ล้างไม่ได้)
-//    Lesson Five ลบ = +2 · Rapid/Snipe/Wormhole โดนแล้วลบ = +1 · ลบเมื่อไหร่เล่นเสียง chumimi
+//    Lesson Five ลบ = +2 (+ สตั้น + ไม่สนการลดดาเมจ) · Rapid/Snipe/Wormhole โดนแล้วลบ = +1 · ลบเมื่อไหร่เล่นเสียง chumimi
 // ============================================================
 
 const { registerBuffSource, nextBuffSeq, statusAmtOf } = require("./_universal_status");
@@ -96,12 +102,13 @@ const PA_MAX = 2;
 const CRIT_ACT2 = 10;
 const CRIT_PER_PA = 12.5;
 const DODGE_ACT3 = 15;
-const RAPID = { nails: 2, cd: 3, hits: 2, missPct: 25, whirl: [1, 2] };
+const NAIL_SHOT = { pct: 50, whirl: 1 }; // ตีปกติที่ใช้เล็บแล้วลง: 50% หมุนวน +1
+const RAPID = { cd: 3, hits: 3, missPct: 25, whirl: [1, 2] };
 const SNIPE = { nails: 2, cd: 4, dmg: 2, whirl: [2, 3] };
 const WORM = { nails: 3, cd: 5, shots: 3, perTarget: 2, dmg: 1, whirl: [1, 2] };
 const ORA = { cd: 5, per: 3 };
 const EVO = { cost: 4, cd: 5 };
-const LESSON = { atk: 1, chumimi: 2, stun: 1 };
+const LESSON = { dmg: 3, chumimi: 2, stun: 1, nails: 1 };
 const SHOT_CHUMIMI = 1;
 const WHIRL_MAX = 9;
 const WHIRL_TURNS = 8;
@@ -129,9 +136,9 @@ function fresh() {
     rapid: false,            // Rapid Shot ค้างรอโจมตี
     rapidShot: 0,            // กำลังยิงชุด Rapid Shot ครั้งที่เท่าไหร่ (0 = ไม่ได้ยิง)
     rapidTargetId: null,
-    snipe: null,             // Snipe Shot ค้างรอชนะ: id เป้า
     ora: false,
-    lesson: false,
+    nailShot: false,         // หมัดที่กำลังตีใช้กระสุนเล็บไปแล้ว (ลงแล้วทอย 50% หมุนวน +1)
+    pierce: false,           // ช่วงลงดาเมจ Lesson Five + Chumimi (pierceFloor อ่าน)
     fx: null,                // ผลของหมัดที่กำลังตี
   };
 }
@@ -225,7 +232,7 @@ function takeChumimi(engine, t) {
 //  ลดเกราะก่อน · บวกเปราะบางเอง (dealMixed ไม่คิดให้ — กับดัก #5) · ลบ Chumimi ได้ +1 · ฆ่าได้
 function shotHit(engine, p, t, dmg, whirlRange) {
   const r = { name: t.name, dmg: 0, whirl: 0, chumimi: false };
-  if (!t.alive) return r;
+  if (!t.alive || warded(p, t)) return r;
   let n = dmg + statusAmtOf(t, "fragile");
   if (takeChumimi(engine, t)) { r.chumimi = true; n += SHOT_CHUMIMI; }
   const before = (t.hp || 0) + (t.armor || 0);
@@ -248,6 +255,8 @@ function onDealtDamage(engine, p) {
 // ---------- บริบทการกดสกิล/ไอเทม (หมุนวน + Slow Dancer) ----------
 //  เปิดที่ useSkill()/useInventoryItem() ชั้นนอกสุด (ซ้อนกันไม่ได้ — ตัวในคืน null) และปิดใน finally
 let useCtx = null;
+// เป้า (จอห์นนี่ฝั่งตรงข้าม) ใช้ Slow Dancer กันสกิลที่ผู้ใช้คนนี้กดอยู่ไปแล้ว — สกิลนั้นไม่มีผลกับเขาเลย
+function warded(user, t) { return !!(useCtx && user && t && useCtx.userId === user.id && useCtx.ward.has(t.id)); }
 
 const strippable = ["slowDancer", "spin", "goldenRatio", "mastery"];
 const STRIP_LABEL = { slowDancer: "Slow Dancer", spin: "Spin", goldenRatio: "Golden Ratio", mastery: "Spin Mastery" };
@@ -298,13 +307,12 @@ module.exports = {
   id: ID,
   IMG, VIDEO, SFX, MUSIC,
   NAIL_MAX, SPIN_MAX, ENERGY_AT, SKIN_AT, SKIN_USES, SKIN_CD, SLOW_DANCER, GR_MAX, PA_MAX,
-  CRIT_ACT2, CRIT_PER_PA, DODGE_ACT3, RAPID, SNIPE, WORM, ORA, EVO, LESSON, SHOT_CHUMIMI,
+  CRIT_ACT2, CRIT_PER_PA, DODGE_ACT3, NAIL_SHOT, RAPID, SNIPE, WORM, ORA, EVO, LESSON, SHOT_CHUMIMI,
   WHIRL_MAX, WHIRL_TURNS, REVERSE_PCT, REVERSE_LOSS, CHUMIMI_TURNS, MASTERY_PCT, MASTERY_TURNS,
   isJ, formOf, whirlOf, chumimiOn, addWhirl, buffSource,
 
   resetCombat(p) {
     p.johnny = isJ(p) ? fresh() : null;
-    p.johnnyStunPending = 0; // สตั้นจาก Lesson Five ที่รอเริ่มเทิร์นหน้า (ติดที่เป้าหมาย)
   },
 
   // ---------- ชุดสกิลตามร่าง (useSkill + buildStateFor ใช้สูตรเดียวกัน) ----------
@@ -319,7 +327,8 @@ module.exports = {
     return ch[tier];
   },
 
-  snipeTarget(engine, p, targets) {
+  // เป้าของ Snipe Shot / Lesson Five (ศัตรู 1 คนที่เลือกตอนกด)
+  pickTarget(engine, p, targets) {
     const id = Array.isArray(targets) ? targets[0] : null;
     return engine.attackableTargets(p.id).find((t) => t.id === id) || null;
   },
@@ -331,13 +340,13 @@ module.exports = {
     const round = engine.roundNumber;
     if (tier === "basic") return item === "tea" || item === "spin";
     if (tier === "secondary") {
-      if (form === 1) return !s.rapid && !(s.rapidShot > 0) && round >= s.cd.rapid && s.nails >= RAPID.nails;
-      if (form === 2) return !s.snipe && round >= s.cd.snipe && s.nails >= SNIPE.nails && !!this.snipeTarget(engine, p, targets);
+      if (form === 1) return !s.rapid && !(s.rapidShot > 0) && round >= s.cd.rapid;
+      if (form === 2) return round >= s.cd.snipe && s.nails >= SNIPE.nails && !!this.pickTarget(engine, p, targets);
       if (form === 3) return round >= s.cd.wormhole && s.nails >= WORM.nails && enemiesOf(engine, p).length > 0;
       return !s.ora && round >= s.cd.ora && s.goldenRatio >= 1;
     }
     if (tier === "ultimate") {
-      if (form === 4) return !s.lesson && s.goldenRatio >= 1;
+      if (form === 4) return s.goldenRatio >= 1 && !!this.pickTarget(engine, p, targets);
       return round >= s.cd.evo;
     }
     return true;
@@ -369,17 +378,16 @@ module.exports = {
       return ` — Spin ${s.spin}/${SPIN_MAX}${mastery ? " · Spin Mastery" : ""}`;
     }
     if (tier === "secondary" && form === 1) {
-      s.nails -= RAPID.nails;
       s.rapid = true;
       engine.log(`💅 ${p.name} Rapid Shot — ตีปกติครั้งถัดไปยิง ${RAPID.hits} นัด`);
       return "";
     }
     if (tier === "secondary" && form === 2) {
-      const t = this.snipeTarget(engine, p, targets);
+      const t = this.pickTarget(engine, p, targets);
       s.nails -= SNIPE.nails;
-      s.snipe = t ? t.id : null;
-      engine.log(`🎯 ${p.name} Snipe Shot — เล็งไว้แล้ว ชนะการเปิดไพ่เมื่อไหร่ยิงทันที`);
-      return "";
+      s.cd.snipe = round + SNIPE.cd;
+      const r = this.fireSnipe(engine, p, t);
+      return r ? ` — ${r.name} -${r.dmg}` : "";
     }
     if (tier === "secondary" && form === 3) {
       s.nails -= WORM.nails;
@@ -394,13 +402,7 @@ module.exports = {
       engine.log(`👊 ${p.name} Ora Ora Ora Ora! BeatDown — เสีย Golden Ratio 1 และกระสุนเล็บทั้งหมด · ตีครั้งถัดไปแรงขึ้นตามหมุนวนของเป้า`);
       return "";
     }
-    if (tier === "ultimate" && form === 4) {
-      s.lesson = true;
-      s.nails = Math.max(0, s.nails - 1);
-      loseGoldenRatio(p, 1);
-      engine.log(`🐎 ${p.name} Lesson Five — เสีย Golden Ratio 1 และกระสุนเล็บ 1 · ตีครั้งถัดไป +${LESSON.atk}`);
-      return "";
-    }
+    if (tier === "ultimate" && form === 4) return this.fireLesson(engine, p, this.pickTarget(engine, p, targets));
     if (tier === "ultimate") {
       const held = s.preAwaken;
       s.cd.evo = round + EVO.cd + held;
@@ -435,41 +437,59 @@ module.exports = {
     return res;
   },
 
-  // ---------- Snipe Shot: ชนะการเปิดไพ่ = ยิงก่อนเฟสโจมตี (หัว afterSummary) ----------
-  fireSnipe(engine, p) {
-    if (!isJ(p) || !p.alive) return null;
+  // ---------- Snipe Shot (ก่อนเปิดไพ่): ยิงเป้าที่เลือกทันที — แยกจากการโจมตีปกติ ----------
+  fireSnipe(engine, p, t) {
+    if (!isJ(p) || !p.alive || !t) return null;
     bind(engine);
-    const s = st(p);
-    if (!s.snipe) return null;
-    const pool = engine.attackableTargets(p.id);
-    if (!pool.length) return null;
-    const t = pool.find((x) => x.id === s.snipe) || pool[Math.floor(Math.random() * pool.length)];
-    s.snipe = null;
-    s.cd.snipe = engine.roundNumber + SNIPE.cd;
     engine.sfx(SFX.nail);
     const r = shotHit(engine, p, t, SNIPE.dmg, SNIPE.whirl);
-    if (s.awakening) engine.addSkill(p, 1, "passive");
+    if (st(p).awakening) engine.addSkill(p, 1, "passive");
     engine.log(`🎯 ${p.name} Snipe Shot — ${t.name} -${r.dmg}${r.chumimi ? " (Chumimi +1)" : ""}${r.whirl ? ` · หมุนวน +${r.whirl}` : ""}`);
-    engine.skillFlash({ name: `Snipe Shot — ${t.name} -${r.dmg}`, img: IMG.snipe, by: p.name, color: engine.colorOf(p) });
     return r;
   },
 
-  // ---------- ต้นเทิร์น (ทุกคน) ----------
-  //  สตั้นของ Lesson Five เริ่มมีผล — ต้องอยู่ก่อนบล็อกเช็คสตั้นของ dealRound (แพทเทิร์นเดียวกับ ippo.applyPendingStun)
+  // ---------- Lesson Five (ก่อนเปิดไพ่): ดาเมจ 3 ทันที · Chumimi = +2 สตั้น ไม่สนการลดดาเมจ ----------
+  //  ลงผลก่อนวีดีโอ (คิวไว้ — useSkill เปิด pausePlayingForCutscene ให้) จึงยังอยู่ในบริบทการกด (หมุนวน/Slow Dancer ครอบ)
+  fireLesson(engine, p, t) {
+    bind(engine);
+    const s = st(p);
+    loseGoldenRatio(p, 1);
+    s.nails = Math.max(0, s.nails - LESSON.nails);
+    engine.queueCutscene(p, "johnnyLesson");
+    if (!t || !t.alive) return "";
+    if (warded(p, t)) {
+      engine.log(`🐎 ${p.name} Lesson Five — ${t.name} ไม่ได้รับผล (Slow Dancer)`);
+      return ` — ${t.name} ไม่ได้รับผล`;
+    }
+    const chumimi = takeChumimi(engine, t);
+    const n = LESSON.dmg + (chumimi ? LESSON.chumimi : 0) + statusAmtOf(t, "fragile");
+    s.pierce = chumimi;
+    try {
+      engine.withEffectSource(p, () => {
+        engine.dealMixed(t, n);
+        engine.resolveDamageAftermath(t);
+      });
+    } finally { s.pierce = false; }
+    if (!t.alive) engine.log(`💀 ${t.name} เลือดจริงหมด ตกรอบ!`);
+    let stun = "";
+    if (chumimi && t.alive) {
+      const ok = engine.withEffectSource(p, () => engine.applyDebuff(t, "stun", null, LESSON.stun));
+      // สตั้นก่อนเปิดไพ่ = เปิดไพ่ให้ทันที (แบบ Barrett ของ Recruit) · การหมุนย้อนกลับอาจย้ายสตั้นมาลงผู้ใช้เอง
+      for (const x of [t, p]) if (x.alive && (x.statuses.stun || 0) > 0) x.locked = true;
+      stun = ok ? ` · สตั้น ${LESSON.stun} เทิร์น` : " · ต้านสตั้น";
+    }
+    engine.log(`🐎 ${p.name} Lesson Five — เสีย Golden Ratio 1 และกระสุนเล็บ ${LESSON.nails} · ${t.name} -${n}${chumimi ? ` (Chumimi +${LESSON.chumimi} · ไม่สนการลดดาเมจ)` : ""}${stun}`);
+    return ` — ${t.name} -${n}${chumimi ? " · Chumimi" : ""}${stun}`;
+  },
+
+  // ---------- ต้นเทิร์น ----------
   onRoundStartTick(engine, p) {
     bind(engine);
-    if (p.johnnyStunPending > 0) {
-      const turns = p.johnnyStunPending;
-      p.johnnyStunPending = 0;
-      if (p.alive) {
-        if (engine.applyDebuff(p, "stun", null, turns)) engine.log(`😵 ${p.name} โดน Lesson Five เมื่อเทิร์นก่อน — สตั้น ${turns} เทิร์น`);
-        else engine.log(`🛡️ ${p.name} ต้านสตั้นของ Lesson Five ไว้ได้`);
-      }
-    }
     if (!isJ(p)) return;
     const s = st(p);
     s.rapidShot = 0;
     s.fx = null;
+    s.nailShot = false;
     if (s.mastery > 0) {
       s.mastery--;
       if (s.mastery <= 0) engine.log(`🌀 ${p.name} Spin Mastery หมดเวลา`);
@@ -492,18 +512,20 @@ module.exports = {
     const fx = s.fx;
     let b = s.awakening ? 1 : 0;
     if (fx) {
-      if (fx.lesson) b += LESSON.atk + (fx.lessonChumimi ? LESSON.chumimi : 0);
       if (fx.ora) b += fx.ora;
       if (fx.rapidChumimi) b += SHOT_CHUMIMI;
     }
     return b;
   },
-  // หัว doAttack: ล้างผลหมัดก่อน · Rapid Shot ที่ค้างเริ่มชุดยิง (คูลดาวน์นับจากตอนนี้)
+  // หัว doAttack (ออกหมัดจริง — ก่อนด่านหลบ): ล้างผลหมัดก่อน · ใช้กระสุนเล็บ 1 ถ้ามี
+  //  · Rapid Shot ที่ค้างเริ่มชุดยิง (คูลดาวน์นับจากตอนนี้) — แต่ละนัดของชุดผ่านที่นี่ จึงใช้เล็บนัดละ 1
   onAttack(engine, attacker, target) {
     if (!isJ(attacker)) return;
     bind(engine);
     const s = st(attacker);
     s.fx = null;
+    s.nailShot = s.nails > 0;
+    if (s.nailShot) s.nails--;
     if (s.rapid && !(s.rapidShot > 0)) {
       s.rapid = false;
       s.rapidShot = 1;
@@ -538,20 +560,13 @@ module.exports = {
     });
     return true;
   },
-  // ผ่านด่านหลบแล้ว (ก่อนคิดดาเมจ): ใช้ Lesson Five / Ora ที่ค้าง + ลบ Chumimi + คิววีดีโอ (เล่นก่อนการ์ดสรุป)
+  // ผ่านด่านหลบแล้ว (ก่อนคิดดาเมจ): ใช้ Ora ที่ค้าง + Rapid Shot ลบ Chumimi + คิววีดีโอ (เล่นก่อนการ์ดสรุป)
   prepareOnAttack(engine, attacker, target) {
     if (!isJ(attacker) || !target) return null;
     bind(engine);
     const s = st(attacker);
     const fx = { videoQueued: false };
     if (s.rapidShot > 0) fx.rapid = s.rapidShot;
-    if (s.lesson) {
-      s.lesson = false;
-      fx.lesson = true;
-      if (takeChumimi(engine, target)) { fx.lessonChumimi = true; fx.pierce = true; }
-      engine.queueCutscene(attacker, "johnnyLesson");
-      fx.videoQueued = true;
-    }
     if (s.ora) {
       s.ora = false;
       fx.ora = Math.floor(whirlOf(target) / ORA.per);
@@ -564,8 +579,6 @@ module.exports = {
     s.fx = fx;
     return fx;
   },
-  // Lesson Five + Chumimi: หมัดนี้ไม่สนการลดดาเมจทุกชนิด
-  piercing(attacker) { return isJ(attacker) && !!(st(attacker).fx && st(attacker).fx.pierce); },
   // หมัดลงแล้ว — คืนชื่อเอฟเฟกต์ไว้โชว์บนการ์ดสรุป
   onAttackLanded(engine, attacker, target, dmg) {
     if (!isJ(attacker)) return [];
@@ -577,15 +590,15 @@ module.exports = {
       const w = target.alive ? addWhirl(engine, attacker, target, randInt(RAPID.whirl[0], RAPID.whirl[1])) : 0;
       out.push(`Rapid Shot นัดที่ ${fx.rapid}/${RAPID.hits}${fx.rapidChumimi ? ` · Chumimi +${SHOT_CHUMIMI}` : ""}${w ? ` · หมุนวน +${w}` : ""}`);
     }
+    // กระสุนเล็บ: หมัดที่ใช้เล็บแล้วลง 50% หมุนวน +1
+    if (s.nailShot && target.alive && Math.random() * 100 < NAIL_SHOT.pct) {
+      const w = addWhirl(engine, attacker, target, NAIL_SHOT.whirl);
+      if (w) out.push(`กระสุนเล็บ · หมุนวน +${w}`);
+    }
+    s.nailShot = false;
     if (fx.ora !== undefined) {
       giveChumimi(target);
       out.push(`Ora Ora Ora Ora! BeatDown +${fx.ora} (หมุนวน ${fx.oraStacks})${target.alive ? " · Chumimi" : ""}`);
-    }
-    if (fx.lesson) {
-      if (fx.lessonChumimi && target.alive) target.johnnyStunPending = LESSON.stun;
-      out.push(fx.lessonChumimi
-        ? `Lesson Five +${LESSON.atk} · Chumimi +${LESSON.chumimi} · ไม่สนการลดดาเมจ · สตั้นเทิร์นหน้า`
-        : `Lesson Five +${LESSON.atk}`);
     }
     if (s.awakening) {
       engine.addSkill(attacker, 1, "passive");
@@ -636,11 +649,11 @@ module.exports = {
     if (s.skinUses <= 0) { s.skinUses = SKIN_USES; s.skinReady = engine.roundNumber + SKIN_CD; }
     return Math.max(0, n - 1);
   },
-  // combat.adjustIncomingDamage: Lesson Five + Chumimi ห้ามถูกลดต่ำกว่าค่าที่ส่งเข้ามา — คืน null = ไม่เกี่ยว
-  pierceFloor(engine, n, isNormalAttack) {
-    if (!isNormalAttack) return null;
+  // combat.adjustIncomingDamage: ดาเมจสกิล Lesson Five + Chumimi ห้ามถูกลดต่ำกว่าค่าที่ส่งเข้ามา — คืน null = ไม่เกี่ยว
+  //  (ธง pierce เปิดเฉพาะช่วง dealMixed ใน fireLesson)
+  pierceFloor(engine, n) {
     const src = engine.effectSourceId && engine.players[engine.effectSourceId];
-    return src && this.piercing(src) ? n : null;
+    return isJ(src) && src.johnny && src.johnny.pierce ? n : null;
   },
 
   // ---------- Slow Dancer / การหมุนย้อนกลับ ----------
@@ -733,18 +746,17 @@ module.exports = {
   privateState(engine, p) {
     if (!isJ(p)) return {};
     const s = st(p);
-    const t = s.snipe ? engine.players[s.snipe] : null;
-    return { johnnyPending: { rapid: s.rapid, snipe: t ? t.name : null, ora: s.ora, lesson: s.lesson } };
+    return { johnnyPending: { rapid: s.rapid, ora: s.ora } };
   },
   skillLocks(engine, p) {
     if (!isJ(p)) return undefined;
     const s = st(p);
     const form = formOf(p);
-    const sec = form === 1 ? { locked: s.rapid || s.rapidShot > 0 || s.nails < RAPID.nails, cd: cdLeft(engine, s, "rapid") }
-      : form === 2 ? { locked: !!s.snipe || s.nails < SNIPE.nails, cd: cdLeft(engine, s, "snipe") }
+    const sec = form === 1 ? { locked: s.rapid || s.rapidShot > 0, cd: cdLeft(engine, s, "rapid") }
+      : form === 2 ? { locked: s.nails < SNIPE.nails, cd: cdLeft(engine, s, "snipe") }
       : form === 3 ? { locked: s.nails < WORM.nails, cd: cdLeft(engine, s, "wormhole") }
       : { locked: s.ora || s.goldenRatio < 1, cd: cdLeft(engine, s, "ora") };
-    const ult = form === 4 ? { locked: s.lesson || s.goldenRatio < 1 } : { locked: false, cd: cdLeft(engine, s, "evo") };
+    const ult = form === 4 ? { locked: s.goldenRatio < 1 } : { locked: false, cd: cdLeft(engine, s, "evo") };
     return { basic: { locked: false }, secondary: sec, ultimate: ult };
   },
 };

@@ -18,13 +18,21 @@
 //  สกิลพื้นฐาน Throwing knife (3 แต้ม · คูลดาวน์ 2) — ศัตรู 1 คน ดาเมจ 1 (ลดเกราะก่อน) + เลือดไหล 1
 //    คลิปง้างมีดเล่นตอนกดปุ่ม (socket "dioKnifeAim" -> aimKnife) แล้วคลิปขว้างเล่นหลังเลือกเป้า
 //    ถ้า client ไม่ได้ส่ง aim มา (เช่นเทสต์) จะเล่นทั้งสองคลิปต่อกันหลังเลือกเป้าแทน
-//  สกิลรอง Barrage (3 แต้ม · คูลดาวน์ 3) — ศัตรู 1 คน ดาเมจ 1 × 2 + ผุพัง 2 เทิร์น
+//    ทั้งสองคลิปเล่นครั้งแรกต่อเกมเท่านั้น (p.cutsceneShown แยกรายคลิป) — ครั้งต่อไป aimKnife ไม่เล่น/ไม่พักเฟส
+//    และคลิปขว้างกลายเป็นการ์ดแจ้งเตือน (notifyTransform แบบ triggerCutscene ครั้งที่ 2)
+//  สกิลรอง Barrage (3 แต้ม · คูลดาวน์ 3) — ดาเมจ 1 × 2 เลือกเป้าทีละหมัด (ซ้ำคนเดิมได้) + ผุพัง 2 เทิร์นทุกคนที่โดน
+//    คลิปสุ่ม 1 จาก 2 (dioBarrage / dioBarrage2) ทุกครั้งที่กด
 //  ท่าไม้ตาย Za warudo!!!!!! (ไม่ใช้แต้มสกิล · คูลดาวน์ 4 · ต้องมีเกจเวลา 1 ขึ้นไป)
 //    ใช้เกจเวลาทั้งหมด = แอคชัน แล้วเปิด [THE WORLD]: คนอื่นทุกคนถูกแช่ (รวมไรเดอร์ที่ Clock Up อยู่)
+//    คลิปสุ่ม 1 จาก 3 (dioWorld1/2/3) ทุกครั้งที่กด
 //    ดิโอเข้าร่างหยุดเวลา — ปุ่มทั้งสามกลายเป็นชุดหยุดเวลา จ่ายด้วยแอคชัน ไม่มีคูลดาวน์ ไม่กินโควตาสกิล
-//      SHINEI! (2) ดาเมจ 2 + ไร้ทางเยียวยา 2 เทิร์น · Barrage (3) ดาเมจ 1 × 3 + ผุพัง 2 เทิร์น
-//      Road Roller (ต้องมี 4 · ใช้หมด) ดาเมจ 2 × 2 แล้ว THE WORLD จบทันที
-//    THE WORLD จบเมื่อ: แอคชันไม่พอกดอะไรแล้ว · ใช้ Road Roller · ครบ 10 วิ (เวลาหยุดนับระหว่างคลิป)
+//    ทุกท่าใช้ได้ 1 ครั้งต่อการเปิด THE WORLD (p.dio.world.used — รีเซ็ตทุกครั้งที่กด Za warudo)
+//      SHINEI! (3) ดาเมจ 2 + ไร้ทางเยียวยา 2 เทิร์น · Barrage (3) ดาเมจ 1 × 3 เลือกเป้าทีละหมัด + ผุพัง 2 เทิร์น
+//      Road Roller (ต้องมี 3 · ใช้หมด) ดาเมจ 2 × 2 เลือกเป้าทีละหมัด แล้ว THE WORLD จบทันที
+//    เลือกเป้าทีละหมัด: client ส่ง targets เป็น array ตามจำนวนหมัด (prepareTarget) — id ที่ไม่ใช่ศัตรูที่เล็งได้
+//      ถูกแทนด้วยเป้าที่ถูกต้องก่อนหน้า (หรือคนแรกที่ถูกต้อง) · ส่งมาไม่ครบ = หมัดที่เหลือลงเป้าสุดท้าย
+//      ไม่มีเป้าที่ถูกต้องเลย = กดไม่ได้ · ตอนลงผล หมัดที่เป้าตายไปแล้วถูกข้าม (ไม่เปลี่ยนเป้าให้) แล้วลงบันทึก
+//    THE WORLD จบเมื่อ: ไม่เหลือท่าที่ใช้ได้ (แอคชันไม่พอ/ใช้ครบแล้ว) · ใช้ Road Roller · ครบ 10 วิ (เวลาหยุดนับระหว่างคลิป)
 //    ระหว่าง THE WORLD เวลาเฟสจั่วไพ่หยุด — จบแล้วทุกคนกลับมาเฟสเดิมด้วยเวลาที่เหลือตอนกด
 //    ⚠️ ตัวจับเวลา 10 วิคือตาข่ายกันห้องค้างในตัว (ดิโอหลุดเน็ตก็จบเองเมื่อครบ) — ไม่มี clearPhaseTimer เฉยๆ
 //    หมดเวลา = summary.resolveRound ถูกเรียก -> ดักไว้ที่หัวฟังก์ชันแล้วคืนเวลาให้ (endWorld)
@@ -63,17 +71,17 @@ const ULT_METER_MIN = 1;
 
 // ---------- THE WORLD ----------
 const WORLD_SECONDS = 10;
-const SHINE_ACTIONS = 2;
+const SHINE_ACTIONS = 3;
 const SHINE_DMG = 2;
 const SHINE_NOHEAL = 2;
 const TW_BARRAGE_ACTIONS = 3;
 const TW_BARRAGE_HITS = 3;
 const TW_BARRAGE_DMG = 1;
 const TW_BARRAGE_DECAY = 2;
-const ROAD_ACTIONS = 4;      // ขั้นต่ำ — กดแล้วใช้แอคชันที่เหลือทั้งหมด
+const ROAD_ACTIONS = 3;      // ขั้นต่ำ — กดแล้วใช้แอคชันที่เหลือทั้งหมด
 const ROAD_HITS = 2;
 const ROAD_DMG = 2;
-const MIN_ACTION = SHINE_ACTIONS; // แอคชันต่ำกว่านี้ = กดอะไรไม่ได้แล้ว THE WORLD จบ
+const TIERS = ["basic", "secondary", "ultimate"];
 
 const DIR = "/characters/dio_brando";
 const IMG = {
@@ -107,7 +115,7 @@ function freshState() {
   return {
     meter: 0,
     cd: {},              // คูลดาวน์รายช่อง: เลขรอบสุดท้ายที่ยังติดคูลดาวน์ (แบบเดียวกับ ippo.setCooldown)
-    world: null,         // { actions, resume } ระหว่าง THE WORLD
+    world: null,         // { actions, resume, used: { [tier]: true } } ระหว่าง THE WORLD (used = ท่าที่ใช้ไปแล้วในครั้งนี้)
     lastStandUsed: false,
     lastStand: null,     // { attackerId, round, active } — ดวลที่จองไว้/กำลังดวล
     aimRound: 0,         // เทิร์นที่เล่นคลิปง้างมีดไปแล้ว (กันเล่นซ้ำ/กดรัวถ่วงเกม)
@@ -130,6 +138,24 @@ function enemySource(engine, p) {
 // พลังป้องกันรวมของเป้า (ใช้ตัดสินว่า "ทำความเสียหายได้จริง" ไหม)
 function guardTotal(p) { return (p.hp || 0) + (p.armor || 0) + (p.shield || 0) + (p.tempHp || 0); }
 function tierCost(tier) { return tier === "basic" ? SHINE_ACTIONS : tier === "secondary" ? TW_BARRAGE_ACTIONS : ROAD_ACTIONS; }
+// ท่าในร่างหยุดเวลาช่องนี้ยังกดได้ไหม (แอคชันพอ + ยังไม่ได้ใช้ใน THE WORLD ครั้งนี้)
+function worldTierOpen(w, tier) { return !!w && !(w.used && w.used[tier]) && (w.actions || 0) >= tierCost(tier); }
+function worldAnyOpen(w) { return TIERS.some((t) => worldTierOpen(w, t)); }
+// จำนวนหมัดที่ต้องเลือกเป้า (1 = เป้าเดียวแบบเดิม)
+function hitsFor(p, tier) {
+  if (worldOn(p)) return tier === "secondary" ? TW_BARRAGE_HITS : tier === "ultimate" ? ROAD_HITS : 1;
+  return tier === "secondary" ? BARRAGE_HITS : 1;
+}
+// สุ่ม 1 คลิปจากรายการ (ทุกครั้งที่กด)
+function pickClip(keys) { return keys[Math.min(keys.length - 1, Math.floor(Math.random() * keys.length))]; }
+// คลิปที่เล่นครั้งแรกต่อเกมเท่านั้น (p.cutsceneShown ล้างทุกแมตช์ใน resetCombat กลาง) — คืน true = คิวคลิปแล้ว
+function queueOnce(engine, p, key) {
+  if (!p.cutsceneShown) p.cutsceneShown = {};
+  if (p.cutsceneShown[key]) return false;
+  p.cutsceneShown[key] = true;
+  engine.queueCutscene(p, key);
+  return true;
+}
 
 module.exports = {
   id: ID,
@@ -150,6 +176,7 @@ module.exports = {
   isDio,
   meterOf,
   worldOn,
+  hitsFor,
 
   maxHp() { return MAX_HP; },
   maxArmor() { return MAX_ARMOR; },
@@ -189,7 +216,7 @@ module.exports = {
   canUseSkill(engine, p, tier) {
     if (!isDio(p)) return true;
     const s = st(p);
-    if (worldOn(p)) return (s.world.actions || 0) >= tierCost(tier);
+    if (worldOn(p)) return worldTierOpen(s.world, tier);
     if (this.duelActive(engine)) return false;
     if (this.cooldownLeft(engine, p, tier) > 0) return false;
     if (tier === "ultimate") return meterOf(p) >= ULT_METER_MIN;
@@ -197,12 +224,27 @@ module.exports = {
   },
   // ทุกท่าที่เล็งต้องเป็นศัตรูที่ยังอยู่ (Za warudo ไม่ต้องเลือกใคร)
   needsTarget(p, tier) { return worldOn(p) || tier !== "ultimate"; },
-  prepareTarget(engine, p, targets) {
-    const id = Array.isArray(targets) ? targets[0] : targets;
+  validTarget(engine, p, id) {
     const t = engine.players[id];
     if (!t || !t.alive || t.id === p.id) return null;
     if (engine.sameTeam(p, t) || engine.sealActive(t)) return null;
     return t;
+  },
+  // ท่าหลายหมัด (Barrage / Road Roller) คืน array เป้ารายหมัดยาวเท่าจำนวนหมัด (คนเดิมซ้ำได้)
+  //  id ที่เล็งไม่ได้ = ใช้เป้าที่ถูกต้องก่อนหน้า (หมัดแรกผิด = คนแรกที่ถูกต้องในรายการ) · ส่งมาไม่ครบ = ต่อด้วยเป้าสุดท้าย
+  prepareTarget(engine, p, targets, tier) {
+    const ids = Array.isArray(targets) ? targets : targets != null ? [targets] : [];
+    const n = tier ? hitsFor(p, tier) : 1;
+    if (n <= 1) return this.validTarget(engine, p, ids[0]);
+    const valid = ids.slice(0, n).map((id) => this.validTarget(engine, p, id));
+    let last = valid.find(Boolean) || null;
+    if (!last) return null;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      if (valid[i]) last = valid[i];
+      out.push(last);
+    }
+    return out;
   },
 
   // ---------- ลงผลของสกิล ----------
@@ -239,6 +281,25 @@ module.exports = {
     if (got > 0) engine.log(`🧛 ${p.name} Vampire — ดูดเลือดจาก${why} ฟื้นพลังชีวิต +${got}`);
     return got;
   },
+  // ตีทีละหมัดตามรายการเป้า (คนเดิมซ้ำได้) — เป้าที่ตายไปแล้วก่อนถึงหมัดนั้นถูกข้าม (ไม่เปลี่ยนเป้าให้)
+  //  คืน { dealt, hitList: [{ target, n }] ตามลำดับที่โดนครั้งแรก, skipped }
+  multiHit(engine, p, targets, dmg) {
+    const list = Array.isArray(targets) ? targets : [targets];
+    const counts = new Map();
+    let dealt = false, skipped = 0;
+    for (const t of list) {
+      if (!t || !t.alive) { skipped++; continue; }
+      if (this.hit(engine, p, t, dmg, 1)) dealt = true;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    return { dealt, hitList: [...counts].map(([target, n]) => ({ target, n })), skipped };
+  },
+  // ข้อความบันทึกของท่าหลายหมัด: "A รับความเสียหาย 1 × 2 · B รับความเสียหาย 1 × 1"
+  hitSummary(r, dmg) {
+    const parts = r.hitList.map(({ target, n }) => `${target.name} รับความเสียหาย ${dmg} × ${n}`);
+    if (r.skipped) parts.push(`ข้าม ${r.skipped} หมัด (เป้าตกรอบไปก่อน)`);
+    return parts.join(" · ") || "ไม่มีเป้าเหลือ";
+  },
 
   // ---------- สกิลพื้นฐาน Throwing knife ----------
   //  เรียกจาก socket "dioKnifeAim" ตอนผู้เล่นกดปุ่ม (ก่อนเลือกเป้า) — คืน true = คิวคลิปง้างมีดแล้ว ผู้เรียกต้องพักเฟสเล่นคลิป
@@ -246,6 +307,7 @@ module.exports = {
     if (!isDio(p) || !p.alive || p.locked || engine.gameState !== "PLAYING") return false;
     const s = st(p);
     if (worldOn(p) || s.aimRound === engine.roundNumber) return false;
+    if (p.cutsceneShown && p.cutsceneShown.dioKnifeAim) return false; // คลิปง้างเล่นครั้งแรกต่อเกมเท่านั้น (ไม่พักเฟส)
     if (p.skillUsedRound || ((p.statuses && p.statuses.noskill) || 0) > 0) return false;
     if (!this.canUseSkill(engine, p, "basic") || this.skillBlocked(engine, p, "basic")) return false;
     const flow = engine.statusAmtOf(p, "spellflow");
@@ -253,15 +315,14 @@ module.exports = {
     const cost = Math.max(0, ((engine.CHAR_BY_ID[ID] || {}).basic || {}).cost - flow);
     if (!free && (p.skillPoints || 0) < cost) return false;
     s.aimRound = engine.roundNumber;
-    engine.queueCutscene(p, "dioKnifeAim");
-    return true;
+    return queueOnce(engine, p, "dioKnifeAim");
   },
   applyKnife(engine, p, target) {
     const s = st(p);
-    // ไม่ได้ง้างผ่านปุ่ม (ไม่มี aim เทิร์นนี้) -> เล่นคลิปง้างต่อหน้าคลิปขว้างแทน
-    if (s.aimRound !== engine.roundNumber) engine.queueCutscene(p, "dioKnifeAim");
+    // ไม่ได้ง้างผ่านปุ่ม (ไม่มี aim เทิร์นนี้) -> เล่นคลิปง้างต่อหน้าคลิปขว้างแทน · ทั้งสองคลิปครั้งแรกต่อเกมเท่านั้น
+    if (s.aimRound !== engine.roundNumber) queueOnce(engine, p, "dioKnifeAim");
     s.aimRound = 0;
-    engine.queueCutscene(p, "dioKnifeThrow");
+    if (!queueOnce(engine, p, "dioKnifeThrow")) engine.notifyTransform(p, "dioKnifeThrow"); // ครั้งต่อไป = การ์ดแจ้งเตือน
     this.setCooldown(engine, p, "basic", KNIFE_CD);
     const dealt = this.hit(engine, p, target, KNIFE_DMG, 1);
     let bled = 0;
@@ -272,19 +333,26 @@ module.exports = {
   },
 
   // ---------- สกิลรอง Barrage ----------
-  applyBarrage(engine, p, target) {
-    engine.queueCutscene(p, "dioBarrage");
-    engine.queueCutscene(p, "dioBarrage2");
+  //  targets = array เป้ารายหมัดจาก prepareTarget (คลิปสุ่ม 1 จาก 2 ทุกครั้ง)
+  applyBarrage(engine, p, targets) {
+    engine.queueCutscene(p, pickClip(["dioBarrage", "dioBarrage2"]));
     this.setCooldown(engine, p, "secondary", BARRAGE_CD);
-    return this.barrageHits(engine, p, target, BARRAGE_DMG, BARRAGE_HITS, BARRAGE_DECAY);
+    return this.barrageHits(engine, p, targets, BARRAGE_DMG, BARRAGE_DECAY);
   },
-  barrageHits(engine, p, target, dmg, hits, decayTurns) {
-    const dealt = this.hit(engine, p, target, dmg, hits);
-    let decayed = false;
-    if (target.alive) engine.withEffectSource(p, () => { decayed = engine.applyDebuff(target, "decay", null, decayTurns); });
-    engine.log(`👊 ${p.name} Barrage — ${target.name} รับความเสียหาย ${dmg} × ${hits}${decayed ? ` และติดผุพัง ${decayTurns} เทิร์น` : ""}`);
-    if (dealt) this.vampireHeal(engine, p, target.name);
-    return ` — ${target.name}`;
+  // ทุกคนที่โดนอย่างน้อย 1 หมัดและยังอยู่ ติดผุพัง (คนละ 1 ครั้ง) · Vampire 1 ครั้งต่อการกด
+  barrageHits(engine, p, targets, dmg, decayTurns) {
+    const r = this.multiHit(engine, p, targets, dmg);
+    const decayed = [];
+    for (const { target } of r.hitList) {
+      if (!target.alive) continue;
+      let ok = false;
+      engine.withEffectSource(p, () => { ok = engine.applyDebuff(target, "decay", null, decayTurns); });
+      if (ok) decayed.push(target.name);
+    }
+    engine.log(`👊 ${p.name} Barrage — ${this.hitSummary(r, dmg)}${decayed.length ? ` · ติดผุพัง ${decayTurns} เทิร์น: ${decayed.join(", ")}` : ""}`);
+    const names = r.hitList.map((h) => h.target.name).join(", ");
+    if (r.dealt) this.vampireHeal(engine, p, names);
+    return names ? ` — ${names}` : "";
   },
 
   // ============================================================
@@ -296,15 +364,14 @@ module.exports = {
     s.meter = 0;
     this.setCooldown(engine, p, "ultimate", ULT_CD);
     // จำเวลาที่เหลือของเฟสจั่วไพ่ไว้ แล้วตั้งนาฬิกาของ THE WORLD แทน — pausePlayingForCutscene() ท้าย useSkill
-    //  อ่าน timeLeft ตัวนี้ไปตั้งใหม่หลังคลิปจบ เวลา 10 วิจึงเริ่มนับหลังคลิปทั้งสามเล่นจบ
-    s.world = { actions, resume: Math.max(1, engine.timeLeft || 1) };
+    //  อ่าน timeLeft ตัวนี้ไปตั้งใหม่หลังคลิปจบ เวลา 10 วิจึงเริ่มนับหลังคลิปเล่นจบ
+    //  used = ท่าที่ใช้ไปแล้วใน THE WORLD ครั้งนี้ (ทุกท่า 1 ครั้งต่อการเปิด) — สร้างใหม่ทุกครั้งที่กด Za warudo
+    s.world = { actions, resume: Math.max(1, engine.timeLeft || 1), used: {} };
     engine.setTimeLeft(WORLD_SECONDS);
     p.transformAt = engine.nextTransformCounter();
-    engine.queueCutscene(p, "dioWorld1");
-    engine.queueCutscene(p, "dioWorld2");
-    engine.queueCutscene(p, "dioWorld3");
+    engine.queueCutscene(p, pickClip(["dioWorld1", "dioWorld2", "dioWorld3"])); // สุ่ม 1 จาก 3 ทุกครั้ง
     engine.log(`⏱️ ${p.name} Za warudo!!!!!! — [THE WORLD] เวลาหยุดนิ่ง! ทุกคนขยับไม่ได้ · ดิโอได้ ${actions} แอคชัน (สูงสุด ${WORLD_SECONDS} วิ)`);
-    if (actions < MIN_ACTION) this.endWorld(engine, p, "แอคชันไม่พอใช้ท่าใด");
+    if (!worldAnyOpen(s.world)) this.endWorld(engine, p, "แอคชันไม่พอใช้ท่าใด");
     return ` — ${actions} แอคชัน`;
   },
   // ปิด THE WORLD แล้วคืนเวลาเฟสจั่วไพ่ที่จำไว้ (คืนค่าเวลาที่คืนให้ · null = ไม่ได้อยู่ใน THE WORLD)
@@ -331,6 +398,8 @@ module.exports = {
 
   applyWorldSkill(engine, p, tier, target) {
     const w = st(p).world;
+    w.used = w.used || {};
+    w.used[tier] = true; // 1 ครั้งต่อ THE WORLD
     let suffix = "";
     if (tier === "basic") {
       w.actions -= SHINE_ACTIONS;
@@ -343,20 +412,20 @@ module.exports = {
       suffix = ` — ${target.name}`;
     } else if (tier === "secondary") {
       w.actions -= TW_BARRAGE_ACTIONS;
-      engine.queueCutscene(p, "dioBarrage");
-      engine.queueCutscene(p, "dioBarrage2");
-      suffix = this.barrageHits(engine, p, target, TW_BARRAGE_DMG, TW_BARRAGE_HITS, TW_BARRAGE_DECAY);
+      engine.queueCutscene(p, pickClip(["dioBarrage", "dioBarrage2"]));
+      suffix = this.barrageHits(engine, p, target, TW_BARRAGE_DMG, TW_BARRAGE_DECAY);
     } else if (tier === "ultimate") {
       const spent = w.actions;
       w.actions = 0;
       engine.queueCutscene(p, "dioRoadRoller");
-      const dealt = this.hit(engine, p, target, ROAD_DMG, ROAD_HITS);
-      engine.log(`🚧 ${p.name} Road Roller! (ใช้ ${spent} แอคชัน) — ${target.name} รับความเสียหาย ${ROAD_DMG} × ${ROAD_HITS}`);
-      if (dealt) this.vampireHeal(engine, p, target.name);
+      const r = this.multiHit(engine, p, target, ROAD_DMG);
+      engine.log(`🚧 ${p.name} Road Roller! (ใช้ ${spent} แอคชัน) — ${this.hitSummary(r, ROAD_DMG)}`);
+      const names = r.hitList.map((h) => h.target.name).join(", ");
+      if (r.dealt) this.vampireHeal(engine, p, names);
       this.endWorld(engine, p, "Road Roller");
-      return ` — ${target.name}`;
+      return names ? ` — ${names}` : "";
     }
-    if (p.dio.world && p.dio.world.actions < MIN_ACTION) this.endWorld(engine, p, "แอคชันหมด");
+    if (p.dio.world && !worldAnyOpen(p.dio.world)) this.endWorld(engine, p, "ไม่เหลือท่าที่ใช้ได้");
     return suffix;
   },
 
@@ -582,7 +651,8 @@ module.exports = {
     return {
       meter: meterOf(p),
       meterMax: METER_MAX,
-      world: worldOn(p) ? { actions: s.world.actions } : null,
+      world: worldOn(p) ? { actions: s.world.actions, used: { ...(s.world.used || {}) } } : null,
+      picks: { basic: hitsFor(p, "basic"), secondary: hitsFor(p, "secondary"), ultimate: hitsFor(p, "ultimate") }, // จำนวนเป้าที่ client ต้องเลือก (รายหมัด)
       lastStandUsed: !!s.lastStandUsed,
       lastStand: s.lastStand ? { foe: foe ? foe.name : "", active: !!s.lastStand.active } : null,
     };
@@ -603,11 +673,11 @@ module.exports = {
   skillLocks(engine, p) {
     if (!isDio(p) || !p.dio) return undefined;
     if (worldOn(p)) {
-      const a = p.dio.world.actions || 0;
+      const w = p.dio.world;
       return {
-        basic: { locked: a < SHINE_ACTIONS, free: true },
-        secondary: { locked: a < TW_BARRAGE_ACTIONS, free: true },
-        ultimate: { locked: a < ROAD_ACTIONS, free: true },
+        basic: { locked: !worldTierOpen(w, "basic"), free: true },
+        secondary: { locked: !worldTierOpen(w, "secondary"), free: true },
+        ultimate: { locked: !worldTierOpen(w, "ultimate"), free: true },
       };
     }
     const duel = this.duelActive(engine);

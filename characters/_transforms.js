@@ -203,17 +203,19 @@ module.exports = function buildTransforms(img) {
     taktCmdTitan:      { img: titanChar.IMG.base, video: taktChar.VIDEO.cmdTitan, title: "บรรเลง", label: "ไททันล่อเป้า", seconds: 7, music: null, afterReveal: false },
     taktCmdDestiny:    { img: cosetteChar.IMG.base, video: taktChar.VIDEO.cmdDestiny, title: "บรรเลง", label: "เดสตินี่โจมตี", seconds: 6, music: null, afterReveal: false },
     // ---------- ดิโอ แบรนโด (Stardust) ----------
-    //  ทุกคลิปเรียกผ่าน queueCutscene = เล่นทุกครั้ง · seconds = ความยาวจริงปัดขึ้น (+1 ให้คลิปแรกที่มีการ์ดเปิดตัว)
-    //  คลิปที่เล่นต่อกันเป็นชุด (Barrage 2 · Za warudo 2-3 · ขว้างมีด) ใช้ noIntro ให้ต่อเนื่องไม่มีการ์ดคั่น
+    //  ทุกคลิปเรียกผ่าน queueCutscene = เล่นทุกครั้ง ยกเว้นมีดสองคลิป (ครั้งแรกต่อเกม — dio.js queueOnce)
+    //  seconds = ความยาวจริงปัดขึ้น (+1 ให้คลิปที่มีการ์ดเปิดตัว)
+    //  Barrage สุ่ม 1 จาก 2 · Za warudo สุ่ม 1 จาก 3 (เล่นเดี่ยวทุกคลิป จึงมีการ์ดเปิดตัวทุกตัว)
+    //  ขว้างมีดเล่นต่อจากคลิปง้าง (ครั้งแรกต่อเกม) จึงใช้ noIntro ให้ต่อเนื่องไม่มีการ์ดคั่น
     //  ความยาวจริง: skill1 3.48 / skill1_after 5.33 / skill2 4.76 / skill2_x2 5.06 / ult1 5.93 / ult2 4.35 / ult3 3.75
     //   shine 3.52 / roadroller 4.97 / laststand 6.19 / laststand_fail 7.51 วิ
     dioKnifeAim:      { img: dioChar.IMG.knife,      video: dioChar.VIDEO.knifeAim,      title: "Throwing knife", label: "ง้างมีด",          seconds: 5, music: null, afterReveal: false },
     dioKnifeThrow:    { img: dioChar.IMG.knife,      video: dioChar.VIDEO.knifeThrow,    title: "Throwing knife", label: "ขว้างมีด",         seconds: 6, music: null, afterReveal: false, noIntro: true },
     dioBarrage:       { img: dioChar.IMG.barrage,    video: dioChar.VIDEO.barrage,       title: "Barrage",        label: "หมัดต่อเนื่อง",     seconds: 6, music: null, afterReveal: false },
-    dioBarrage2:      { img: dioChar.IMG.barrage,    video: dioChar.VIDEO.barrage2,      title: "Barrage",        label: "หมัดต่อเนื่อง",     seconds: 6, music: null, afterReveal: false, noIntro: true },
+    dioBarrage2:      { img: dioChar.IMG.barrage,    video: dioChar.VIDEO.barrage2,      title: "Barrage",        label: "หมัดต่อเนื่อง",     seconds: 7, music: null, afterReveal: false },
     dioWorld1:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult1,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 7, music: null, afterReveal: false },
-    dioWorld2:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult2,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 5, music: null, afterReveal: false, noIntro: true },
-    dioWorld3:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult3,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 4, music: null, afterReveal: false, noIntro: true },
+    dioWorld2:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult2,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 6, music: null, afterReveal: false },
+    dioWorld3:        { img: dioChar.IMG.timestop,   video: dioChar.VIDEO.ult3,          title: "Za warudo!!!!!!", label: "THE WORLD",      seconds: 5, music: null, afterReveal: false },
     dioShine:         { img: dioChar.IMG.shine,      video: dioChar.VIDEO.shine,         title: "SHINEI!",        label: "ร่างหยุดเวลา",      seconds: 5, music: null, afterReveal: false },
     dioRoadRoller:    { img: dioChar.IMG.roadroller, video: dioChar.VIDEO.roadroller,    title: "Road Roller",    label: "ร่างหยุดเวลา",      seconds: 6, music: null, afterReveal: false },
     dioLastStand:     { img: dioChar.IMG.base,       video: dioChar.VIDEO.lastStand,     title: "Last stand",     label: "ดวลเดิมพันชีวิต",   seconds: 8, music: null, afterReveal: false },

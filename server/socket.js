@@ -424,7 +424,7 @@ io.on('connection', (socket) => {
   }, 4);
   onPlayerEvent(socket, 'nanayaToggleEye', (id) => draw.nanayaToggleEye(id), 4);
   // ดิโอ Throwing knife: กดปุ่มแล้ว (ก่อนเลือกเป้า) เล่นคลิปง้างมีดให้ทุกคน — client เข้าโหมดเลือกเป้าค้างไว้ระหว่างคลิป
-  //  แล้วค่อยส่ง useSkill ตอนเลือกเป้า · คลิปเล่นเฉพาะตอนกดสกิลได้จริง และไม่เกิน 1 ครั้ง/เทิร์น (dio.aimKnife)
+  //  แล้วค่อยส่ง useSkill ตอนเลือกเป้า · คลิปเล่นเฉพาะตอนกดสกิลได้จริง และครั้งแรกต่อเกมเท่านั้น (dio.aimKnife — ครั้งต่อไปไม่พักเฟส)
   onPlayerEvent(socket, 'dioKnifeAim', (id) => {
     const p = match.players[id];
     if (!p || match.gameState !== 'PLAYING') return;

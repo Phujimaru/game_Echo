@@ -1,5 +1,6 @@
 // ดิโอ แบรนโด (Stardust) — characters/dio.js ผ่าน engine จริง
 //  เกจเวลา · Vampire (ดูดเลือด + กลางวัน/กลางคืน + Last stand) · Throwing knife · Barrage · Za warudo / THE WORLD
+//  คลิปสุ่ม (Barrage 1/2 · Za warudo 1/3) · คลิปมีดครั้งแรกต่อเกม · เลือกเป้ารายหมัด · ชุดหยุดเวลา 1 ครั้งต่อ THE WORLD
 //  เป้าหมายใช้ temari / kai (ไม่มีการหลบแบบสุ่ม — กับดัก #6)
 process.env.JOURNEY_START_SECONDS = '0';
 const test = require('node:test');
@@ -43,16 +44,18 @@ function attack(byId, targetId) {
   engine.doAttack(byId, targetId);
   engine.clearPhaseTimer();
 }
-const saved = { triggerCutscene: engine.triggerCutscene, queueCutscene: engine.queueCutscene, skillFlash: engine.skillFlash, sfx: engine.sfx };
+const saved = { triggerCutscene: engine.triggerCutscene, queueCutscene: engine.queueCutscene, notifyTransform: engine.notifyTransform, skillFlash: engine.skillFlash, sfx: engine.sfx };
 const cutscenes = [];
+const notices = [];
 test.before(() => {
   engine.triggerCutscene = (p, k) => cutscenes.push(k);
   engine.queueCutscene = (p, k) => cutscenes.push(k);
+  engine.notifyTransform = (p, k) => notices.push(k);
   engine.skillFlash = () => {};
   engine.sfx = () => {};
 });
 test.after(() => { Object.assign(engine, saved); for (const id of Object.keys(engine.players)) delete engine.players[id]; engine.setCycleShift(0); });
-test.afterEach(() => { Math.random = realRandom; engine.clearPhaseTimer(); cutscenes.length = 0; engine.setCycleShift(0); });
+test.afterEach(() => { Math.random = realRandom; engine.clearPhaseTimer(); cutscenes.length = 0; notices.length = 0; engine.setCycleShift(0); });
 
 // ---------------------------------------------------------------- ข้อมูล
 test('ข้อมูล: กลาง · พลังชีวิต 6 เกราะ 4 · ราคา 3/3/0 · ชุดหยุดเวลาราคา 0 · คลิปทุกตัวคิวเอง', () => {
@@ -163,6 +166,43 @@ test('Throwing knife: ง้างผ่านปุ่ม (aimKnife) เล่�
   assert.equal(dio.aimKnife(engine, D), false, 'แต้มไม่พอ = ไม่เล่นคลิป');
 });
 
+test('Throwing knife: คลิปเล่นครั้งแรกต่อเกมเท่านั้น — ครั้งต่อไปเป็นการ์ดแจ้งเตือน ไม่มีคลิป', () => {
+  const { D } = setup();
+  engine.useSkill('D', 'basic', ['T']);
+  assert.deepEqual(cutscenes, ['dioKnifeAim', 'dioKnifeThrow']);
+  assert.deepEqual(notices, []);
+  cutscenes.length = 0;
+  engine.setRoundNumber(engine.roundNumber + 3);
+  engine.setGameState('PLAYING');
+  D.skillUsedRound = false;
+  const sp = D.skillPoints;
+  engine.useSkill('D', 'basic', ['K']);
+  assert.equal(D.skillPoints, sp - 3, 'สกิลยังทำงาน');
+  assert.deepEqual(cutscenes, [], 'ไม่มีคลิปครั้งที่สอง');
+  assert.deepEqual(notices, ['dioKnifeThrow']);
+  // แมตช์ใหม่ = เล่นได้อีก (cutsceneShown ล้างที่ resetCombat)
+  setup();
+  engine.useSkill('D', 'basic', ['T']);
+  assert.deepEqual(cutscenes, ['dioKnifeAim', 'dioKnifeThrow']);
+});
+
+test('Throwing knife: ง้างผ่านปุ่มหลังครั้งแรกของเกม = ไม่เล่นคลิปง้าง ไม่พักเฟส', () => {
+  const { D } = setup();
+  assert.equal(dio.aimKnife(engine, D), true, 'ครั้งแรกของเกม');
+  engine.setGameState('PLAYING');
+  engine.useSkill('D', 'basic', ['T']);
+  assert.deepEqual(cutscenes, ['dioKnifeAim', 'dioKnifeThrow']);
+  cutscenes.length = 0;
+  engine.setRoundNumber(engine.roundNumber + 3);
+  engine.setGameState('PLAYING');
+  D.skillUsedRound = false;
+  assert.equal(dio.aimKnife(engine, D), false, 'ครั้งต่อไป socket ไม่ต้องพักเฟส');
+  assert.equal(engine.gameState, 'PLAYING');
+  engine.useSkill('D', 'basic', ['K']);
+  assert.deepEqual(cutscenes, []);
+  assert.deepEqual(notices, ['dioKnifeThrow']);
+});
+
 test('Throwing knife: ต้องเลือกเป้าศัตรู — ไม่เลือก/เลือกตัวเอง = ไม่เสียแต้ม', () => {
   const { D } = setup();
   engine.useSkill('D', 'basic');
@@ -172,16 +212,56 @@ test('Throwing knife: ต้องเลือกเป้าศัตรู —
 });
 
 // ---------------------------------------------------------------- Barrage
-test('Barrage: 1 × 2 + ผุพัง 2 เทิร์น · คลิป 2 ต่อกัน · คูลดาวน์ 3', () => {
+test('Barrage: 1 × 2 เป้าเดียว (ส่งมาเป้าเดียว = ทุกหมัดลงคนนั้น) + ผุพัง 2 เทิร์น · คลิปเดียว · คูลดาวน์ 3', () => {
   const { D, K } = setup();
+  Math.random = () => 0;
   K.armor = 1;
   const hp = K.hp;
   engine.useSkill('D', 'secondary', ['K']);
   assert.equal(K.armor, 0);
   assert.equal(K.hp, hp - 1, 'หมัดที่สองทะลุเข้าเลือด');
   assert.equal(K.statuses.decay, 2);
-  assert.deepEqual(cutscenes, ['dioBarrage', 'dioBarrage2']);
+  assert.deepEqual(cutscenes, ['dioBarrage']);
   assert.equal(dio.cooldownLeft(engine, D, 'secondary'), 4);
+});
+
+test('Barrage: คลิปสุ่ม 1 จาก 2 ทุกครั้งที่กด (ไม่เล่นต่อกัน)', () => {
+  for (const [r, clip] of [[0, 'dioBarrage'], [0.49, 'dioBarrage'], [0.5, 'dioBarrage2'], [0.999, 'dioBarrage2']]) {
+    setup();
+    Math.random = () => r;
+    engine.useSkill('D', 'secondary', ['K']);
+    assert.deepEqual(cutscenes, [clip], `random ${r}`);
+  }
+});
+
+test('Barrage: เลือกเป้ารายหมัด — คนละคนได้ · ทุกคนที่โดนติดผุพัง · Vampire ครั้งเดียว', () => {
+  const { D, T, K } = setup();
+  D.hp = 3;
+  T.armor = 0; K.armor = 0;
+  const th = T.hp, kh = K.hp;
+  engine.useSkill('D', 'secondary', ['T', 'K']);
+  assert.equal(T.hp, th - 1);
+  assert.equal(K.hp, kh - 1);
+  assert.equal(T.statuses.decay, 2);
+  assert.equal(K.statuses.decay, 2);
+  assert.equal(D.hp, 4, 'Vampire 1 ครั้งต่อการกด ไม่ใช่ต่อเป้า');
+  assert.equal(D.skillPoints, 5);
+});
+
+test('Barrage: id ที่เล็งไม่ได้ใช้เป้าที่ถูกต้องแทน · ไม่มีเป้าที่ถูกต้องเลย = กดไม่ได้ ไม่เสียแต้ม', () => {
+  const { D, T, K } = setup();
+  T.armor = 0; K.armor = 0;
+  const th = T.hp, kh = K.hp;
+  engine.useSkill('D', 'secondary', ['D', 'T']);
+  assert.equal(T.hp, th - 2, 'หมัดแรกเล็งตัวเอง -> ใช้เป้าที่ถูกต้องคนแรก');
+  assert.equal(K.hp, kh);
+  const P = setup();
+  engine.useSkill('D', 'secondary', ['D', 'nobody']);
+  assert.equal(P.D.skillPoints, 8);
+  assert.equal(P.D.skillUsedRound, false);
+  const picks = dio.prepareTarget(engine, P.D, ['K', 'D'], 'secondary');
+  assert.deepEqual(picks.map((x) => x.id), ['K', 'K'], 'หมัดหลังผิด = ใช้เป้าก่อนหน้า');
+  assert.equal(dio.prepareTarget(engine, P.D, ['T', 'K'], 'basic').id, 'T', 'ท่าหมัดเดียวคืนเป้าเดียว');
 });
 
 // ---------------------------------------------------------------- Za warudo / THE WORLD
@@ -194,16 +274,17 @@ function startWorld(meter) {
   return P;
 }
 
-test('Za warudo: ต้องมีเกจ 1 ขึ้นไป · ไม่ใช้แต้มสกิล · ใช้เกจทั้งหมดเป็นแอคชัน · นาฬิกา 10 วิ · คลิป 1→2→3', () => {
+test('Za warudo: ต้องมีเกจ 1 ขึ้นไป · ไม่ใช้แต้มสกิล · ใช้เกจทั้งหมดเป็นแอคชัน · นาฬิกา 10 วิ · คลิปสุ่ม 1 จาก 3', () => {
   const { D } = setup();
   engine.useSkill('D', 'ultimate');
   assert.equal(dio.worldOn(D), false, 'เกจ 0 กดไม่ได้');
+  Math.random = () => 0;
   const P = startWorld(5);
   assert.equal(P.D.dio.world.actions, 5);
   assert.equal(dio.meterOf(P.D), 0);
   assert.equal(P.D.skillPoints, 8, 'ไม่ใช้แต้มสกิล');
   assert.equal(engine.timeLeft, dio.WORLD_SECONDS);
-  assert.deepEqual(cutscenes, ['dioWorld1', 'dioWorld2', 'dioWorld3']);
+  assert.deepEqual(cutscenes, ['dioWorld1']);
   assert.equal(engine.displayImg(P.D), dio.IMG.timestop);
   assert.equal(dio.cooldownLeft(engine, P.D, 'ultimate'), 5);
 });
@@ -250,7 +331,7 @@ test('THE WORLD: ไรเดอร์ที่ Clock Up อยู่ก็ถ�
   assert.equal(dio.actionBlocked(engine, Z), true);
 });
 
-test('THE WORLD: SHINEI! 2 แอคชัน — ดาเมจ 2 + ไร้ทางเยียวยา 2 · ดูดเลือด · ไม่กินโควตา/แต้ม · ปุ่มเป็นชุดหยุดเวลา', () => {
+test('THE WORLD: SHINEI! 3 แอคชัน — ดาเมจ 2 + ไร้ทางเยียวยา 2 · ดูดเลือด · ไม่กินโควตา/แต้ม · 1 ครั้งต่อ THE WORLD', () => {
   const { D, T } = startWorld(6);
   D.hp = 2;
   assert.equal(D.skillUsedRound, true, 'Za warudo กินโควตาของเทิร์น');
@@ -264,12 +345,21 @@ test('THE WORLD: SHINEI! 2 แอคชัน — ดาเมจ 2 + ไร้�
   assert.equal(T.hp, hp - 2);
   assert.equal(T.statuses.nohealing, 2);
   assert.equal(D.hp, 3, 'Vampire');
-  assert.equal(D.dio.world.actions, 4);
+  assert.equal(D.dio.world.actions, 3);
   assert.equal(D.skillPoints, 8);
   assert.deepEqual(cutscenes, ['dioShine']);
   engine.setGameState('PLAYING');
+  const hp2 = T.hp;
   engine.useSkill('D', 'basic', ['T']);
-  assert.equal(D.dio.world.actions, 2, 'กดต่อได้ (ไม่ติดโควตา)');
+  assert.equal(D.dio.world.actions, 3, 'SHINEI! ซ้ำใน THE WORLD เดียวกันไม่ได้');
+  assert.equal(T.hp, hp2);
+  const locks = engine.buildStateFor('D').players.find((x) => x.id === 'D').skillLocks;
+  assert.equal(locks.basic.locked, true, 'ปุ่ม SHINEI! ล็อก');
+  assert.equal(locks.secondary.locked, false);
+  assert.equal(locks.ultimate.locked, false);
+  Math.random = () => 0;
+  engine.useSkill('D', 'secondary', ['T']);
+  assert.equal(dio.worldOn(D), false, 'ท่าอื่นยังกดต่อได้ (ไม่ติดโควตา) · แอคชันหมด = จบ');
 });
 
 test('THE WORLD: Barrage 3 แอคชัน — 1 × 3 + ผุพัง · แอคชันเหลือไม่พอ = THE WORLD จบ คืนเวลาเดิม', () => {
@@ -283,10 +373,9 @@ test('THE WORLD: Barrage 3 แอคชัน — 1 × 3 + ผุพัง · �
   assert.equal(engine.timeLeft, 37, 'เวลาเฟสจั่วไพ่เดินต่อจากที่เหลือตอนกด');
 });
 
-test('THE WORLD: Road Roller ต้องมี 4 แอคชัน · 2 × 2 · ใช้แอคชันที่เหลือทั้งหมดแล้วจบทันที', () => {
-  const P = startWorld(3);
-  engine.useSkill('D', 'ultimate', ['T']);
-  assert.equal(P.D.dio.world.actions, 3, 'มี 3 แอคชัน กด Road Roller ไม่ได้');
+test('THE WORLD: Road Roller ต้องมี 3 แอคชัน · 2 × 2 · ใช้แอคชันที่เหลือทั้งหมดแล้วจบทันที', () => {
+  const P = startWorld(2);
+  assert.equal(dio.worldOn(P.D), false, 'เกจ 2 = แอคชันไม่พอใช้ท่าใด จบทันที');
   const { D, T } = startWorld(6);
   T.armor = 0; T.hp = 7;
   engine.useSkill('D', 'ultimate', ['T']);
@@ -304,6 +393,67 @@ test('THE WORLD: ครบ 10 วิ (resolveRound จากตัวจับ�
   assert.equal(engine.gameState, 'PLAYING');
   assert.equal(engine.timeLeft, 37);
   assert.equal(T.locked, false, 'ยังไม่ได้สรุปรอบ');
+});
+
+test('THE WORLD: Road Roller ที่ 3 แอคชันพอดี · เลือกเป้ารายหมัด (คนละคน) · ดูดเลือดครั้งเดียว', () => {
+  const { D, T, K } = startWorld(3);
+  assert.equal(dio.worldOn(D), true);
+  D.hp = 2;
+  T.armor = 0; K.armor = 0;
+  const th = T.hp, kh = K.hp;
+  engine.useSkill('D', 'ultimate', ['T', 'K']);
+  assert.equal(T.hp, th - 2);
+  assert.equal(K.hp, kh - 2);
+  assert.equal(D.hp, 3, 'Vampire 1 ครั้ง');
+  assert.equal(dio.worldOn(D), false);
+  assert.equal(engine.timeLeft, 37);
+});
+
+test('THE WORLD: Barrage เลือกเป้ารายหมัด — เป้าตายก่อนถึงหมัดถัดไปถูกข้าม (ไม่เปลี่ยนเป้า)', () => {
+  const { D, T, K } = startWorld(6);
+  K.armor = 0; K.hp = 1;
+  T.armor = 0;
+  const th = T.hp;
+  engine.useSkill('D', 'secondary', ['K', 'K', 'T']);
+  assert.equal(K.alive, false);
+  assert.equal(T.hp, th - 1, 'หมัดที่ 2 (K ตายแล้ว) ข้าม · หมัดที่ 3 ลง T');
+  assert.equal(T.statuses.decay, 2);
+  assert.equal(D.dio.world.actions, 3);
+  assert.equal(D.dio.world.used.secondary, true);
+  assert.match(require('../../server/match.js').lastLog.join(' '), /ข้าม 1 หมัด/);
+});
+
+test('THE WORLD: Barrage 1 ครั้งต่อ THE WORLD · Za warudo ครั้งใหม่รีเซ็ตโควตา', () => {
+  const { D, K } = startWorld(6);
+  Math.random = () => 0;
+  K.armor = 0; K.hp = 9;
+  engine.useSkill('D', 'secondary', ['K']);
+  engine.setGameState('PLAYING');
+  assert.equal(D.dio.world.actions, 3);
+  engine.useSkill('D', 'secondary', ['K']);
+  assert.equal(D.dio.world.actions, 3, 'Barrage ซ้ำไม่ได้');
+  assert.equal(K.hp, 6);
+  engine.useSkill('D', 'basic', ['K']);
+  assert.equal(dio.worldOn(D), false);
+  // THE WORLD ครั้งใหม่ (พ้นคูลดาวน์) — ใช้ได้อีก
+  engine.setRoundNumber(engine.roundNumber + 5);
+  D.skillUsedRound = false;
+  D.dio.meter = 6;
+  engine.useSkill('D', 'ultimate');
+  engine.setGameState('PLAYING');
+  assert.equal(dio.worldOn(D), true);
+  assert.deepEqual(D.dio.world.used, {});
+  engine.useSkill('D', 'secondary', ['K']);
+  assert.equal(D.dio.world.actions, 3, 'Barrage ใช้ได้อีกใน THE WORLD ใหม่');
+});
+
+test('THE WORLD: client ได้จำนวนหมัดที่ต้องเลือกเป้า (picks) ตามร่าง', () => {
+  const P = setup();
+  assert.deepEqual(engine.buildStateFor('D').players.find((x) => x.id === 'D').dio.picks, { basic: 1, secondary: 2, ultimate: 1 });
+  P.D.dio.meter = 6;
+  engine.useSkill('D', 'ultimate');
+  engine.setGameState('PLAYING');
+  assert.deepEqual(engine.buildStateFor('D').players.find((x) => x.id === 'D').dio.picks, { basic: 1, secondary: 3, ultimate: 2 });
 });
 
 test('THE WORLD: เกจ 1 = เข้า THE WORLD แล้วจบทันที (แอคชันไม่พอใช้ท่าใด)', () => {

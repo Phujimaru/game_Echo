@@ -127,8 +127,6 @@ function afterSummary() {
       return;
     }
   }
-  // จอห์นนี่ Snipe Shot: ชนะการเปิดไพ่ (ไม่เสมอ) = ยิงที่เล็งไว้ก่อนเฟสโจมตี — แยกจากตีปกติ ยังได้ตีต่อตามเดิม
-  if (winner && winner.alive && !match.roundTiedWin) CHAR_HOOKS.johnny.fireSnipe(engine, winner);
   const doomTieOverride = match.doomTieAttack && !!winner && winner.alive && winner.characterId === "doomguy";
   if (winner && winner.alive && (!match.roundTiedWin || doomTieOverride)) {
     const targets = attackableTargets(winner.id);
@@ -224,7 +222,7 @@ function attackSoundOf(attacker) {
   if (attacker.characterId === "recruit") return CHAR_HOOKS.recruit.attackSound(attacker); // เสียงปืน
   if (attacker.characterId === "striker") return CHAR_HOOKS.striker.attackSound(attacker);
   if (attacker.characterId === "cayenne") return CHAR_HOOKS.cayenne.attackSound(attacker);
-  if (attacker.characterId === "johnny") return CHAR_HOOKS.johnny.attackSound(attacker); // johnny_nail.mp3 (เสียงอย่างเดียว ไม่ใช้กระสุนเล็บ)
+  if (attacker.characterId === "johnny") return CHAR_HOOKS.johnny.attackSound(attacker); // johnny_nail.mp3 (เสียงอย่างเดียว — การใช้กระสุนเล็บคิดใน johnny.onAttack)
   if (attacker.characterId === "cosette") return "destiny_hit"; // destiny_hit.mp3 (ทุกร่าง)
   if (attacker.characterId === "titan") return CHAR_HOOKS.titan.attackSound(attacker); // titan_hit.mp3 // ร่างเกพาร์ด: เสียงปืน           // BA.mp3
   if (attacker.characterId === "muimi") return CHAR_HOOKS.muimi.towerActive(attacker) ? "muimi_ub_hit" : "muimi_normal_hit";
@@ -325,7 +323,7 @@ function doAttack(byId, targetId) {
   CHAR_HOOKS.usagi.onAttack(engine, attacker);
   CHAR_HOOKS.artoria_caster.onAttack(engine, attacker); // ความหวัง: ออกหมัด (ถูกหลบก็นับ) ฟื้นแต้มสกิล +1
   CHAR_HOOKS.cosette.onAttack(engine, attacker); // คอเซ็ตต์: ล้างผลหมัดก่อน · คอนดักเตอร์ออกหมัด -> Maestro จองตามตี
-  CHAR_HOOKS.johnny.onAttack(engine, attacker, target); // จอห์นนี่: ล้างผลหมัดก่อน · Rapid Shot ที่ค้างเริ่มชุดยิง 2 นัด
+  CHAR_HOOKS.johnny.onAttack(engine, attacker, target); // จอห์นนี่: ล้างผลหมัดก่อน · ใช้กระสุนเล็บ 1 (ถ้ามี) · Rapid Shot ที่ค้างเริ่มชุดยิง 3 นัด
   CHAR_HOOKS.reines.onAttack(engine, attacker); // คุณนายใหญ่: ผู้ติดคำสั่งขั้นเด็ดขาดออกหมัด -> ไรเนสฟื้นแต้มสกิล +2
   // Bamboo-Hatted Kim: จำว่าออกหมัด (ก่อนด่านหลบทั้งหมด) — ถูกหลบ = ฝักดาบ +10 ตัดสินที่หมัดถัดไป/endTurn
   CHAR_HOOKS.kim.beforeAttack(engine, attacker);
@@ -537,9 +535,8 @@ function doAttack(byId, targetId) {
 
   // คอเซ็ตต์: ผ่านด่านหลบแล้ว = ทิ่มแทง (คัดลอกบัฟ/ภาระเวท) หรือ Destiny II (ลบบัฟเป้า) ลงก่อนคิดดาเมจ + คิววีดีโอ
   const cosetteFx = CHAR_HOOKS.cosette.prepareOnAttack(engine, attacker, target);
-  // จอห์นนี่: ผ่านด่านหลบแล้ว = ใช้ Lesson Five / Ora ที่ค้าง + ลบ Chumimi + คิววีดีโอ (ก่อนคิดพลังโจมตี — damageBonus อ่านผลนี้)
+  // จอห์นนี่: ผ่านด่านหลบแล้ว = ใช้ Ora ที่ค้าง + Rapid Shot ลบ Chumimi + คิววีดีโอ (ก่อนคิดพลังโจมตี — damageBonus อ่านผลนี้)
   const johnnyFx = CHAR_HOOKS.johnny.prepareOnAttack(engine, attacker, target);
-  const johnnyPierce = CHAR_HOOKS.johnny.piercing(attacker); // Lesson Five + Chumimi: ไม่สนการลดดาเมจทุกชนิด
   // สูตรพลังโจมตีพื้นฐาน — ย้าย body ไป computeAttackBase() แล้ว (ดูก่อนหน้า doAttack ในไฟล์นี้)
   let {
     base,
@@ -589,7 +586,7 @@ function doAttack(byId, targetId) {
   }
   // คุ้มครอง (Harmony / สถานะพื้นฐาน): ความเสียหายที่ได้รับลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1)
   const bardGuard = (target.statuses.guard || 0) > 0;
-  const guardAmt = johnnyPierce ? 0 : (bardGuard ? (statusAmtOf(target, "guard") || 1) : 0)
+  const guardAmt = (bardGuard ? (statusAmtOf(target, "guard") || 1) : 0)
     + CHAR_HOOKS.the_supplicant.statusAmtBonus(target, "guard");
   if (guardAmt > 0) dmg = Math.max(0, dmg - guardAmt);
   // Discord (Bard): เป้าหมายติดขัดแย้ง — ความเสียหายที่ได้รับ +1
@@ -602,10 +599,10 @@ function doAttack(byId, targetId) {
   const yunaDeleteAmt = statusAmtOf(target, "yunaDelete");
   if (yunaDeleteAmt > 0) dmg += yunaDeleteAmt;
   //  เอจิ (เอฟเฟกต์เฉพาะตัว): โจมตีปกติของเอจิไม่สนบัฟลดความเสียหาย Smile for You ของเป้าหมาย
-  const yunaSmileAmt = CHAR_HOOKS.eiji.ignoresYunaSmile(attacker) || johnnyPierce ? 0 : statusAmtOf(target, "yunaSmile");
+  const yunaSmileAmt = CHAR_HOOKS.eiji.ignoresYunaSmile(attacker) ? 0 : statusAmtOf(target, "yunaSmile");
   if (yunaSmileAmt > 0) dmg = Math.max(0, dmg - yunaSmileAmt);
   // เต็มอิ่ม (Breakfast โอกูริ patch 2.0.8.1): ดาเมจที่ได้รับ -1 (หมดหลังจบเทิร์นที่กดใช้)
-  const fullBelly = !johnnyPierce && (target.statuses.fullbelly || 0) > 0;
+  const fullBelly = (target.statuses.fullbelly || 0) > 0;
   if (fullBelly) dmg = Math.max(0, dmg - 1);
   // MOON*CELL (คิชินามิ ฮาคุโนะ patch 2.2.1): ทุกคนยกเว้นเจ้าของท่า โจมตีด้วยพลังโจมตีพื้นฐาน 1 หน่วยเท่านั้น
   //  ไม่ว่าจะเสริมแกร่งอะไรมา (ทับค่าที่คำนวณไว้ทั้งหมดข้างบน — สกิลติดตัว/บัฟถาวรที่ไม่ใช่สถานะก็โดนด้วย)

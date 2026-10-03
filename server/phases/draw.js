@@ -283,7 +283,7 @@ function dealRound() {
     CHAR_HOOKS.takt.onRoundStartTick(engine, p);
     CHAR_HOOKS.titan.onRoundStartTick(engine, p);
     CHAR_HOOKS.cosette.onRoundStartTick(engine, p); // คอเซ็ตต์: ร่างมนุษย์ฟื้น 1 / พรมลิขิตเสีย 2 (หรือลงคอนดักเตอร์ 1)
-    // จอห์นนี่: สตั้นของ Lesson Five เริ่มมีผล (ทุกคน · ก่อนบล็อกเช็คสตั้น) · Spin Energy แต้มสกิล +1 · Spin Mastery นับถอยหลัง
+    // จอห์นนี่: Spin Energy แต้มสกิล +1 · Spin Mastery นับถอยหลัง · ล้างชุด Rapid Shot ที่ค้าง
     CHAR_HOOKS.johnny.onRoundStartTick(engine, p);
     // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
     CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);

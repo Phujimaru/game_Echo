@@ -533,16 +533,17 @@ function useSkillCore(id, tier, targets, item) {
   if (isTitanPick && !CHAR_HOOKS.titan.canUseSkill(engine, p, tier)) return;
   const isCosettePick = p.characterId === "cosette";
   if (isCosettePick && !CHAR_HOOKS.cosette.canUseSkill(engine, p, tier, item)) return;
-  const isJohnnyPick = p.characterId === "johnny"; // คูลดาวน์รายท่า · กระสุนเล็บ · Golden Ratio · เป้าของ Snipe Shot
+  const isJohnnyPick = p.characterId === "johnny"; // คูลดาวน์รายท่า · กระสุนเล็บ · Golden Ratio · เป้าของ Snipe Shot / Lesson Five
   if (isJohnnyPick && !CHAR_HOOKS.johnny.canUseSkill(engine, p, tier, targets, item)) return;
   // ---------- ดิโอ แบรนโด (characters/dio.js) ----------
-  //  คูลดาวน์/เกจเวลา (ร่างปกติ) หรือแอคชันพอ (THE WORLD) · ทุกท่าเล็งศัตรู 1 คน ยกเว้น Za warudo
+  //  คูลดาวน์/เกจเวลา (ร่างปกติ) หรือแอคชันพอ + ยังไม่ใช้ใน THE WORLD ครั้งนี้ · ทุกท่าเล็งศัตรู ยกเว้น Za warudo
+  //  Barrage / Road Roller เลือกเป้ารายหมัด (targets ยาวเท่าจำนวนหมัด · คนเดิมซ้ำได้)
   const isDioPick = p.characterId === "dio";
   let dioTarget = null;
   if (isDioPick) {
     if (!CHAR_HOOKS.dio.canUseSkill(engine, p, tier)) return;
     if (CHAR_HOOKS.dio.needsTarget(p, tier)) {
-      dioTarget = CHAR_HOOKS.dio.prepareTarget(engine, p, targets);
+      dioTarget = CHAR_HOOKS.dio.prepareTarget(engine, p, targets, tier); // ท่าหลายหมัด = array เป้ารายหมัด
       if (!dioTarget) return;
     }
   }

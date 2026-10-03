@@ -1520,7 +1520,7 @@ const STATUS_INFO = {
   hisakawaTalent: { icon: "✨", label: "พรสวรรค์ของพวกเรา", cls: "bg-echo-ice text-gray-900", desc: "พลังโจมตี +2" },
   // จอห์นนี่ โจสตาร์: ดีบัฟ/มาร์กบนตัวศัตรู (จำนวนสแตคของหมุนวนอยู่ที่ statusAmt)
   johnnyWhirl: { icon: "🌀", label: "หมุนวน", cls: "bg-purple-700 text-white", desc: "หมุนวน (สูงสุด 9 สแตค · 8 เทิร์น ได้เพิ่มต่ออายุ): ใช้สกิลหรือไอเทมที่ทำดาเมจ 15% ผลย้อนกลับเข้าตัวเอง และหมุนวน -2 · ต้าน/ล้างได้" },
-  johnnyChumimi: { icon: "🐾", label: "Chumimi", cls: "bg-echo-hp", desc: "Chumimi: Lesson Five ลบทิ้ง = ดาเมจ +2 สตั้น และไม่สนการลดดาเมจ · Rapid Shot/Snipe Shot/Wormhole Multi Shot ลบทิ้ง = ดาเมจ +1 · ต้าน/ล้างไม่ได้" },
+  johnnyChumimi: { icon: "🐾", label: "Chumimi", cls: "bg-echo-hp", desc: "Chumimi: Lesson Five ลบทิ้ง = ดาเมจ +2 สตั้น 1 เทิร์น และไม่สนการลดดาเมจ · Rapid Shot/Snipe Shot/Wormhole Multi Shot ลบทิ้ง = ดาเมจ +1 · ต้าน/ล้างไม่ได้" },
   hisakawaDream: { icon: "🎁", label: "ฝันของเหล่าฝาแฝด", cls: "bg-echo-ice text-gray-900", desc: "แต้มสกิล +1, โจมตี +2, โชคลาภ +1 ทุกเทิร์น และทุกครั้งที่ได้โจมตีแฝดอีกคนจะออกมาโจมตีเป็นครั้งที่ 2 (100%) ดาเมจ 2 (ต้องมีแฝดครบทั้งคู่)" },
 };
 // อาซาฮินะ ทักต์: โหมดของบทเพลง (บรรเลงเสียงสวรรค์) — key ตรงกับ characters/takt.js MODES
@@ -1702,14 +1702,14 @@ function statusEntries(p, full) {
     const d = p.dio;
     out.push({ key: "dioMeter", v: 1, icon: "⏳", label: `เกจเวลา ${d.meter}/${d.meterMax}`, cls: d.meter > 0 ? "bg-echo-ice text-gray-900" : "bg-white/20",
       desc: "ไพ่ไม่แตก +1 · 21 พอดี +1 · ไพ่แตก -2 · ใช้เปิด Za warudo!!!!!!" });
-    if (d.world) out.push({ key: "dioWorld", v: 1, icon: "⏱️", label: `THE WORLD · ${d.world.actions} แอคชัน`, cls: "bg-amber-400 text-gray-900", desc: "เวลาหยุดนิ่ง: คนอื่นขยับไม่ได้ · ร่างหยุดเวลาใช้แอคชันแทนแต้มสกิล" });
+    if (d.world) out.push({ key: "dioWorld", v: 1, icon: "⏱️", label: `THE WORLD · ${d.world.actions} แอคชัน`, cls: "bg-amber-400 text-gray-900", desc: "เวลาหยุดนิ่ง: คนอื่นขยับไม่ได้ · ร่างหยุดเวลาใช้แอคชันแทนแต้มสกิล · แต่ละท่าใช้ได้ 1 ครั้งต่อ THE WORLD" });
     if (d.lastStand) out.push({ key: "dioLastStand", v: 1, icon: "🩸", label: d.lastStand.active ? `Last stand vs ${d.lastStand.foe}` : `Last stand เทิร์นหน้า · ${d.lastStand.foe}`, cls: "bg-echo-hp", desc: "ดวลแต้ม 1 รอบ: แต้มสูงกว่า (ไม่แตก) ชนะ สูบพลังชีวิต 2 · เสมอหรือแพ้ = ดิโอตาย" });
     else if (!d.lastStandUsed) out.push({ key: "dioLastStandReady", v: 1, icon: "🧛", label: "Last stand", cls: "bg-echo-armor", desc: "ครั้งแรกที่จะตายจากตีปกติ/สกิลของศัตรู หรือโดนตอนพลังชีวิตเหลือ 1: ค้างที่ 1 แล้วลากผู้โจมตีมาดวลเทิร์นหน้า" });
   }
   // จอห์นนี่ โจสตาร์: กระสุนเล็บ / Spin (ทรัพยากร x/y ขึ้นแถบใต้แผงตัวละคร) + บัฟเฉพาะตัว + ท่าที่ค้าง (เห็นเจ้าตัว)
   if (p.johnny) {
     const j = p.johnny;
-    out.push({ key: "johnnyNails", v: 1, icon: "💅", label: `กระสุนเล็บ ${j.nails}/${j.nailMax}`, cls: j.nails > 0 ? "bg-echo-ice text-gray-900" : "bg-echo-hp", desc: "กระสุนเล็บ: Rapid Shot/Snipe Shot ใช้ 2 · Wormhole Multi Shot ใช้ 3 · Herbal Tea Time เติม 3-5 · ตีปกติไม่ใช้" });
+    out.push({ key: "johnnyNails", v: 1, icon: "💅", label: `กระสุนเล็บ ${j.nails}/${j.nailMax}`, cls: j.nails > 0 ? "bg-echo-ice text-gray-900" : "bg-echo-hp", desc: "กระสุนเล็บ: ตีปกติแต่ละครั้งใช้ 1 (ตีโดน 50% หมุนวน +1) · Snipe Shot ใช้ 2 · Wormhole Multi Shot ใช้ 3 · Herbal Tea Time เติม 3-5" });
     out.push({ key: "johnnySpin", v: 1, icon: "🌀", label: `Spin ${j.spin}/${j.spinMax}`, cls: "bg-echo-cyan text-gray-900", desc: "Spin: 7 ขึ้นไป = Spin Energy · ครบ 15 = Spinning Skin · Act 4 ใช้ Spin 15 แลก Golden Ratio 1 เมื่อ Golden Ratio ถูกปาด (ครั้งเดียว)" });
     out.push({ key: "johnnyAct", v: 1, icon: "🐎", label: `Tusk Act ${j.form}${j.crit ? ` · คริติคอล ${j.crit}%` : ""}${j.dodge ? ` · หลบ ${j.dodge}%` : ""}`, cls: j.form === 4 ? "bg-echo-hp" : "bg-white/20",
       desc: ["", "Act 1: สกิลรอง Rapid Shot", "Act 2: คริติคอล 10% · สกิลรอง Snipe Shot", "Act 3: หลบการโจมตีปกติ 15% · สกิลรอง Wormhole Multi Shot", "Act 4: พลังโจมตี +1 · ตีโดนแต้มสกิล +1 · สกิลรอง Ora Ora Ora Ora! BeatDown · ท่าไม้ตาย Lesson Five"][j.form] || "" });
@@ -1720,14 +1720,12 @@ function statusEntries(p, full) {
     if (j.energy) out.push({ key: "johnnyEnergy", v: 1, icon: "⚡", label: "Spin Energy", cls: "bg-echo-cyan text-gray-900", desc: "Spin Energy (Spin 7 ขึ้นไป): ต้นเทิร์นแต้มสกิล +1" });
     if (j.skin) out.push({ key: "johnnySkin", v: 1, icon: "🛡️", label: j.skin.cd > 0 ? `Spinning Skin · อีก ${j.skin.cd} เทิร์น` : `Spinning Skin ×${j.skin.uses}`, cls: "bg-echo-armor", desc: "Spinning Skin (Spin 15): ดาเมจที่ได้รับ -1 สองครั้ง แล้วคูลดาวน์ 3 เทิร์น" });
     if (j.mastery > 0) out.push({ key: "johnnyMastery", v: j.mastery, icon: "🌀", label: `Spin Mastery ${j.mastery} เทิร์น`, cls: "bg-echo-magenta", desc: "Spin Mastery: Spin Rotation ได้ Spin เพิ่ม +1-2" });
-    if (j.rapidShot > 0) out.push({ key: "johnnyRapidSeq", v: 1, icon: "💅", label: `Rapid Shot นัดที่ ${j.rapidShot}`, cls: "bg-echo-hp", desc: "Rapid Shot: กำลังยิงชุด 2 นัด" });
+    if (j.rapidShot > 0) out.push({ key: "johnnyRapidSeq", v: 1, icon: "💅", label: `Rapid Shot นัดที่ ${j.rapidShot}`, cls: "bg-echo-hp", desc: "Rapid Shot: กำลังยิงชุด 3 นัด" });
   }
   if (p.johnnyPending) {
     const q = p.johnnyPending;
-    if (q.rapid) out.push({ key: "johnnyRapid", v: 1, icon: "💅", label: "Rapid Shot", cls: "bg-echo-hp", desc: "Rapid Shot: ตีปกติครั้งถัดไปยิง 2 นัด" });
-    if (q.snipe) out.push({ key: "johnnySnipe", v: 1, icon: "🎯", label: `Snipe Shot · ${q.snipe}`, cls: "bg-echo-hp", desc: "Snipe Shot: ชนะการเปิดไพ่แล้วยิงเป้าที่เล็งไว้ ดาเมจ 2" });
+    if (q.rapid) out.push({ key: "johnnyRapid", v: 1, icon: "💅", label: "Rapid Shot", cls: "bg-echo-hp", desc: "Rapid Shot: ตีปกติครั้งถัดไปยิง 3 นัด" });
     if (q.ora) out.push({ key: "johnnyOra", v: 1, icon: "👊", label: "Ora Ora Ora Ora!", cls: "bg-echo-hp", desc: "Ora Ora Ora Ora! BeatDown: ตีครั้งถัดไป +1 ต่อหมุนวน 3 สแตคบนเป้า และมอบ Chumimi" });
-    if (q.lesson) out.push({ key: "johnnyLesson", v: 1, icon: "🐎", label: "Lesson Five", cls: "bg-purple-700 text-white", desc: "Lesson Five: ตีครั้งถัดไป +1 · เป้ามี Chumimi: +2 สตั้น และไม่สนการลดดาเมจ" });
   }
   // โทโนะ ชิกิ: โหมด / สถานะที่รอ / ชุดเชือดเฉือน — ข้อมูลสาธารณะ
   if (p.tohno) {
@@ -4491,14 +4489,16 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         : !((state.gameMode === "duo" || state.gameMode === "trio") && me?.teamId && x.teamId === me.teamId))).map((x) => x.id);
       const knife = tier === "basic" && !me?.dio?.world;
       if (knife) socket.emit("dioKnifeAim");
-      setGiftSel({ tier, anyone: true, onlyIds: foes, name: ch[tier]?.name, keep: knife });
+      // Barrage / Road Roller: เลือกเป้าทีละหมัด (need = จำนวนหมัดจาก server · คนเดิมซ้ำได้) · dioWorld จำร่างตอนกดไว้
+      const need = me?.dio?.picks?.[tier] || 1;
+      setGiftSel({ tier, anyone: true, onlyIds: foes, name: ch[tier]?.name, keep: knife, need, picks: [], dioWorld: !!me?.dio?.world });
       return;
     }
     // คอเซ็ตต์: ระหว่างบทเพลง ท่าไม้ตาย = Destiny เลือกระดับก่อน
     if (ch?.id === "cosette" && tier === "ultimate" && me?.cosette?.unlocked) { setCosetteDestinyOpen(true); return; }
-    // จอห์นนี่: สกิลพื้นฐานเลือกโหมด (ชา/หมุน) · Act 2 สกิลรอง Snipe Shot เลือกศัตรู 1 คน
+    // จอห์นนี่: สกิลพื้นฐานเลือกโหมด (ชา/หมุน) · Act 2 Snipe Shot / Act 4 Lesson Five เลือกศัตรู 1 คน (ก่อนเปิดไพ่)
     if (ch?.id === "johnny" && tier === "basic") { setJohnnyBasicOpen(true); return; }
-    if (ch?.id === "johnny" && tier === "secondary" && me?.johnny?.form === 2) {
+    if (ch?.id === "johnny" && ((tier === "secondary" && me?.johnny?.form === 2) || (tier === "ultimate" && me?.johnny?.form === 4))) {
       const ids = state.players.filter((x) => x.alive && x.id !== me.id
         && !((state.gameMode === "duo" || state.gameMode === "trio") && me.teamId && x.teamId === me.teamId)).map((x) => x.id);
       setGiftSel({ tier, anyone: true, onlyIds: ids, name: ch[tier]?.name }); return;
@@ -4647,6 +4647,14 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   };
   const pickGift = (id) => {
     // ทักต์ (เปิดม่าน) สั่งเดสตินี่: ส่งคำสั่งบรรเลงแทนการใช้สกิล
+    // ดิโอ Barrage / Road Roller: เก็บเป้าทีละหมัดจนครบ need แล้วส่งทั้งชุด (ศัตรูเหลือคนเดียว = คลิกเดียวครบทุกหมัด)
+    if (giftSel.need > 1) {
+      const picks = giftSel.onlyIds?.length === 1 ? Array(giftSel.need).fill(id) : [...(giftSel.picks || []), id];
+      if (picks.length < giftSel.need) { setGiftSel({ ...giftSel, picks }); return; }
+      socket.emit("useSkill", { tier: giftSel.tier, targets: picks, item: giftSel.item });
+      setGiftSel(null);
+      return;
+    }
     if (giftSel.perform) socket.emit("taktPerform", { cartId: giftSel.perform, targetId: id });
     else socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
     setGiftSel(null);
@@ -4897,6 +4905,10 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
   }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, cosetteDestinyOpen, me?.cosette?.unlocked, johnnyBasicOpen, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  // ดิโอ: กำลังเลือกเป้ารายหมัดอยู่แล้ว THE WORLD เปิด/จบ (ปุ่มเปลี่ยนชุด จำนวนหมัดเปลี่ยน) -> ยกเลิกโหมดเลือกเป้า
+  useEffect(() => {
+    if (giftSel && giftSel.dioWorld !== undefined && giftSel.dioWorld !== !!me?.dio?.world) setGiftSel(null);
+  }, [giftSel, me?.dio?.world]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -5664,7 +5676,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       )}
       {giftSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard whitespace-nowrap">
-          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">✨ คลิกเลือกเป้าหมายของ “{giftSel.name}”</span>
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5">
+            {giftSel.need > 1
+              ? `✨ ${giftSel.name} — เลือกเป้า ครั้งที่ ${(giftSel.picks?.length || 0) + 1}/${giftSel.need}${giftSel.picks?.length ? ` (${giftSel.picks.map((pid) => state.players.find((x) => x.id === pid)?.name || "?").join(", ")})` : ""}`
+              : `✨ คลิกเลือกเป้าหมายของ “${giftSel.name}”`}
+          </span>
           {(!giftSel.onlyIds || giftSel.onlyIds.includes(me?.id)) && (
             <button onClick={() => { clickSound(); pickGift(me.id); }} className="ml-3 text-sm font-bold bg-echo-ice text-gray-900 rounded-full px-3 py-1">เลือกตัวเอง</button>
           )}

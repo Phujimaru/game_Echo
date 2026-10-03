@@ -584,11 +584,16 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 **จอห์นนี่ โจสตาร์ (Tusk · ยาก)** — `characters/johnny.js` (กติกาเต็มอยู่หัวไฟล์) · สถานะเฉพาะตัวทั้งหมดที่ `p.johnny`
 - **ร่างไม่ได้เก็บแยก** — `formOf(p)` อ่านจาก Pre-Awaken (0/1/2 = Act 1/2/3) และ Awakening (= Act 4) · `dynamicSkillFor`
   เลือก `secondary`..`secondary4` / `ultimate`|`ultimate2` (ราคา Tusk Evo = `ultimate.cost` + Pre-Awaken) — `publicRoster` มี `secondary4` แล้ว
-- **คูลดาวน์เป็น "เลขรอบที่กดได้"** (`p.johnny.cd.*` · แยกรายท่า) · ท่าหลังเปิดไพ่ (Rapid/Ora/Lesson) ค้างเป็นธงจนตีที่ผ่านด่านหลบ
-  แล้วคูลดาวน์เริ่มนับตอนนั้น · Snipe ยิงที่ `afterSummary` (ก่อนเปิดเฟส ATTACK ของผู้ชนะ) แยกจากการตีปกติ
-- **Rapid Shot นัดที่ 2** เปิดจากหัว `endTurn` (`continueRapid`) แพทเทิร์นเดียวกับคาเยนน์ — พลาดเอง 25% อยู่ใน `johnny.tryAttackDodge`
-- **Lesson Five + Chumimi ไม่สนการลดดาเมจ**: `doAttack` ปิดคุ้มครอง/Smile for You/เต็มอิ่มด้วย `johnnyPierce` และ
-  `combat.adjustIncomingDamage` ใช้ `johnny.pierceFloor` (ฮุคตัวละครยังทำงาน แต่ลดต่ำกว่าค่าเดิมไม่ได้)
+- **คูลดาวน์เป็น "เลขรอบที่กดได้"** (`p.johnny.cd.*` · แยกรายท่า) · ท่าหลังเปิดไพ่ (Rapid/Ora) ค้างเป็นธงจนตีที่ผ่านด่านหลบ
+  แล้วคูลดาวน์เริ่มนับตอนนั้น · Snipe / Lesson Five เป็นท่าก่อนเปิดไพ่ (`instant`) เลือกศัตรูตอนกด (`johnny.pickTarget`) ลงผลทันทีใน `applyInstantSkill`
+- **กระสุนเล็บกับตีปกติ**: `johnny.onAttack` (หัว doAttack ก่อนด่านหลบ) ใช้เล็บ 1 ถ้ามี (`s.nailShot`) · `onAttackLanded` ทอย 50% หมุนวน +1
+  · แต่ละนัดของ Rapid Shot ผ่าน doAttack จึงคิดเล็บแยกนัด
+- **Rapid Shot นัดที่ 2-3** เปิดจากหัว `endTurn` (`continueRapid`) แพทเทิร์นเดียวกับคาเยนน์ — พลาดเอง 25% อยู่ใน `johnny.tryAttackDodge`
+- **Lesson Five + Chumimi ไม่สนการลดดาเมจ**: `fireLesson` เปิดธง `p.johnny.pierce` เฉพาะช่วง `dealMixed` แล้ว
+  `combat.adjustIncomingDamage` ใช้ `johnny.pierceFloor` (ฮุคตัวละคร/SE.RA.PH/เย็นชื่นใจยังทำงาน แต่ลดต่ำกว่าค่าเดิมไม่ได้)
+  · ยังกันได้: ชุด Mark 42 (ดูดก่อนถึงด่าน) · โล่ (`shield`) · ผนึก/กันพวกเดียวกัน · Slow Dancer ฝั่งตรงข้าม (`warded`)
+  · สตั้น 1 ทันทีแบบ Barrett ของ Recruit (`applyDebuff` + `locked = true` = เปิดไพ่ให้ เสียช่วงจั่วที่เหลือ + ชนะก็ตีไม่ได้ · หมดที่ endTurn)
+  · วีดีโอ `johnnyLesson` คิวไว้ทุกครั้ง เล่นท้าย useSkill (`pausePlayingForCutscene`) หลังดาเมจลงแล้ว
 - **บริบทการกด** `johnny.beginUse/endUse` ห่อ `useSkill()` และ `useInventoryItem()` (ชั้นนอกสุดเท่านั้น):
   · หมุนวน: ทอย 15% ครั้งเดียว -> `redirectTarget` ที่หัว `dealMixed/dealDirect/dealArmorOnly` ย้ายดาเมจไปลงผู้ใช้
     (ไม่ใช่ตีปกติ) · หลังย้อนครั้งแรก `redirectEffect` ย้ายดีบัฟใน `applyDebuff`/`applySpellburden`/`engine.applyBleed` ด้วย
@@ -599,7 +604,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   ปาด Slow Dancer / Spin / Golden Ratio / Spin Mastery ได้ (ทั้งก้อน) · Pre-Awaken/Awakening ไม่อยู่ในรายการ ·
   Golden Ratio ถูกปาดใน Act 4 + Spin 15 = แปลงเป็น Golden Ratio 1 (ครั้งเดียวต่อการเข้า Act 4)
 - ดีบัฟ `johnnyWhirl` (หมุนวน: เทิร์นที่ statuses · สแตคที่ statusAmt) อยู่ใน `BASIC_DEBUFF_CLEAR` · มาร์ก `johnnyChumimi` ไม่อยู่ (ต้าน/ล้างไม่ได้)
-  · ทั้งสองลดเทิร์นตามลูปกลางของ `endTurn` (ไม่ใช่ NO_TICK) · สตั้นของ Lesson Five จองที่ `p.johnnyStunPending` เริ่มต้นเทิร์นหน้า
+  · ทั้งสองลดเทิร์นตามลูปกลางของ `endTurn` (ไม่ใช่ NO_TICK)
 - สื่อ: `client/public/characters/johnny/` (แปลงวีดีโอตามมาตรฐานสตรีมแล้ว) · เพลง `johnny_theme` ผ่าน `johnny.activeMusic` (Act 4)
   · เสียง `johnny_nail` (ตีปกติ/ยิงเล็บ) `johnny_chumimi` (ลบ Chumimi) `johnny_tusk` (Tusk Evo) · หน้าต่างเลือกสกิลพื้นฐานมีเฉพาะกระดานจอคอม
 เทสต์: [tests/characters/johnny.test.js](tests/characters/johnny.test.js)
@@ -617,16 +622,25 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `dioFrozen` ที่ `bustedOf` · `dio.duelResolveRound` เข้าคุม `resolveRound` แล้ว `return` (ข้าม afterResolve) · `skillBlocked`/`itemBlocked` ทุกคน
   · มีดวลไบรอัน/ไล่ล่าคอนเนอร์ค้างอยู่ = เลื่อนไปเทิร์นถัดไป · แพ้ = `instantDeath(dio, true)` หลังคิวคลิป `dioLastStandFail`
 - **THE WORLD** (`p.dio.world = { actions, resume }`): Za warudo จำ `engine.timeLeft` ไว้ที่ `resume` แล้ว `engine.setTimeLeft(10)` ก่อน
-  `pausePlayingForCutscene()` ท้าย useSkill อ่านค่า -> นาฬิกา 10 วิเริ่มหลังคลิป 3 ตัวจบ และหยุดนับระหว่างคลิปของท่าในร่างหยุดเวลาเอง
+  `pausePlayingForCutscene()` ท้าย useSkill อ่านค่า -> นาฬิกา 10 วิเริ่มหลังคลิป (สุ่ม 1 จาก 3) จบ และหยุดนับระหว่างคลิปของท่าในร่างหยุดเวลาเอง
   · ครบ 10 วิ = ตัวจับเวลาเรียก `summary.resolveRound` -> ดักที่หัวฟังก์ชันด้วย `dio.endWorldOnTimeout` แล้วตั้งเวลาเฟสจั่วไพ่ที่เหลือคืน
     (ตัวจับเวลา 10 วิคือตาข่ายกันห้องค้างในตัว ดิโอหลุดเน็ตก็จบเอง) · `checkAllLocked` ไม่สรุปรอบระหว่างนี้ (`dio.pendingResolve`)
-  · แอคชันเหลือไม่ถึง 2 / Road Roller / ดิโอตกรอบ / จบเทิร์น = `endWorld` คืน `timeLeft` ทันที
+  · ชุดหยุดเวลา: SHINEI! 3 · Barrage 3 · Road Roller ขั้นต่ำ 3 (ใช้หมด) — **ทุกท่า 1 ครั้งต่อ THE WORLD** (`p.dio.world.used` สร้างใหม่ทุกครั้งที่กด Za warudo)
+    · ไม่เหลือท่าที่ใช้ได้ (`worldAnyOpen`: แอคชันไม่พอ หรือใช้ครบแล้ว) / Road Roller / ดิโอตกรอบ / จบเทิร์น = `endWorld` คืน `timeLeft` ทันที
   · แช่ทุกคน (รวมไรเดอร์ Clock Up) ด้วย `dio.actionBlocked` ข้างๆ `daisuke.actionBlocked` ทุกจุด (hit/lock/ร้าน/ไอเทม/ปุ่มเฉพาะตัว)
     — ดิโอเองก็จั่ว/เปิดไพ่/ใช้ไอเทมไม่ได้ ทำได้แค่ชุดหยุดเวลา (`dio.skillBlocked` ปล่อยเฉพาะเจ้าของท่า)
   · ชุดหยุดเวลา = `basic2/secondary2/ultimate2` ผ่าน `dio.dynamicSkillFor` (useSkill + buildStateFor) · ราคาแต้มสกิลถูกทับเป็น 0 ที่
     `dio.freeCost` (Za warudo ด้วย) · ไม่กินโควตาสกิล (`dio.skipsTurnQuota`) · ปุ่มฝั่ง client ใช้ `skillLocks` + `costLabel` (ป้ายราคาเป็นแอคชัน)
 - **Throwing knife สองคลิป**: กดปุ่ม -> socket `dioKnifeAim` (`dio.aimKnife` เช็คว่ากดได้จริง · 1 ครั้ง/เทิร์น) เล่นคลิปง้าง ->
   client ค้างโหมดเลือกเป้าผ่าน CUTSCENE (`giftSel.keep`) -> useSkill เล่นคลิปขว้าง · ไม่มี aim ในเทิร์นนั้น = เล่นสองคลิปต่อกันหลังเลือกเป้า
+  · ทั้งสองคลิปเล่น **ครั้งแรกต่อเกมเท่านั้น** (`p.cutsceneShown.dioKnifeAim` / `.dioKnifeThrow` แยกรายคลิปผ่าน `queueOnce`) — ครั้งต่อไป
+    `aimKnife` คืน false (ไม่เล่น ไม่พักเฟส) และคลิปขว้างเป็นการ์ดแจ้งเตือน `notifyTransform` แทน
+- **คลิปสุ่ม**: Barrage (ทั้งสองร่าง) สุ่ม `dioBarrage`/`dioBarrage2` 1 คลิป · Za warudo สุ่ม `dioWorld1-3` 1 คลิป ทุกครั้งที่กด (`pickClip` ใช้ `Math.random`)
+- **เลือกเป้ารายหมัด** (Barrage 2 หมัด · Barrage ร่างหยุดเวลา 3 · Road Roller 2): client เก็บ `giftSel.picks` จนครบ `need`
+  (= `dio.publicState().picks[tier]` · ศัตรูเหลือคนเดียวคลิกเดียวครบ) แล้วส่ง `targets` ทั้งชุด · server `dio.prepareTarget(…, tier)`
+  คืน array รายหมัด: id ที่เล็งไม่ได้ใช้เป้าที่ถูกต้องก่อนหน้าแทน (หมัดแรก = คนแรกที่ถูกต้อง) · ส่งไม่ครบ = ต่อด้วยเป้าสุดท้าย · ไม่มีเป้าถูกต้องเลย = กดไม่ได้
+  · ลงผลทีละหมัดตามลำดับ (`dio.multiHit`) — เป้าที่ตายไปก่อนถึงหมัดนั้น **ข้าม** (ไม่เปลี่ยนเป้า) แล้วลงบันทึก · ผุพังลงทุกคนที่โดน (คนละครั้ง)
+    · Vampire 1 ครั้งต่อการกด
 - คูลดาวน์เป็น "เลขรอบ" แบบ `ippo.setCooldown` (`p.dio.cd.*`) · ผลของสกิลลงทันทีตอนกด แล้วคลิปเล่นตาม (ไม่ใช่วีดีโอก่อนดาเมจ)
 - สื่อ: `client/public/characters/dio_brando/` (โฟลเดอร์ `Dio/` ต้นฉบับชื่อซ้ำแบบไม่สนตัวพิมพ์บน Windows จึงใช้ชื่อนี้)
   · วีดีโอแปลงตามมาตรฐานสตรีมแล้ว และขยายเสียงที่ตัวไฟล์ให้ใกล้ -16 dBFS (ต้นฉบับเบา -28 ถึง -35) · `dio_laststand_fail.mp4` ลดใน `LOUDNESS_GAIN`

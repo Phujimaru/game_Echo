@@ -501,7 +501,7 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   else if (p && !match.effectSourceId && n > 0) p.lastDamageSourceId = null;
   // เกราะ Mark 42: ชุดรับความเสียหายทุกชนิดแทนตัวจริงทั้งก้อน (ส่วนเกินหายไปพร้อมชุด = แค่กลับร่างเดิม)
   if (n > 0 && Mark42.absorb(engine, p, n)) return 0;
-  // จอห์นนี่ Lesson Five + Chumimi: หมัดนี้ไม่สนการลดดาเมจทุกชนิด — ฮุคยังทำงาน (ผลข้างเคียง) แต่ลดต่ำกว่าค่าเดิมไม่ได้
+  // จอห์นนี่ Lesson Five + Chumimi: ดาเมจสกิลก้อนนี้ไม่สนการลดดาเมจทุกชนิด — ฮุคยังทำงาน (ผลข้างเคียง) แต่ลดต่ำกว่าค่าเดิมไม่ได้
   const pierceFloor = CHAR_HOOKS.johnny.pierceFloor(engine, n, isNormalAttack);
   // SE.RA.PH Matrix ระดับ 2: ลง 2 แต้มบนใคร = รับความเสียหายจากคนนั้นน้อยลง 1 หน่วย (§6)
   //  ต้นตอของดาเมจอ่านจาก effectSourceId (จุดเดียวกับที่ friendly-fire/ตราล่าเวทใช้)
@@ -759,7 +759,7 @@ function resetCombat(p) {
   CHAR_HOOKS.takt.resetCombat(p);  // อาซาฮินะ ทักต์: พันธะ/คำเชิญ/โหมดบทเพลง (ฟิลด์ฝั่งมิวสิคคาร์ทอยู่ที่ทุกคน)
   CHAR_HOOKS.titan.resetCombat(p); // ไททัน: ของว่าง/ชุดตีหลายครั้ง/คิวสวนกลับ/ล่อเป้า
   CHAR_HOOKS.cosette.resetCombat(p); // คอเซ็ตต์: ร่าง/ขั้นมิวสิคคาร์ท/ทิ่มแทง/Maestro/Destiny/ตัวนับจั่ว
-  CHAR_HOOKS.johnny.resetCombat(p); // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว/คูลดาวน์ + สตั้น Lesson Five ที่ค้าง (ติดที่ทุกคน)
+  CHAR_HOOKS.johnny.resetCombat(p); // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว/คูลดาวน์
   CHAR_HOOKS.dio.resetCombat(p); // ดิโอ: เกจเวลา/คูลดาวน์/THE WORLD/Last stand + ธง "ถูกแช่" ของ Last stand (อยู่ที่ทุกคน)
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน

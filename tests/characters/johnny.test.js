@@ -5,8 +5,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { engine } = require('../../server.js');
-const attackPhase = require('../../server/phases/attack.js');
-const match = require('../../server/match.js');
 const J = require('../../characters/johnny.js');
 const CHARACTERS = require('../../characters.js');
 
@@ -190,64 +188,111 @@ test('Slow Dancer: กันดีบัฟจากศัตรู 2 ครั�
   assert.equal(j.statuses.weak, 1, 'ไม่กันของตัวเอง');
 });
 
-test('Rapid Shot: เล็บ 2 · ยิง 2 นัด นัดละหมุนวน 1-2 · พลาด 25% ก็ยิงต่อ · คูลดาวน์ 3 นับจากได้ตี', () => {
+test('กระสุนเล็บ: ตีปกติใช้เล็บ 1 · ตีโดน 50% หมุนวน +1 (ต้านได้) · เล็บ 0 ยังตีได้แต่ไม่มีหมุนวน', () => {
+  const { J: j, T: t } = setup();
+  const hpArm = () => t.hp + t.armor;
+  let before = hpArm();
+  Math.random = () => 0.3; // < 50% ติด (Act 1 ไม่มีคริ)
+  attack('J', 'T');
+  assert.equal(hpArm(), before - 1);
+  assert.equal(j.johnny.nails, 4);
+  assert.equal(J.whirlOf(t), 1);
+  Math.random = () => 0.5; // ไม่ติด (ต้องต่ำกว่า 50%)
+  attack('J', 'T');
+  assert.equal(j.johnny.nails, 3);
+  assert.equal(J.whirlOf(t), 1);
+  t.statuses.resist = 2;
+  Math.random = () => 0.2;
+  attack('J', 'T');
+  assert.equal(j.johnny.nails, 2);
+  assert.equal(J.whirlOf(t), 1, 'ต้านได้');
+  delete t.statuses.resist;
+  j.johnny.nails = 0;
+  before = hpArm();
+  attack('J', 'T');
+  assert.equal(hpArm(), before - 1, 'เล็บหมดยังตีได้');
+  assert.equal(j.johnny.nails, 0);
+  assert.equal(J.whirlOf(t), 1, 'เล็บหมด ไม่มีโอกาสหมุนวน');
+});
+
+test('Rapid Shot: แต้ม 3 อย่างเดียว · ยิง 3 นัด นัดละหมุนวน 1-2 · แต่ละนัดใช้เล็บ 1 + 50% หมุนวน +1 · พลาด 25% ก็ยิงต่อ · คูลดาวน์ 3 นับจากได้ตี', () => {
   const { J: j, T: t } = setup();
   engine.useSkill('J', 'secondary');
-  assert.equal(j.johnny.nails, 3);
+  assert.equal(j.skillPoints, 5);
+  assert.equal(j.johnny.nails, 5, 'กดแล้วไม่ใช้เล็บ');
   assert.equal(j.johnny.rapid, true);
   assert.equal(J.canUseSkill(engine, j, 'secondary'), false, 'ค้างอยู่');
-  Math.random = () => 0.5; // ไม่พลาด · หมุนวน +2
+  Math.random = () => 0.5; // ไม่พลาด · หมุนวน +2 · เล็บไม่ติด 50%
   attack('J', 'T');
   assert.equal(t.armor, 2);
   assert.equal(J.whirlOf(t), 2);
+  assert.equal(j.johnny.nails, 4);
   assert.equal(j.johnny.rapidShot, 1);
   assert.equal(j.johnny.cd.rapid, engine.roundNumber + 3);
   assert.equal(J.continueRapid(engine), true);
   assert.equal(engine.gameState, 'ATTACK');
   engine.clearPhaseTimer();
+  Math.random = () => 0.3; // ไม่พลาด (30 >= 25) · หมุนวน +1 · เล็บติด 50% +1
+  engine.doAttack('J', 'T');
+  engine.clearPhaseTimer();
+  assert.equal(t.armor, 1);
+  assert.equal(J.whirlOf(t), 4);
+  assert.equal(j.johnny.nails, 3);
+  assert.equal(j.johnny.rapidShot, 2);
+  assert.equal(J.continueRapid(engine), true, 'ยังเหลือนัดที่ 3');
+  engine.clearPhaseTimer();
   Math.random = () => 0.1; // พลาด
   engine.doAttack('J', 'T');
   engine.clearPhaseTimer();
-  assert.equal(t.armor, 2, 'นัดที่ 2 พลาด');
-  assert.equal(J.continueRapid(engine), false, 'ครบ 2 นัด');
+  assert.equal(t.armor, 1, 'นัดที่ 3 พลาด');
+  assert.equal(j.johnny.nails, 2, 'พลาดก็ใช้เล็บ');
+  assert.equal(J.whirlOf(t), 4);
+  assert.equal(J.continueRapid(engine), false, 'ครบ 3 นัด');
   assert.equal(j.johnny.rapidShot, 0);
-  // นัดแรกพลาดก็ยังได้นัดที่ 2
-  nextRound(); j.johnny.cd.rapid = 0;
+  // นัดแรกพลาดก็ยังได้นัดที่ 2-3 · เล็บหมดก็ยังยิงได้ (ไม่มีหมุนวน +1)
+  nextRound(); j.johnny.cd.rapid = 0; j.johnny.nails = 0; t.armor = 3; t.statuses = {}; t.statusAmt = {};
   engine.useSkill('J', 'secondary');
   Math.random = () => 0.1;
   attack('J', 'T');
-  assert.equal(t.armor, 2);
-  Math.random = () => 0.5;
+  assert.equal(t.armor, 3);
+  Math.random = () => 0.3; // ไม่พลาด · หมุนวน +1 · ไม่มีเล็บ = ไม่ทอย 50%
+  assert.equal(J.continueRapid(engine), true);
+  engine.clearPhaseTimer();
+  engine.doAttack('J', 'T');
+  engine.clearPhaseTimer();
   assert.equal(J.continueRapid(engine), true);
   engine.clearPhaseTimer();
   engine.doAttack('J', 'T');
   engine.clearPhaseTimer();
   assert.equal(t.armor, 1);
-  assert.equal(J.whirlOf(t), 4);
+  assert.equal(J.whirlOf(t), 2);
+  assert.equal(J.continueRapid(engine), false);
 });
 
-test('Snipe Shot: เลือกเป้า · ชนะแล้วยิงแยกก่อนเฟสโจมตี ดาเมจ 2 + หมุนวน 2-3 · Chumimi +1 · ยังตีปกติได้', () => {
+test('Snipe Shot: ก่อนเปิดไพ่ · เลือกศัตรู · ยิงทันที ดาเมจ 2 + หมุนวน 2-3 · Chumimi +1 · เล็บ 2 · คูลดาวน์ 4', () => {
   const { J: j, T: t } = setup();
   act(j, 2);
   engine.useSkill('J', 'secondary', []);
-  assert.equal(j.johnny.snipe, null, 'ต้องเลือกเป้า');
-  engine.useSkill('J', 'secondary', ['T']);
-  assert.equal(j.johnny.snipe, 'T');
-  assert.equal(j.johnny.nails, 3);
+  assert.equal(j.skillPoints, 8, 'ต้องเลือกเป้า');
+  engine.useSkill('J', 'secondary', ['J']);
+  assert.equal(j.skillPoints, 8, 'เลือกตัวเองไม่ได้');
   t.statuses.johnnyChumimi = 5;
   Math.random = () => 0.99; // หมุนวน +3
-  match.roundWinnerId = 'J'; match.roundTiedWin = false;
-  engine.setGameState('SUMMARY');
-  attackPhase.afterSummary();
-  engine.clearPhaseTimer();
+  engine.useSkill('J', 'secondary', ['T']);
+  assert.equal(engine.gameState, 'PLAYING', 'ลงผลช่วงจั่วไพ่ ไม่ต้องรอชนะ');
+  assert.equal(j.skillPoints, 4);
+  assert.equal(j.johnny.nails, 3);
   assert.equal(t.armor, 0, '2 + Chumimi 1');
   assert.equal(t.statuses.johnnyChumimi, undefined);
   assert.ok(sounds.includes('johnny_chumimi'));
   assert.equal(J.whirlOf(t), 3);
-  assert.equal(j.johnny.snipe, null);
   assert.equal(j.johnny.cd.snipe, engine.roundNumber + 4);
-  assert.equal(engine.gameState, 'ATTACK', 'ยังได้ตีปกติ');
-  assert.equal(engine.attackerId, 'J');
+  nextRound();
+  assert.equal(J.canUseSkill(engine, j, 'secondary', ['T']), false, 'คูลดาวน์');
+  j.johnny.cd.snipe = 0; j.johnny.nails = 1;
+  assert.equal(J.canUseSkill(engine, j, 'secondary', ['T']), false, 'เล็บไม่พอ');
+  j.johnny.nails = 2;
+  assert.equal(J.canUseSkill(engine, j, 'secondary', ['T']), true);
 });
 
 test('Wormhole Multi Shot: 3 นัดสุ่ม คนละไม่เกิน 2 · เล็บ 3 · ศัตรูคนเดียวโดนแค่ 2 นัด', () => {
@@ -319,30 +364,50 @@ test('Ora Ora Ora Ora! BeatDown: เสีย Golden Ratio 1 + เล็บท�
   assert.equal(j.skillPoints, 2 + 1, 'Awakening ตีโดนแต้มสกิล +1');
 });
 
-test('Lesson Five: Chumimi = +2 · ไม่สนคุ้มครอง/เต็มอิ่ม · สตั้นเทิร์นหน้า · ไม่มี Chumimi = +1', () => {
+test('Lesson Five: ก่อนเปิดไพ่ · เลือกศัตรู · ดาเมจ 3 ทันที · Chumimi = +2 (รวม 5) ไม่สนการลดดาเมจ + สตั้นทันที · วีดีโอทุกครั้ง', () => {
   const { J: j, T: t, M: m } = setup();
   act(j, 4);
-  t.statuses.johnnyChumimi = 5;
-  engine.applyBuff(t, 'guard', 2, 2);
-  t.statuses.fullbelly = 1;
-  engine.useSkill('J', 'ultimate');
+  engine.useSkill('J', 'ultimate', []);
+  assert.equal(j.skillPoints, 8, 'ต้องเลือกเป้า');
+  // ไม่มี Chumimi: ดาเมจ 3 (เย็นชื่นใจยังลดได้ตามปกติ)
+  m.statuses.escanorCool = 2; m.statusAmt.escanorCool = 1;
+  const mBefore = m.hp + m.armor;
+  engine.useSkill('J', 'ultimate', ['M']);
+  assert.equal(engine.gameState, 'PLAYING');
+  assert.equal(j.skillPoints, 1);
   assert.equal(j.johnny.goldenRatio, 1);
   assert.equal(j.johnny.nails, 4);
-  assert.equal(j.skillPoints, 1);
-  Math.random = () => 0.99;
-  attack('J', 'T');
-  assert.equal(t.armor + t.hp, 10 - 5, '1 + Awakening 1 + Lesson 1 + Chumimi 2 = 5 ไม่ถูกลด');
-  assert.equal(t.statuses.johnnyChumimi, undefined);
+  assert.equal(m.hp + m.armor, mBefore - 2, '3 - เย็นชื่นใจ 1');
+  assert.equal(m.statuses.stun, undefined);
+  assert.equal(m.locked, false);
   assert.ok(cutscenes.includes('johnnyLesson'));
-  assert.equal(t.johnnyStunPending, 1);
-  J.onRoundStartTick(engine, t);
-  assert.equal(t.statuses.stun, 1);
+  // Chumimi: +2 · ไม่สนเย็นชื่นใจ · สตั้นทันที (เปิดไพ่ให้) · Golden Ratio หมด -> Act 1
   nextRound();
-  engine.useSkill('J', 'ultimate');
-  assert.equal(J.formOf(j), 1, 'Golden Ratio หมดตอนกด -> Act 1 ทันที (Lesson Five ยังค้างรอตี)');
-  attack('J', 'M');
-  assert.equal(m.armor, 1, '1 + Lesson 1 = 2 (Awakening หายไปแล้ว)');
-  assert.equal(m.johnnyStunPending || 0, 0);
+  t.statuses.johnnyChumimi = 5;
+  t.statuses.escanorCool = 2; t.statusAmt.escanorCool = 3;
+  const tBefore = t.hp + t.armor;
+  engine.useSkill('J', 'ultimate', ['T']);
+  assert.equal(t.hp + t.armor, tBefore - 5, '3 + Chumimi 2 ไม่ถูกลด');
+  assert.equal(t.statuses.johnnyChumimi, undefined);
+  assert.ok(sounds.includes('johnny_chumimi'));
+  assert.equal(t.statuses.stun, 1);
+  assert.equal(t.locked, true);
+  assert.equal(j.johnny.pierce, false, 'ธงทะลุปิดหลังลงดาเมจ');
+  assert.equal(j.johnny.nails, 3);
+  assert.equal(J.formOf(j), 1, 'Golden Ratio หมด -> Act 1');
+  assert.equal(cutscenes.filter((k) => k === 'johnnyLesson').length, 2, 'วีดีโอทุกครั้ง');
+  // ต้านสตั้นได้ · ดาเมจหลังทะลุไม่ถูกลดเฉพาะก้อน Lesson Five
+  act(j, 4); nextRound();
+  m.statuses = { johnnyChumimi: 5, resist: 2 }; m.statusAmt = {}; m.locked = false;
+  const m2 = m.hp + m.armor;
+  engine.useSkill('J', 'ultimate', ['M']);
+  assert.equal(m.hp + m.armor, m2 - 5);
+  assert.equal(m.statuses.stun, undefined, 'ต้านได้');
+  assert.equal(m.locked, false);
+  t.statuses.escanorCool = 2; t.statusAmt.escanorCool = 1;
+  const t2 = t.hp + t.armor;
+  engine.withEffectSource(j, () => engine.dealMixed(t, 1));
+  assert.equal(t.hp + t.armor, t2, 'ดาเมจสกิลอื่นยังถูกลดตามปกติ');
 });
 
 test('Golden Ratio หมด = กลับ Act 1 · สกิลกลับเป็น Rapid Shot / Tusk Evo · เพลงหยุด', () => {
