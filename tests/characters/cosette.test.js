@@ -249,6 +249,10 @@ test('เปิดม่าน: ไททัน+คอเซ็ตต์เท�
   engine.setRoundNumber(r + 5);
   C.statuses.stun = 1;
   assert.equal(takt.perform(engine, K, 'destiny', 'T'), null, 'คู่พันธะติดสตั้นสั่งไม่ได้');
+  C.statuses.stun = 0; K.statuses.stun = 1;
+  assert.equal(takt.perform(engine, K, 'destiny', 'T'), null, 'ทักต์ติดสตั้นสั่งไม่ได้');
+  K.statuses.stun = 0;
+  assert.ok(takt.perform(engine, K, 'destiny', 'T'));
 });
 
 test('เปิดม่าน: มิวสิคคาร์ทซ้ำแบบ (ไททัน 2 คน) ไม่ทำงาน', () => {
