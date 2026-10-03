@@ -259,7 +259,7 @@ module.exports = {
     s.destiny = null;
     s.follow = 0;
     s.followPending = false;
-    engine.queueCutscene(p, "cosetteLow"); // เล่นทุกครั้งที่บทเพลงพัง
+    // คลิป cosetteLow คิวที่ takt.playLowVideo (พังพร้อมไททัน = เล่นคลิปของไททันแทน)
   },
 
   // ---------- สกิลติดตัว มิวสิคคาร์ท: จั่วครบ 5 ใบ 20% โชคลาภ ----------

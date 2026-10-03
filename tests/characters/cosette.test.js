@@ -225,8 +225,7 @@ test('บทเพลงพัง: คอนดักเตอร์เลือ
   assert.equal(C.statuses.stun, 2); assert.equal(N.statuses.stun, 2);
   assert.equal(C.cosette.form, 'human');
   assert.equal(C.cosette.destiny, null);
-  assert.ok(cutscenes.includes('cosetteLow'));
-  assert.ok(cutscenes.includes('titanLow'), 'ไททันมีวีดีโอบทเพลงพัง');
+  assert.deepEqual(cutscenes.filter((k) => /Low$/.test(k)), ['titanLow'], 'ต่างแบบพังพร้อมกัน = คลิปไททันคลิปเดียว');
   assert.equal(takt.canUseSkill(engine, K, 'ultimate', ['C']), false, 'เลือด 1 มอบบทเพลงไม่ได้');
 });
 
@@ -352,4 +351,21 @@ test('ทักต์หลายคน: แย่งมิวสิคคาร
   assert.equal(C.statuses.taktSong, undefined);
   assert.equal(N.statuses.taktSong, 5, 'บทเพลงของพันธะ K2 ไม่พัง');
   assert.ok(T);
+});
+
+test('คลิปบทเพลงพัง: แบบเดียวกันพังพร้อมกันเล่นครั้งเดียว · พังแยกจังหวะเล่นทุกครั้ง', () => {
+  const { K, C } = setup();
+  engine.players.C2 = blank('C2', 'cosette', 6);
+  const C2 = engine.players.C2;
+  C2.statuses = {}; C2.statusAmt = {}; C2.hp = 7; C2.armor = 3; titan.resetCombat(C2); takt.resetCombat(C2); cos.resetCombat(C2);
+  bond(K, C); bond(K, C2);
+  song(K, C); song(K, C2);
+  K.hp = 1;
+  takt.checkLowRevert(engine);
+  assert.deepEqual(cutscenes.filter((k) => /Low$/.test(k)), ['cosetteLow'], 'คอเซ็ตต์ 2 คน = คลิปเดียว');
+  // พังแยกจังหวะ: ได้บทเพลงใหม่แล้วพังอีกรอบ = เล่นอีกครั้ง
+  K.hp = 5; song(K, C);
+  K.hp = 1;
+  takt.checkLowRevert(engine);
+  assert.deepEqual(cutscenes.filter((k) => /Low$/.test(k)), ['cosetteLow', 'cosetteLow']);
 });

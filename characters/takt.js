@@ -34,6 +34,7 @@
 //    สั่งเดสตินี่: คอเซ็ตต์ทำดาเมจสกิล 2 ใส่เป้าที่เลือก (วีดีโอก่อน) · ทักต์และคู่พันธะที่ถูกสั่งต้องไม่ติดสตั้น
 //  บทเพลงพัง: ทักต์เลือดเหลือ 1 หรือตาย -> มิวสิคคาร์ททุกคนที่มีบทเพลงเสียบทเพลง + สตั้น 2 (ต้านไม่ได้)
 //    (checkLowRevert ที่ flushOrtCounters / ต้นเทิร์น / onDeath) · ผลเฉพาะตัวผ่าน onSongLost ของมิวสิคคาร์ท
+//    คลิป low ทุกครั้งที่พัง แต่พังพร้อมกันในจังหวะเดียวเล่นคลิปเดียว (playLowVideo: ต่างแบบ = ไททัน · แบบเดียวกัน = ครั้งเดียว)
 //  สถานะของพันธะอยู่บนตัวผู้เล่นทั้งหมด (ย้อนได้ผ่านสแนปช็อต Overload Force/ชิโด):
 //    ทักต์: taktBonds (id ของมิวสิคคาร์ท) · taktBasicReady (เลขรอบ)
 //    มิวสิคคาร์ท: taktBondBy · taktInvite { fromId } · taktDeclinedRound · taktSongMode · taktModeRound
@@ -57,7 +58,12 @@ const VIDEO = {
 };
 
 // ตัวละครที่มีสกิลติดตัว "มิวสิคคาร์ท" -> คีย์คัตซีนตอนได้บทเพลง (characters/_transforms.js)
-const MUSIC_CARTS = { titan: { songKey: "taktSongTitan" }, cosette: { songKey: "taktSongCosette" } };
+//  lowKey = คลิปตอนบทเพลงพัง · พังพร้อมกันหลายคนในจังหวะเดียว เล่นคลิปเดียวตามลำดับ LOW_VIDEO_ORDER
+const MUSIC_CARTS = {
+  titan: { songKey: "taktSongTitan", lowKey: "titanLow" },
+  cosette: { songKey: "taktSongCosette", lowKey: "cosetteLow" },
+};
+const LOW_VIDEO_ORDER = ["titan", "cosette"]; // ต่างแบบพังพร้อมกัน = คลิปของไททัน
 
 const MAX_BONDS = 2;
 const TAKT_HP = 5;
@@ -256,8 +262,9 @@ module.exports = {
   },
 
   // ---------- บทเพลงพัง: ทักต์เลือดเหลือ 1 หรือตาย ----------
+  //  คืน array ของมิวสิคคาร์ทที่บทเพลงพัง (ผู้เรียกส่งเข้า playLowVideo ทีเดียวต่อจังหวะ)
   revertCarts(engine, takt) {
-    let n = 0;
+    const out = [];
     for (const c of bondedCarts(engine, takt)) {
       if (!alive(c) || !songActive(c)) continue;
       delete c.statuses.taktSong;
@@ -265,16 +272,23 @@ module.exports = {
       const hook = engine.CHAR_HOOKS[c.characterId];
       if (hook && hook.onSongLost) hook.onSongLost(engine, c);
       engine.log(`💔 ${takt.name} ${takt.alive ? "พลังชีวิตเหลือ 1" : "ตกรอบ"} — บทเพลงของ ${c.name} ขาดหาย คืนร่างเดิม และติดสตั้น ${LOW_STUN} เทิร์น`);
-      n++;
+      out.push(c);
     }
-    return n;
+    return out;
+  },
+  // คลิปบทเพลงพัง 1 คลิปต่อจังหวะ: ต่างแบบ = ของไททัน · แบบเดียวกันหลายคน = คลิปของแบบนั้นครั้งเดียว
+  playLowVideo(engine, carts) {
+    const type = LOW_VIDEO_ORDER.find((t) => carts.some((c) => c.characterId === t));
+    const c = type && carts.find((x) => x.characterId === type);
+    if (c) engine.queueCutscene(c, MUSIC_CARTS[type].lowKey);
   },
   checkLowRevert(engine) {
-    let n = 0;
+    const carts = [];
     for (const p of Object.values(engine.players)) {
-      if (isTakt(p) && p.alive && p.hp <= 1) n += this.revertCarts(engine, p);
+      if (isTakt(p) && p.alive && p.hp <= 1) carts.push(...this.revertCarts(engine, p));
     }
-    return n;
+    this.playLowVideo(engine, carts);
+    return carts.length;
   },
   // คำเชิญที่ยังไม่ตอบ — checkAllLocked รอคำตอบก่อนสรุปรอบ (หมดเวลาเฟส = ปฏิเสธ)
   invitePending(engine) {
@@ -297,7 +311,7 @@ module.exports = {
   onDeath(engine, victim) {
     if (!victim) return;
     if (isTakt(victim)) {
-      this.revertCarts(engine, victim); // ทักต์ตาย = บทเพลงของทุกคนพัง (ก่อนพันธะหลุด)
+      this.playLowVideo(engine, this.revertCarts(engine, victim)); // ทักต์ตาย = บทเพลงของทุกคนพัง (ก่อนพันธะหลุด)
       for (const c of bondedCarts(engine, victim)) {
         c.taktBondBy = null;
         if (c.alive) engine.log(`🎼 ${victim.name} ตกรอบ — พันธะสัญญากับ ${c.name} สิ้นสุดลง`);

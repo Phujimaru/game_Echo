@@ -114,7 +114,7 @@ module.exports = {
     const s = st(p);
     s.sun = false;
     s.sunVideo = false;
-    engine.queueCutscene(p, "titanLow"); // ทุกครั้งที่บทเพลงพัง
+    // คลิป titanLow คิวที่ takt.playLowVideo (1 คลิปต่อจังหวะที่บทเพลงพัง)
   },
 
   // ---------- เปิดม่าน: ล่อเป้า ----------
