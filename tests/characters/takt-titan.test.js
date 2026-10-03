@@ -55,10 +55,10 @@ test.before(() => {
 test.after(() => { Object.assign(engine, saved); for (const id of Object.keys(engine.players)) delete engine.players[id]; });
 test.afterEach(() => { Math.random = realRandom; engine.clearPhaseTimer(); cutscenes.length = 0; });
 
-test('ข้อมูล: ทักต์พิเศษ unique · ไททันง่าย · ราคาตามสเปก', () => {
+test('ข้อมูล: ทักต์พิเศษ เลือกซ้ำได้ · ไททันง่าย · ราคาตามสเปก', () => {
   const k = CHARACTERS.CHAR_BY_ID.takt, n = CHARACTERS.CHAR_BY_ID.titan;
   assert.equal(k.difficulty, 'special');
-  assert.equal(k.unique, true);
+  assert.equal(k.unique, undefined);
   assert.deepEqual([k.basic.cost, k.secondary.cost, k.ultimate.cost], [2, 0, 4]);
   assert.equal(n.difficulty, 'easy');
   assert.deepEqual([n.basic.cost, n.secondary.cost, n.ultimate.cost, n.secondary2.cost, n.ultimate2.cost], [0, 4, 4, 4, 12]);

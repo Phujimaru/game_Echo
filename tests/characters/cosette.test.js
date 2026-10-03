@@ -221,15 +221,16 @@ test('มิวสิคคาร์ท: จั่วเองครบ 5 ใบ
   assert.equal(C.cosette.draws, 0);
 });
 
-test('เปิดม่าน: ไททัน+คอเซ็ตต์เท่านั้น · สั่งไททันล่อเป้าทั้งตีปกติและสกิล · สั่งเดสตินี่ตี 2 · คูลดาวน์ 5', () => {
+test('เปิดม่าน: คลิปขึ้นเฉพาะครบคู่ไม่ซ้ำแบบ · สั่งไททันล่อเป้าทั้งตีปกติและสกิล · สั่งเดสตินี่ตี 2 · คูลดาวน์ 5', () => {
   const { K, C, N, T, M } = setup();
   bond(K, N);
   assert.equal(takt.curtainActive(engine, K), false);
+  assert.ok(!cutscenes.includes('taktCurtain'));
   bond(K, C);
   assert.equal(takt.curtainActive(engine, K), true);
   assert.ok(cutscenes.includes('taktCurtain'));
   const r = engine.roundNumber;
-  assert.ok(takt.perform(engine, K, 'titan'));
+  assert.ok(takt.perform(engine, K, 'N'));
   assert.equal(titan.tauntActive(engine, N), true);
   // สกิลที่เล็งศัตรูคนอื่นถูกปิด — เล็งไททันได้
   assert.equal(titan.skillTargetBlocked(engine, M, ['T']), true);
@@ -239,29 +240,35 @@ test('เปิดม่าน: ไททัน+คอเซ็ตต์เท�
   N.hp = 7; N.armor = 0;
   attack('M', 'T');
   assert.equal(N.hp < 7, true, 'ตีปกติถูกดึงไปที่ไททัน');
-  assert.equal(takt.perform(engine, K, 'titan'), null, 'คูลดาวน์');
+  assert.equal(takt.perform(engine, K, 'N'), null, 'คูลดาวน์');
   // สั่งเดสตินี่
   T.hp = 7; T.armor = 0;
-  const res = takt.perform(engine, K, 'destiny', 'T');
+  const res = takt.perform(engine, K, 'C', 'T');
   assert.ok(res && res.after);
   res.after();
   assert.equal(T.hp, 5);
   engine.setRoundNumber(r + 5);
   C.statuses.stun = 1;
-  assert.equal(takt.perform(engine, K, 'destiny', 'T'), null, 'คู่พันธะติดสตั้นสั่งไม่ได้');
+  assert.equal(takt.perform(engine, K, 'C', 'T'), null, 'คู่พันธะติดสตั้นสั่งไม่ได้');
   C.statuses.stun = 0; K.statuses.stun = 1;
-  assert.equal(takt.perform(engine, K, 'destiny', 'T'), null, 'ทักต์ติดสตั้นสั่งไม่ได้');
+  assert.equal(takt.perform(engine, K, 'C', 'T'), null, 'ทักต์ติดสตั้นสั่งไม่ได้');
   K.statuses.stun = 0;
-  assert.ok(takt.perform(engine, K, 'destiny', 'T'));
+  assert.ok(takt.perform(engine, K, 'C', 'T'));
 });
 
-test('เปิดม่าน: มิวสิคคาร์ทซ้ำแบบ (ไททัน 2 คน) ไม่ทำงาน', () => {
+test('บรรเลง: ใช้ได้ตั้งแต่คู่พันธะคนเดียว · ซ้ำแบบได้ คูลดาวน์แยกรายคน · คลิปเปิดม่านไม่ขึ้น', () => {
   const { K, N } = setup();
   engine.players.N2 = blank('N2', 'titan', 6);
   const N2 = engine.players.N2;
   N2.statuses = {}; N2.statusAmt = {}; N2.hp = 7; N2.armor = 3; titan.resetCombat(N2); takt.resetCombat(N2); cos.resetCombat(N2);
-  bond(K, N); bond(K, N2);
+  bond(K, N);
+  assert.ok(takt.perform(engine, K, 'N'), 'คู่พันธะคนเดียวก็สั่งได้');
+  bond(K, N2);
   assert.equal(takt.curtainActive(engine, K), false);
+  assert.ok(!cutscenes.includes('taktCurtain'));
+  assert.equal(takt.perform(engine, K, 'N'), null, 'N ติดคูลดาวน์');
+  assert.ok(takt.perform(engine, K, 'N2'), 'N2 คูลดาวน์แยก');
+  assert.equal(takt.publicState(engine, K).perform.length, 2);
 });
 
 test('เพลง takt_theme: เล่นระหว่างมีบทเพลง · ได้บทเพลงเพิ่มอีกคนไม่เริ่มใหม่ · ดับหมดแล้วหยุด', () => {
@@ -277,4 +284,35 @@ test('เพลง takt_theme: เล่นระหว่างมีบทเ�
   assert.equal(takt.activeMusic(engine).at, m1.at, 'ยังมีอีกคน เพลงต่อเนื่อง');
   delete N.statuses.taktSong;
   assert.equal(takt.activeMusic(engine), null);
+});
+
+test('ทักต์หลายคน: แย่งมิวสิคคาร์ทที่ผูกกับทักต์อื่นไม่ได้ · กลุ่มพันธะแยกกัน · บทเพลงพังเฉพาะของตัวเอง', () => {
+  const { K, C, N, T } = setup();
+  engine.players.K2 = blank('K2', 'takt', 6);
+  const K2 = engine.players.K2;
+  K2.statuses = {}; K2.statusAmt = {}; K2.hp = 5; K2.armor = 0; K2.skillPoints = 8;
+  takt.resetCombat(K2); titan.resetCombat(K2); cos.resetCombat(K2);
+  assert.equal(CHARACTERS.CHAR_BY_ID.takt.unique, undefined, 'เลือกซ้ำได้');
+  bond(K, C);
+  assert.equal(takt.invite(engine, K2, 'C'), false, 'C ผูกกับ K แล้ว');
+  // คำเชิญค้างของ K กันไม่ให้ K2 แทรก
+  takt.invite(engine, K, 'N');
+  assert.equal(takt.invite(engine, K2, 'N'), false);
+  takt.answerInvite(engine, N, false);
+  engine.setRoundNumber(engine.roundNumber + 1);
+  bond(K2, N);
+  assert.equal(N.taktBondBy, 'K2');
+  assert.equal(engine.sameTeam(K, C), true);
+  assert.equal(engine.sameTeam(K2, N), true);
+  assert.equal(engine.sameTeam(K, K2), false, 'ทักต์คนละกลุ่มไม่ใช่พวก');
+  assert.equal(engine.sameTeam(C, N), false);
+  assert.equal(takt.bondGroupWins(engine, [K, C, K2, N]), false);
+  // ท่าไม้ตายของ K มอบให้มิวสิคคาร์ทของ K2 ไม่ได้
+  assert.equal(takt.canUseSkill(engine, K, 'ultimate', ['N']), false);
+  song(K, C); song(K2, N);
+  K.hp = 1;
+  takt.checkLowRevert(engine);
+  assert.equal(C.statuses.taktSong, undefined);
+  assert.equal(N.statuses.taktSong, 5, 'บทเพลงของพันธะ K2 ไม่พัง');
+  assert.ok(T);
 });

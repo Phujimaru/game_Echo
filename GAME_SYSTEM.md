@@ -545,7 +545,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 - อาศัยจังหวะเรียกท้ายสุดของ `postAttackFollowup` (หลังตีเพิ่มทุกแบบของฝั่งตรงข้ามจบ) · งานช่างกันโจมตีที่ `afterSummary`
 - เทสต์: [tests/characters/striker.test.js](tests/characters/striker.test.js) · [tests/striker-pair.integration.test.js](tests/striker-pair.integration.test.js)
 
-**อาซาฮินะ ทักต์ (พิเศษ · unique) + ไททัน (ง่าย) + คอเซ็ตต์ (กลาง) — มิวสิคคาร์ท** — `characters/takt.js` · `characters/titan.js`
+**อาซาฮินะ ทักต์ (พิเศษ · เลือกซ้ำได้ — พันธะแยกตาม id ทักต์) + ไททัน (ง่าย) + คอเซ็ตต์ (กลาง) — มิวสิคคาร์ท** — `characters/takt.js` · `characters/titan.js`
 - **ระบบพันธะเป็นของกลางของ "มิวสิคคาร์ท"** (`takt.MUSIC_CARTS` = characterId -> คีย์คัตซีนตอนได้บทเพลง) — มิวสิคคาร์ทตัวใหม่แค่เพิ่มในตารางนี้
   แล้วอ่าน `takt.songActive(p)` เพื่อปลดล็อกความสามารถของตัวเอง · ฟิลด์ทั้งหมดอยู่บนตัวผู้เล่น (ย้อนได้ผ่านสแนปช็อต):
   ทักต์ `taktBonds` · มิวสิคคาร์ท `taktBondBy` / `taktInvite` / `taktSongMode` / `taktModeRound` · บทเพลง = `statuses.taktSong` (นับเทิร์นปกติ)

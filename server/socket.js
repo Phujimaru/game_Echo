@@ -468,11 +468,11 @@ io.on('connection', (socket) => {
     if (CHAR_HOOKS.takt.answerInvite(engine, p, !!accept) && match.cutsceneQueue.length) cutscene.pausePlayingForCutscene();
     else { view.broadcastState(); draw.checkAllLocked(); }
   }, 6);
-  // อาซาฮินะ ทักต์ (เปิดม่าน): คำสั่งบรรเลง — titan = ไททันล่อเป้า · destiny = คอเซ็ตต์โจมตีเป้า (วีดีโอก่อน)
-  onPlayerEvent(socket, 'taktPerform', (id, { cmd, targetId } = {}) => {
+  // อาซาฮินะ ทักต์ (เปิดม่าน): คำสั่งบรรเลงรายคู่พันธะ — ไททันล่อเป้า · คอเซ็ตต์โจมตีเป้า (วีดีโอก่อน)
+  onPlayerEvent(socket, 'taktPerform', (id, { cartId, targetId } = {}) => {
     const p = match.players[id];
     if (!p || !p.alive || match.gameState !== "PLAYING") return;
-    const r = combat.withEffectSource(p, () => CHAR_HOOKS.takt.perform(engine, p, cmd, targetId));
+    const r = combat.withEffectSource(p, () => CHAR_HOOKS.takt.perform(engine, p, cartId, targetId));
     if (!r) return;
     if (match.cutsceneQueue.length) cutscene.pausePlayingForCutscene(r.after || undefined);
     else { if (r.after) r.after(); draw.flushOrtCounters(); view.broadcastState(); draw.checkAllLocked(); }

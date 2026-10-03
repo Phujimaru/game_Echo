@@ -3096,15 +3096,20 @@ function TaktModeModal({ carts, onPick, onClose }) {
   );
 }
 
-// ---------- อาซาฮินะ ทักต์ (คอนดักเตอร์): พันธะสัญญา — พันธะที่มีอยู่ + ส่งคำเชิญมิวสิคคาร์ท ----------
-function TaktBondModal({ me, onInvite, onClose }) {
+// ---------- อาซาฮินะ ทักต์ (คอนดักเตอร์): พันธะสัญญา + บรรเลง — หน้าต่างเดียว ----------
+//  พันธะที่มีอยู่ · คำสั่งบรรเลงรายคู่พันธะ (me.takt.perform — block = เหตุผลที่สั่งไม่ได้ รวมคูลดาวน์) · เชิญมิวสิคคาร์ท
+//  สั่งเดสตินี่ต้องมีเป้าใน me.taktPerformTargets[cartId]
+function TaktBondModal({ me, onInvite, onCmd, onClose }) {
   const t = me?.takt || {};
   const bonds = t.bonds || [];
   const cands = me?.taktCandidates || [];
+  const perform = t.perform || [];
+  const targets = me?.taktPerformTargets || {};
+  const full = bonds.length >= (t.maxBonds || 2);
   return (
     <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-        <div className="text-lg font-black text-echo-cyan text-center">🎼 พันธะสัญญา {bonds.length}/{t.maxBonds || 2}</div>
+        <div className="text-lg font-black text-echo-cyan text-center">{t.curtain ? "🎭 บรรเลง" : "🎼 พันธะสัญญา"} {bonds.length}/{t.maxBonds || 2}</div>
         {bonds.length > 0 && (
           <div className="flex flex-col gap-1.5">
             {bonds.map((b) => (
@@ -3115,54 +3120,32 @@ function TaktBondModal({ me, onInvite, onClose }) {
             ))}
           </div>
         )}
-        <div className="text-xs font-bold opacity-70">เชิญ</div>
-        {cands.length === 0 ? (
-          <div className="text-sm opacity-60 text-center py-2">ไม่มีมิวสิคคาร์ท</div>
-        ) : cands.map((c) => (
-          <button key={c.id} disabled={!!c.block} onClick={() => onInvite(c.id)}
-            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
-            <span className="font-black">{c.name}</span>
-            <span className="text-xs opacity-80">{c.block || "✉️ เชิญ"}</span>
-          </button>
-        ))}
-        <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ปิด</button>
-      </div>
-    </div>
-  );
-}
-
-// ---------- อาซาฮินะ ทักต์ (เปิดม่าน): บรรเลง — สั่งไททันล่อเป้า / สั่งเดสตินี่โจมตี ----------
-//  perform.<cmd>.block = เหตุผลที่สั่งไม่ได้ (รวมคูลดาวน์ "อีก N เทิร์น") · destiny ต้องมีเป้าใน taktPerformTargets
-function TaktPerformModal({ me, onCmd, onClose }) {
-  const t = me?.takt || {};
-  const perf = t.perform || {};
-  const bonds = t.bonds || [];
-  const targets = me?.taktPerformTargets || [];
-  const cmds = [
-    { key: "titan", icon: "🎯", label: "สั่งไททัน — ล่อเป้า", block: perf.titan?.block || null },
-    { key: "destiny", icon: "🗡️", label: "สั่งเดสตินี่ — โจมตี 2", block: perf.destiny?.block || (targets.length ? null : "ไม่มีเป้า") },
-  ];
-  return (
-    <div className="fixed inset-0 z-40 bg-black/60 grid place-items-center p-4" onClick={onClose}>
-      <div className="bg-echo-navy rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-        <div className="text-lg font-black text-echo-cyan text-center">🎭 บรรเลง</div>
-        {bonds.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            {bonds.map((b) => (
-              <div key={b.id} className="rounded-lg px-4 py-2 bg-echo-cyan/15 border border-echo-cyan flex items-center justify-between gap-2">
-                <span className="font-black">🔗 {b.name}</span>
-                <span className="text-xs opacity-85">{b.song > 0 ? `🎵 ${TAKT_MODE_LABEL[b.mode] || ""} · ${b.song} เทิร์น` : "ยังไม่มีบทเพลง"}</span>
-              </div>
+        {perform.length > 0 && <div className="text-xs font-bold opacity-70">บรรเลง</div>}
+        {perform.map((c) => {
+          const noTarget = c.kind === "destiny" && !(targets[c.cartId] || []).length;
+          const block = c.block || (noTarget ? "ไม่มีเป้า" : null);
+          return (
+            <button key={c.cartId} disabled={!!block} onClick={() => onCmd(c)}
+              className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
+              <span className="font-black">{c.kind === "titan" ? `🎯 สั่ง ${c.name} — ล่อเป้า` : `🗡️ สั่ง ${c.name} — โจมตี 2`}</span>
+              <span className="text-xs opacity-80">{block || "พร้อม"}</span>
+            </button>
+          );
+        })}
+        {!full && (
+          <>
+            <div className="text-xs font-bold opacity-70">เชิญ</div>
+            {cands.length === 0 ? (
+              <div className="text-sm opacity-60 text-center py-2">ไม่มีมิวสิคคาร์ท</div>
+            ) : cands.map((c) => (
+              <button key={c.id} disabled={!!c.block} onClick={() => onInvite(c.id)}
+                className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
+                <span className="font-black">{c.name}</span>
+                <span className="text-xs opacity-80">{c.block || "✉️ เชิญ"}</span>
+              </button>
             ))}
-          </div>
+          </>
         )}
-        {cmds.map((c) => (
-          <button key={c.key} disabled={!!c.block} onClick={() => onCmd(c.key)}
-            className="text-left rounded-lg px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2">
-            <span className="font-black">{c.icon} {c.label}</span>
-            <span className="text-xs opacity-80">{c.block || "พร้อม"}</span>
-          </button>
-        ))}
         <button onClick={onClose} className="py-2 rounded-lg bg-white/10 border border-white/20 text-sm">ปิด</button>
       </div>
     </div>
@@ -3963,7 +3946,6 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [recruitPrepOpen, setRecruitPrepOpen] = useState(false); // Recruit: หน้าต่างสกิลพิเศษ "เตรียมตัว"
   const [taktModeOpen, setTaktModeOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างเลือกโหมดของบรรเลงเสียงสวรรค์
   const [taktBondOpen, setTaktBondOpen] = useState(false); // อาซาฮินะ ทักต์: หน้าต่างพันธะสัญญา (เชิญมิวสิคคาร์ท)
-  const [taktPerformOpen, setTaktPerformOpen] = useState(false); // อาซาฮินะ ทักต์ (เปิดม่าน): หน้าต่างบรรเลง
   const [cosetteDestinyOpen, setCosetteDestinyOpen] = useState(false); // คอเซ็ตต์: หน้าต่างเลือก Destiny I / II
   const [usagiSel, setUsagiSel] = useState(false);   // อุซากิ: โหมดเลือกเป้าหมาย "ปรุ้ต....."
   const [usagiItemOpen, setUsagiItemOpen] = useState(false); // อุซากิ: หน้าต่างเลือกไอเทมที่จะกิน
@@ -4582,18 +4564,18 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   };
   const pickGift = (id) => {
     // ทักต์ (เปิดม่าน) สั่งเดสตินี่: ส่งคำสั่งบรรเลงแทนการใช้สกิล
-    if (giftSel.perform) socket.emit("taktPerform", { cmd: giftSel.perform, targetId: id });
+    if (giftSel.perform) socket.emit("taktPerform", { cartId: giftSel.perform, targetId: id });
     else socket.emit("useSkill", { tier: giftSel.tier, targets: [id], item: giftSel.item });
     setGiftSel(null);
   };
   // ทักต์ (เปิดม่าน): สั่งไททันส่งเลย · สั่งเดสตินี่เลือกเป้าบนกระดาน (เฉพาะคนที่คอเซ็ตต์เล็งได้)
-  const pickTaktPerform = (cmd) => {
+  const pickTaktPerform = (c) => {
     clickSound();
-    setTaktPerformOpen(false);
-    if (cmd === "titan") { socket.emit("taktPerform", { cmd: "titan" }); return; }
-    const ids = me?.taktPerformTargets || [];
+    setTaktBondOpen(false);
+    if (c.kind === "titan") { socket.emit("taktPerform", { cartId: c.cartId }); return; }
+    const ids = (me?.taktPerformTargets || {})[c.cartId] || [];
     if (!ids.length) return;
-    setGiftSel({ tier: null, perform: "destiny", anyone: true, onlyIds: ids, name: "สั่งเดสตินี่ — โจมตี 2" });
+    setGiftSel({ tier: null, perform: c.cartId, anyone: true, onlyIds: ids, name: `สั่ง ${c.name} — โจมตี 2` });
   };
   const pickCosetteDestiny = (item) => {
     clickSound();
@@ -4820,12 +4802,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     if (recruitPrepOpen && (phase !== "PLAYING" || done)) setRecruitPrepOpen(false);
     if (taktModeOpen && (phase !== "PLAYING" || done)) setTaktModeOpen(false);
     if (taktBondOpen && (phase !== "PLAYING" || done)) setTaktBondOpen(false);
-    if (taktPerformOpen && (phase !== "PLAYING" || done || !me?.takt?.curtain)) setTaktPerformOpen(false);
     if (cosetteDestinyOpen && (phase !== "PLAYING" || done || !me?.cosette?.unlocked)) setCosetteDestinyOpen(false);
     if (strikerMissileOpen && (phase !== "PLAYING" || done)) setStrikerMissileOpen(false);
     if (!me?.recruitPick && recruitPicks.length) setRecruitPicks([]);
     if (usagiItemOpen && (phase !== "PLAYING" || done)) setUsagiItemOpen(false);
-  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, taktPerformOpen, cosetteDestinyOpen, me?.takt?.curtain, me?.cosette?.unlocked, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
+  }, [usagiSel, giftSel, andersenColorOpen, usagiItemOpen, recruitSel, recruitPrepOpen, taktModeOpen, taktBondOpen, cosetteDestinyOpen, me?.cosette?.unlocked, strikerMissileOpen, recruitPicks.length, me?.recruitPick, phase, done]);
   useEffect(() => {
     if (danSel && (phase !== "PLAYING" || me?.skillUsed || done)) setDanSel(null);
   }, [danSel, phase, me?.skillUsed, done]);
@@ -5066,8 +5047,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         {me?.usagiSwapOffer && <UsagiSwapModal offer={me.usagiSwapOffer} />}
         {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
         {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
-        {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
-        {taktPerformOpen && me && <TaktPerformModal me={me} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktPerformOpen(false); }} />}
+        {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
         {cosetteDestinyOpen && me && <CosetteDestinyModal options={me.cosetteDestiny} onPick={pickCosetteDestiny} onClose={() => { clickSound(); setCosetteDestinyOpen(false); }} />}
         {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
@@ -5392,8 +5372,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {me?.usagiSwapOffer && <UsagiSwapModal offer={me.usagiSwapOffer} />}
       {me?.taktInvite && <TaktInviteModal invite={me.taktInvite} />}
       {taktModeOpen && me && <TaktModeModal carts={taktModeCarts} onPick={pickTaktMode} onClose={() => { clickSound(); setTaktModeOpen(false); }} />}
-      {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
-      {taktPerformOpen && me && <TaktPerformModal me={me} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktPerformOpen(false); }} />}
+      {taktBondOpen && me && <TaktBondModal me={me} onInvite={(id) => { clickSound(); socket.emit("taktInvite", { targetId: id }); }} onCmd={pickTaktPerform} onClose={() => { clickSound(); setTaktBondOpen(false); }} />}
       {cosetteDestinyOpen && me && <CosetteDestinyModal options={me.cosetteDestiny} onPick={pickCosetteDestiny} onClose={() => { clickSound(); setCosetteDestinyOpen(false); }} />}
       {usagiItemOpen && me && <UsagiItemModal me={me} onPick={pickUsagiItem} onClose={() => { clickSound(); setUsagiItemOpen(false); }} />}
 
@@ -5789,12 +5768,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                   )}
                   {isTakt && phase === "PLAYING" && me.alive && !done && (
                     <button
-                      onClick={() => { clickSound(); if (me.takt?.curtain) setTaktPerformOpen(true); else setTaktBondOpen(true); }}
+                      onClick={() => { clickSound(); setTaktBondOpen(true); }}
                       disabled={frozenByClockUp}
                       className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35"
                       title={me.takt?.curtain ? "บรรเลง" : "พันธะสัญญา"}
                     >
-                      {me.takt?.curtain ? "🎭 บรรเลง" : `🎼 พันธะสัญญา ${taktBonds.length}/${me.takt?.maxBonds || 2}`}
+                      {me.takt?.curtain ? "🎭 บรรเลง" : `🎼 พันธะสัญญา ${taktBonds.length}/${me.takt?.maxBonds || 2}`}{(me.takt?.perform || []).some((c) => !c.block) ? " ✦" : ""}
                     </button>
                   )}
                 </>

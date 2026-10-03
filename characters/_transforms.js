@@ -185,7 +185,7 @@ module.exports = function buildTransforms(img) {
     taktSongTitan: { img: titanChar.IMG.song, video: titanChar.VIDEO.song, title: "บทเพลงที่ไม่อาจลืม", label: "ไททัน", seconds: 13, music: null, afterReveal: false },
     titanAgile:    { img: titanChar.IMG.skill3, video: titanChar.VIDEO.agile, title: "คล่องตัวสูง", label: "หลบหลีก + สวนกลับ", seconds: 4, music: null, afterReveal: false },
     titanSun:      { img: titanChar.IMG.sun, video: titanChar.VIDEO.sun, title: "Vigorous Rising Sun", label: "โจมตี 2 ครั้ง", seconds: 3, music: null, afterReveal: false, noIntro: true },
-    //  คอเซ็ตต์: ทุกคลิปเต็มครั้งแรกต่อเกม (triggerCutscene) ยกเว้น Destiny I/II ที่เล่นทุกครั้ง (queueCutscene)
+    //  คอเซ็ตต์: ทุกคลิปเต็มครั้งแรกต่อเกม (triggerCutscene) ยกเว้น Destiny I/II และ cosetteLow ที่เล่นทุกครั้ง (queueCutscene)
     //  taktCurtain/taktCmd*: เปิดม่านและคำสั่งบรรเลงของทักต์ (ครั้งแรกต่อเกม)
     taktSongCosette:   { img: cosetteChar.IMG.song, video: cosetteChar.VIDEO.song, title: "บทเพลงที่ไม่อาจลืม", label: "เดสตินี่", seconds: 4, music: null, afterReveal: false },
     cosettePierce:     { img: cosetteChar.IMG.skill3, video: cosetteChar.VIDEO.pierce, title: "ทิ่มแทง", label: "คัดลอกบัฟ + ภาระเวท", seconds: 10, music: null, afterReveal: false },

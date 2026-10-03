@@ -1,5 +1,7 @@
 // ============================================================
-//  อาซาฮินะ ทักต์ — พิเศษ · เลือกได้คนเดียวต่อเกม
+//  อาซาฮินะ ทักต์ — พิเศษ · เลือกซ้ำได้หลายคน
+//    ทุกอย่างของพันธะผูกกับ id ของทักต์แต่ละคน (taktBonds / taktBondBy) — กลุ่มพันธะของทักต์คนละคน
+//    ไม่ใช่พวกเดียวกัน · มิวสิคคาร์ทที่มีพันธะ/คำเชิญค้างกับทักต์คนอื่นเชิญไม่ได้ (inviteBlock)
 //
 //  ระบบพันธะสัญญา (สกิลติดตัว คอนดักเตอร์) — ของกลางของ "มิวสิคคาร์ท" ทุกตัว (MUSIC_CARTS)
 //    ปุ่มแยก (socket taktInvite) ไม่เสียแต้ม ไม่นับเป็นการใช้สกิล — ส่งคำเชิญให้มิวสิคคาร์ท 1 คน
@@ -24,8 +26,10 @@
 //    วีดีโอของมิวสิคคาร์ทแต่ละตัว (takt/<id>/takt_<id>.mp4) เต็มครั้งแรก ครั้งต่อไปขึ้นการ์ดแจ้งเตือน
 //    ความสามารถที่ปลดล็อกเป็นของตัวมิวสิคคาร์ทเอง (เช่น characters/titan.js อ่าน songActive)
 //
-//  สกิลติดตัว 3 เปิดม่าน: ผูกพันธะกับมิวสิคคาร์ท 2 คน "ไม่ซ้ำแบบ" (ไททัน + คอเซ็ตต์) -> takt_passive3.mp4 (ครั้งแรกต่อเกม)
-//    ปุ่มพันธะเปลี่ยนเป็นปุ่มบรรเลง (socket taktPerform · ไม่เสียแต้ม · ไม่นับเป็นการใช้สกิล · คำสั่งละคูลดาวน์ 5)
+//  สกิลติดตัว 3 เปิดม่าน: คำสั่งบรรเลงใช้ได้ทันทีที่มีคู่พันธะ (ซ้ำแบบก็ได้) — คำสั่งผูกกับคู่พันธะรายคน
+//    (socket taktPerform { cartId, targetId } · ไม่เสียแต้ม · ไม่นับเป็นการใช้สกิล · คูลดาวน์ 5 แยกรายคน)
+//    คลิปเปิดม่าน takt_passive3.mp4 ขึ้นเฉพาะตอนพันธะครบ 2 คนไม่ซ้ำแบบ (ไททัน + คอเซ็ตต์ · ครั้งแรกต่อเกม)
+//    คลิปของคำสั่ง (passive3-titan / passive3-destiny) เล่นตามปกติ (ครั้งแรกต่อเกม)
 //    สั่งไททัน: ล่อเป้าทั้งโจมตีปกติและสกิลที่เล็งศัตรูไปที่ไททันจนจบเทิร์น (titan.titanTauntRound)
 //    สั่งเดสตินี่: คอเซ็ตต์ทำดาเมจสกิล 2 ใส่เป้าที่เลือก (วีดีโอก่อน) · ทักต์และคู่พันธะที่ถูกสั่งต้องไม่ติดสตั้น
 //  บทเพลงพัง: ทักต์เลือดเหลือ 1 หรือตาย -> มิวสิคคาร์ททุกคนที่มีบทเพลงเสียบทเพลง + สตั้น 2 (ต้านไม่ได้)
@@ -122,15 +126,12 @@ function curtainActive(engine, takt) {
   const types = bondedCarts(engine, takt).filter(alive).map((c) => c.characterId);
   return CURTAIN_TYPES.every((t) => types.includes(t));
 }
-function cartOfType(engine, takt, type) {
-  return bondedCarts(engine, takt).find((c) => alive(c) && c.characterId === type) || null;
-}
-function performBlock(engine, takt, cmd) {
-  if (!curtainActive(engine, takt)) return "ยังไม่เปิดม่าน";
+// คำสั่งบรรเลงของคู่พันธะแต่ละแบบ: titan = ล่อเป้า · cosette = โจมตี 2
+const PERFORM_KIND = { titan: "titan", cosette: "destiny" };
+function performBlock(engine, takt, cart) {
+  if (!cart || !alive(cart) || !PERFORM_KIND[cart.characterId] || cart.taktBondBy !== takt.id) return "ไม่มีคู่พันธะ";
   if ((takt.statuses.stun || 0) > 0) return "คอนดักเตอร์ติดสตั้น";
-  const cart = cartOfType(engine, takt, cmd === "titan" ? "titan" : "cosette");
-  if (!cart) return "ไม่มีคู่พันธะ";
-  const ready = (takt.taktPerformReady || {})[cmd] || 0;
+  const ready = (takt.taktPerformReady || {})[cart.id] || 0;
   if (engine.roundNumber < ready) return `อีก ${ready - engine.roundNumber} เทิร์น`;
   if ((cart.statuses.stun || 0) > 0) return "ติดสตั้น";
   return null;
@@ -160,7 +161,7 @@ module.exports = {
     p.taktDeclinedRound = 0;   // มิวสิคคาร์ท: เทิร์นที่ปฏิเสธ (เชิญซ้ำได้เทิร์นถัดไป)
     p.taktSongMode = DEFAULT_MODE; // มิวสิคคาร์ท: โหมดของบทเพลง
     p.taktModeRound = 0;       // มิวสิคคาร์ท: เทิร์นที่ถูกสลับโหมดล่าสุด (1 ครั้ง/เทิร์น)
-    p.taktPerformReady = { titan: 0, destiny: 0 }; // ทักต์ (เปิดม่าน): คำสั่งบรรเลงกดได้อีกเมื่อ roundNumber >= ค่านี้
+    p.taktPerformReady = {}; // ทักต์ (เปิดม่าน): { [id คู่พันธะ]: เลขรอบที่สั่งได้อีก } — คูลดาวน์แยกรายคน
   },
 
   // ---------- เพลงประจำบทเพลง (view.activeSkillMusic) ----------
@@ -215,28 +216,29 @@ module.exports = {
     engine.queueCutscene(takt, "taktAccept");
     if (curtainActive(engine, takt)) {
       engine.triggerCutscene(takt, "taktCurtain"); // เปิดม่าน: เต็มครั้งแรกต่อเกม
-      engine.log(`🎭 ${takt.name} เปิดม่าน — มิวสิคคาร์ทครบทั้งสองแบบ ปุ่มพันธะเปลี่ยนเป็นปุ่มบรรเลง`);
+      engine.log(`🎭 ${takt.name} เปิดม่าน — มิวสิคคาร์ทครบทั้งสองแบบ`);
     }
     return true;
   },
 
   // ---------- เปิดม่าน: คำสั่งบรรเลง ----------
   //  คืน null = สั่งไม่ได้ · { after } = ผลที่ต้องลงหลังวีดีโอ (ผู้เรียกส่งเข้า pausePlayingForCutscene)
-  perform(engine, takt, cmd, targetId) {
-    if (!alive(takt) || !isTakt(takt) || (cmd !== "titan" && cmd !== "destiny") || performBlock(engine, takt, cmd)) return null;
-    if (cmd === "titan") {
-      const titan = cartOfType(engine, takt, "titan");
-      takt.taktPerformReady = { ...(takt.taktPerformReady || {}), titan: engine.roundNumber + PERFORM_COOLDOWN };
+  perform(engine, takt, cartId, targetId) {
+    const cart = engine.players[cartId];
+    if (!alive(takt) || !isTakt(takt) || performBlock(engine, takt, cart)) return null;
+    if (PERFORM_KIND[cart.characterId] === "titan") {
+      const titan = cart;
+      takt.taktPerformReady = { ...(takt.taktPerformReady || {}), [titan.id]: engine.roundNumber + PERFORM_COOLDOWN };
       titan.titanTauntRound = engine.roundNumber;
       engine.triggerCutscene(takt, "taktCmdTitan");
       engine.log(`🎭 ${takt.name} บรรเลง — สั่ง ${titan.name} ล่อเป้าศัตรูทุกคนจนจบเทิร์นนี้`);
       engine.skillFlash({ name: `บรรเลง — ${titan.name} ล่อเป้า`, img: IMG.skill2, by: takt.name, color: engine.colorOf(takt) });
       return { after: null };
     }
-    const cos = cartOfType(engine, takt, "cosette");
+    const cos = cart;
     const t = engine.attackableTargets(cos.id).find((o) => o.id === targetId);
     if (!t) return null;
-    takt.taktPerformReady = { ...(takt.taktPerformReady || {}), destiny: engine.roundNumber + PERFORM_COOLDOWN };
+    takt.taktPerformReady = { ...(takt.taktPerformReady || {}), [cos.id]: engine.roundNumber + PERFORM_COOLDOWN };
     engine.triggerCutscene(takt, "taktCmdDestiny");
     engine.log(`🎭 ${takt.name} บรรเลง — สั่ง ${cos.name} โจมตี ${t.name}`);
     engine.skillFlash({ name: `บรรเลง — ${cos.name} โจมตี ${t.name}`, img: IMG.skill2, by: takt.name, color: engine.colorOf(takt) });
@@ -445,10 +447,11 @@ module.exports = {
         maxBonds: MAX_BONDS,
         dodge: bondedCarts(engine, p).length ? BOND_DODGE : INNATE_DODGE,
         curtain: curtainActive(engine, p),
-        perform: curtainActive(engine, p) ? {
-          titan: { block: performBlock(engine, p, "titan"), cd: Math.max(0, ((p.taktPerformReady || {}).titan || 0) - engine.roundNumber) },
-          destiny: { block: performBlock(engine, p, "destiny"), cd: Math.max(0, ((p.taktPerformReady || {}).destiny || 0) - engine.roundNumber) },
-        } : null,
+        // คำสั่งบรรเลงรายคู่พันธะ (kind: titan = ล่อเป้า / destiny = โจมตี 2)
+        perform: bondedCarts(engine, p).filter((c) => alive(c) && PERFORM_KIND[c.characterId]).map((c) => ({
+          cartId: c.id, name: c.name, kind: PERFORM_KIND[c.characterId],
+          block: performBlock(engine, p, c), cd: Math.max(0, ((p.taktPerformReady || {})[c.id] || 0) - engine.roundNumber),
+        })),
       };
     }
     if (isMusicCart(p)) {
@@ -472,11 +475,14 @@ module.exports = {
     }
     if (isTakt(p)) {
       const carts = Object.values(engine.players).filter((c) => isMusicCart(c) && c.alive && !engine.isOrt(c));
-      const cos = curtainActive(engine, p) ? cartOfType(engine, p, "cosette") : null;
+      const targets = {};
+      for (const c of bondedCarts(engine, p)) {
+        if (alive(c) && PERFORM_KIND[c.characterId] === "destiny") targets[c.id] = engine.attackableTargets(c.id).map((o) => o.id);
+      }
       return {
         taktCandidates: carts.map((c) => ({ id: c.id, name: c.name, block: inviteBlock(engine, p, c) })),
-        // สั่งเดสตินี่: เป้าที่คอเซ็ตต์เล็งได้
-        taktPerformTargets: cos ? engine.attackableTargets(cos.id).map((o) => o.id) : [],
+        // สั่งเดสตินี่: เป้าที่คอเซ็ตต์แต่ละคนเล็งได้ { [cartId]: [ids] }
+        taktPerformTargets: targets,
       };
     }
     return {};
