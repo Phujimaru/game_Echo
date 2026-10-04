@@ -1,8 +1,9 @@
 // หน้าดูกระดานจริง (Game.jsx) ด้วย state จำลอง — เฉพาะ dev: ?hud=1&game=1
 //  ไว้ตรวจว่าแผงตัวเราต่อกับ GameBoard ถูก (เงื่อนไขปุ่ม/สถานะ/การ์ด) โดยไม่ต้องเปิดห้องจริง
 //  phase=PLAYING|ATTACK (ATTACK = เราเป็นฝ่ายโจมตี → แผงเลื่อนลง) · arena=1..3 · n=1..6 · ch=<id ตัวละครเรา>
+//  echo=1 = คู่แข่งคนที่ 2 เป็น Echo + แผงปุ่มทดสอบสนามราชินี (ฉากเปิดตัว/ต่อย/ต่อยเรา/โดนตี/ออกจากสนาม)
 //  journey=0 = โต๊ะแบบเดิม · ch=oguri / escanor / kim / bard / kai = มีแถวทรัพยากร/ช่องพิเศษ · st=many = สถานะเยอะ · drawer=1 = กดเปิดลิ้นชักสถานะให้หลังโหลด
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Game from "../Game";
 import { measureHud } from "./hudMeasure";
 
@@ -43,6 +44,11 @@ function player(i, me, chId) {
   };
 }
 
+// ?echo=1: ตัวนับ/ตัวจับเวลาของแผงทดสอบ (หน้า dev หน้าเดียว — เก็บระดับโมดูลพอ)
+const echoSeq = { n: 1 };
+const echoTimers = [];
+const later = (ms, fn) => { echoTimers.push(setTimeout(fn, ms)); };
+
 export default function GamePreview() {
   const q = new URLSearchParams(location.search);
   const n = Math.min(6, Math.max(1, Number(q.get("n") || 6)));
@@ -63,8 +69,37 @@ export default function GamePreview() {
     const t = setTimeout(measureHud, 8000);
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // ?echo=1: จำลองท่าไม้ตาย Echo (EchoQueenLayer อ่าน state.cutscene / echoField / attack เหมือนของจริง)
+  const echoOn = q.get("echo") === "1" && n >= 2;
+  const [eq, setEq] = useState({ phase: null, cs: null, field: null, attack: null });
+  useEffect(() => () => echoTimers.forEach(clearTimeout), []);
+  if (echoOn) {
+    players[2] = { ...players[2], name: "Echo", hp: 30, maxHp: 30, armor: 0, maxArmor: 0, img: "/characters/echo_queen/echo_queen_portrait.webp",
+      echoQueen: { lv: 10, queenTurns: 0, ultTurns: eq.field ? 5 : 0 } };
+  }
+  const echoCtl = echoOn && {
+    transform: () => {
+      const id = ++echoSeq.n;
+      setEq({ phase: "CUTSCENE", cs: { id, kind: "echoQueen", playerId: "p2", name: "Echo" }, field: { ownerId: "p2", seq: id, turnsLeft: 5 }, attack: null });
+      later(13000, () => setEq((e) => ({ ...e, phase: null, cs: null })));
+    },
+    punch: (target) => {
+      const id = ++echoSeq.n;
+      setEq((e) => ({ ...e, phase: "ATTACKING", attack: { id, byId: "p2", targetId: target, dmg: 3, byName: "Echo", targetName: target, skills: [] } }));
+      later(2500, () => setEq((e) => ({ ...e, phase: null, attack: null })));
+    },
+    hit: () => {
+      const id = ++echoSeq.n;
+      setEq((e) => ({ ...e, phase: "ATTACKING", attack: { id, byId: "p0", targetId: "p2", dmg: 1, byName: "เรา", targetName: "Echo", skills: [] } }));
+      later(2500, () => setEq((e) => ({ ...e, phase: null, attack: null })));
+    },
+    exit: () => setEq((e) => ({ ...e, field: null })),
+  };
   const state = {
-    gameState: phase,
+    gameState: (echoOn && eq.phase) || phase,
+    cutscene: echoOn ? eq.cs : null,
+    echoField: echoOn ? eq.field : null,
+    attack: echoOn ? eq.attack : null,
     youId: "p0",
     players,
     roundNumber: 3,
@@ -76,5 +111,16 @@ export default function GamePreview() {
     shop: [],
     deckLedger: [],
   };
-  return <Game state={state} lowQ={q.get("lowq") === "1"} skillConfirmOn />;
+  return (
+    <>
+      <Game state={state} lowQ={q.get("lowq") === "1"} skillConfirmOn />
+      {echoCtl && (
+        <div style={{ position: "fixed", left: 8, bottom: 8, zIndex: 200, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[["ฉากเปิดตัว", echoCtl.transform], ["ต่อย ผู้เล่น 2", () => echoCtl.punch("p1")], ["ต่อยเรา", () => echoCtl.punch("p0")], ["โดนตี", echoCtl.hit], ["ออกจากสนาม", echoCtl.exit]].map(([label, fn]) => (
+            <button key={label} onClick={fn} style={{ padding: "4px 10px", background: "#2a1650", color: "#fff", border: "1px solid #a85cff" }}>{label}</button>
+          ))}
+        </div>
+      )}
+    </>
+  );
 }

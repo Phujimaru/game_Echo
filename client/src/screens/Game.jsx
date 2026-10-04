@@ -23,6 +23,7 @@ import { OrtLostTierContext } from "./hud/ortLost";
 import { SelfHud, HudPanel, HudStatusDrawer, HudCenter, HudRight, HudTopBar } from "./hud/SelfHud";
 import { clickSound, playSfx, stopSfx, sfxPlayId, startLoopSfx, stopLoopSfx, playCutsceneVideo, suspendMusic, DOOM_WEAPON_SOUNDS } from "../audio";
 import PurgeStage from "../purge/PurgeStage";
+import EchoQueenLayer from "../echoQueen/EchoQueenLayer";
 
 const P_DISPLAY = "var(--font-p-display)";
 const TEAM_COLORS = { A: "#22d3ee", B: "#f97316", C: "#a3e635" };
@@ -670,12 +671,13 @@ function ArenaBackground({ area, night, lowQ, spec }) {
 // ---------- ฉากหลังกลางวัน/กลางคืน (patch 1.7) ----------
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
-function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey, arena }) {
+function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey, arena, hidden }) {
   // SE.RA.PH: โหมดนี้วาดฉากหลังของตัวเองไว้ข้างล่างแล้ว (สนามดวลวันที่ 5 กลางวัน/กลางคืน)
   //  ถ้าปล่อยให้กระดานเดิมวาดทับ จะกลายเป็นฉากหลังของเกมปกติแทน
   if (seraph) return null;
+  // hidden: สนามราชินีของ Echo บังทั้งจอ — ซ่อนแบบยังค้าง mount (ถอดออกแล้ว mount ใหม่ = สนาม 2.5D เล่นฉากพุ่งลงซ้ำ)
   return (
-    <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden" style={hidden ? { visibility: "hidden" } : undefined}>
       {/* การเดินทาง (ffa/duo/trio): ฉากหลังประจำภูมิภาค แยกกลางวัน/กลางคืน แทนสนามดอกไม้เดิม */}
       {/*  ภูมิภาค I–III (5.1.8): สนามประลอง 2.5D มุมกล้องเฉียง 55° — ที่นั่งบนพื้นสนามตรงกับการ์ดผู้เล่น (arena = ผังจาก GameBoard) */}
       {journey && arena
@@ -2627,6 +2629,46 @@ function SliverArmBadge({ me }) {
     </span>
   );
 }
+// Echo (นี่มันเกมของฉัน): เลือกเป้าตีฟรีช่วงจั่วไพ่ — server ส่งรายชื่อเป้าที่ตีได้มาให้เจ้าตัว (freeHitTargets)
+//  กดชื่อ = ตีทันที · ไม่เลือกก่อนเปิดไพ่ = server สุ่มเป้าให้ · จอคอม/แท็บเล็ตเท่านั้น
+function EchoFreeHitPicker({ me, players, disabled }) {
+  const [open, setOpen] = useState(false);
+  const eq = me?.echoQueen;
+  if (!eq || eq.ultTurns <= 0) return null;
+  if (!eq.freeHitPending) {
+    const hit = eq.freeHitTarget && players.find((x) => x.id === eq.freeHitTarget);
+    return hit ? <span className="text-[11px] font-bold rounded-lg px-2 py-1 border border-white/25 bg-black/30 whitespace-nowrap">👊 ตีฟรีแล้ว · {hit.name}</span> : null;
+  }
+  const targets = (eq.freeHitTargets || []).map((id) => players.find((x) => x.id === id)).filter(Boolean);
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => { clickSound(); setOpen((v) => !v); }}
+        disabled={disabled || !targets.length}
+        className="text-[11px] font-bold rounded-lg px-2 py-1 border bg-white/5 border-white/25 disabled:opacity-35 whitespace-nowrap"
+      >
+        👊 ตีฟรี
+      </button>
+      {open && !disabled && (
+        <span className="absolute bottom-full right-0 mb-1 z-40 flex flex-col gap-1 rounded-lg border border-white/25 bg-black/85 p-2 min-w-[9rem]">
+          {targets.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => { clickSound(); setOpen(false); socket.emit("echoFreeHit", { targetId: t.id }); }}
+              className="text-xs font-bold rounded-md px-2 py-1 text-left border border-white/15 hover:bg-white/10"
+              style={{ color: t.color || undefined }}
+            >
+              {t.name}
+            </button>
+          ))}
+          <span className="text-[10px] opacity-70 whitespace-nowrap">ไม่เลือก = สุ่มเป้าก่อนเปิดไพ่</span>
+        </span>
+      )}
+    </span>
+  );
+}
 // ทาคุมิ ฟุจิวาระ: แจ้งเตือนเกียร์ปัจจุบัน (1-6) — เกียร์ 3 ขึ้นไปพลังโจมตี +1, เกียร์ 6 รวม +2
 function TakumiGearBadge({ me, ch }) {
   if (!ch || ch.id !== "takumi") return null;
@@ -3943,7 +3985,7 @@ function useCardFlights(state) {
   }, [state]);
 
   const removeFlight = (id) => setFlights((f) => f.filter((x) => x.id !== id));
-  return { flights, removeFlight, deckRef, selfHandRef, registerOther };
+  return { flights, removeFlight, deckRef, selfHandRef, registerOther, otherRefs };
 }
 
 // ---------- ชั้นเรนเดอร์การ์ดที่กำลังบิน (fixed เต็มจอ ทับทุกอย่าง ไม่กันคลิก) ----------
@@ -4059,7 +4101,16 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const [deckOpen, setDeckOpen] = useState(false);   // สมุดการ์ดกองกลาง: กดที่กองการ์ดกลางเพื่อดู
   const shopAutoShown = useRef(-1);                  // จำรอบร้านค้าที่เด้งอัตโนมัติไปแล้ว (กันเด้งซ้ำ)
   const vp = useViewport();
-  const { flights: cardFlights, removeFlight: removeCardFlight, deckRef, selfHandRef, registerOther } = useCardFlights(state);
+  const { flights: cardFlights, removeFlight: removeCardFlight, deckRef, selfHandRef, registerOther, otherRefs } = useCardFlights(state);
+  // Echo "นี่มันเกมของฉัน": สนามราชินีบังฉากหลังเดิมทั้งจอ (ซ่อนฉากหลังเดิมไว้ประหยัด GPU) · จุดกลางการ์ดที่นั่ง (เป้ากำปั้น/ม่านหุบ)
+  const [echoCover, setEchoCover] = useState(false);
+  const echoSeatCenter = (id) => { // เรียกตอนเกิดเหตุการณ์เท่านั้น (ใน effect ของ EchoQueenLayer) ไม่ใช่ตอน render
+    if (id && id === state?.youId) return [window.innerWidth / 2, window.innerHeight * .86];
+    const el = id && otherRefs.current[id];
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  };
   const phase = state.gameState;
 
   // ---------- ตัวขับคิวฉากประกาศ ----------
@@ -4970,8 +5021,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const csYuna = phase === "CUTSCENE" && state.cutscene && state.cutscene.kind === "yuna" ? state.cutscene : null;
   const csOverload = phase === "CUTSCENE" && state.cutscene && state.cutscene.kind === "overloadForce" ? state.cutscene : null;
   const csAnnounce = phase === "CUTSCENE" && state.cutscene && state.cutscene.announce ? state.cutscene : null;
-  const csSkipped = lowQ && phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !csOverload ? state.cutscene : null;
-  const cutsceneEl = csOverload ? <OverloadForceCutscene key={state.cutscene.id} cs={state.cutscene} />
+  // Echo: ฉากเปิดตัวร่างยักษ์วาดเองใน EchoQueenLayer (canvas) — ไม่ใช่วีดีโอ · โหมดประหยัดก็เล่น (แบบลดเอฟเฟกต์)
+  const csEcho = phase === "CUTSCENE" && state.cutscene && state.cutscene.kind === "echoQueen";
+  const csSkipped = lowQ && phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !csOverload && !csEcho ? state.cutscene : null;
+  const cutsceneEl = csEcho ? null
+    : csOverload ? <OverloadForceCutscene key={state.cutscene.id} cs={state.cutscene} />
     : phase === "CUTSCENE" && state.cutscene && csYuna && !lowQ ? <YunaCutscene key={state.cutscene.id} cs={state.cutscene} />
     : phase === "CUTSCENE" && state.cutscene && !csAnnounce && !csYuna && !lowQ ? <Cutscene key={state.cutscene.id} cs={state.cutscene} />
     : null;
@@ -5455,6 +5509,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const hudK = hudZ / scale;
   // โหมด Purge: ฉากท่อ 2.5D + ซ่อนกระดานระหว่างฉากเปิด/ฉากจบเทิร์นที่ server พักเกมรอ
   const purgeOn = !!state.purge;
+  const echoInMatch = (state.players || []).some((p) => p.echoQueen); // มี Echo ในแมตช์ (publicState ของ Echo)
   const purgeSceneOn = purgeOn && !!state.purge.scene?.active && !state.cutscene;
 
   return (
@@ -5462,7 +5517,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* Purge: ฉากอุโมงค์ท่อแทนฉากหลังทั้งหมด (ระหว่างฉากเปิด/จบเทิร์น ซ่อน UI กระดานไว้ — purge-scene-on) */}
       {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} night={state.cycle === "night"} hidden={!!purgeFight} gameState={state.gameState} />}
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={arenaJourney} arena={arenaBg} />}
+      {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={arenaJourney} arena={arenaBg} hidden={echoCover} />}
+      {/* Echo "นี่มันเกมของฉัน": สนามราชินี (หลังกรอบกระดาน) + ฉากเปิดตัว/กำปั้น (หน้าทุกอย่าง) — mount ตลอดแมตช์ที่มี Echo */}
+      {echoInMatch && <EchoQueenLayer state={state} lowQ={lowQ} seatCenter={echoSeatCenter} onCover={setEchoCover} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
       {boss && !muteScenes && <OrtBossPanel layer="canvas" boss={boss} phase={phase} lowQ={lowQ} walking={phase === "PLAYING" && boss.alive} targetable={isTargetable(boss, iAmAttacker, targetChain)} />}
         {state.fullForce && <div className="full-force-speed" />}
@@ -5914,6 +5971,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
                     >
                       🔧 ซ่อม{(st.repairCd || 0) > 0 ? ` (อีก ${st.repairCd} เทิร์น)` : ""}
                     </button>
+                  )}
+                  {me.echoQueen && phase === "PLAYING" && me.alive && (!done || !me.echoQueen.freeHitPending) && (
+                    <EchoFreeHitPicker me={me} players={state.players} disabled={frozenByClockUp || !!state.dioWorld} />
                   )}
                   {isPairChar && (
                     <span className="text-[11px] font-bold rounded-lg px-2 py-1 border border-white/25 bg-black/30">

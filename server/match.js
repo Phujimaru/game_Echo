@@ -41,6 +41,9 @@ const match = {
   timeLeft: 0,
   phaseTimerId: null,
   attackerId: null,
+  // Echo "นี่มันเกมของฉัน": เฟสโจมตีย่อยของตีฟรีที่แทรกกลางช่วงจั่วไพ่ (server/phases/echoFreeHit.js)
+  //  { echoId, then, resume, prevAttackerId } — มีค่า = endTurn()/postAttackFollowup() ต้องคืนเฟสแทนการจบเทิร์น
+  echoFreeHit: null,
   roundWinnerId: null,
   roundTiedWin: false,  // ผู้ชนะได้จากการเสมอแต้ม -> ไม่มีเทิร์นโจมตีรอบนี้
   doomTieAttack: false, // DoomGuy สกิลติดตัว: เสมอแต้มแล้วโรลติด -> ได้เป็นผู้ชนะและได้โจมตีรอบนี้

@@ -113,6 +113,13 @@ export function VitalExtras({ p, className = "" }) {
   const bits = [];
   if (p.shield > 0) bits.push(["sh", `+🛡️${p.shield}`, "#7fd4ff", `โล่ชั่วคราว ${p.shield}`]);
   if (p.lumiProducerHp != null && !p.lumiIdolDown) bits.push(["pr", `🎧${p.lumiProducerHp}`, "#ff8ad0", `โปรดิวเซอร์เหลือพลังชีวิต ${p.lumiProducerHp}/${p.lumiProducerMax}`]);
+  // Echo: ระดับขยายร่าง (ทุกคนเห็น) · ราชินีแห่ง Echo / นี่มันเกมของฉัน เทิร์นที่เหลือ
+  const eq = p.echoQueen;
+  if (eq) {
+    bits.push(["eqlv", `👑 ขยายร่าง ${eq.lv}/${eq.lvMax}`, "#c4b5fd", `ขยายร่าง ${eq.lv}/${eq.lvMax}`]);
+    if (eq.queenTurns > 0) bits.push(["eqq", `ราชินีแห่ง Echo ${eq.queenTurns}`, "#e9d5ff", `ราชินีแห่ง Echo เหลือ ${eq.queenTurns} เทิร์น`]);
+    if (eq.ultTurns > 0) bits.push(["equ", `♛ ${eq.ultTurns}`, "#f0abfc", `นี่มันเกมของฉัน เหลือ ${eq.ultTurns} เทิร์น`]);
+  }
   if (!bits.length) return null;
   return (
     <div className={`pc-extra ${className}`}>

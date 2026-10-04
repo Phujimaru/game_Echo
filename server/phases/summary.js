@@ -16,6 +16,7 @@ const characterRules = require("../characterRules");
 const combat = require("../combat");
 const cutscene = require("../cutscene");
 const cardDeck = require("../deck");
+const echoFreeHit = require("./echoFreeHit");
 const draw = require("./draw");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
@@ -38,6 +39,9 @@ function resolveRound() {
     draw.checkAllLocked();
     return;
   }
+  // Echo (นี่มันเกมของฉัน): ยังไม่ได้ตีฟรีเทิร์นนี้ = สุ่มเป้าแล้วตีให้ "ก่อนเปิดไพ่" — จุดนี้ครอบทั้งหมดเวลาเฟสจั่วไพ่
+  //  และ checkAllLocked (ทุกทางเข้าสู่การเปิดไพ่ผ่านที่นี่) · หมัดจบแล้วเรียก resolveRound ซ้ำ (ตีฟรีถูกใช้ไปแล้ว ไม่วน)
+  if (echoFreeHit.runPendingBeforeReveal(resolveRound)) return;
   match.explicitTargetIds = null; match.explicitActorId = null; // ข้อยกเว้นของการกระทำที่เพิ่งจบ ไม่ลามมาถึงผลหลังเปิดไพ่
   for (const p of combat.livingPlayers()) p.locked = true;
   // นักบินปริศนา: จบช่วงจั่วไพ่ของเทิร์นนี้ (ร่างที่สิงโดนดาเมจหลังจากนี้ไม่ทำให้ปรากฏตัว)

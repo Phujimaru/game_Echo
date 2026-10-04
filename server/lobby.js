@@ -279,6 +279,7 @@ function startMatch() {
     match.teamCount = 0;
   }
   match.winningTeamId = null;
+  match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้างจากแมตช์ก่อน (ถ้ามี)
   for (const p of Object.values(match.players)) combat.resetCombat(p);
   match.roundNumber = 0;
   match.cycleShift = 0;
@@ -383,6 +384,7 @@ function backToLobby() {
   timers.clearPhaseTimer();
   match.timeLeft = 0;
   match.attackerId = null;
+  match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้าง (กลับล็อบบี้กลางหมัด)
   match.roundWinnerId = null;
   match.roundNumber = 0;
   match.cycleShift = 0;

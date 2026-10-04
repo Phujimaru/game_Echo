@@ -32,7 +32,7 @@ const DIFFICULTY_GROUPS = [
   { key: "medium", label: "กลาง", color: "#E5B33B", order: ["temari", "miyako", "bat_ben", "escanor", "hisakawa_sister", "ippo", "cayenne", "oberon_summer", "reines", "cosette", "dio"] },
   { key: "hard", label: "ยาก", color: "#C0392B", order: ["kotone", "bard", "shiki", "kai", "takumi", "the_supplicant", "recruit", "tohno", "andersen", "johnny"] },
   { key: "fun", label: "เอาฮา", color: "#9B4F96", order: ["appleguy", "dan", "usagi"] },
-  { key: "special", label: "พิเศษ", color: "#0e7490", order: ["ultraman_trigger", "yui", "shido", "brian", "producer_lumi", "kim", "striker", "takt"] },
+  { key: "special", label: "พิเศษ", color: "#0e7490", order: ["ultraman_trigger", "yui", "shido", "brian", "producer_lumi", "kim", "striker", "takt", "echo_queen"] },
   // หมวดตามสังกัด ไม่ใช่ระดับความยาก — ไรเดอร์ทุกคนที่มี Clock Up (แกนร่วม characters/_zect.js)
   { key: "zect", label: "องค์กรZectz", color: "#3B5BA5", order: ["daisuke", "yaguruma", "kagami", "tsurugi"] },
   // มหันตภัย: บอส (บอตเท่านั้น — ดูข้อมูลได้แต่เลือกเล่นไม่ได้) + ตัวโหดสุด (นานายะ / ชิกิ เจ้าหญิง)
@@ -134,6 +134,7 @@ function skillRows(sel) {
   if (sel.id === "nanaya") { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
   if (sel.id === "conner") { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); push("ติดตัว 4", sel.passive4); }
   if (sel.id === "cayenne") push("ติดตัว 2", sel.passive2);
+  if (sel.id === "echo_queen") push("ติดตัว 2", sel.passive2);
   if (sel.pair) { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
   if (sel.id === "ort") { push("ติดตัว 2", sel.passive2); push("ติดตัว 3", sel.passive3); }
   // จอห์นนี่: สกิลติดตัว 3 ข้อ + สกิลรอง/ท่าไม้ตายของแต่ละ Act (ต่อท้ายรายการด้านล่าง)

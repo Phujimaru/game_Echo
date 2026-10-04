@@ -59,6 +59,7 @@ const cosette = require("./cosette"); // คอเซ็ตต์ ชไนเ�
 const johnny = require("./johnny"); // จอห์นนี่ โจสตาร์ (ยาก · Tusk Act 1-4)
 const dio = require("./dio"); // ดิโอ แบรนโด (Stardust) (กลาง · เกจเวลา / THE WORLD)
 const sliver_bullet = require("./sliver_bullet"); // นักบินปริศนา (ง่าย · unique · ซ่อนตัวสิงร่างผู้เล่นอื่น)
+const echo_queen = require("./echo_queen"); // Echo (พิเศษ · unique · ขยายร่าง / ร่างยักษ์ตีฟรี)
 const ort = require("./ort"); // บอสมหันตภัย (บอตเท่านั้น — โหมด Type Mercury)
 
 const CHARACTER_MODULES = [
@@ -117,6 +118,7 @@ const CHARACTER_MODULES = [
   johnny,
   dio,
   sliver_bullet,
+  echo_queen,
   ort,
 ];
 

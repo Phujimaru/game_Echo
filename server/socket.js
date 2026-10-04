@@ -20,6 +20,7 @@ const characterRules = require("./characterRules");
 const combat = require("./combat");
 const cutscene = require("./cutscene");
 const draw = require("./phases/draw");
+const echoFreeHit = require("./phases/echoFreeHit");
 const endTurnPhase = require("./phases/endTurn");
 const lobby = require("./lobby");
 const mercury = require("./modes/mercury");
@@ -423,6 +424,8 @@ io.on('connection', (socket) => {
     if (match.gameState === 'SERAPH_PLACE') Seraph.readyPlace(engine, id);
   }, 4);
   onPlayerEvent(socket, 'nanayaToggleEye', (id) => draw.nanayaToggleEye(id), 4);
+  // Echo (นี่มันเกมของฉัน): เลือกเป้าตีฟรีช่วงจั่วไพ่ -> ตีทันที (โจมตีปกติ — doAttack ห่อ effectSource เอง)
+  onPlayerEvent(socket, 'echoFreeHit', (id, { targetId } = {}) => echoFreeHit.pickFreeHit(id, targetId), 4);
   // ดิโอ Throwing knife: กดปุ่มแล้ว (ก่อนเลือกเป้า) เล่นคลิปง้างมีดให้ทุกคน — client เข้าโหมดเลือกเป้าค้างไว้ระหว่างคลิป
   //  แล้วค่อยส่ง useSkill ตอนเลือกเป้า · คลิปเล่นเฉพาะตอนกดสกิลได้จริง และครั้งแรกต่อเกมเท่านั้น (dio.aimKnife — ครั้งต่อไปไม่พักเฟส)
   onPlayerEvent(socket, 'dioKnifeAim', (id) => {

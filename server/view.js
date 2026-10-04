@@ -335,7 +335,10 @@ function buildStateFor(viewerId) {
   //  เอจิ: ท่าไม้ตาย ไม่ว่ายังก็ตาม เป็นคนบังคับเปิดสนาม Break Beat Bark! เอง — เพลงจึงเป็นลำดับ
   //  eiji_skill3_connect.m4a แล้วต่อด้วย Break Beat Bark!.mp3 วนลูป (MUSIC_SEQUENCES ฝั่ง client)
   const eijiUltOwner = Object.values(match.players).find((p) => p.alive && CHAR_HOOKS.eiji.ultActive(p));
-  let sm = (match.overloadForceActive && match.gameState !== "CUTSCENE")
+  // Echo "นี่มันเกมของฉัน": เพลงราชินีอยู่บนสุด ไม่โดนเพลงอื่นบัง (ผู้ใช้สั่ง — สูงกว่ายูนะ)
+  const echoQueenMusic = CHAR_HOOKS.echo_queen.activeMusic(engine);
+  let sm = echoQueenMusic ? echoQueenMusic
+    : (match.overloadForceActive && match.gameState !== "CUTSCENE")
     ? { music: "overload_force", at: match.overloadForceSeq }
     : eijiUltOwner
     ? { music: "eiji_ult", at: eijiUltOwner.transformAt || 0 }
@@ -414,6 +417,7 @@ function buildStateFor(viewerId) {
     // Type Mercury (Raid Boss ORT): ข้อมูลโหมด + บอส + โหวตยอมแพ้ + ตัวที่เลือกลงสนามได้ (per-viewer)
     mercury: mercury.mercuryStateFor(viewer),
     ortArrival: { seq: match.ortArrivalSeq, active: match.ortArrivalActive }, // ฉากเปิดตัว ORT (Raid)
+    echoField: CHAR_HOOKS.echo_queen.fieldState(engine), // Echo "นี่มันเกมของฉัน": สนามราชินี (null = ไม่มี → client เล่นฉากออก)
     // Purge: ตำแหน่งทุกคนในท่อ + ORT + ฉากเปิด/ฉากจบเทิร์นที่กำลังพักเกมรอ (ข้อมูลเดียวกันทุกคน)
     purge: purge.purgeStateFor(viewerId),
     // การเดินทาง (ffa/duo/trio): ภูมิภาค + กลางวัน/กลางคืน + คำอธิบายผลสนาม + ฉากแผนที่ที่กำลังพักเกมรอ
@@ -677,12 +681,14 @@ function buildStateFor(viewerId) {
         // นักบินปริศนา: แขน/ซ่อนตัว/เตรียมพร้อม · ร่างที่สิง (hostId/hostName) เห็นเฉพาะตัวเอง + เพื่อนร่วมทีม
         sliver_bullet: p.characterId === "sliver_bullet" ? CHAR_HOOKS.sliver_bullet.publicState(engine, p, viewer) : undefined,
         dio: p.characterId === "dio" ? CHAR_HOOKS.dio.publicState(engine, p) : undefined, // ดิโอ: เกจเวลา / THE WORLD / Last stand (ข้อมูลสาธารณะ)
+        // Echo: ขยายร่าง/ราชินี/ท่าไม้ตาย/ตีฟรี (เห็นทุกคน) · คูลดาวน์มหึมา + รายชื่อเป้าตีฟรี (เห็นเจ้าตัว)
+        echoQueen: p.characterId === "echo_queen" ? CHAR_HOOKS.echo_queen.publicState(engine, p, mine) : undefined,
         // คอเซ็ตต์ Destiny: ราคาจริงของแต่ละระดับ (หน้าต่างเลือก I/II) — เห็นเจ้าตัว
         cosetteDestiny: mine && p.characterId === "cosette" && CHAR_HOOKS.cosette.unlocked(p)
           ? ["I", "II"].map((t) => { const s = CHAR_HOOKS.cosette.destinySplit(engine, p, t); return { tier: t, cost: s.cost, own: s.own, need: s.need, ok: s.ok }; })
           : undefined,
         // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: คูลดาวน์/ล็อกรายช่อง — client ใช้ทำปุ่มเทา + ตัวเลขคูลดาวน์
-        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette" || p.characterId === "dio" || p.characterId === "johnny" || p.characterId === "sliver_bullet")
+        skillLocks: CHAR_HOOKS[p.characterId] && CHAR_HOOKS[p.characterId].skillLocks && (p.characterId === "oberon_summer" || p.characterId === "artoria_caster" || p.characterId === "reines" || p.characterId === "andersen" || p.characterId === "takt" || p.characterId === "titan" || p.characterId === "cosette" || p.characterId === "dio" || p.characterId === "johnny" || p.characterId === "sliver_bullet" || p.characterId === "echo_queen")
           ? CHAR_HOOKS[p.characterId].skillLocks(engine, p) : undefined,
         ...(mine ? CHAR_HOOKS.usagi.privateState(engine, p) : {}),
         // Bamboo-Hatted Kim: ฝักดาบ/Poise/เหรียญ/บัพ (เห็นทุกคน) · คูลดาวน์/ห้ามจั่ว (เห็นเจ้าตัวคนเดียว)

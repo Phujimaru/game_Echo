@@ -6,6 +6,8 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
   if (["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(phase)) return { name: "lobby5" };
   if (intro && !state?.seraph) return { name: "lobby5" };
   const cs = phase === "CUTSCENE" ? state.cutscene : null;
+  // Echo: ฉากเปิดตัวร่างยักษ์ (kind "echoQueen" — จะเพิ่มตอนย้ายฉากจากต้นแบบเข้าเกม) เล่นเพลงราชินีตั้งแต่ต้นฉาก ไม่เงียบแบบคัตซีนอื่น
+  if (cs?.kind === "echoQueen" && state.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
   const mandatory = cs?.kind === "overloadForce";
   if (cs && (!lowQ || mandatory || cs.announce)) return { name: null };
   const sc = state?.seraph;

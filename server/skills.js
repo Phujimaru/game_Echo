@@ -541,6 +541,10 @@ function useSkillCore(id, tier, targets, item) {
   if (isJohnnyPick && !CHAR_HOOKS.johnny.canUseSkill(engine, p, tier, targets, item)) return;
   const isSliverPick = p.characterId === "sliver_bullet"; // นักบินปริศนา: Beam Magnum ต้องมีแขน + เป้าศัตรู 1 คน
   if (isSliverPick && !CHAR_HOOKS.sliver_bullet.canUseSkill(engine, p, tier, targets)) return;
+  // ---------- Echo (characters/echo_queen.js) ----------
+  //  มหึมา: คูลดาวน์ 12 (เลขรอบ) + กดไม่ได้ระหว่างราชินี · Overwrite: กดไม่ได้ระหว่างท่าไม้ตาย · ท่าไม้ตาย: ต้องขยายร่าง 10
+  const isEchoPick = p.characterId === "echo_queen";
+  if (isEchoPick && !CHAR_HOOKS.echo_queen.canUseSkill(engine, p, tier)) return;
   // กด Beam Magnum = ปรากฏตัวทันที (ก่อนด่านเหน็บชา/ป่าไม้ต้องสาปที่ขึ้นป้ายชื่อผู้ใช้ — ด่านที่เหลือด้านล่างเป็นของตัวละครอื่น)
   if (isSliverPick && tier === "secondary") CHAR_HOOKS.sliver_bullet.reveal(engine, p);
   // ---------- ดิโอ แบรนโด (characters/dio.js) ----------
@@ -872,6 +876,7 @@ function useSkillCore(id, tier, targets, item) {
   if (isDioPick) flashSuffix = CHAR_HOOKS.dio.applyInstantSkill(engine, p, tier, dioTarget) || flashSuffix;
   // นักบินปริศนา: Beam Magnum ปรากฏตัวก่อนลงผล (ป้ายด้านล่างจึงเปิดเผยได้) · สกิลพื้นฐานมีคลิป/การ์ดของตัวเอง
   if (isSliverPick) flashSuffix = CHAR_HOOKS.sliver_bullet.applyInstantSkill(engine, p, tier, targets) || flashSuffix;
+  if (isEchoPick) flashSuffix = CHAR_HOOKS.echo_queen.applyInstantSkill(engine, p, tier) || flashSuffix; // Echo: ลงผลทันที (ไม่มีคลิป)
   // ผลที่ลง "หลังวีดีโอ": ขีปนาวุธของยูเรก้า · Triumphant ของไททัน
   const strikerAfter = isStrikerPick ? CHAR_HOOKS.striker.takeAfter(p) : isTitanPick ? CHAR_HOOKS.titan.takeAfter(p) : null;
   // ---------- ผู้วิงวอน (patch 3.4) ----------

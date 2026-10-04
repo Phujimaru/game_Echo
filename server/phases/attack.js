@@ -26,6 +26,7 @@ const { engine } = require("../engine");
 const characterRules = require("../characterRules");
 const combat = require("../combat");
 const cutscene = require("../cutscene");
+const echoFreeHit = require("./echoFreeHit");
 const endTurnPhase = require("./endTurn");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
@@ -153,6 +154,9 @@ function postAttackFollowup(attacker) {
   // คอนเนอร์ RK800 (สกิลติดตัว 4 การป้องกันตัว): วีดีโอ connor_passive4 เล่นจบแล้ว -> ค่อยลงดาเมจสวนกลับ
   //  (จุดนี้อยู่หลัง runCutsceneQueue ของ doAttack เสมอ จึงได้ลำดับ "วีดีโอก่อน แล้วจึงเกิดความเสียหาย" ตามสเปค)
   CHAR_HOOKS.conner.resolvePendingCounter(engine);
+  // Echo (นี่มันเกมของฉัน): หมัดตีฟรีกลางช่วงจั่วไพ่ — ไม่มีโจมตีต่อ/ตีตาม/จบเทิร์น คืนเฟสจั่วไพ่แทน
+  //  (ตีเพิ่มทุกแบบด้านล่างเป็นของผู้ชนะรอบ — ตีฟรีไม่ใช่การชนะรอบ)
+  if (echoFreeHit.finishFreeHit()) return;
   if (attacker && attacker.alive && attacker.characterId === "nanaya") {
     if (CHAR_HOOKS.nanaya.startReattack(engine, attacker)) return;
   }
@@ -393,7 +397,7 @@ function doAttack(byId, targetId) {
       target.wasAttacked = true;
       match.lastLog.push(`💨 หลบหลีก! ${target.name} หลบการโจมตีของ ${attacker.name} ได้ (${evadePct}%) — เหลือหลบหลีกอีก ${target.statuses.evade || 0} ครั้ง`);
       match.lastAttack = {
-        id: ++match.attackSeq,
+        id: ++match.attackSeq, byId: attacker.id, targetId: target.id,
         byName: attacker.name, byImg: view.displayImg(attacker), byColor: lobby.colorOf(attacker),
         byDoomWeapon: attacker.characterId === "doomguy" ? attacker.doomWeapon : undefined, // DoomGuy: อาวุธที่ใช้ยิงตอนนี้ (เสียงยิงฝั่ง client)
         byAttackSound: attackSoundOf(attacker), // เสียงโจมตีปกติเฉพาะตัว (ผู้สังหารเมจ / ฮารุกะระหว่างโอเมก้า)
@@ -435,6 +439,11 @@ function doAttack(byId, targetId) {
     if (CHAR_HOOKS.ort.onAttackKill(engine, attacker, target)) return;
   }
 
+  // ---------- Echo (characters/echo_queen.js): ขยายร่าง 10 โจมตีปกติมีโอกาสสังหาร 5% (ตีฟรีของท่าไม้ตายก็ใช้) ----------
+  if (attacker.characterId === "echo_queen") {
+    if (CHAR_HOOKS.echo_queen.onAttackKill(engine, attacker, target)) return;
+  }
+
   // ---------- "เนตรมณะ" (สถานะ Universal patch 2.2.7 — เจ้าหญิงราก "ทุกอย่างจะต้องราบรื่น") ----------
   //  ใครก็ตามที่ติดบัฟนี้ โจมตีปกติแล้วมีโอกาสสังหารเป้าหมายทันที 20% (คิดแยกจาก/หลังเนตรของแต่ละตัวละคร)
   //  วีดีโอสังหารขึ้นเฉพาะตอนเจ้าหญิงรากเป็นผู้ลงมือเอง — ตัวละครอื่นที่ได้บัฟไปสังหารเงียบๆ
@@ -450,7 +459,7 @@ function doAttack(byId, targetId) {
       if (!target.alive) match.lastLog.push(`👁️✨💀 เนตรมณะ — ${attacker.name} มองทะลุความตายของ ${target.name} (โอกาส ${Math.round(netraChance * 100)}%) — สังหารทันที!`);
       else match.lastLog.push(`👁️✨💀 เนตรมณะ — ${attacker.name} มองทะลุความตายของ ${target.name} — แต่ ${target.name} เกิดใหม่หนีความตายไปได้!`);
       match.lastAttack = {
-        id: ++match.attackSeq,
+        id: ++match.attackSeq, byId: attacker.id, targetId: target.id,
         byName: attacker.name, byImg: view.displayImg(attacker), byColor: lobby.colorOf(attacker),
         byDoomWeapon: attacker.characterId === "doomguy" ? attacker.doomWeapon : undefined,
         targetName: target.name, targetImg: view.displayImg(target), targetColor: lobby.colorOf(target),
@@ -516,7 +525,7 @@ function doAttack(byId, targetId) {
       // patch 2.1.3.5: ถูกโจมตีไม่ได้แต้มสกิลอีกต่อไป
       target.wasAttacked = true;
       match.lastAttack = {
-        id: ++match.attackSeq,
+        id: ++match.attackSeq, byId: attacker.id, targetId: target.id,
         byName: attacker.name, byImg: view.displayImg(attacker), byColor: lobby.colorOf(attacker),
         byDoomWeapon: attacker.characterId === "doomguy" ? attacker.doomWeapon : undefined, // DoomGuy: อาวุธที่ใช้ยิงตอนนี้ (เสียงยิงฝั่ง client)
         byAttackSound: attackSoundOf(attacker), // เสียงโจมตีปกติเฉพาะตัว (ผู้สังหารเมจ / ฮารุกะระหว่างโอเมก้า)
@@ -539,6 +548,7 @@ function doAttack(byId, targetId) {
   // จอห์นนี่: ผ่านด่านหลบแล้ว = ใช้ Ora ที่ค้าง + Rapid Shot ลบ Chumimi + คิววีดีโอ (ก่อนคิดพลังโจมตี — damageBonus อ่านผลนี้)
   const johnnyFx = CHAR_HOOKS.johnny.prepareOnAttack(engine, attacker, target);
   // สูตรพลังโจมตีพื้นฐาน — ย้าย body ไป computeAttackBase() แล้ว (ดูก่อนหน้า doAttack ในไฟล์นี้)
+  const atkCtx = computeAttackBase(engine, attacker, target);
   let {
     base,
     gingastriumAtk, ginga, storiumAtk, lastStanding, empowerAtk,
@@ -547,7 +557,7 @@ function doAttack(byId, targetId) {
     doomLockonAtk, cardAtkBonus,
     triggerCircleAtk, triggerMultiAtk, triggerZeperionAtk, triggerLightBonus, triggerMultiHighestHp, triggerMultiLowHpPenalty,
     triggerDarkAtk, muimiTowerAtk, mark42Atk, journeyAtkFx,
-  } = computeAttackBase(engine, attacker, target);
+  } = atkCtx;
   // ผกผัน (สถานะ Universal patch 2.2.1): โบนัสพลังโจมตีที่ควรได้ กลับกลายเป็นลดพลังโจมตีแทน (คำนวณรอบเพดานฐาน 1 หน่วย)
   if (invertActive(attacker)) base = Math.max(0, 1 - (base - 1));
   let dmg = base;
@@ -588,7 +598,8 @@ function doAttack(byId, targetId) {
   // คุ้มครอง (Harmony / สถานะพื้นฐาน): ความเสียหายที่ได้รับลดลงตามจำนวนที่ระบุ (ไม่ระบุ = 1)
   const bardGuard = (target.statuses.guard || 0) > 0;
   const guardAmt = (bardGuard ? (statusAmtOf(target, "guard") || 1) : 0)
-    + CHAR_HOOKS.the_supplicant.statusAmtBonus(target, "guard");
+    + CHAR_HOOKS.the_supplicant.statusAmtBonus(target, "guard")
+    + CHAR_HOOKS.echo_queen.guardBonus(engine, target); // Echo ขยายร่างระดับ 1-4
   if (guardAmt > 0) dmg = Math.max(0, dmg - guardAmt);
   // Discord (Bard): เป้าหมายติดขัดแย้ง — ความเสียหายที่ได้รับ +1
   const bardDiscord = (target.statuses.discord || 0) > 0;
@@ -952,11 +963,13 @@ function doAttack(byId, targetId) {
   for (const fx of CHAR_HOOKS.cayenne.attackFx(engine, attacker, cayAttackFx)) addFx(fx, fx.side);
   for (const fx of CHAR_HOOKS.daichi.attackFx(engine, attacker, daichiAttackFx)) addFx(fx, fx.side);
   addFx(CHAR_HOOKS.cayenne.delayFx(engine, target, cayPendingBefore), "def");
+  // Echo: พลังโจมตีจากขยายร่าง / การกลืนกิน / Overwrite
+  for (const name of CHAR_HOOKS.echo_queen.attackFx(atkCtx)) addFx({ name, img: CHAR_HOOKS.echo_queen.IMG.base, by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
   if (pshikiBladeHeal > 0) addFx({ name: `อืม ฉันเข้าใจแล้ว (ฟื้นเลือด +${pshikiBladeHeal})`, img: "/characters/princess_shiki/p_shiki_skill1.jpg", by: attacker.name, color: lobby.colorOf(attacker) }, "atk");
 
   // อนิเมชันบอกว่าใครตีใคร
   match.lastAttack = {
-    id: ++match.attackSeq,
+    id: ++match.attackSeq, byId: attacker.id, targetId: target.id,
     byName: attacker.name, byImg: view.displayImg(attacker), byColor: lobby.colorOf(attacker),
         byDoomWeapon: attacker.characterId === "doomguy" ? attacker.doomWeapon : undefined, // DoomGuy: อาวุธที่ใช้ยิงตอนนี้ (เสียงยิงฝั่ง client)
         byAttackSound: attackSoundOf(attacker), // เสียงโจมตีปกติเฉพาะตัว (ผู้สังหารเมจ / ฮารุกะระหว่างโอเมก้า)

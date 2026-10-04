@@ -78,6 +78,8 @@ function hasKillCapability(p) {
   if (p.characterId === "princess_shiki") return true;
   // "เนตรมณะ" (สถานะ Universal patch 2.2.7): ใครติดบัฟนี้ก็มีความสามารถสังหารทันทีระหว่างที่บัฟยังอยู่
   if (netramanaActive(p)) return true;
+  // Echo: ขยายร่าง 10 = โจมตีปกติมีโอกาสสังหาร 5%
+  if (CHAR_HOOKS.echo_queen.hasKillCapability(p)) return true;
   return false;
 }
 // Apple guy: หลบหลีกสำเร็จระหว่างชิวๆครับน้องๆ สามารถรอดพ้นจากสกิลประเภท "สังหารทันที" ได้ด้วย
@@ -222,7 +224,7 @@ function recruitAttackResolved(p, res) {
 }
 function recruitShowMiss(p, target, label) {
   match.lastAttack = {
-    id: ++match.attackSeq,
+    id: ++match.attackSeq, byId: p.id, targetId: target ? target.id : null,
     byName: p.name, byImg: view.displayImg(p), byColor: lobby.colorOf(p), byAttackSound: attack.attackSoundOf(p),
     targetName: target ? target.name : "", targetImg: target ? view.displayImg(target) : null, targetColor: target ? lobby.colorOf(target) : "#888",
     dmg: 0, dodge: true, fxMs: ATTACKFX_TIME * 1000,

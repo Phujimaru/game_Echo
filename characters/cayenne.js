@@ -251,7 +251,7 @@ module.exports = {
     const sup = engine.CHAR_HOOKS.the_supplicant;
     let dmg = BULLET_DMG;
     const guard = ((target.statuses.guard || 0) > 0 ? (engine.statusAmtOf(target, "guard") || 1) : 0)
-      + sup.statusAmtBonus(target, "guard");
+      + sup.statusAmtBonus(target, "guard") + engine.CHAR_HOOKS.echo_queen.guardBonus(engine, target);
     if (guard > 0) dmg = Math.max(0, dmg - guard);
     if ((target.statuses.discord || 0) > 0) dmg += 1;
     dmg += engine.statusAmtOf(target, "fragile") + sup.statusAmtBonus(target, "fragile");

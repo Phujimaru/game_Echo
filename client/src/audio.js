@@ -70,6 +70,8 @@ const FILES = {
   takt_theme: "/characters/takt/takt_theme_first.m4a", // อาซาฮินะ ทักต์: ระหว่างมิวสิคคาร์ทมีบทเพลง (ต่อด้วย loop — MUSIC_SEQUENCES)
   // จอห์นนี่ โจสตาร์: เพลงตลอด Tusk Act 4 · เสียงโจมตีปกติ/ยิงเล็บ · เสียงลบ Chumimi · เสียงกด Tusk Evo Experience
   johnny_theme: "/characters/johnny/johnny_theme.mp3",
+  // Echo: เพลงตลอดท่าไม้ตาย "นี่มันเกมของฉัน" (-15.5 dBFS ใกล้เป้า -14 ไม่ต้องลด)
+  echo_queen_theme: "/characters/echo_queen/echo_queen_theme.mp3",
   johnny_nail: "/characters/johnny/johnny_nail.mp3",
   johnny_chumimi: "/characters/johnny/johnny_chumimi.mp3",
   johnny_tusk: "/characters/johnny/johnny_tusk.mp3",

@@ -20,6 +20,7 @@ const combat = require("../combat");
 const cutscene = require("../cutscene");
 const dayNight = require("../dayNight");
 const cardDeck = require("../deck");
+const echoFreeHit = require("./echoFreeHit");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
@@ -37,6 +38,7 @@ function dealRound() {
   match.centralDeck = cardDeck.buildCentralDeck(); // กองกลาง 43 ใบ สับใหม่ทุกรอบ
   match.lastLog = [];
   match.attackerId = null;
+  match.echoFreeHit = null; // ตาข่าย: เฟสย่อยตีฟรีของ Echo ไม่ข้ามเทิร์น
   match.roundWinnerId = null;
   match.roundTiedWin = false;
   match.doomTieAttack = false;
@@ -300,6 +302,8 @@ function dealRound() {
     CHAR_HOOKS.cayenne.onRoundStartTick(engine, p);
     // ---------- ไดจิ โอโซระ: โควตาการ์ดไซเบอร์ · การ์ดที่ตัดไว้บวกเข้ามือ · เกราะเบมสตาร์ฟื้นเลือด ----------
     CHAR_HOOKS.daichi.onRoundStartTick(engine, p);
+    // ---------- Echo: ราชินีแห่ง Echo ขยายร่าง +1 · สุ่ม 20% ต้านสถานะ 1 เทิร์น ----------
+    CHAR_HOOKS.echo_queen.onRoundStartTick(engine, p);
     // ---------- "เยียวยา" (สถานะ Universal patch 3.4): ฟื้นพลังชีวิตต่อเทิร์นตามจำนวนหน่วย ----------
     //  วางไว้ที่นี่ (ต้นเทิร์น) เหมือนลุกไหม้/เลือดไหล การลดเทิร์นทำที่ลูปกลางของ endTurn ตามปกติ
     tickMend(engine, p);
@@ -459,6 +463,8 @@ function lock(id) {
   if (match.gameState !== "PLAYING" || !p || !p.alive || p.locked) return;
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นกดเปิดไพ่ไม่ได้
   if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD — ไม่มีใครเปิดไพ่ได้จนเวลากลับมาเดิน
+  // Echo (นี่มันเกมของฉัน): เปิดไพ่ทั้งที่ยังไม่ได้ตีฟรี = สุ่มเป้าตีให้ก่อน แล้วค่อยเปิดไพ่ (เรียก lock ซ้ำหลังหมัดจบ)
+  if (echoFreeHit.runPendingOnLock(p)) return;
   cardDeck.applyLockColorTriggers(p);
   p.locked = true;
   // นักบินปริศนา: ปุ่ม "เตรียมพร้อม" ระหว่างซ่อนตัวส่ง event lock เดิม — นับเหมือนเปิดไพ่ (ห้องเดินต่อได้)

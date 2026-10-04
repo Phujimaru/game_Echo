@@ -55,6 +55,7 @@ tests/                           node --test (ไม่มี dep เพิ่�
 | `phases/summary.js` | `resolveRound`, `afterResolve`, `goSummary` |
 | `phases/attack.js` | `afterSummary`, `computeAttackBase`, `doAttack`, `postAttackFollowup` |
 | `phases/endTurn.js` | `endTurn` |
+| `phases/echoFreeHit.js` | Echo: เฟสโจมตีย่อยของตีฟรีกลางช่วงจั่วไพ่ (`pickFreeHit`, `startFreeHit`, `finishFreeHit`, `runPendingBeforeReveal`, `runPendingOnLock`) |
 | `modes/mercury.js` | Type Mercury (ORT): `mercuryActive`, `isOrt`, `mercuryPick`, โหวตยอมแพ้ |
 | `modes/seraph.js` | SE.RA.PH: เฟสเลือกสถานที่ + `seraphAdvance` |
 
@@ -687,6 +688,56 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   `alivePlayers` ข้ามเขาระหว่างซ่อน
 เทสต์: [tests/characters/sliver_bullet.test.js](tests/characters/sliver_bullet.test.js)
 
+**Echo (`echo_queen` · พิเศษ · unique)** — `characters/echo_queen.js` (กติกาเต็มอยู่หัวไฟล์ · สเปกล็อก `.claude/plans/echo-queen-plan.md` §1)
+· เลือด 10 · เกราะ 0 · เพดานเลือด = 10 + 2×ขยายร่าง (`maxHpOf`/`maxArmorOf`) · ราคา 0/0/8 · ยังไม่มีภาพ/คลิปสกิล (ปุ่มวาด ✦)
+- **สถานะทั้งหมดอยู่ที่ `p.echoQ`** (`lv` · `queenFrom/queenUntil` · `cdRound` · `atkBuffUntil/atkBuffN` · `killAtk` · `ultFrom/ultUntil` ·
+  `freeHitRound/freeHitTarget`) — ไม่ใช่ `p.statuses` จึงล้าง/ต้าน/ปาดไม่ได้ (ยกเว้น Overwrite ของ Echo เอง) · ทุกช่วงเวลาเป็น "เลขรอบ"
+  (ราชินี 10 เทิร์น = `queenUntil = กด + 9` · มหึมาคูลดาวน์ 12 = `cdRound = กด + 12` คือเลขรอบที่กดได้ · ท่าไม้ตาย 5 เทิร์นนับเทิร์นที่กด)
+  · plain object -> สแนปช็อต Overload Force/ชิโดย้อนคืนพร้อมทุกอย่าง (ไม่อยู่ใน `keep`) · ล้างที่ `resetCombat`
+  · ข้อยกเว้นเดียวที่เป็นสถานะจริง: ต้านสถานะ 20% ต้นเทิร์น (`applyBuff(p, "resist", null, 1)` ใน `onRoundStartTick`)
+- ต้นเทิร์น (`dealRound` ข้าง `daichi`): ราชินีมีผล + ไม่ใช่เทิร์นที่กด -> ขยายร่าง +1 (`gainLevel` = เพดาน +2 แล้ว `healHp` 2)
+- **คุ้มครองระดับ 1-4** = "คุ้มครอง" ปกติของเกม (ผู้ใช้ยืนยัน) — `echo_queen.guardBonus()` บวกเข้าจุดเดียวกับ `guard` กลาง
+  (`attack.js` ตีปกติ/ตีฟรี + กระสุนคาเยนน์) ไม่ลดดาเมจสกิล/ลุกไหม้/แพ้รอบ · คิดสด ไม่ใช่สถานะจริง (ต้าน/ล้างไม่ได้) · หมัด 1 หน่วยเหลือ 0 โดยตั้งใจ
+  (ไม่มีโล่ที่ต้องกร่อน จึงไม่ใช่กับดัก "บัฟลดดาเมจ = อมตะ") · พลังโจมตี (ระดับ 5/10 · คิล · Overwrite) ที่ `damageBonus` + ป้าย `attackFx`
+- โอกาสสังหาร 5% (ระดับ 10) = `echo_queen.onAttackKill` ใน `doAttack` ถัดจาก ORT (ผ่าน `miyakoKillChance` -> ORT ต้านได้ · พลาด =
+  `miyakoSurvivedKillAttempt` แบบเนตรมณะ) · `hasKillCapability` นับ Echo ระดับ 10 · สกิลติดตัวทั้งหมดปิดได้ด้วย `passiveSealed`
+- คิล +1 (สูงสุด 2) = `echo_queen.onKill` ใน `instantDeath` ข้าง `ort.onKill` — ผู้สังหาร = `effectSourceId` หรือ `lastDamageSourceId`
+  ของเทิร์นเดียวกัน (ตีปกติจนเลือดหมดไปตายตอนกวาดท้าย `endTurn`/หลังตีฟรี)
+- ท่าไม้ตายฟื้นเลือดตัวเอง 5 ทันทีตอนกด (`healHp` ปกติ — ไม่ใช้งานต่อ/ผกผัน/เลือดไหลมีผล)
+- ท่าไม้ตาย**ไม่เป็นโมฆะเมื่อไพ่แตก** (ผลลงก่อนเปิดไพ่ — ผู้ใช้ยืนยัน) → Echo ไม่อยู่ใน `voidUltimateOnBust`
+  แบบเดียวกับท่าอื่นที่กลไกนี้แค่ลบสถานะ · เลือด 5 ที่ฟื้นไปตอนกดไม่ถูกดึงคืน · ปุ่ม disable ผ่าน `skillLocks` ชุดเดียวกับ `canUseSkill`
+- **ตีฟรีของท่าไม้ตาย (`server/phases/echoFreeHit.js`) — เลือกตัวเลือก (ข) "เฟสโจมตีย่อย"** ไม่ใช่ (ก) แยกแกนดาเมจ:
+  `doAttack` มีทางออกกลางฟังก์ชัน ~20 ทาง และฮุคตัวละครหลายตัว (หลบของ eiji/ippo/ฯลฯ · สะท้อน phenex · ดูดซับ bat_ben · สังหาร ORT)
+  ตั้ง `ATTACKING` + ตัวจับเวลา -> `endTurn` เองในโมดูลของตัวเอง — แยกแกนต้องรื้อทุกตัว จึงเลือกเรียก `doAttack` ตัวจริงใต้เฟส `ATTACK` ชั่วคราว
+  - `startFreeHit`: จำ `timeLeft` -> `match.echoFreeHit = { echoId, then, resume, prevAttackerId }` -> `ATTACK` + `attackerId = Echo` -> `doAttack`
+    (ทุกด่านของตีปกติทำงาน: หลบ/ล่อเป้า/คุ้มครอง/สวนกลับ/เปราะบาง) · `doAttack` ปฏิเสธเป้า (เฟสยังเป็น ATTACK) = คืนเฟสทันที
+  - ทุกเส้นทางจบที่ `postAttackFollowup()` หรือ `endTurn()` — ทั้งสองมีด่าน `finishFreeHit()` บนสุด: คืน `PLAYING` · flush สวนกลับ
+    (`flushOrtCounters`) + luminous · **กวาดคนเลือดหมด** (`instantDeath` ไม่ห่อ effectSource) · แล้วเรียก `then` แทนการตีต่อ/จบเทิร์น
+    (`postAttackFollowup` ยังลงดาเมจสวนกลับของคอนเนอร์ก่อนด่าน) — ตีเพิ่มทุกแบบเป็นของผู้ชนะรอบ ตีฟรีจึงไม่ได้
+  - ระหว่างเฟสย่อยคนอื่นจั่ว/กดสกิล/เปิดไพ่ไม่ได้ (เฟสไม่ใช่ PLAYING — แบบพักดูคัตซีน) · การ์ดสรุปการโจมตีเล่นตามปกติ (`state.attack` ตอน ATTACKING)
+  - ทางเข้า: socket `echoFreeHit {targetId}` (`pickFreeHit` -> คืนเวลาที่เหลือ) · Echo กด `lock` ทั้งที่ยังไม่ตี (`runPendingOnLock` สุ่มเป้า -> หมัดจบแล้ว `lock` ซ้ำ)
+    · หัว `resolveRound` (`runPendingBeforeReveal` สุ่มเป้า -> หมัดจบแล้ว `resolveRound` ซ้ำ) ครอบทั้งหมดเวลาและ `checkAllLocked` · ใช้แล้ว `freeHitRound = รอบนี้` ไม่วน
+  - ติดสตั้น/หลับ = ไม่มีตีฟรี (`freeHitPending`) · ไม่มีเป้าที่ตีได้ = ใช้สิทธิ์ทิ้ง · `match.echoFreeHit` ล้างที่ `dealRound`/`startMatch`/`backToLobby`
+- client (จอคอมเท่านั้น): ชิป `ขยายร่าง n/10` · `ราชินีแห่ง Echo n` · `♛ n` ใน `VitalExtras` (ทุกคนเห็น) · ปุ่ม `👊 ตีฟรี` ใน `HudRight` (`EchoFreeHitPicker`)
+  · `buildStateFor` -> `echoQueen` (`basicCd` + `freeHitTargets` เห็นเจ้าตัว)
+  · หลอดเลือดถึง 30 บนจอคอมใช้ `StatRow` อยู่แล้ว (เกิน 9 ช่องเป็นหลอดต่อเนื่อง) — `LifeBar` แบบหัวใจเหลือใช้แค่บนมือถือ
+- **เพลง `echo_queen_theme`** (`characters/echo_queen/echo_queen_theme.mp3`) ตลอดท่าไม้ตาย — `echo_queen.activeMusic()` เป็น**เงื่อนไขแรกของ `sm`**
+  ใน `buildStateFor` (ทับ Overload Force / ท่าไม้ตายเอจิ / ยูนะ / ANATA / เพลงสกิลอื่นทั้งหมด — ผู้ใช้สั่งให้ไม่มีอะไรบังได้) · `at = transformAt` (กดใหม่ = เริ่มจากต้น)
+  · `audioPolicy.musicForState`: คัตซีน `kind: "echoQueen"` เล่นเพลงราชินีตั้งแต่ต้นฉากเปิดตัว ไม่เงียบแบบคัตซีนอื่น
+- **ฉากเปิดตัว + สนามราชินี** (จอคอมเท่านั้น):
+  - server: `applyUlt` ดัน `pushCutsceneRaw({ seconds: INTRO_SECONDS (13), info: { kind: "echoQueen", playerId, … } })` (ไม่มีคลิป) →
+    `useSkill` พักช่วงจั่วไพ่ (`pausePlayingForCutscene`) แล้วคืนเวลาที่เหลือ · `buildStateFor.echoField` = `{ ownerId, seq, turnsLeft }` หรือ null
+    · `lastAttack` ทุกจุดมี `byId`/`targetId` แล้ว (client เล็งกำปั้นไปการ์ดเป้าได้)
+  - client: `echoQueen/echoQueenStage.js` (canvas ล้วน ย้ายจากต้นแบบ `.claude/plans/echo-queen-artifact/`) + `EchoQueenLayer.jsx` ใน `GameBoard`
+    · canvas 2 ชั้น: `.echoq-back` (สนาม — ต่อจาก `GameBackground` ก่อนกรอบกระดาน = หลังการ์ดผู้เล่น/HUD) · `.echoq-fx` (z 90 ฉากเปิดตัว/กำปั้น/อนุภาค ไม่รับคลิก)
+    · ฉากเปิดตัว 12 วิ: ช่วงแรกทับกระดานจริงแบบโปร่ง (กลิตช์/ภาพแวบ/"ECHO"/ม่านหุบเข้าการ์ด Echo) แล้วทึบทั้งจอ · `Cutscene`/`csSkipped` ข้าม kind นี้ (lowQ ก็เล่นแบบลดเอฟเฟกต์)
+    · สนาม: `onCover(true)` → `GameBackground hidden` (visibility — ไม่ถอด ไม่งั้นสนาม 2.5D เล่นฉากพุ่งลงซ้ำ) = ฉากหลัง/สนามของตัวละครอื่นไม่ทับ
+    · ต่อย = `state.attack.byId === echoField.ownerId` (รวมตีฟรี) กำปั้นพุ่งไปกลางการ์ดเป้า (`otherRefs`) / เราโดน = พุ่งเข้าจอ · โดนตี = สั่น+เรืองแดง
+    · `echoField` หายไป = ฉากออก 3.2 วิ (โบกลา → สลายเป็นพิกเซล → กระดานพลิกหาย → กลิตช์กลับสนามปกติ)
+    · ฉากย้ายภูมิภาคไม่บัง: App ไม่ตั้ง `travel` ระหว่างมี `echoField` (server ยังพักเกมตามเดิม)
+  - หน้า dev: `?hud=1&game=1&echo=1` (GamePreview — ปุ่มฉากเปิดตัว/ต่อย/ต่อยเรา/โดนตี/ออกจากสนาม)
+เทสต์: [tests/characters/echo_queen.test.js](tests/characters/echo_queen.test.js)
+
 **คูลดาวน์ท่าไม้ตายที่วัดเป็น "เลขรอบ" (ชิโด · เอจิ)** — คูลดาวน์ที่กินเวลาข้ามเทิร์นห้ามเก็บเป็นตัวนับใน
 `p.statuses` ถ้าไม่อยากให้มันไปโผล่ในรายการสถานะให้ทุกคนเห็น จึงเก็บเป็น **เลขรอบที่ล็อกถึง**
 (`p.shidoRewindLock` / `p.eijiUltLock`) แล้วเทียบกับ `engine.roundNumber` — ไม่ต้องมีใครลดเทิร์นให้
@@ -1002,7 +1053,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 ```
 reconnectSession {sessionToken}   reserve {position}   join {name,position,characterId,shikiUlt}
 startGame   selectGameMode {mode}   teamBackToMode   chooseTeam {teamId}   confirmTeam {confirmed}   toggleReady
-hit   lock   useSkill {tier,targets,item}   attack {targetId}
+hit   lock   useSkill {tier,targets,item}   attack {targetId}   echoFreeHit {targetId}
 buyShopItem {itemId}   useInventoryItem {uid,cardIndex,color,targetId}
 purgeRoll   purgeChoose {nextId}   purgeItem {uid,value,targetId}
 contractAnswer / locaAnswer / allyAnswer / allyBreakAnswer / allyFinalAnswer / bardTarget /

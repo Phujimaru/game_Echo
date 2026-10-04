@@ -17,6 +17,7 @@ const combat = require("../combat");
 const cutscene = require("../cutscene");
 const dayNight = require("../dayNight");
 const draw = require("./draw");
+const echoFreeHit = require("./echoFreeHit");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
 const seraphMode = require("../modes/seraph");
@@ -25,6 +26,8 @@ const timers = require("../timers");
 const view = require("../view");
 
 function endTurn() {
+  // Echo (นี่มันเกมของฉัน): หมัดตีฟรีกลางช่วงจั่วไพ่จบลงที่นี่ (ถูกหลบ/ลบล้าง/สะท้อน ฯลฯ) — คืนเฟสจั่วไพ่ ไม่ใช่จบเทิร์น
+  if (echoFreeHit.finishFreeHit()) return;
   draw.flushOrtCounters();
   // Bamboo-Hatted Kim: หมัดที่ถูกหลบ (ทุกเส้นทางหลบจบที่นี่) -> ฝักดาบ +10
   CHAR_HOOKS.kim.flushMiss(engine);

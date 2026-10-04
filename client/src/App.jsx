@@ -137,7 +137,8 @@ export default function App() {
       if (jScene?.active && jScene.seq !== journeySeqRef.current) {
         journeySeqRef.current = jScene.seq;
         if (jScene.mode === "start") pendingJourneyRef.current = jScene;
-        else setTravel({ seq: jScene.seq, area: jScene.area, fromArea: jScene.fromArea, durationMs: journeyDurationMs(s.timeLeft, 6000) });
+        // Echo "นี่มันเกมของฉัน": สนามราชินีไม่โดนฉากย้ายภูมิภาคบัง — ข้ามฉากลูกโลก (server ยังพักเกมตามเดิม ผู้เล่นเห็นสนามราชินีต่อ)
+        else if (!s.echoField) setTravel({ seq: jScene.seq, area: jScene.area, fromArea: jScene.fromArea, durationMs: journeyDurationMs(s.timeLeft, 6000) });
       }
       const arrival = s.ortArrival;
       if (arrival?.active && arrival.seq !== arrivalSeqRef.current) {

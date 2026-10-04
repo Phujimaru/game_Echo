@@ -67,6 +67,8 @@ function maxHpOf(p) {
   if (p && p.characterId === "dio") return Math.max(1, CHAR_HOOKS.dio.maxHp() - ((p.maxHpPenalty) || 0));
   // นักบินปริศนา: พลังชีวิตพื้นฐาน 3 หน่วย
   if (p && p.characterId === "sliver_bullet") return Math.max(1, CHAR_HOOKS.sliver_bullet.maxHp() - ((p.maxHpPenalty) || 0));
+  // Echo: พลังชีวิตพื้นฐาน 10 + 2 ต่อระดับขยายร่าง (สูงสุด 30)
+  if (p && p.characterId === "echo_queen") return Math.max(1, CHAR_HOOKS.echo_queen.maxHp(p) - ((p.maxHpPenalty) || 0));
   return Math.max(1, MAX_HP - ((p && p.maxHpPenalty) || 0));
 }
 // ฟื้นเลือดจริงแบบเคารพสถานะ "ไม่ใช้งานต่อ" / "ไร้ทางเยียวยา" — คืนจำนวนที่ฟื้นได้จริง
@@ -268,6 +270,7 @@ function maxArmorOf(p) {
     : (p && p.characterId === "takt") ? CHAR_HOOKS.takt.maxArmor() // อาซาฮินะ ทักต์: ไม่มีเกราะ
     : (p && p.characterId === "dio") ? CHAR_HOOKS.dio.maxArmor() // ดิโอ แบรนโด: เกราะ 4
     : (p && p.characterId === "sliver_bullet") ? CHAR_HOOKS.sliver_bullet.maxArmor() // นักบินปริศนา: เกราะ 2
+    : (p && p.characterId === "echo_queen") ? CHAR_HOOKS.echo_queen.maxArmor() // Echo: ไม่มีเกราะ
     : MAX_ARMOR;
   return armorBase
     + (characterRules.oguriGoldStacks(p) >= OGURI_GOLD_ARMOR_AT ? 1 : 0) // ยุคทอง (โอกูริ Rework): ครบ 2 แต้มขึ้นไป เพดานเกราะ +1
@@ -352,6 +355,7 @@ function instantDeath(p, force) {
   const killer = match.players[match.effectSourceId];
   if (killer && killer.id !== p.id) killer.hasKilled = true;
   CHAR_HOOKS.ort.onKill(engine, p); // ORT สกิลติดตัว 3 การวิวัฒนาการ: สังหารผู้เล่นจริง -> หลอด +1 / พลังโจมตี +1
+  CHAR_HOOKS.echo_queen.onKill(engine, p); // Echo การกลืนกินระดับ EX: สังหารผู้เล่น -> พลังโจมตีถาวร +1 (สูงสุด +2)
   if (mercury.mercuryActive() && !mercury.isOrt(p)) mercury.mercuryOnDeath(p);
   CHAR_HOOKS.kai.pruneOverhaulSlots(engine); // ไค ชิซากิ: ผู้ถือรังสรรค์/ลงทัณฑ์ตกรอบ -> ลบออกจาก Overhaul tracker
   // ยูนะ: เป้าหมายที่ได้รับพร (Delete/Smile for You/Longing) ตาย/หมดสภาพ -> เพลง+บัฟยูนะปิดลงทันที
@@ -686,6 +690,7 @@ function voidUltimateOnBust(p) {
       }
     }
   }
+  // Echo "นี่มันเกมของฉัน" ไม่อยู่ในรายการนี้ — ผลลงทันทีก่อนเปิดไพ่ ไพ่แตกจึงไม่ทำให้เป็นโมฆะ (ผู้ใช้ยืนยัน)
   // ANATA WAAAAAAAA (เทมาริ): ผู้ใช้ไพ่แตกเอง = ท่าไม้ตายเป็นโมฆะ
   if ((p.statuses.anata || 0) > 0 && p.anataTargets) {
     delete p.statuses.anata;
@@ -773,6 +778,7 @@ function resetCombat(p) {
   CHAR_HOOKS.cosette.resetCombat(p); // คอเซ็ตต์: ร่าง/ขั้นมิวสิคคาร์ท/ทิ่มแทง/Maestro/Destiny/ตัวนับจั่ว
   CHAR_HOOKS.johnny.resetCombat(p); // จอห์นนี่: ร่าง/เล็บ/Spin/บัฟเฉพาะตัว/คูลดาวน์
   CHAR_HOOKS.sliver_bullet.resetCombat(p); // นักบินปริศนา: แขน / ซ่อนตัว / ร่างที่สิง / เตรียมพร้อม
+  CHAR_HOOKS.echo_queen.resetCombat(p); // Echo: ขยายร่าง/ราชินี/คูลดาวน์/ท่าไม้ตาย/ตีฟรี (p.echoQ — ไม่ใช่สถานะ)
   CHAR_HOOKS.dio.resetCombat(p); // ดิโอ: เกจเวลา/คูลดาวน์/THE WORLD/Last stand + ธง "ถูกแช่" ของ Last stand (อยู่ที่ทุกคน)
   Mark42.resetCombat(p); // เกราะ Mark 42: ชุดที่ใส่อยู่ / ชุดที่ส่งออกไป / คูลดาวน์ซื้อ // สไตรเกอร์ ยูเรก้า: โหมดมือมีด/หมัดเหล็ก/นับถอยหลังระเบิด/งานช่าง + สตั้นค้างของเป้าหมาย (p.pair ไม่ถูกล้าง)
   // ไบรอัน: น้ำมัน/ตัวสะสมน้ำมันที่รถกิน/ธงวีดีโอครั้งแรก + ธง "ถูกแช่" ที่อยู่ที่ผู้เล่นทุกคน
