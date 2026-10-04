@@ -229,6 +229,22 @@ test('Overwrite กดไม่ได้ระหว่างท่าไม้�
 });
 
 // ---------------------------------------------------------------- ท่าไม้ตาย
+test('บั๊ก 5.1.26: ก่อนเทิร์น 1 (roundNumber 0) ท่าไม้ตาย/ราชินี/บัฟ Overwrite ต้องไม่ทำงานเอง (ค่าเริ่มต้น 0 >= 0)', () => {
+  const { E } = setup();
+  engine.setRoundNumber(0);
+  echo.resetCombat(E);
+  assert.equal(echo.ultActive(engine, E), false);
+  assert.equal(echo.queenActive(engine, E), false);
+  assert.equal(echo.overwriteAtk(engine, E), 0);
+  assert.equal(echo.freeHitPending(engine, E), false, 'ไม่มีตีฟรี');
+  const st = engine.buildStateFor('T');
+  assert.equal(st.echoField, null, 'ไม่มีสนามราชินี');
+  assert.notEqual(st.skillMusic, 'echo_queen_theme', 'ไม่มีเพลงราชินี');
+  const pub = st.players.find((x) => x.id === 'E').echoQueen;
+  assert.equal(pub.ultTurns, 0);
+  assert.equal(pub.queenTurns, 0);
+});
+
 test('ท่าไม้ตาย: ฟื้นเลือดตัวเอง 5 ทันทีตอนกด (ไม่เกินเพดาน · ไม่ใช้งานต่อกันได้)', () => {
   const { E } = setup();
   setLv(E, 10); E.hp = 20;

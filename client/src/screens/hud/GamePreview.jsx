@@ -39,6 +39,8 @@ function player(i, me, chId) {
     teamId: null,
     // ข้อมูลทรัพยากรของตัวละครที่ statusEntries อ่าน (โชว์เป็นแถวทรัพยากรในแผงผู้เล่น)
     ...(me && chId === "oguri" ? { oguriEnergy: 10, stamina: 30, oguriChargeCap: 52 } : {}),
+    // ch=echo_queen: เราเป็น Echo กลางท่าไม้ตาย ยังไม่ได้ตีฟรีเทิร์นนี้ (การ์ดศัตรูต้องขึ้นเป้าหมาย)
+    ...(me && chId === "echo_queen" ? { echoQueen: { lv: 10, lvMax: 10, queenTurns: 0, ultTurns: 5, freeHitPending: true, freeHitTargets: ["p1", "p2", "p3", "p4", "p5", "p6"], basicCd: 3 } } : {}),
     ...(me && chId === "escanor" ? { escanorCharge: 7, escanorChargeMax: 12 } : {}),
     ...(me && chId === "kim" ? { kim: { scabbard: 42, scabbardMax: 100, poise: 20, poiseMax: 50, crit: 24, awake: false, coin: "heads", resentUsed: false } } : {}),
   };

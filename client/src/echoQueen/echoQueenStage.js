@@ -148,7 +148,7 @@ export function createEchoQueenStage(backCv, fxCv, { lowQ = false, onCover = () 
   function makeCam(eDeg, dist) {
     const e = eDeg * Math.PI / 180, t = [0, 0, 0], c = [0, dist * Math.sin(e), dist * Math.cos(e)];
     const f = norm(sub(t, c)), r = norm(cross(f, [0, 1, 0])), u = cross(r, f);
-    const fl = 1.5 * H, cx = W / 2, cy = .76 * H;
+    const fl = 1.5 * H, cx = W / 2, cy = .83 * H; // .83: ตัวราชินีลงมาเว้นที่ให้แถบเลือดเหนือหัว (เดิม .76)
     const P = (x, y, z) => { const d = [x - c[0], y - c[1], z - c[2]]; const zc = dot(d, f); return [cx + fl * dot(d, r) / zc, cy - fl * dot(d, u) / zc, zc]; };
     P.pos = c;
     return P;

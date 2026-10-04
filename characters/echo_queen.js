@@ -93,7 +93,8 @@ module.exports = {
   queenTurnsLeft(engine, p) {
     if (!isEcho(p)) return 0;
     const s = st(p);
-    return s.queenUntil >= engine.roundNumber ? s.queenUntil - engine.roundNumber + 1 : 0;
+    // ต้องเคยกดจริง (queenFrom > 0) — ก่อนเทิร์น 1 roundNumber = 0 = ค่าเริ่มต้น queenUntil จึงห้ามเทียบเปล่าๆ (บั๊ก 5.1.26)
+    return s.queenFrom > 0 && s.queenUntil >= engine.roundNumber ? s.queenUntil - engine.roundNumber + 1 : 0;
   },
   queenActive(engine, p) { return this.queenTurnsLeft(engine, p) > 0; },
   basicCooldownLeft(engine, p) {
@@ -103,7 +104,8 @@ module.exports = {
   ultTurnsLeft(engine, p) {
     if (!isEcho(p)) return 0;
     const s = st(p);
-    return s.ultUntil >= engine.roundNumber ? s.ultUntil - engine.roundNumber + 1 : 0;
+    // ต้องเคยกดจริง (ultFrom > 0) — บั๊ก 5.1.26: ก่อนเทิร์น 1 (roundNumber 0) ท่าไม้ตาย/สนาม/เพลงทำงานเองเพราะ 0 >= 0
+    return s.ultFrom > 0 && s.ultUntil >= engine.roundNumber ? s.ultUntil - engine.roundNumber + 1 : 0;
   },
   ultActive(engine, p) { return this.ultTurnsLeft(engine, p) > 0; },
   // สนามราชินีที่ทุกคนเห็น (buildStateFor.echoField) — client วาดสนามเฉพาะ/ฉากออกจากค่านี้
@@ -129,7 +131,7 @@ module.exports = {
   overwriteAtk(engine, p) {
     if (!isEcho(p)) return 0;
     const s = st(p);
-    return s.atkBuffUntil >= engine.roundNumber ? (s.atkBuffN || 0) : 0;
+    return s.atkBuffN > 0 && s.atkBuffUntil >= engine.roundNumber ? s.atkBuffN : 0;
   },
 
   // ขยายร่าง +1 (เพดาน 10): เพดานเลือด +2 แล้วฟื้นเลือด 2 — คืน true ถ้าระดับขึ้นจริง

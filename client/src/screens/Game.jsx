@@ -87,6 +87,7 @@ function isTargetable(p, iAmAttacker, c) {
   const danTarget = !!c.danSel && !self && !friendly; // โมโรโบชิ ดัน: เล็งใครก็ได้ที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
   const supTarget = !!c.supSel; // ผู้วิงวอน: เล็งได้ทุกคนบนสนามรวมทั้งตัวเอง (ทั้งสามท่ามอบผลให้เป้าหมาย)
   const brianTarget = !!c.brianSel && !self && !friendly; // ไบรอัน: ท้าแข่งใครก็ได้ที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
+  const echoFreeTarget = (c.echoFreeIds || []).includes(p.id); // Echo: ตีฟรีช่วงจั่วไพ่ (server ส่งรายชื่อเป้าที่ตีได้มาแล้ว)
   // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: โหมดเลือกเป้าหมายกลาง — ตัวเองกดปุ่ม "เลือกตัวเอง" บนแบนเนอร์
   //  anyone = เลือกศัตรูได้แม้โหมดทีม (โอเบรอนใช้ผลเสียของท่ากับศัตรูได้) · ไม่งั้นโหมดทีมเลือกได้เฉพาะเพื่อน (server กันซ้ำ)
   //  onlyIds = จำกัดเฉพาะบางคน (ทักต์: มิวสิคคาร์ทในพันธะที่เข้าเงื่อนไข)
@@ -94,7 +95,7 @@ function isTargetable(p, iAmAttacker, c) {
   // ไททันล่อเป้า (เปิดม่านของทักต์): ศัตรูคนอื่นของเราเล็งไม่ได้ทั้งตีปกติและสกิล/ปืน — ตัวเอง/พวกเดียวกันยังเลือกได้ (server กันซ้ำ)
   const tauntBlocked = (c.tauntIds || []).length > 0 && !self && !friendly && !bondAlly && !raidMate && !c.tauntIds.includes(p.id);
   if (tauntBlocked) return false;
-  return (normalAttackTarget || giftTarget || !!c.anataSel || c.appleSel || c.skSel || c.doomSel || c.saObSel || escanorSkillTarget || c.ignisSel || c.ignisImpactSel || !!c.bardPending || c.nanayaSel || c.tpSel || c.kaiCreateSel || c.kaiPunishSel || c.msMarkSel || c.msRuptureSel || c.psSealSel || connorTarget || usagiTarget || recruitTarget || danTarget || supTarget || brianTarget || gunTarget) && p.alive;
+  return (normalAttackTarget || giftTarget || !!c.anataSel || c.appleSel || c.skSel || c.doomSel || c.saObSel || escanorSkillTarget || c.ignisSel || c.ignisImpactSel || !!c.bardPending || c.nanayaSel || c.tpSel || c.kaiCreateSel || c.kaiPunishSel || c.msMarkSel || c.msRuptureSel || c.psSealSel || connorTarget || usagiTarget || recruitTarget || danTarget || supTarget || brianTarget || gunTarget || echoFreeTarget) && p.alive;
 }
 // แตะ/คลิกการ์ดคู่ต่อสู้แล้วต้องทำอะไร — ไล่ตามโหมดเลือกเป้าหมายที่เปิดอยู่ ไม่มีเลยก็โจมตีปกติ
 function resolveAttackPick(id, c) {
@@ -123,6 +124,8 @@ function resolveAttackPick(id, c) {
   if (c.msRuptureSel) return c.pickMsRupture(id);
   if (c.psSealSel) return c.pickPsSeal(id);
   if (c.gunSel) return c.pickGunTarget(id);
+  // Echo: ตีฟรีช่วงจั่วไพ่ (โหมดเลือกเป้าของสกิลด้านบนมาก่อน — กดสกิลเล็งเป้าอยู่ก็ยังเลือกเป้าสกิลได้ตามปกติ)
+  if ((c.echoFreeIds || []).includes(id)) return socket.emit("echoFreeHit", { targetId: id });
   return socket.emit("attack", { targetId: id });
 }
 
@@ -956,6 +959,19 @@ function rankTiers(players) {
 // [top%, left%] ของการ์ดผู้เล่นคนอื่นบนกระดานจอคอม (index = จำนวนคนอื่นในสนาม)
 //  ข้อกำหนดสำคัญ: ห้ามมีช่องไหนทับ "กองการ์ดกลาง" ซึ่งอยู่ที่ top 40% / left 45-55%
 //  (การ์ดกว้าง w-28 = กว้าง +-6.2% ที่ความกว้างออกแบบต่ำสุด 900px)
+// Echo "นี่มันเกมของฉัน": การ์ดคู่แข่งเรียงสองข้างจอ ต่ำลงมา ไม่บังตัวราชินี — [ขอบล่าง%, กลาง x%, สเกล, "bottom"]
+//  ซ้ายได้ก่อน (ceil n/2) · ข้างละ 2 แถว (ขอบล่าง 42% / 61% — แถว 2 ยังเหนือปุ่มลิ้นชักสถานะซ้าย/ร้านค้าขวา)
+//  ข้างที่มี 3 ใบ (คนอื่น 5 คน ไม่นับ Echo) ย่อการ์ดลงแล้วเรียง 3 แถว
+const ECHO_SIDE_ROWS = { 2: [42, 61], 3: [38, 54, 70] };
+function echoSideSlots(n, scale) {
+  const left = Math.ceil(n / 2), right = n - left;
+  return Array.from({ length: n }, (_, i) => {
+    const onLeft = i < left, k = onLeft ? left : right, row = onLeft ? i : i - left;
+    const rows = ECHO_SIDE_ROWS[k > 2 ? 3 : 2];
+    return [rows[row], onLeft ? 10.5 : 89.5, k > 2 ? scale * 0.86 : scale, "bottom"];
+  });
+}
+
 const SLOTS = {
   0: [],
   1: [[12, 50]],
@@ -2411,6 +2427,38 @@ function PlaqueCrest() {
 //  แบบแนวตั้งที่เกจขนาบสองข้างอ่านยาก (ต้องเทียบสีเอาเองว่าเสาไหนคือเลือด) — แถวมีไอคอนกับตัวเลขกำกับชัดกว่า
 // alwaysScore: Type Mercury — เพื่อนร่วมทีมเห็นแต้มการ์ดกันตลอดเวลา (server ส่ง score มาให้แล้ว)
 // slot[2] (ถ้ามี) = ย่อการ์ด — ผังที่นั่งของโหมด Raid วางเพื่อนร่วมทีมหลายคนเรียงแถวเดียว
+// Echo "นี่มันเกมของฉัน": แถบเลือดแบบบอสเหนือหัวราชินี (แทนการ์ดที่นั่งระหว่างสนามราชินี)
+//  กดเลือกเป้า/ดูสถานะได้เหมือนการ์ด · โชว์แต้มตอนสรุปผล · ✓ พร้อม · 👑 ชนะรอบ
+function EchoBossBar({ p, phase, targetable, onAttack, onInspect }) {
+  const summary = phase === "SUMMARY";
+  return (
+    <div
+      className={`echoq-boss${targetable ? " echoq-boss-target" : ""}`}
+      role="button"
+      title={targetable ? "โจมตี" : "ดูสถานะ"}
+      onClick={targetable ? () => { clickSound(); onAttack(p.id); } : () => { clickSound(); onInspect(p.id); }}
+    >
+      <div className="echoq-boss-head">
+        <span className="echoq-boss-name">♛ {p.name}{!p.connected && <span className="ml-1 text-[11px] text-echo-hp">•offline</span>}</span>
+        {p.echoQueen?.ultTurns > 0 && <span className="echoq-boss-turns">อีก {p.echoQueen.ultTurns} เทิร์น</span>}
+      </div>
+      <StatRow big kind="hp" value={p.hp} max={p.maxHp} extra={p.tempHp || 0} extraLabel="เลือดชั่วคราว" />
+      <div className="echoq-boss-foot">
+        <VitalExtras p={p} className="pc-extra-inline" />
+        <StatusChips p={p} left compact max={6} />
+      </div>
+      {targetable && <span className="p-target-badge echoq-boss-badge">เป้าหมาย</span>}
+      {phase === "PLAYING" && p.locked && p.alive && <span className="pc-ready echoq-boss-badge" title="เปิดไพ่แล้ว">✓ พร้อม</span>}
+      {p.isWinner && summary && <span className="echoq-boss-crown">👑</span>}
+      {summary && p.score !== null && p.score !== undefined && (
+        <div className={`score-pop echoq-boss-score text-2xl font-black ${p.isWinner ? "text-echo-ice" : p.busted ? "text-echo-hp" : "text-white"}`}>
+          {p.busted ? "แตก!" : `${p.score} แต้ม`}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null }) {
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
@@ -4159,6 +4207,11 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const arenaSlots = arenaLay
     ? arenaLay.others.map((o) => [(o.bottom / vp.h) * 100, (o.cardX / vp.w) * 100, o.s * ARENA_CARD_SCALE * arenaCardZoom(vp.w, vp.h), "bottom"])
     : null;
+  // Echo "นี่มันเกมของฉัน": ระหว่างสนามราชินี การ์ดของ Echo หาย (น้องตัวใหญ่ + แถบเลือดบนหัวแทน) และการ์ดคนอื่นเรียงสองข้างจอไม่บังหน้า
+  //  สลับตามช่วงที่สนามบังทั้งจอ (echoCover) — ตอนสลับมีฉากทึบ/แฟลชบังอยู่ จึงไม่เห็นการ์ดกระโดด
+  const echoRec = echoCover ? state.players.find((p) => p.echoQueen) || null : null;
+  const cardOthers = echoRec ? seatOthers.filter((p) => p.id !== echoRec.id) : seatOthers;
+  const cardSlots = echoRec ? echoSideSlots(cardOthers.length, ARENA_CARD_SCALE * arenaCardZoom(vp.w, vp.h) * 0.86) : (arenaSlots || slots);
   // สไตรเกอร์ ยูเรก้า (ตัวละครคู่): เครื่องนี้บังคับส่วนไหน — นักบิน (จั่ว/เปิดการ์ด/โจมตี/ซ่อม) · พลปืน (สกิล/ร้านค้า/ไอเทม)
   const meRec = state.players.find((pl) => pl.id === state.youId);
   const isPairChar = !!meRec?.pair && !!pairRole;
@@ -5053,6 +5106,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     myTeamId: me?.teamId,
     teamModeActive: state.gameMode === "duo" || state.gameMode === "trio",
     raid: !!state.mercury, // Type Mercury: ผู้เล่นจริงทุกคนเป็นพวกเดียวกัน (server กันที่ sameTeam อยู่แล้ว — ตรงนี้กันกดพลาด)
+    // Echo "นี่มันเกมของฉัน": ตีฟรีช่วงจั่วไพ่ — การ์ดศัตรูกดตีได้ทันทีเหมือนช่วงโจมตี (เดิมต้องหาปุ่มเล็ก "ตีฟรี" — ผู้เล่นนึกว่าตีไม่ได้)
+    echoFreeIds: phase === "PLAYING" && me?.echoQueen?.freeHitPending && !me.locked && !frozenByClockUp && !state.dioWorld
+      ? (me.echoQueen.freeHitTargets || []) : null,
   };
 
   // ============================================================
@@ -5543,8 +5599,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         style={{ width: DESIGN_W, height: designH, transform: `scale(${scale})`, transformOrigin: "top left" }}
       >
       {/* กองการ์ดกลาง ทับตำแหน่งโลโก้กลางโต๊ะเดิม (โลโก้เป็นแค่วอเตอร์มาร์กจางๆ ด้านหลัง) — ใหญ่ขึ้นชัดเจน */}
-      {raid ? (
+      {raid || echoRec ? (
         // Type Mercury: กองกลางย้ายเป็นลิ้นชักทางขวา (เปิด/ปิดได้) — เว้นกลางจอไว้ให้ ORT
+        //  Echo "นี่มันเกมของฉัน": ระหว่างสนามราชินีก็ใช้ลิ้นชักนี้ (กองไพ่กลางจอทับตัวราชินี)
         <RaidDeckDrawer anchorRef={deckRef}>
           <DeckPile size="lg" onClick={() => setDeckOpen(true)} />
         </RaidDeckDrawer>
@@ -5624,7 +5681,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
         />
       )}
       {/* ผู้เล่นคนอื่น (โหมด Raid: เพื่อนร่วมทีมเรียงแถวใต้ ORT และเห็นแต้มกันตลอด) */}
-      {seatOthers.map((p, i) => (
+      {cardOthers.map((p, i) => (
         <OtherPlayer
           alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
           // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
@@ -5632,7 +5689,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           enterDelay={arenaSlots && !lowQ && arenaSeatDelay0 != null ? arenaSeatDelay0 + i * 0.09 : null}
           p={p}
           phase={phase}
-          slot={(arenaSlots || slots)[i] || [50, 50]}
+          slot={cardSlots[i] || [50, 50]}
           targetable={isTargetable(p, iAmAttacker, targetChain)}
           picked={!!anataSel && anataSel.includes(p.id)}
           onAttack={(id) => resolveAttackPick(id, targetChain)}
@@ -5641,7 +5698,22 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
           possessedBy={sliverHosts[p.id] || null}
         />
       ))}
+      {echoRec && echoRec.id !== state.youId && echoRec.alive && (
+        <EchoBossBar
+          p={echoRec}
+          phase={phase}
+          targetable={isTargetable(echoRec, iAmAttacker, targetChain)}
+          onAttack={(id) => resolveAttackPick(id, targetChain)}
+          onInspect={setStatusViewId}
+        />
+      )}
 
+      {/* Echo: ตีฟรีช่วงจั่วไพ่ — การ์ดศัตรูขึ้นเป้าหมายให้กดได้เลย */}
+      {targetChain.echoFreeIds?.length > 0 && (
+        <div className="absolute top-[14%] left-1/2 -translate-x-1/2 z-40 text-center text-hard pointer-events-none">
+          <span className="text-xl font-black text-echo-ice animate-pulse bg-black/60 rounded-full px-5 py-1.5 whitespace-nowrap">👊 ตีฟรี — เลือกเป้าหมาย</span>
+        </div>
+      )}
       {/* โหมดเลือกเป้าหมาย ANATA WAAAAAAAA (เทมาริ) */}
       {anataSel && (
         <div className="absolute top-[22%] left-1/2 -translate-x-1/2 z-40 text-center text-hard">

@@ -3,3 +3,22 @@
    .echoq-fx   = ฉากเปิดตัว/กำปั้น/เอฟเฟกต์ → หน้าทุกอย่างบนกระดาน (ต่ำกว่าม่านเปลี่ยนฉาก .p-curtain z 100) ไม่รับคลิก */
 .echoq-back, .echoq-fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
 .echoq-fx { z-index: 90; }
+
+/* แถบเลือดแบบบอสเหนือหัวราชินี (EchoBossBar ใน Game.jsx) — อยู่ในกรอบกระดาน (พิกัดออกแบบ ถูกย่อ/ขยายพร้อมกระดาน) */
+.echoq-boss {
+  position: absolute; top: 1.2%; left: 50%; transform: translateX(-50%); z-index: 20;
+  width: 460px; padding: 8px 14px 6px; cursor: pointer; pointer-events: auto;
+  background: linear-gradient(180deg, rgba(42, 18, 82, .88), rgba(14, 8, 30, .82));
+  border: 1px solid rgba(168, 92, 255, .75); box-shadow: 0 0 18px rgba(168, 92, 255, .35);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%);
+  font-family: var(--font-display); color: #f1e8ff;
+}
+.echoq-boss:hover { border-color: #d6b8ff; }
+.echoq-boss-target { box-shadow: 0 0 22px rgba(255, 61, 110, .7); border-color: #ff3d6e; }
+.echoq-boss-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.echoq-boss-name { font-size: 18px; font-weight: 800; letter-spacing: .02em; text-shadow: 0 0 8px rgba(168, 92, 255, .8); }
+.echoq-boss-turns { font-size: 12px; color: #c9b6ff; white-space: nowrap; }
+.echoq-boss-foot { display: flex; align-items: center; gap: 6px; min-height: 20px; margin-top: 3px; overflow: hidden; }
+.echoq-boss-badge { position: absolute; top: 4px; right: 22px; }
+.echoq-boss-crown { position: absolute; top: -4px; left: 18px; font-size: 20px; }
+.echoq-boss-score { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 4px; white-space: nowrap; }
