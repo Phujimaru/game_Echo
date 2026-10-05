@@ -173,3 +173,13 @@ test('คนที่ตกรอบแล้วไม่ฟื้นกลั�
   assert.equal(c.alive, false);
   assert.deepEqual(c.cards, []);
 });
+
+test('Moon Cell: ยูนะทางเดียวที่เหลือคือท่าไม้ตายของเอจิ (เปิดสนาม Break Beat Bark!) — Longing ปิด', () => {
+  startSeraph(['eiji', 'kotone']);
+  match.roundNumber = 7;
+  const CHAR_HOOKS = require('../characters/index');
+  CHAR_HOOKS.eiji.applyUlt(engine, match.players.P1);
+  assert.equal(match.yunaEffect, 'beatbark');
+  combat.instantDeath(match.players.P2, true);
+  assert.equal(match.yunaLongingPendingId, null); // ตายในเทิร์น 1-10 ก็ไม่มี Longing มาชุบ
+});
