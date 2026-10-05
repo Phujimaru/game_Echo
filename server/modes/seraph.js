@@ -7,6 +7,7 @@ Object.assign(module.exports, {
 const Seraph = require("../../seraph");
 const { SERAPH_PLACE_SAFETY_SECONDS, TRANSITION_TIME } = require("../constants");
 const match = require("../match");
+const combat = require("../combat");
 const { engine } = require("../engine");
 const draw = require("../phases/draw");
 const endTurnPhase = require("../phases/endTurn");
@@ -67,6 +68,9 @@ function seraphAdvance() {
     }
     // หมดคิวคู่ดวลแล้ว -> จบรอบ
     if (finish()) return true;
+    // ล้างของจากวันดวลก่อน แล้ว endCycle ค่อยฟื้นเลือด/เกราะ + แจกเหรียญจบรอบ
+    for (const p of Object.values(match.players)) if (!p.scEliminated) combat.resetCycleCombat(p);
+    match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้าง
     Seraph.endCycle(engine);
     match.gameState = "TRANSITION";
     timers.startPhaseTimer(TRANSITION_TIME, draw.dealRound);

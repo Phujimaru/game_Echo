@@ -8,7 +8,7 @@ Object.assign(module.exports, {
   resolveDamageAftermath, healOverflow, loseHp, applyOverloadOverdrawPenalty, loseArmor,
   damageSoft, mageslayerMarkSteal, tryYunaLongingForTwin, dealDirect, dealArmorOnly, dealMixed,
   addSkill, applyEffect, firePassive, skillByStatus, shikiCancelUltimate, voidUltimateOnBust,
-  resetRoundDisplay, resetCombat,
+  resetRoundDisplay, resetCombat, resetCycleCombat,
 });
 
 const { CHAR_BY_ID } = require("../characters");
@@ -219,7 +219,10 @@ function applySpellburden(p, turns) {
 //  ต่อสู้ + เอฟเฟกต์สกิล
 // ============================================================
 // ผู้เล่น "บนสนาม" ที่ยังรอด — นักบินปริศนาที่ซ่อนตัวอยู่ไม่นับ (โจมตี/สกิลหมู่/สุ่มเป้า/นับคนในสนามข้ามเขาเอง)
-function alivePlayers() { return Object.values(match.players).filter((p) => p.alive && !CHAR_HOOKS.sliver_bullet.offField(p)); }
+//  SE.RA.PH: คนที่นั่งดูวันดวล + คนที่ตกรอบแล้วก็ไม่อยู่บนสนาม — ไม่งั้นโดนสกิลหมู่/สุ่มเป้า/บัฟของคู่ดวล
+//  และเพลงสกิลค้างของคนดูจะแย่งเพลงดวล (view.activeSkillMusic)
+function alivePlayers() { return Object.values(match.players).filter((p) => p.alive && !CHAR_HOOKS.sliver_bullet.offField(p) && !offSeraphField(p)); }
+function offSeraphField(p) { return Seraph.active() && (p.scSpectator || p.scEliminated); }
 // ผู้เล่นที่ยังรอดทั้งหมด รวมคนที่อยู่นอกสนาม (นักบินปริศนาที่ซ่อนตัว) — ใช้กับระบบที่ต้องนับทุกคน
 //  (รอเปิดไพ่ · แต้มสกิล/เหรียญจบเทิร์น)
 function livingPlayers() { return Object.values(match.players).filter((p) => p.alive); }
@@ -868,6 +871,18 @@ function resetCombat(p) {
   p.hp = maxHpOf(p);
   p.armor = maxArmorOf(p);
   if (p.characterId === "hisakawa_sister") CHAR_HOOKS.hisakawa_sister.init(p);
+}
+
+// SE.RA.PH จบรอบ: ล้างของจากวันดวลทั้งหมด (สถานะ/ร่าง/คูลดาวน์/ท่าไม้ตายที่ค้าง/ตัวนับเฉพาะตัวละคร)
+//  ไม่งั้นของพวกนี้ทำงานต่อในวันที่ 1-6 ของรอบใหม่ (ตีฟรีของ Echo, เลือดไหล, เพลงร่างของ Kim ฯลฯ)
+//  เก็บไว้เฉพาะที่ SERAPH_MOONCELL.md §8 บอกให้คงอยู่: ฟิลด์ sc* ของโหมด · เงิน · ไอเทม (รวมชุด Mark 42)
+//  + วีดีโอที่เล่นไปแล้ว (ครั้งเดียวต่อแมตช์) — เลือด/เกราะ/แต้มสกิล Seraph.endCycle ตั้งต่อเอง
+const CYCLE_KEEP = ["gold", "inventory", "mark42", "mark42Owned", "mark42BuyLock", "cutsceneShown"];
+function resetCycleCombat(p) {
+  const keep = {};
+  for (const k of Object.keys(p)) if (/^sc[A-Z]/.test(k) || CYCLE_KEEP.includes(k)) keep[k] = p[k];
+  resetCombat(p);
+  Object.assign(p, keep);
 }
 
 Object.assign(module.exports, { TEMARI_ANATA_DRAWS, DEBUFF_KEYS });

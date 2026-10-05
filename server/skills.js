@@ -118,6 +118,8 @@ function useSkillCore(id, tier, targets, item) {
     if (Seraph.noCombat()) return;
     if (!Seraph.tierUnlocked(p, tier)) return;
     if (p.scSpectator) return; // ผู้ชมกดอะไรไม่ได้
+    // และเล็งผู้ชม/คนที่ตกรอบไม่ได้ (สกิลหมู่/สุ่มเป้ากันไว้ที่ combat.alivePlayers แล้ว)
+    if (Array.isArray(targets) && targets.some((tid) => { const t = match.players[tid]; return t && (t.scSpectator || t.scEliminated); })) return;
   }
   // ผู้วิงวอน (patch 3.4): คนที่ติด "ลูกแกะน้อยรู้แจ้ง" เล็งผู้วิงวอนด้วยสกิลไม่ได้เลย
   //  กันที่ปากทางจุดเดียว จึงครอบคลุมทุกท่าของทุกตัวละครที่ส่ง targets มา โดยไม่ต้องแก้ prepareXTarget ทีละตัว

@@ -457,7 +457,7 @@ function buildStateFor(viewerId) {
     attack: match.gameState === "ATTACKING" ? match.lastAttack : null,
     // นักบินปริศนา: บรรทัดที่มีชื่อเขาซึ่งเกิดระหว่างซ่อนตัว ไม่ส่งให้ผู้ชมที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
     log: (match.gameState === "SUMMARY" || match.gameState === "TRANSITION" || match.gameState === "GAMEOVER")
-      ? CHAR_HOOKS.sliver_bullet.filterLog(engine, match.lastLog, viewer) : [],
+      ? seraphFilterLog(CHAR_HOOKS.sliver_bullet.filterLog(engine, match.lastLog, viewer), viewer) : [],
     shop: match.shopItems, // ร้านค้ามายา (patch 2.3): สินค้าส่วนกลางร้านเดียว เห็นเหมือนกันทุกคน
     deckLedger, // สมุดการ์ด 43 ใบ + สถานะจั่วแล้ว/ยัง (ของรอบปัจจุบัน) — กดที่กองการ์ดกลางเพื่อดู
     // นักบินปริศนา: ระหว่างซ่อนตัว ศัตรูไม่ได้รับข้อมูลของเขาเลย (ไม่มีที่นั่ง/ชื่อ/เลือด/สถานะ) — ตัวเอง + เพื่อนร่วมทีมเห็นปกติ
@@ -648,7 +648,7 @@ function buildStateFor(viewerId) {
       //  ชื่อ "ผู้เล่น" ไม่ใช่ความลับ — ที่ซ่อนคือ "ตัวละคร" (ภาพ/ชื่อ/สกิลทั้งชุด)
       const scHidden = Seraph.active() && !Seraph.canSee(viewer, p);
       if (scHidden) { basicPub = null; secondaryPub = null; ultimatePub = null; }
-      return {
+      const out = {
         id: p.id,
         name: p.name,
         avatar: p.avatar,
@@ -925,8 +925,53 @@ function buildStateFor(viewerId) {
         dmgHp: p.dmgHp, dmgArmor: p.dmgArmor, gainedSkill: p.gainedSkill,
         wasAttacked: p.wasAttacked, isWinner: p.isWinner, isLoser: p.isLoser,
       };
+      return scHidden ? seraphMaskHidden(out, p) : out;
     }),
   };
+}
+
+// ---------- SE.RA.PH: ผู้เล่นที่ผู้ชมยังไม่เคยเห็นตัวละคร (SERAPH_MOONCELL.md §9) ----------
+//  ส่งเฉพาะฟิลด์กลางที่ทุกตัวละครมีเหมือนกัน — ฟิลด์เฉพาะตัวละคร (echoQueen/kim/piggy/connorStress ฯลฯ)
+//  แค่ "มีค่า" ก็บอกได้แล้วว่าเป็นใคร จึงใช้รายการอนุญาตแทนการไล่ปิดทีละฟิลด์ (ตัวละครใหม่จะไม่รั่วเพิ่มเอง)
+const SC_PUBLIC_KEYS = new Set([
+  "id", "name", "img", "scHidden", "scSpectator", "scEliminated", "scMatrixLevel",
+  "position", "color", "teamId", "teamConfirmed", "isBoss", "modeVote",
+  "locked", "busted", "result", "cardCount", "cards", "score",
+  "hp", "maxHp", "armor", "maxArmor", "mark42", "shield", "tempHp",
+  "skillPoints", "maxSkill", "gold", "goldMax", "atCap", "skillUsed",
+  "ready", "connected", "alive", "character",
+  "dmgHp", "dmgArmor", "gainedSkill", "wasAttacked", "isWinner", "isLoser",
+]);
+function seraphMaskHidden(out, p) {
+  const masked = {};
+  // อาร์เรย์ส่งเป็นอาร์เรย์ว่าง (client บางจุด .length/.map ของทุกคน) · ที่เหลือตัดทิ้ง
+  for (const [k, v] of Object.entries(out)) masked[k] = SC_PUBLIC_KEYS.has(k) ? v : (Array.isArray(v) ? [] : undefined);
+  masked.avatar = null;
+  masked.statuses = {};
+  masked.statusAmt = {};
+  masked.inventory = []; // ของเฉพาะตัวละคร (เช่น Black Sparklence ของ Ignis) อยู่ในช่องเก็บของ
+  // ค่าที่ถูกปรับตามตัวละคร (ซาโตรุซ่อนแต้มสกิล -1 · ชิโดโชว์หลอดเต็ม · รถแบทแมนโชว์เลือด 0) -> ใช้ค่าจริงแทน
+  if (out.skillPoints != null) masked.skillPoints = p.skillPoints;
+  if (out.hp != null && !Mark42.suited(p)) { masked.hp = p.hp; masked.maxHp = combat.maxHpOf(p); }
+  return masked;
+}
+
+// SE.RA.PH: บรรทัด log ที่มีชื่อตัวละคร/ชื่อสกิลของคนที่ผู้ชมยังไม่เคยเห็น = รั่วตัวตน (SERAPH_MOONCELL.md §14 ข้อ 2)
+function seraphFilterLog(lines, viewer) {
+  if (!Seraph.active() || !viewer) return lines;
+  const words = [];
+  for (const p of Object.values(match.players)) {
+    if (Seraph.canSee(viewer, p)) continue;
+    const ch = CHAR_BY_ID[p.characterId];
+    if (!ch) continue;
+    // ชื่อตัวละคร + ชื่อสกิล/สกิลติดตัวทุกแบบ (รวมเวอร์ชันกลางคืน/ร่างที่สอง เช่น basicNight, basic2)
+    for (const part of [ch, ...Object.values(ch)]) {
+      if (!part || typeof part !== "object") continue;
+      for (const w of [part.name, part.nightName]) if (typeof w === "string" && w.trim().length >= 3) words.push(w.trim());
+    }
+  }
+  if (!words.length) return lines;
+  return lines.filter((line) => typeof line !== "string" || !words.some((w) => line.includes(w)));
 }
 function broadcastState() {
   CHAR_HOOKS.usagi.syncPause(engine); // อุซากิ: โจทย์คณิตหยุดนับเวลาระหว่างที่ไม่ได้อยู่เฟสจั่วไพ่ (คัตซีนคั่น)

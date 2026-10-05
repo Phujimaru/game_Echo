@@ -280,6 +280,9 @@ function startMatch() {
   }
   match.winningTeamId = null;
   match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้างจากแมตช์ก่อน (ถ้ามี)
+  // SE.RA.PH: ปิดโหมดก่อน resetCombat — maxHpOf/maxArmorOf อ่าน Seraph.active() ถ้ายังค้างเปิดจากแมตช์ก่อน
+  //  ทุกคนจะเริ่มแมตช์ใหม่ด้วยเลือด/เกราะของ Moon Cell (3/0) แทนค่าของตัวละคร
+  Seraph.reset();
   for (const p of Object.values(match.players)) combat.resetCombat(p);
   match.roundNumber = 0;
   match.cycleShift = 0;
@@ -294,21 +297,23 @@ function startMatch() {
   // อาริมะ มิยาโกะ (characters/miyako.js): เจอ โทโนะ ชิกิ หรือ นานายะ ชิกิ ในเกมเดียวกัน -> เล่นวีดีโอ arima_shiki.mp4 ก่อนเริ่มเทิร์นแรก
   match.cutsceneQueue = [];
   // SE.RA.PH: ตั้งค่าเริ่มต้นของโหมด (วัน 1 รอบ 1) + บังคับสเตตัสทุกตัวละครให้เท่ากันหมด
-  Seraph.reset();
   if (match.gameMode === "seraph") {
     Seraph.startMatch(engine);
     for (const m of Seraph.takeLog()) match.lastLog.push(m);
   }
+  // วีดีโอเปิดตัวตัวละคร — SE.RA.PH ไม่มี: ตัวละครเป็นความลับจนถึงวันดวล (คลิปบอกทุกคนว่าใครอยู่ในแมตช์)
+  //  และหน้าจอวันที่ 1-6 ของโหมดนี้ไม่มีที่เล่นคลิป (ผู้เล่นจะเห็นกระดานค้างเฉย ๆ เพลงเงียบตามความยาวคลิป)
+  const intros = match.gameMode !== "seraph";
   // คอนเนอร์ RK800: วีดีโอเปิดตัวเล่น 1 ครั้งตอนเริ่มเกม (ก่อนฉากคู่ปรับของมิยาโกะถ้ามีทั้งคู่)
-  const connerIntro = CHAR_HOOKS.conner.maybeQueueIntro(engine);
-  const miyakoIntro = CHAR_HOOKS.miyako.maybeQueueRivalIntro(engine);
+  const connerIntro = intros && CHAR_HOOKS.conner.maybeQueueIntro(engine);
+  const miyakoIntro = intros && CHAR_HOOKS.miyako.maybeQueueRivalIntro(engine);
   // คาซามะ ไดสุเกะ: วีดีโอเปิดตัวเล่นครั้งเดียวก่อนเทิร์นแรก (ไม่มีคำบรรยาย)
-  const daisukeIntro = CHAR_HOOKS.daisuke.maybeQueueIntro(engine);
-  const yagurumaIntro = CHAR_HOOKS.yaguruma.maybeQueueIntro(engine);
-  const kagamiIntro = CHAR_HOOKS.kagami.maybeQueueIntro(engine);
-  const tsurugiIntro = CHAR_HOOKS.tsurugi.maybeQueueIntro(engine);
+  const daisukeIntro = intros && CHAR_HOOKS.daisuke.maybeQueueIntro(engine);
+  const yagurumaIntro = intros && CHAR_HOOKS.yaguruma.maybeQueueIntro(engine);
+  const kagamiIntro = intros && CHAR_HOOKS.kagami.maybeQueueIntro(engine);
+  const tsurugiIntro = intros && CHAR_HOOKS.tsurugi.maybeQueueIntro(engine);
   // สไตรเกอร์ ยูเรก้า: วีดีโอเปิดตัว "วัตถุอันตราย" หลังฉากเปิดตัวผู้เล่น
-  const strikerIntro = CHAR_HOOKS.striker.maybeQueueIntro(engine);
+  const strikerIntro = intros && CHAR_HOOKS.striker.maybeQueueIntro(engine);
   // Type Mercury: ไม่มีฉากเปิดตัวผู้เล่น — ใช้ฉากเปิดตัว ORT (OrtArrival ฝั่ง client) แทน
   //  server พักเกมไว้ในเฟส CUTSCENE (ไม่มีคลิป) ให้ฉากเล่นจบก่อน แล้วค่อยเล่นวีดีโอเปิดตัวตัวละครที่คิวไว้ (ถ้ามี)
   if (mercury.mercuryActive()) {
@@ -398,6 +403,7 @@ function backToLobby() {
   match.lastLog = [];
   match.cutsceneQueue = [];
   match.cutsceneInfo = null;
+  Seraph.reset(); // ต้องก่อน resetCombat (เหตุผลเดียวกับใน startMatch) · state.seraph ในห้องรอจะได้เป็น null
   for (const p of Object.values(match.players)) {
     p.cards = []; p.locked = false; p.busted = false; p.result = null;
     combat.resetRoundDisplay(p);
