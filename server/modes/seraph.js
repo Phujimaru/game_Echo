@@ -34,6 +34,14 @@ function finishSeraphPlacePhase() {
   endTurnPhase.endTurn();
 }
 
+// ล้างสถานะการต่อสู้ของผู้เล่นที่ยังไม่ตกรอบ (คงเงิน/ไอเทม/ค่าของโหมด — combat.resetCycleCombat)
+//  + ของระดับแมตช์: ตีฟรีของ Echo ที่ค้าง · สนาม Break Beat Bark! (ท่าไม้ตายของเอจิใช้ช่องทางเดียวกับยูนะ)
+function clearCombatState() {
+  for (const p of Object.values(match.players)) if (!p.scEliminated) combat.resetCycleCombat(p);
+  match.echoFreeHit = null;
+  match.yunaEffect = null; match.yunaTargetId = null; match.yunaWindowEnd = 0; match.yunaLongingPendingId = null;
+}
+
 // ---- ปิดรอบ ----
 // ============================================================
 //  SE.RA.PH — ตัวเดินวัน/รอบ (เรียกจากท้าย endTurn เท่านั้น)
@@ -69,8 +77,7 @@ function seraphAdvance() {
     // หมดคิวคู่ดวลแล้ว -> จบรอบ
     if (finish()) return true;
     // ล้างของจากวันดวลก่อน แล้ว endCycle ค่อยฟื้นเลือด/เกราะ + แจกเหรียญจบรอบ
-    for (const p of Object.values(match.players)) if (!p.scEliminated) combat.resetCycleCombat(p);
-    match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้าง
+    clearCombatState();
     Seraph.endCycle(engine);
     match.gameState = "TRANSITION";
     timers.startPhaseTimer(TRANSITION_TIME, draw.dealRound);
@@ -79,6 +86,9 @@ function seraphAdvance() {
   }
 
   // วันที่ 1-6: ขึ้นวันถัดไป (จบวันที่ 2 = ประกาศคู่ดวล · จบวันที่ 6 = เข้าวันดวล)
+  //  ตาข่าย: วันสืบสวนไม่มีสถานะ/สกิลติดตัว — อะไรที่ hook ของตัวละครแอบสร้างไว้ระหว่างวันถูกล้างทิ้ง
+  //  ก่อนขึ้นวันใหม่ (และก่อน beginDuelDay แจกแต้มสกิลเริ่มดวล) จึงเข้าวันดวลด้วยสภาพสะอาดเสมอ
+  clearCombatState();
   const { next } = Seraph.advanceDay(engine);
   if (next === "duelDay") Seraph.beginDuelDay(engine);
   match.gameState = "TRANSITION";

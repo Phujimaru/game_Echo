@@ -236,6 +236,12 @@ function useInventoryItemCore(id, uid, opts = {}) {
   const p = match.players[id];
   if (!p || !p.alive) return;
   if (purge.benched(p) || (opts && opts.targetId && purge.benched(match.players[opts.targetId]))) return; // Purge: ผู้ชมใช้ไอเทมไม่ได้ และใช้ใส่ผู้ชมไม่ได้
+  // SE.RA.PH: วันที่ 1-6 ไม่มีไอเทม (รวมปืน GUTS) · วันดวล ผู้ชม/คนตกรอบใช้ไม่ได้ และใช้ใส่พวกเขาไม่ได้ (§5, §7)
+  if (Seraph.noCombat()) return;
+  if (Seraph.active()) {
+    const t = opts && opts.targetId ? match.players[opts.targetId] : null;
+    if (p.scSpectator || p.scEliminated || (t && (t.scSpectator || t.scEliminated))) return;
+  }
   if (asleep(p)) return; // หลับไหล: ใช้ไอเทมไม่ได้เลย (ยาโชคลาภ/ต้านสถานะ/แต้มสกิล/เกราะ เดิมไม่เช็ค p.locked จึงรั่ว)
   if (CHAR_HOOKS.conner.skillBlocked(engine, p)) return; // คอนเนอร์: ระหว่างการไล่ล่า ทุกคนใช้ไอเทมไม่ได้ (รวมคอนเนอร์กับเป้าหมาย)
   if (CHAR_HOOKS.brian.itemBlocked(engine)) return;      // ไบรอัน: ระหว่างการแข่ง ทุกคนใช้ไอเทมไม่ได้

@@ -51,6 +51,9 @@ function dealRound() {
   CHAR_HOOKS.mageslayer.resolveDueRuptures(engine);
   // SE.RA.PH: ตั้งว่าใครลงสนามเทิร์นนี้ (วันที่ 7 = เฉพาะคู่ที่ดวล คนอื่นเป็นผู้ชม)
   Seraph.onDealRound(engine);
+  // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัว/สถานะ/ผลต้นเทิร์นของตัวละคร (SERAPH_MOONCELL.md §5, §14 ข้อ 1)
+  //  หลาย hook ถูกเรียกตรงจากที่นี่ ไม่ผ่าน firePassive — จึงครอบด้วยธงเดียวกันทั้งหมด
+  const charTicks = !Seraph.noCombat();
   // ร้านค้ามายา (patch 2.2 full): เปิดทุกๆ 5 เทิร์น ตอนเริ่มเทิร์นใหม่
   //  SE.RA.PH: เติมสต็อกใหม่ทุกวัน เพราะ "ร้านสะดวกซื้อ" เป็น 1 ใน 5 สถานที่ที่เลือกได้ทุกวัน
   if (Seraph.active()) { if (Seraph.currentDay() === 1) shop.openShop(); } // เปิดครั้งเดียวต่อรอบ ใช้สต็อกเดิมทั้งรอบ
@@ -66,11 +69,13 @@ function dealRound() {
   mercury.mercuryRespawnPicked();
   // ORT สกิลติดตัว 1: สกิลแรกของเทิร์นที่แล้ว "ข้อมูลสูญหาย" ในเทิร์นนี้ (อยู่หลังล้าง cutsceneQueue แล้ว)
   CHAR_HOOKS.ort.onRoundStart(engine);
-  // อาซาฮินะ ทักต์: คำเชิญพันธะที่ไม่ได้ตอบในเทิร์นที่แล้ว = ปฏิเสธ
-  CHAR_HOOKS.takt.sweepInvites(engine);
-  // นักบินปริศนา (characters/sliver_bullet.js): ต้นเทิร์นตัดสินว่าซ่อนตัวไหม + สุ่มร่างที่สิงใหม่
-  //  ต้องอยู่ก่อนลูปแจกไพ่ (คนที่ซ่อนไม่ได้ไพ่ใบแรก)
-  CHAR_HOOKS.sliver_bullet.onRoundStart(engine);
+  if (charTicks) {
+    // อาซาฮินะ ทักต์: คำเชิญพันธะที่ไม่ได้ตอบในเทิร์นที่แล้ว = ปฏิเสธ
+    CHAR_HOOKS.takt.sweepInvites(engine);
+    // นักบินปริศนา (characters/sliver_bullet.js): ต้นเทิร์นตัดสินว่าซ่อนตัวไหม + สุ่มร่างที่สิงใหม่
+    //  ต้องอยู่ก่อนลูปแจกไพ่ (คนที่ซ่อนไม่ได้ไพ่ใบแรก)
+    CHAR_HOOKS.sliver_bullet.onRoundStart(engine);
+  }
 
   for (const p of Object.values(match.players)) {
     combat.resetRoundDisplay(p);
@@ -87,7 +92,7 @@ function dealRound() {
     p.bardNotesUsed = 0;      // Bard: นับโน้ตใหม่ทุกเทิร์น (จำกัด 2 — มิติวิญญาณไม่จำกัด)
     p.kaiSkillUsesRound = 0;  // ไค: งบสกิล 2 ครั้ง (รังสรรค์/ลงทัณฑ์ ผสมกันได้อิสระ) เต็มใหม่ทุกเทิร์น
     p.takumiSkillUsesRound = 0; // ทาคุมิ: งบสกิลรวม 5 ครั้งต่อเทิร์น (พื้นฐาน/รอง/ท่าไม้ตาย ผสมกันได้อิสระ) เต็มใหม่ทุกเทิร์น
-    CHAR_HOOKS.doomguy.onRoundStartFortuneRoll(engine, p); // DoomGuy: ทุกต้นเทิร์นมีโอกาส 20% ได้ [โชคลาภ] +1 สแตค
+    if (charTicks && Seraph.inCurrentDuel(p)) CHAR_HOOKS.doomguy.onRoundStartFortuneRoll(engine, p); // DoomGuy: ทุกต้นเทิร์นมีโอกาส 20% ได้ [โชคลาภ] +1 สแตค
     p.anataTargets = null;
     // ห้ามจั่วการ์ดเพิ่มที่ตั้งไว้จากเทิร์นก่อน (ทงคัสสึ / กำไรเท่าตัวโว้ย) — noDrawNext เป็นจำนวนเทิร์น
     if (p.noDrawNext) {
@@ -106,9 +111,11 @@ function dealRound() {
     }
     // คอนเนอร์ RK800 (สกิลติดตัว 3 ปัญญาประดิษฐ์): ครบ 10 เทิร์นหลังตาย -> กลับเข้าสนามด้วยเลือด 3 เกราะ 2
     //  ต้องอยู่ "ก่อน" บล็อกข้ามผู้เล่นที่ตายแล้ว ไม่งั้นเทิร์นที่ฟื้นจะไม่ได้รับไพ่ใบแรก
-    if (!p.alive) CHAR_HOOKS.conner.maybeRevive(engine, p);
+    if (!p.alive && !p.scEliminated) CHAR_HOOKS.conner.maybeRevive(engine, p);
     // ยุย: สมบัติล้ำค่าที่สุด..... — ครบกำหนดแล้วชุบชีวิตเป้าหมายที่จองไว้ (ตัวยุยเองต้องยังอยู่)
     if (p.characterId === "yui") CHAR_HOOKS.yui.maybeRevive(engine, p);
+    // SE.RA.PH: คนที่ตกรอบแล้วกลับมาไม่ได้ ไม่ว่าการชุบช่องทางไหน (ระบบสำรองของคอนเนอร์ / ยุย ฯลฯ)
+    if (Seraph.active() && p.scEliminated) p.alive = false;
     if (!p.alive) { p.cards = []; p.locked = true; p.busted = false; p.overloadDrawReady = false; continue; }
     // SE.RA.PH วันที่ 7: คนที่ไม่ใช่คู่ที่กำลังลงสนาม = ผู้ชม ไม่ได้รับไพ่และไม่ถ่วงการเปิดไพ่
     if (Seraph.active() && !Seraph.inCurrentDuel(p)) { p.cards = []; p.locked = true; p.busted = false; p.overloadDrawReady = false; continue; }
@@ -131,97 +138,99 @@ function dealRound() {
     }
     p.phenexTauntGrace = false; // ไม่อยากให้ใครต้องเจ็บปวด (ริต้า เบอร์นัล): ผ่านเทิร์นที่หมดเวลาพอดีไปแล้ว ล้างค่านี้ทิ้ง
 
-    // ---------- นานายะ ชิกิ (characters/nanaya.js) ----------
-    p.nanayaToggleUsed = false; // Mystic eye of death perception: เปิด/ปิดได้อีก 1 ครั้งในเทิร์นใหม่นี้
-    if (p.characterId === "nanaya") CHAR_HOOKS.nanaya.onRoundStartRest(engine, p);
+    if (charTicks) {
+      // ---------- นานายะ ชิกิ (characters/nanaya.js) ----------
+      p.nanayaToggleUsed = false; // Mystic eye of death perception: เปิด/ปิดได้อีก 1 ครั้งในเทิร์นใหม่นี้
+      if (p.characterId === "nanaya") CHAR_HOOKS.nanaya.onRoundStartRest(engine, p);
 
-    CHAR_HOOKS.daisuke.onRoundStartTick(engine, p); // ค่าแต้มสกิลของ Clock Up + การฟื้นฟูของ PUT ON
-    CHAR_HOOKS.yaguruma.onRoundStartTick(engine, p);
-    CHAR_HOOKS.kagami.onRoundStartTick(engine, p);
-    CHAR_HOOKS.usagi.onRoundStartTick(engine, p);
-    CHAR_HOOKS.oberon_summer.onRoundStartTick(engine, p);  // นกจาบยามเช้า: เป้าหมายเสียพลังชีวิต 2 ทะลุเกราะ
-    CHAR_HOOKS.artoria_caster.onRoundStartTick(engine, p); // หัวใจที่บริสุทธิ์: เทิร์นที่ 3, 6, 9, … หลบหลีก + ฟื้นพลังชีวิต
-    CHAR_HOOKS.tsurugi.onRoundStartTick(engine, p);
+      CHAR_HOOKS.daisuke.onRoundStartTick(engine, p); // ค่าแต้มสกิลของ Clock Up + การฟื้นฟูของ PUT ON
+      CHAR_HOOKS.yaguruma.onRoundStartTick(engine, p);
+      CHAR_HOOKS.kagami.onRoundStartTick(engine, p);
+      CHAR_HOOKS.usagi.onRoundStartTick(engine, p);
+      CHAR_HOOKS.oberon_summer.onRoundStartTick(engine, p);  // นกจาบยามเช้า: เป้าหมายเสียพลังชีวิต 2 ทะลุเกราะ
+      CHAR_HOOKS.artoria_caster.onRoundStartTick(engine, p); // หัวใจที่บริสุทธิ์: เทิร์นที่ 3, 6, 9, … หลบหลีก + ฟื้นพลังชีวิต
+      CHAR_HOOKS.tsurugi.onRoundStartTick(engine, p);
 
-    // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2): ดาเมจต่อเนื่องทุก 2 เทิร์น ----------
-    //  สิ่งแปลกปลอม (Obla Di, Obla Da): ดาเมจ 1 / [Calamity]: ดาเมจตามเลเวล — ทำงานตอนเวลาคงเหลือเป็นเลขคี่
-    {
-      let dotDmg = 0;
-      const dotFrom = [];
-      if ((p.statuses.oblada || 0) > 0 && p.statuses.oblada % 2 === 1) { dotDmg += 1; dotFrom.push("สิ่งแปลกปลอม"); }
-      if ((p.statuses.calamity || 0) > 0 && p.statuses.calamity % 2 === 1) {
-        const lv = Math.max(1, (p.statusAmt && p.statusAmt.calamity) || 1);
-        dotDmg += lv;
-        dotFrom.push(`Calamity Lv${lv}`);
-      }
-      if (dotDmg > 0) {
-        combat.dealMixed(p, dotDmg);
-        combat.maybeBeatSave(p);
-        combat.maybeBeatMode(p);
-        p.wasAttacked = true;
-        match.lastLog.push(`🌩️ ${p.name} ถูกหายนะกัดกิน (${dotFrom.join(" + ")}) — รับความเสียหาย -${dotDmg}`);
-        if (p.alive && p.hp <= 0) {
-          combat.instantDeath(p);
-          if (!p.alive) match.lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
-          p.cards = [];
-          p.locked = true;
-          p.busted = false;
-          continue;
+      // ---------- ซาโตรุ อาเคฟุ (patch 2.0.8.2): ดาเมจต่อเนื่องทุก 2 เทิร์น ----------
+      //  สิ่งแปลกปลอม (Obla Di, Obla Da): ดาเมจ 1 / [Calamity]: ดาเมจตามเลเวล — ทำงานตอนเวลาคงเหลือเป็นเลขคี่
+      {
+        let dotDmg = 0;
+        const dotFrom = [];
+        if ((p.statuses.oblada || 0) > 0 && p.statuses.oblada % 2 === 1) { dotDmg += 1; dotFrom.push("สิ่งแปลกปลอม"); }
+        if ((p.statuses.calamity || 0) > 0 && p.statuses.calamity % 2 === 1) {
+          const lv = Math.max(1, (p.statusAmt && p.statusAmt.calamity) || 1);
+          dotDmg += lv;
+          dotFrom.push(`Calamity Lv${lv}`);
+        }
+        if (dotDmg > 0) {
+          combat.dealMixed(p, dotDmg);
+          combat.maybeBeatSave(p);
+          combat.maybeBeatMode(p);
+          p.wasAttacked = true;
+          match.lastLog.push(`🌩️ ${p.name} ถูกหายนะกัดกิน (${dotFrom.join(" + ")}) — รับความเสียหาย -${dotDmg}`);
+          if (p.alive && p.hp <= 0) {
+            combat.instantDeath(p);
+            if (!p.alive) match.lastLog.push(`💀 ${p.name} เลือดจริงหมด ตกรอบ!`);
+            p.cards = [];
+            p.locked = true;
+            p.busted = false;
+            continue;
+          }
         }
       }
-    }
 
-    // เครื่องดื่มชูกำลัง (Apple guy): เพิ่มแต้มสกิล 1 แต่เสียพลัง 1 หน่วยต่อเทิร์น
-    //  ความเสียหายธรรมดา (โดนโล่/เกราะก่อน ไม่เจาะเกราะ) และไม่ถึงตาย — เลือดค้างที่ 1
-    if ((p.statuses.energy || 0) > 0) {
-      combat.addSkill(p, 1, "item");
-      if (p.shield > 0 || p.armor > 0 || (p.tempHp || 0) > 0 || p.hp > 1) {
-        combat.damageSoft(p);
-        match.lastLog.push(`🥤 ${p.name} เครื่องดื่มชูกำลังออกฤทธิ์ — แต้มสกิล +1 เสียพลัง 1 หน่วย (เกราะก่อน)`);
-      } else {
-        match.lastLog.push(`🥤 ${p.name} เครื่องดื่มชูกำลังออกฤทธิ์ — แต้มสกิล +1 (พลังชีวิตเหลือ 1 จึงไม่ลด)`);
+      // เครื่องดื่มชูกำลัง (Apple guy): เพิ่มแต้มสกิล 1 แต่เสียพลัง 1 หน่วยต่อเทิร์น
+      //  ความเสียหายธรรมดา (โดนโล่/เกราะก่อน ไม่เจาะเกราะ) และไม่ถึงตาย — เลือดค้างที่ 1
+      if ((p.statuses.energy || 0) > 0) {
+        combat.addSkill(p, 1, "item");
+        if (p.shield > 0 || p.armor > 0 || (p.tempHp || 0) > 0 || p.hp > 1) {
+          combat.damageSoft(p);
+          match.lastLog.push(`🥤 ${p.name} เครื่องดื่มชูกำลังออกฤทธิ์ — แต้มสกิล +1 เสียพลัง 1 หน่วย (เกราะก่อน)`);
+        } else {
+          match.lastLog.push(`🥤 ${p.name} เครื่องดื่มชูกำลังออกฤทธิ์ — แต้มสกิล +1 (พลังชีวิตเหลือ 1 จึงไม่ลด)`);
+        }
       }
-    }
 
-    // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — เหมือนกันทั้งกลางวัน/กลางคืน (ยกเลิกโบนัสฟื้นทุกเทิร์นตอนกลางคืน patch 2.1.7)
-    // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
-    // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ patch 2.2.0): เกราะไม่ฟื้นตามจำนวนเทิร์นที่เหลือ
-    // [โหมงานหนัก] (โคโตเนะ patch 2.2.2): เปลี่ยนไปพังโล่แทนเกราะแล้ว — เกราะฟื้นได้ตามปกติ
-    // ผุพัง (สถานะ Universal patch 2.2 beta — ไวท์เล็น "ฉันขอรับไปนะคะ"): เกราะไม่ฟื้นระหว่างมีผล
-    //  แบทแมนร่างรถ: เกราะคือ "พลังชีวิตของรถ" ไม่ใช่เกราะจริง — ห้ามฟื้นเอง ไม่งั้นรถซ่อมตัวเองฟรีทุก 2 เทิร์น
-    //  และจะไม่มีวันพังเลยถ้าโดนตีเบาๆ (สเปคระบุว่า "ขึ้นรถถาวรจนกว่ารถจะพัง" = ต้องพังได้จริง)
-    //  การเดินทาง: ภูมิภาค 5-7 เกราะฟื้นทุกเทิร์น (Journey.armorRegenDue)
-    const armorRegenDue = Journey.armorRegenDue(engine, match.roundNumber);
-    if (!p.armorLocked && !((p.statuses.decay || 0) > 0) && !Seraph.noCombat() && armorRegenDue
-        && !CHAR_HOOKS.bat_ben.blocksArmorRegen(p)
-        && !CHAR_HOOKS.daisuke.blocksArmorRegen(p) // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
-        && !CHAR_HOOKS.recruit.blocksArmorRegen(p)) { // Recruit: [Armor] ไม่ฟื้นเองอัตโนมัติ // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
-      // เท็นโนจิ โคทาโร่ (rewrite): เลือดยังไม่เต็ม -> เกราะที่ควรฟื้นถูกเขียนทับเป็นเลือดแทน
-      combat.healArmor(p, 1);
-    }
-    // คู่แฝดฮิซากาว่า: แฝดที่พักอยู่ฟื้นเกราะเองได้ตามจังหวะเดียวกัน แม้ไม่ได้ถูกควบคุมอยู่
-    //  (เงื่อนไข "ผุพัง" คิดจากสถานะของแฝดคนนั้นเอง — ดู CHAR_HOOKS.hisakawa_sister.regenRestingArmor)
-    if (!p.armorLocked && armorRegenDue) CHAR_HOOKS.hisakawa_sister.regenRestingArmor(engine, p);
-    // การตื่นขึ้น (Lai Rhyme Goodfellow โอเบรอน): ฟื้นพลังชีวิตเทิร์นละ 1 หน่วย
-    if ((p.statuses.awaken || 0) > 0 && combat.healHp(p, 1) > 0) {
-      match.lastLog.push(`⏰ ${p.name} การตื่นขึ้น — ฟื้นพลังชีวิต +1`);
-    }
-    combat.firePassive(p, "roundStart");
+      // เกราะฟื้น 1 หน่วยทุก 2 เทิร์น (รอบเลขคู่) — เหมือนกันทั้งกลางวัน/กลางคืน (ยกเลิกโบนัสฟื้นทุกเทิร์นตอนกลางคืน patch 2.1.7)
+      // Beat Mode: หลังกันตายทำงาน เกราะจะไม่ฟื้นคืน
+      // หนูจะทำให้พี่ตาสว่างเอง (อาริมะ มิยาโกะ patch 2.2.0): เกราะไม่ฟื้นตามจำนวนเทิร์นที่เหลือ
+      // [โหมงานหนัก] (โคโตเนะ patch 2.2.2): เปลี่ยนไปพังโล่แทนเกราะแล้ว — เกราะฟื้นได้ตามปกติ
+      // ผุพัง (สถานะ Universal patch 2.2 beta — ไวท์เล็น "ฉันขอรับไปนะคะ"): เกราะไม่ฟื้นระหว่างมีผล
+      //  แบทแมนร่างรถ: เกราะคือ "พลังชีวิตของรถ" ไม่ใช่เกราะจริง — ห้ามฟื้นเอง ไม่งั้นรถซ่อมตัวเองฟรีทุก 2 เทิร์น
+      //  และจะไม่มีวันพังเลยถ้าโดนตีเบาๆ (สเปคระบุว่า "ขึ้นรถถาวรจนกว่ารถจะพัง" = ต้องพังได้จริง)
+      //  การเดินทาง: ภูมิภาค 5-7 เกราะฟื้นทุกเทิร์น (Journey.armorRegenDue)
+      const armorRegenDue = Journey.armorRegenDue(engine, match.roundNumber);
+      if (!p.armorLocked && !((p.statuses.decay || 0) > 0) && !Seraph.noCombat() && armorRegenDue
+          && !CHAR_HOOKS.bat_ben.blocksArmorRegen(p)
+          && !CHAR_HOOKS.daisuke.blocksArmorRegen(p) // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
+          && !CHAR_HOOKS.recruit.blocksArmorRegen(p)) { // Recruit: [Armor] ไม่ฟื้นเองอัตโนมัติ // CAST OFF: ปลดเกราะทิ้งแล้ว เกราะจึงไม่ฟื้น
+        // เท็นโนจิ โคทาโร่ (rewrite): เลือดยังไม่เต็ม -> เกราะที่ควรฟื้นถูกเขียนทับเป็นเลือดแทน
+        combat.healArmor(p, 1);
+      }
+      // คู่แฝดฮิซากาว่า: แฝดที่พักอยู่ฟื้นเกราะเองได้ตามจังหวะเดียวกัน แม้ไม่ได้ถูกควบคุมอยู่
+      //  (เงื่อนไข "ผุพัง" คิดจากสถานะของแฝดคนนั้นเอง — ดู CHAR_HOOKS.hisakawa_sister.regenRestingArmor)
+      if (!p.armorLocked && armorRegenDue) CHAR_HOOKS.hisakawa_sister.regenRestingArmor(engine, p);
+      // การตื่นขึ้น (Lai Rhyme Goodfellow โอเบรอน): ฟื้นพลังชีวิตเทิร์นละ 1 หน่วย
+      if ((p.statuses.awaken || 0) > 0 && combat.healHp(p, 1) > 0) {
+        match.lastLog.push(`⏰ ${p.name} การตื่นขึ้น — ฟื้นพลังชีวิต +1`);
+      }
+      combat.firePassive(p, "roundStart");
 
-    // ---------- โอกูริ แคป (Rework): Stamina ชาร์จ / ยุคทอง / Zone (GrayBeast) / หมดแรง (Burnout) / Sunny Day — เช็คตอนเริ่มเทิร์น ----------
-    CHAR_HOOKS.oguri.onRoundStartTick(engine, p);
-    combat.withEffectSource(p, () => CHAR_HOOKS.escanor.onRoundStartTick(engine, p, prevNight));
-    CHAR_HOOKS.hisakawa_sister.onRoundStartTick(engine, p);
+      // ---------- โอกูริ แคป (Rework): Stamina ชาร์จ / ยุคทอง / Zone (GrayBeast) / หมดแรง (Burnout) / Sunny Day — เช็คตอนเริ่มเทิร์น ----------
+      CHAR_HOOKS.oguri.onRoundStartTick(engine, p);
+      combat.withEffectSource(p, () => CHAR_HOOKS.escanor.onRoundStartTick(engine, p, prevNight));
+      CHAR_HOOKS.hisakawa_sister.onRoundStartTick(engine, p);
 
-    // ---------- ลุกไหม้ (hburn, สถานะ Universal): ดาเมจ 1/เทิร์น สะสมสูงสุด 6 — ย้าย body ไป characters/_universal_status.js แล้ว ----------
-    tickBurn(engine, p);
-    // ---------- เลือดไหล (hbleed, สถานะ Universal patch 2.5): ดาเมจ 1/เทิร์น สะสมสูงสุด 6 (ฮารุกะฟื้นเลือดแทน) ----------
-    tickBleed(engine, p);
-    tickPoison(engine, p); // พิษร้าย (โซ ยากุรุมะ): ดาเมจต้นเทิร์น — ส่วนพลังโจมตีหักที่ computeAttackBase
-    // "ช็อต" (// คากามิ อาราตะ): โรล 15% ติดสตั้น — ต้องอยู่ก่อนบล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะเลื่อนไปมีผลเทิร์นถัดไป
-    tickShock(engine, p);
-    // ---------- [โดนดูด] (doomDrain, Plasma Rifle — DoomGuy): ดาเมจ 1/เทิร์น 3 เทิร์น เจาะเกราะก่อน ----------
-    CHAR_HOOKS.doomguy.tickDrain(engine, p);
+      // ---------- ลุกไหม้ (hburn, สถานะ Universal): ดาเมจ 1/เทิร์น สะสมสูงสุด 6 — ย้าย body ไป characters/_universal_status.js แล้ว ----------
+      tickBurn(engine, p);
+      // ---------- เลือดไหล (hbleed, สถานะ Universal patch 2.5): ดาเมจ 1/เทิร์น สะสมสูงสุด 6 (ฮารุกะฟื้นเลือดแทน) ----------
+      tickBleed(engine, p);
+      tickPoison(engine, p); // พิษร้าย (โซ ยากุรุมะ): ดาเมจต้นเทิร์น — ส่วนพลังโจมตีหักที่ computeAttackBase
+      // "ช็อต" (// คากามิ อาราตะ): โรล 15% ติดสตั้น — ต้องอยู่ก่อนบล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะเลื่อนไปมีผลเทิร์นถัดไป
+      tickShock(engine, p);
+      // ---------- [โดนดูด] (doomDrain, Plasma Rifle — DoomGuy): ดาเมจ 1/เทิร์น 3 เทิร์น เจาะเกราะก่อน ----------
+      CHAR_HOOKS.doomguy.tickDrain(engine, p);
+    }
     p.cards = [];
     // New Omega (ฮารุกะ): ธงบังคับไพ่แตกมีผลแค่เทิร์นที่กด — กดใหม่ถึงจะระเบิดอีกครั้ง
     //  ต้องล้าง "ก่อน" แจกไพ่ใบแรกด้านล่าง ไม่งั้น onCardDrawn/bustedOf ระหว่างแจกจะยังอ่านธงของเทิร์นที่แล้ว
@@ -255,71 +264,73 @@ function dealRound() {
       match.lastLog.push(`💤 ${p.name} หลับไหลจากคำลวงของราชาภูติ — ขยับไม่ได้ (เหลืออีก ${p.statuses.sleep} เทิร์น)`);
     }
 
-    // ---------- แบทแมน (characters/bat_ben.js): เหรียญกลางคืน / ฟื้นเลือดจากเร้นเงา / ฟื้นเลือดจากเข้ามาเลย ----------
-    CHAR_HOOKS.bat_ben.onRoundStartTick(engine, p);
-    // ---------- เจ้าหญิงราก (characters/princess_shiki.js): แต้มสกิลฟื้นเองทุกเทิร์น ----------
-    CHAR_HOOKS.princess_shiki.onRoundStartTick(engine, p);
-    // ---------- ฟุจิตะ โคโตเนะ (characters/kotone.js): Sleeping time (ฮีล/แต้มสกิลต่อเทิร์น) + สตั้นจากท่านประธานเซนะจัง ----------
-    CHAR_HOOKS.kotone.onRoundStartTick(engine, p);
-    // ---------- เอจิ (characters/eiji.js): รีเซ็ตโควตาหลบหลีก/Ordinal Scale + ฟื้นเลือดจากความเร็วสูง ----------
-    if (p.characterId === "eiji") CHAR_HOOKS.eiji.onRoundStartTick(engine, p);
-    // ---------- มิซึซาว่า ฮารุกะ (characters/haruka.js): รีเซ็ตโควตาสกิลพื้นฐาน 2 ครั้ง + โควตาเลือดไหลของสกิลติดตัว ----------
-    if (p.characterId === "haruka") CHAR_HOOKS.haruka.onRoundStartTick(engine, p);
-    // ---------- ยุย โยชิโอกะ (characters/yui.js): ล็อกมือระหว่างบรรเลงเพลงชุบชีวิต ----------
-    if (p.characterId === "yui") CHAR_HOOKS.yui.onRoundStartTick(engine, p);
-    // ---------- อิสึกะ ชิโด (characters/shido.js): ภูติ — ฟื้นพลังชีวิตต่อเทิร์น ----------
-    if (p.characterId === "shido") CHAR_HOOKS.shido.onRoundStartTick(engine, p);
-    // ---------- โมโรโบชิ ดัน (characters/dan.js): ไม้ค้ำพยุงร่าง — ฟื้นพลังชีวิตต่อเทิร์น ----------
-    if (p.characterId === "dan") CHAR_HOOKS.dan.onRoundStartTick(engine, p);
-    // ---------- คอนเนอร์ RK800 (characters/conner.js): รีเซ็ตโควตา "จั่วไพ่ = เครียด +1 ต่อเทิร์น" + ธงวิเคราะห์สถานการณ์ ----------
-    CHAR_HOOKS.conner.onRoundStartTick(engine, p);
-    // อิปโป (characters/ippo.js): Uper Cut ตั้งสตั้นไว้เมื่อเทิร์นก่อน -> เริ่มมีผลตอนนี้
-    //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะเลื่อนไปมีผลอีกเทิร์นหนึ่ง
-    CHAR_HOOKS.ippo.applyPendingStun(engine, p);
-    // Bamboo-Hatted Kim: เหน็บชาที่จองไว้เมื่อเทิร์นก่อนเริ่มมีผล (ทุกคน) · ของ Kim เอง: To Claim Their Bones /
-    //  Poise ลดทุก 5 เทิร์น / โยนเหรียญ — อยู่หลังเลือดไหล/ฟื้นเกราะ เพราะเหรียญอ่านพลังชีวิตของต้นเทิร์นนี้
-    CHAR_HOOKS.kim.onRoundStartTick(engine, p);
-    CHAR_HOOKS.tohno.onRoundStartTick(engine, p); // รอยร้าวจางลงทุก 10 เทิร์น · ล้างชุดโจมตีที่ค้างของโทโนะ
-    CHAR_HOOKS.recruit.onRoundStartTick(engine, p); // Recruit: ล้างธงยิง/HeadShot/โจมตีอีกครั้งที่ค้างจากเทิร์นก่อน
-    // สไตรเกอร์ ยูเรก้า: สตั้นจากหมัดเหล็กซ้ำ (ทุกคน · ก่อนบล็อกเช็คสตั้น) · Mark 5 แต้มสกิล · นับถอยหลังระเบิด · เตาปฏิกรณ์
-    CHAR_HOOKS.striker.onRoundStartTick(engine, p);
-    // ไดจิ เกราะเอเลคิง: สตั้นที่ติดไว้เมื่อเทิร์นก่อน -> เริ่มมีผลตอนนี้ (ก่อนบล็อกเช็คสตั้นด้านล่างด้วยเหตุผลเดียวกัน)
-    CHAR_HOOKS.daichi.applyPendingStun(engine, p);
-    // อาซาฮินะ ทักต์: เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2 · ไททัน: ล้างชุดตี/คิวสวนที่ค้าง
-    CHAR_HOOKS.takt.onRoundStartTick(engine, p);
-    CHAR_HOOKS.titan.onRoundStartTick(engine, p);
-    CHAR_HOOKS.cosette.onRoundStartTick(engine, p); // คอเซ็ตต์: ร่างมนุษย์ฟื้น 1 / พรมลิขิตเสีย 2 (หรือลงคอนดักเตอร์ 1)
-    // จอห์นนี่: Spin Energy แต้มสกิล +1 · Spin Mastery นับถอยหลัง · ล้างชุด Rapid Shot ที่ค้าง
-    CHAR_HOOKS.johnny.onRoundStartTick(engine, p);
-    // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
-    CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);
-    // ---------- ไบรอัน (characters/brian.js): รถกินน้ำมัน (แปลงเป็นเลือด) หรือเติมน้ำมันประจำเทิร์น ----------
-    CHAR_HOOKS.brian.onRoundStartTick(engine, p);
-    CHAR_HOOKS.dio.onRoundStartTick(engine, p); // ดิโอ: ล้างผลค้างของเทิร์นก่อน (THE WORLD ไม่ข้ามเทิร์น)
-    // ---------- โปรดิวเซอร์: ผลติดตัวรายไอดอล + ฝึกซ้อม + ดาเมจที่หน่วงไว้จากเทิร์นก่อน ----------
-    CHAR_HOOKS.producer_lumi.onRoundStartTick(engine, p);
-    // ---------- คาเยนน์ ทหารผ่านศึก: ความเสียหายที่เลื่อนไว้เมื่อเทิร์นก่อนลงผลตอนนี้ ----------
-    CHAR_HOOKS.cayenne.onRoundStartTick(engine, p);
-    // ---------- ไดจิ โอโซระ: โควตาการ์ดไซเบอร์ · การ์ดที่ตัดไว้บวกเข้ามือ · เกราะเบมสตาร์ฟื้นเลือด ----------
-    CHAR_HOOKS.daichi.onRoundStartTick(engine, p);
-    // ---------- Echo: ราชินีแห่ง Echo ขยายร่าง +1 · สุ่ม 20% ต้านสถานะ 1 เทิร์น ----------
-    CHAR_HOOKS.echo_queen.onRoundStartTick(engine, p);
-    // ---------- "เยียวยา" (สถานะ Universal patch 3.4): ฟื้นพลังชีวิตต่อเทิร์นตามจำนวนหน่วย ----------
-    //  วางไว้ที่นี่ (ต้นเทิร์น) เหมือนลุกไหม้/เลือดไหล การลดเทิร์นทำที่ลูปกลางของ endTurn ตามปกติ
-    tickMend(engine, p);
-    // อมาซอน (ฮารุกะ สกิลติดตัว): โดนสวนกลับเมื่อเทิร์นก่อน -> สตั้นเริ่มมีผลตอนนี้
-    //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่างเหมือน Gargorgon Ray ไม่งั้นสตั้นจะเลื่อนไปอีกเทิร์นหนึ่ง
-    if (p.harukaStunPending > 0) {
-      const turns = p.harukaStunPending;
-      p.harukaStunPending = 0;
-      if (combat.applyDebuff(p, "stun", null, turns)) match.lastLog.push(`🌑 ${p.name} โดนอมาซอนสวนกลับเมื่อเทิร์นก่อน — ติดสถานะสตั้น ${turns} เทิร์น!`);
-    }
-    // Gargorgon Ray (ปืนหน่วย GUTS Select): ผลหน่วง 1 เทิร์น — เช็คต้านสถานะตอนนี้ (เป้าหมายซื้อยาต้านมากันไว้ทัน)
-    //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะข้ามไปมีผลอีกเทิร์นหนึ่ง
-    if (p.gutsGargorgonPending) {
-      p.gutsGargorgonPending = false;
-      if (combat.applyDebuff(p, "stun", null, 1)) match.lastLog.push(`🌑 ${p.name} โดน Gargorgon Ray เมื่อเทิร์นก่อน — ติดสถานะสตั้น 1 เทิร์น!`);
-      else match.lastLog.push(`🛡️ ${p.name} ต้านผลของ Gargorgon Ray ไว้ได้ — ไม่ติดสตั้น`);
+    if (charTicks) {
+      // ---------- แบทแมน (characters/bat_ben.js): เหรียญกลางคืน / ฟื้นเลือดจากเร้นเงา / ฟื้นเลือดจากเข้ามาเลย ----------
+      CHAR_HOOKS.bat_ben.onRoundStartTick(engine, p);
+      // ---------- เจ้าหญิงราก (characters/princess_shiki.js): แต้มสกิลฟื้นเองทุกเทิร์น ----------
+      CHAR_HOOKS.princess_shiki.onRoundStartTick(engine, p);
+      // ---------- ฟุจิตะ โคโตเนะ (characters/kotone.js): Sleeping time (ฮีล/แต้มสกิลต่อเทิร์น) + สตั้นจากท่านประธานเซนะจัง ----------
+      CHAR_HOOKS.kotone.onRoundStartTick(engine, p);
+      // ---------- เอจิ (characters/eiji.js): รีเซ็ตโควตาหลบหลีก/Ordinal Scale + ฟื้นเลือดจากความเร็วสูง ----------
+      if (p.characterId === "eiji") CHAR_HOOKS.eiji.onRoundStartTick(engine, p);
+      // ---------- มิซึซาว่า ฮารุกะ (characters/haruka.js): รีเซ็ตโควตาสกิลพื้นฐาน 2 ครั้ง + โควตาเลือดไหลของสกิลติดตัว ----------
+      if (p.characterId === "haruka") CHAR_HOOKS.haruka.onRoundStartTick(engine, p);
+      // ---------- ยุย โยชิโอกะ (characters/yui.js): ล็อกมือระหว่างบรรเลงเพลงชุบชีวิต ----------
+      if (p.characterId === "yui") CHAR_HOOKS.yui.onRoundStartTick(engine, p);
+      // ---------- อิสึกะ ชิโด (characters/shido.js): ภูติ — ฟื้นพลังชีวิตต่อเทิร์น ----------
+      if (p.characterId === "shido") CHAR_HOOKS.shido.onRoundStartTick(engine, p);
+      // ---------- โมโรโบชิ ดัน (characters/dan.js): ไม้ค้ำพยุงร่าง — ฟื้นพลังชีวิตต่อเทิร์น ----------
+      if (p.characterId === "dan") CHAR_HOOKS.dan.onRoundStartTick(engine, p);
+      // ---------- คอนเนอร์ RK800 (characters/conner.js): รีเซ็ตโควตา "จั่วไพ่ = เครียด +1 ต่อเทิร์น" + ธงวิเคราะห์สถานการณ์ ----------
+      CHAR_HOOKS.conner.onRoundStartTick(engine, p);
+      // อิปโป (characters/ippo.js): Uper Cut ตั้งสตั้นไว้เมื่อเทิร์นก่อน -> เริ่มมีผลตอนนี้
+      //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะเลื่อนไปมีผลอีกเทิร์นหนึ่ง
+      CHAR_HOOKS.ippo.applyPendingStun(engine, p);
+      // Bamboo-Hatted Kim: เหน็บชาที่จองไว้เมื่อเทิร์นก่อนเริ่มมีผล (ทุกคน) · ของ Kim เอง: To Claim Their Bones /
+      //  Poise ลดทุก 5 เทิร์น / โยนเหรียญ — อยู่หลังเลือดไหล/ฟื้นเกราะ เพราะเหรียญอ่านพลังชีวิตของต้นเทิร์นนี้
+      CHAR_HOOKS.kim.onRoundStartTick(engine, p);
+      CHAR_HOOKS.tohno.onRoundStartTick(engine, p); // รอยร้าวจางลงทุก 10 เทิร์น · ล้างชุดโจมตีที่ค้างของโทโนะ
+      CHAR_HOOKS.recruit.onRoundStartTick(engine, p); // Recruit: ล้างธงยิง/HeadShot/โจมตีอีกครั้งที่ค้างจากเทิร์นก่อน
+      // สไตรเกอร์ ยูเรก้า: สตั้นจากหมัดเหล็กซ้ำ (ทุกคน · ก่อนบล็อกเช็คสตั้น) · Mark 5 แต้มสกิล · นับถอยหลังระเบิด · เตาปฏิกรณ์
+      CHAR_HOOKS.striker.onRoundStartTick(engine, p);
+      // ไดจิ เกราะเอเลคิง: สตั้นที่ติดไว้เมื่อเทิร์นก่อน -> เริ่มมีผลตอนนี้ (ก่อนบล็อกเช็คสตั้นด้านล่างด้วยเหตุผลเดียวกัน)
+      CHAR_HOOKS.daichi.applyPendingStun(engine, p);
+      // อาซาฮินะ ทักต์: เทิร์นที่ 3, 6, 9, … ฟื้นพลังชีวิต 2 · ไททัน: ล้างชุดตี/คิวสวนที่ค้าง
+      CHAR_HOOKS.takt.onRoundStartTick(engine, p);
+      CHAR_HOOKS.titan.onRoundStartTick(engine, p);
+      CHAR_HOOKS.cosette.onRoundStartTick(engine, p); // คอเซ็ตต์: ร่างมนุษย์ฟื้น 1 / พรมลิขิตเสีย 2 (หรือลงคอนดักเตอร์ 1)
+      // จอห์นนี่: Spin Energy แต้มสกิล +1 · Spin Mastery นับถอยหลัง · ล้างชุด Rapid Shot ที่ค้าง
+      CHAR_HOOKS.johnny.onRoundStartTick(engine, p);
+      // ---------- ผู้วิงวอน (characters/the_supplicant.js): รีเซ็ตโควตาสกิล 2 ครั้ง + ต่ออายุ "กระแสเวท" ถาวร ----------
+      CHAR_HOOKS.the_supplicant.onRoundStartTick(engine, p);
+      // ---------- ไบรอัน (characters/brian.js): รถกินน้ำมัน (แปลงเป็นเลือด) หรือเติมน้ำมันประจำเทิร์น ----------
+      CHAR_HOOKS.brian.onRoundStartTick(engine, p);
+      CHAR_HOOKS.dio.onRoundStartTick(engine, p); // ดิโอ: ล้างผลค้างของเทิร์นก่อน (THE WORLD ไม่ข้ามเทิร์น)
+      // ---------- โปรดิวเซอร์: ผลติดตัวรายไอดอล + ฝึกซ้อม + ดาเมจที่หน่วงไว้จากเทิร์นก่อน ----------
+      CHAR_HOOKS.producer_lumi.onRoundStartTick(engine, p);
+      // ---------- คาเยนน์ ทหารผ่านศึก: ความเสียหายที่เลื่อนไว้เมื่อเทิร์นก่อนลงผลตอนนี้ ----------
+      CHAR_HOOKS.cayenne.onRoundStartTick(engine, p);
+      // ---------- ไดจิ โอโซระ: โควตาการ์ดไซเบอร์ · การ์ดที่ตัดไว้บวกเข้ามือ · เกราะเบมสตาร์ฟื้นเลือด ----------
+      CHAR_HOOKS.daichi.onRoundStartTick(engine, p);
+      // ---------- Echo: ราชินีแห่ง Echo ขยายร่าง +1 · สุ่ม 20% ต้านสถานะ 1 เทิร์น ----------
+      CHAR_HOOKS.echo_queen.onRoundStartTick(engine, p);
+      // ---------- "เยียวยา" (สถานะ Universal patch 3.4): ฟื้นพลังชีวิตต่อเทิร์นตามจำนวนหน่วย ----------
+      //  วางไว้ที่นี่ (ต้นเทิร์น) เหมือนลุกไหม้/เลือดไหล การลดเทิร์นทำที่ลูปกลางของ endTurn ตามปกติ
+      tickMend(engine, p);
+      // อมาซอน (ฮารุกะ สกิลติดตัว): โดนสวนกลับเมื่อเทิร์นก่อน -> สตั้นเริ่มมีผลตอนนี้
+      //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่างเหมือน Gargorgon Ray ไม่งั้นสตั้นจะเลื่อนไปอีกเทิร์นหนึ่ง
+      if (p.harukaStunPending > 0) {
+        const turns = p.harukaStunPending;
+        p.harukaStunPending = 0;
+        if (combat.applyDebuff(p, "stun", null, turns)) match.lastLog.push(`🌑 ${p.name} โดนอมาซอนสวนกลับเมื่อเทิร์นก่อน — ติดสถานะสตั้น ${turns} เทิร์น!`);
+      }
+      // Gargorgon Ray (ปืนหน่วย GUTS Select): ผลหน่วง 1 เทิร์น — เช็คต้านสถานะตอนนี้ (เป้าหมายซื้อยาต้านมากันไว้ทัน)
+      //  ต้องอยู่ "ก่อน" บล็อกเช็คสตั้นด้านล่าง ไม่งั้นสตั้นจะข้ามไปมีผลอีกเทิร์นหนึ่ง
+      if (p.gutsGargorgonPending) {
+        p.gutsGargorgonPending = false;
+        if (combat.applyDebuff(p, "stun", null, 1)) match.lastLog.push(`🌑 ${p.name} โดน Gargorgon Ray เมื่อเทิร์นก่อน — ติดสถานะสตั้น 1 เทิร์น!`);
+        else match.lastLog.push(`🛡️ ${p.name} ต้านผลของ Gargorgon Ray ไว้ได้ — ไม่ติดสตั้น`);
+      }
     }
     // สตั้น (สถานะพื้นฐาน patch 2.0.8): ทำอะไรไม่ได้จนจบเทิร์นหรือจนกว่าดีบัฟจะหมดเวลา
     if ((p.statuses.stun || 0) > 0) {
@@ -331,33 +342,35 @@ function dealRound() {
     CHAR_HOOKS.bard.onRoundStartInterruptCheck(engine, p);
   }
 
-  // ---------- เอสคานอร์ (characters/escanor.js): ลุกไหม้ที่ Last Stand แจกตอนต้นเทิร์น ----------
-  //  ต้องแปะ "หลัง" ลูปต้นเทิร์นจบทั้งวง เพราะ tickBurn ของแต่ละคนอยู่ในลูปด้านบน — ถ้าแปะในลูป
-  //  คนที่ยังวนไม่ถึงจะถูกกินหน่วยที่เพิ่งได้ทิ้งในเทิร์นเดียวกัน (ผลไม่เท่ากันตามลำดับที่นั่ง)
-  CHAR_HOOKS.escanor.flushPendingBurn(engine);
-  // อาซาฮินะ ทักต์: เลือดเหลือ 1 หลังผลต้นเทิร์น (เช่นพรมลิขิตของคอเซ็ตต์) -> บทเพลงของมิวสิคคาร์ทพัง
-  CHAR_HOOKS.takt.checkLowRevert(engine);
-  // ORT: ไม่ต้องกดเปิดไพ่ — จั่วเองผ่าน characters/ort.js (checkAllLocked ไม่รอ ORT อยู่แล้ว)
-  if (mercury.ortBoss()) mercury.ortBoss().locked = true;
+  if (charTicks) {
+    // ---------- เอสคานอร์ (characters/escanor.js): ลุกไหม้ที่ Last Stand แจกตอนต้นเทิร์น ----------
+    //  ต้องแปะ "หลัง" ลูปต้นเทิร์นจบทั้งวง เพราะ tickBurn ของแต่ละคนอยู่ในลูปด้านบน — ถ้าแปะในลูป
+    //  คนที่ยังวนไม่ถึงจะถูกกินหน่วยที่เพิ่งได้ทิ้งในเทิร์นเดียวกัน (ผลไม่เท่ากันตามลำดับที่นั่ง)
+    CHAR_HOOKS.escanor.flushPendingBurn(engine);
+    // อาซาฮินะ ทักต์: เลือดเหลือ 1 หลังผลต้นเทิร์น (เช่นพรมลิขิตของคอเซ็ตต์) -> บทเพลงของมิวสิคคาร์ทพัง
+    CHAR_HOOKS.takt.checkLowRevert(engine);
+    // ORT: ไม่ต้องกดเปิดไพ่ — จั่วเองผ่าน characters/ort.js (checkAllLocked ไม่รอ ORT อยู่แล้ว)
+    if (mercury.ortBoss()) mercury.ortBoss().locked = true;
 
-  // ---------- คอนเนอร์ RK800 (characters/conner.js): การไล่ล่ายังดำเนินอยู่ -> แช่ผู้เล่นนอกวงใหม่ทุกเทิร์น ----------
-  //  ต้องอยู่หลังลูปต้นเทิร์น เพราะในลูปเพิ่งตั้ง p.locked = false และแจกไพ่ใบแรกให้ทุกคนไปแล้ว
-  CHAR_HOOKS.producer_lumi.onRoundStartAfterLoop(engine); // โปรดิวเซอร์: รีเซ็ตโควตาหมัดที่ 2 ของ All star 765
-  CHAR_HOOKS.conner.onRoundStartAfterLoop(engine);
-  // ดิโอ (Last stand): ถึงเทิร์นดวลที่จองไว้ -> แช่คนนอกวง (หลังลูปเพราะลูปเพิ่งปลดล็อก/แจกไพ่ใบแรกให้ทุกคน)
-  CHAR_HOOKS.dio.onRoundStartAfterLoop(engine);
-  // นักบินปริศนา: ร่างที่สิงตาย/เงื่อนไขหมดระหว่างผลต้นเทิร์น -> ปรากฏตัว · ติดสตั้น/หลับระหว่างซ่อน = เตรียมพร้อม
-  CHAR_HOOKS.sliver_bullet.onRoundStartAfterLoop(engine);
-  // ---------- ยุย (characters/yui.js): girl don't cry — คนแต้มสกิลน้อยสุดในวงได้ +1 ----------
-  //  ต้องอยู่หลังลูปต้นเทิร์น ไม่งั้นการเทียบ "ใครแต้มน้อยสุด" จะใช้ค่าคนละเทิร์นกันตามลำดับที่นั่ง
-  CHAR_HOOKS.yui.onRoundStartAfterLoop(engine);
-  // อุซากิ (ท่าไม้ตาย): แจกโจทย์คณิตให้ฝ่ายตรงข้าม — หลังลูปต้นเทิร์น (ทุกคนได้ไพ่ใบแรกแล้ว)
-  CHAR_HOOKS.usagi.onRoundStartAfterLoop(engine);
-  // มุยมิ: ครบแพ้ต่อเนื่อง 3 ครั้งแล้วสุ่มหัวใจนักสู้ที่ต้นเทิร์นถัดไป หลังแจกไพ่ครบทั้งสนาม
-  CHAR_HOOKS.muimi.onRoundStartAfterLoop(engine);
+    // ---------- คอนเนอร์ RK800 (characters/conner.js): การไล่ล่ายังดำเนินอยู่ -> แช่ผู้เล่นนอกวงใหม่ทุกเทิร์น ----------
+    //  ต้องอยู่หลังลูปต้นเทิร์น เพราะในลูปเพิ่งตั้ง p.locked = false และแจกไพ่ใบแรกให้ทุกคนไปแล้ว
+    CHAR_HOOKS.producer_lumi.onRoundStartAfterLoop(engine); // โปรดิวเซอร์: รีเซ็ตโควตาหมัดที่ 2 ของ All star 765
+    CHAR_HOOKS.conner.onRoundStartAfterLoop(engine);
+    // ดิโอ (Last stand): ถึงเทิร์นดวลที่จองไว้ -> แช่คนนอกวง (หลังลูปเพราะลูปเพิ่งปลดล็อก/แจกไพ่ใบแรกให้ทุกคน)
+    CHAR_HOOKS.dio.onRoundStartAfterLoop(engine);
+    // นักบินปริศนา: ร่างที่สิงตาย/เงื่อนไขหมดระหว่างผลต้นเทิร์น -> ปรากฏตัว · ติดสตั้น/หลับระหว่างซ่อน = เตรียมพร้อม
+    CHAR_HOOKS.sliver_bullet.onRoundStartAfterLoop(engine);
+    // ---------- ยุย (characters/yui.js): girl don't cry — คนแต้มสกิลน้อยสุดในวงได้ +1 ----------
+    //  ต้องอยู่หลังลูปต้นเทิร์น ไม่งั้นการเทียบ "ใครแต้มน้อยสุด" จะใช้ค่าคนละเทิร์นกันตามลำดับที่นั่ง
+    CHAR_HOOKS.yui.onRoundStartAfterLoop(engine);
+    // อุซากิ (ท่าไม้ตาย): แจกโจทย์คณิตให้ฝ่ายตรงข้าม — หลังลูปต้นเทิร์น (ทุกคนได้ไพ่ใบแรกแล้ว)
+    CHAR_HOOKS.usagi.onRoundStartAfterLoop(engine);
+    // มุยมิ: ครบแพ้ต่อเนื่อง 3 ครั้งแล้วสุ่มหัวใจนักสู้ที่ต้นเทิร์นถัดไป หลังแจกไพ่ครบทั้งสนาม
+    CHAR_HOOKS.muimi.onRoundStartAfterLoop(engine);
 
-  // ความตายที่โรยรา (ชิกิ patch 2.0.8, characters/shiki.js): ทุกเทิร์นที่ท่าไม้ตายยังทำงาน มอบเส้นชีวิต +1 ให้ทุกคนยกเว้นตัวเอง
-  CHAR_HOOKS.shiki.onRoundStartWitherTick(engine);
+    // ความตายที่โรยรา (ชิกิ patch 2.0.8, characters/shiki.js): ทุกเทิร์นที่ท่าไม้ตายยังทำงาน มอบเส้นชีวิต +1 ให้ทุกคนยกเว้นตัวเอง
+    CHAR_HOOKS.shiki.onRoundStartWitherTick(engine);
+  }
 
   // สลับช่วงเวลากลางวัน/กลางคืน — แบนเนอร์บอกทั้งสนามเมื่อช่วงเวลาเปลี่ยน
   const night = dayNight.isNightRound(match.roundNumber);

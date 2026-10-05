@@ -25,6 +25,9 @@ const shop = require("../shop");
 const timers = require("../timers");
 const view = require("../view");
 
+// SE.RA.PH วันดวล: คนดู/คนตกรอบไม่อยู่บนสนาม (combat.alivePlayers ใช้เกณฑ์เดียวกัน)
+const seraphOffField = (p) => Seraph.active() && (p.scSpectator || p.scEliminated);
+
 function endTurn() {
   // Echo (นี่มันเกมของฉัน): หมัดตีฟรีกลางช่วงจั่วไพ่จบลงที่นี่ (ถูกหลบ/ลบล้าง/สะท้อน ฯลฯ) — คืนเฟสจั่วไพ่ ไม่ใช่จบเทิร์น
   if (echoFreeHit.finishFreeHit()) return;
@@ -59,7 +62,9 @@ function endTurn() {
   CHAR_HOOKS.conner.cleanupChase(engine);
   CHAR_HOOKS.brian.cleanupDuel(engine); // ไบรอัน: การแข่งล่มกลางคัน -> ปลดธง "ถูกแช่" ของทุกคนเสมอ
   CHAR_HOOKS.dio.cleanupTurn(engine); // ดิโอ: Last stand ล่มกลางคัน -> ปลดธง "ถูกแช่" · THE WORLD ไม่ข้ามเทิร์น
-  for (const p of Object.values(match.players)) {
+  // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัว (§5) — ที่หลุดลอดอื่นถูกล้างทิ้งท้ายวันใน seraphAdvance
+  if (!Seraph.noCombat()) for (const p of Object.values(match.players)) {
+    if (seraphOffField(p)) continue; // วันดวล: คนดู/คนตกรอบไม่ได้รับผลท้ายเทิร์นของตัวละคร (เช่น Solar ของเอสคานอร์)
     // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): ความเครียดลดลง 1 ต่อเทิร์น (ไพ่แตกในเทิร์นนี้ลดเพิ่มอีก 1)
     //  ต้องอ่านค่า p.busted ก่อน dealRound() รีเซ็ต — จึงอยู่ท้ายเทิร์นตรงนี้
     CHAR_HOOKS.conner.onEndTurnDecay(engine, p);
@@ -283,7 +288,7 @@ function endTurn() {
   // Ultraman Trigger: นับเทิร์นหลังผลท้ายเทิร์นทั้งหมดจบแล้ว เพื่อให้ครบ 10 เทิร์นเต็ม
   // เมื่อหมดเวลา คืน snapshot ก่อนแปลงร่าง (ค่าที่เกิดในร่าง Trigger จึงไม่ติดกลับไป)
   for (const p of Object.values(match.players)) {
-    if (p.characterId !== "ultraman_trigger" || !p.alive) continue;
+    if (p.characterId !== "ultraman_trigger" || !p.alive || seraphOffField(p)) continue;
     p.statuses.triggerForm = Math.max(0, (p.statuses.triggerForm || 0) - 1);
     if (p.statuses.triggerForm <= 0) CHAR_HOOKS.ultraman_trigger.restore(engine, p, false);
   }

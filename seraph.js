@@ -451,6 +451,17 @@ function checkDuelProgress(engine) {
   if (!aDead && !bDead) return "continue";
 
   pair.done = true;
+  // ตายพร้อมกันในเทิร์นเดียว = ตกรอบทั้งคู่ ไม่มีผู้ชนะ (เหลือไม่ถึง 2 คน = จบเกมตามปกติที่ seraphAdvance)
+  if (aDead && bDead) {
+    for (const p of [a, b]) {
+      if (!p) continue;
+      p.scEliminated = true;
+      engine.log(`💀 ${p.name} ถูกลบออกจาก SE.RA.PH — ตกรอบ`);
+    }
+    engine.log("⚔️ ทั้งคู่ล้มลงพร้อมกัน — ไม่มีผู้ชนะในการดวลครั้งนี้");
+    duelIndex++;
+    return "cycleEnd";
+  }
   const loser = aDead ? a : b;
   const winner = aDead ? b : a;
   if (loser) {

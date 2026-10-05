@@ -350,6 +350,8 @@ function buildStateFor(viewerId) {
   // FULL FORCE: ไรเดอร์สองคนขึ้นไป Clock Up พร้อมกัน — เพลงสนามเปลี่ยนทั้งสนาม
   //  ยังแพ้เพลงสกิล/ท่าไม้ตายที่กำลังเล่นอยู่
   if (!sm && fullForce) sm = { music: "full_force", at: 0 };
+  // SE.RA.PH วันที่ 1-6: ไม่มีเพลงสกิล — เพลงประจำร่าง (เช่น Ultraman Trigger เล่นตลอดตราบที่ยังอยู่) บอกตัวตนได้
+  if (Seraph.noCombat()) sm = null;
   const viewer = match.players[viewerId];
   let connorArrestAsk = null; // คอนเนอร์ RK800: คำขาดจับกุมขั้นเด็ดขาดที่รอผู้ชมคนนี้ตอบ
   let locaOffer = null;

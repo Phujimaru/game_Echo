@@ -110,6 +110,9 @@ test('จบรอบ: ล้างสถานะ/ของจากวัน�
   p.inventory = [{ uid: 1, type: 'armor' }];
   p.scSkillLevel = 4;
   p.scCapSkill = 6;
+  p.scCapHp = 5;
+  p.scCapArmor = 4;
+  p.armor = 1;
   p.scMatrix = 2;
   p.scStat.duelWins = 1;
   combat.resetCycleCombat(p);
@@ -122,5 +125,51 @@ test('จบรอบ: ล้างสถานะ/ของจากวัน�
   assert.equal(p.scCapSkill, 6);
   assert.equal(p.scMatrix, 2);
   assert.equal(p.scStat.duelWins, 1);
-  assert.equal(combat.maxHpOf(p), 3); // ยังอยู่ในโหมด — เพดานเลือดของ Moon Cell
+  assert.equal(p.hp, 5); // เต็มตามความจุจากโบสถ์ ไม่ใช่ค่าตั้งต้น
+  assert.equal(p.armor, 4);
+});
+
+test('ยูนะไม่ทำงานใน Moon Cell: คนแรกที่ตายในเทิร์น 1-10 ไม่ถูก Longing ชุบ (รวมแฝดฮิซากาว่า)', () => {
+  startSeraph(['kotone', 'satoru', 'hisakawa_sister']);
+  match.roundNumber = 7; // วันดวลแรกของแมตช์
+  const p = match.players.P1;
+  combat.instantDeath(p, true);
+  assert.equal(p.alive, false);
+  assert.equal(match.yunaLongingPendingId, null);
+  assert.equal(match.yunaLongingUsed, false);
+  assert.equal(combat.tryYunaLongingForTwin(match.players.P3), false);
+});
+
+test('วันที่ 1-6: ไม่ได้แต้มสกิลทุกช่องทาง และใช้ไอเทมไม่ได้ (§5)', () => {
+  startSeraph(['kotone', 'satoru']);
+  assert.ok(Seraph.noCombat());
+  const p = match.players.P1;
+  combat.addSkill(p, 3, 'item');
+  assert.equal(p.skillPoints, 0);
+  p.inventory = [{ uid: 9, type: 'armor', value: 1 }];
+  match.gameState = 'PLAYING';
+  engine.useInventoryItem(p.id, 9, {});
+  assert.equal(p.inventory.length, 1);
+});
+
+test('วันดวล: ตายพร้อมกันทั้งคู่ = ตกรอบทั้งคู่ ไม่มีผู้ชนะ', () => {
+  startSeraph(['kotone', 'satoru', 'cayenne']);
+  for (let d = 1; d < 7; d++) { const { next } = Seraph.advanceDay(engine); if (next === 'duelDay') Seraph.beginDuelDay(engine); }
+  assert.ok(Seraph.isDuelDay());
+  const pair = Seraph.stateFor(engine, 'P1').duelPair;
+  for (const id of [pair.a, pair.b]) match.players[id].alive = false;
+  assert.equal(Seraph.checkDuelProgress(engine), 'cycleEnd');
+  assert.ok(match.players[pair.a].scEliminated && match.players[pair.b].scEliminated);
+});
+
+test('คนที่ตกรอบแล้วไม่ฟื้นกลับมา แม้ระบบสำรองของคอนเนอร์จะครบกำหนด', () => {
+  startSeraph(['conner', 'satoru', 'kotone']);
+  const c = match.players.P1;
+  c.alive = false;
+  c.scEliminated = true;
+  c.connorReviveRound = 1;
+  match.roundNumber = 5;
+  require('../server/phases/draw').dealRound();
+  assert.equal(c.alive, false);
+  assert.deepEqual(c.cards, []);
 });

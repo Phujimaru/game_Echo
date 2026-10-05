@@ -370,7 +370,8 @@ function instantDeath(p, force) {
   // ยูนะ (เพลง Longing): คนแรกที่ตายระหว่างเทิร์น 1-10 -> ทำเครื่องหมายไว้ก่อน (ครั้งเดียวต่อเกม)
   //  ยังไม่ฟื้นคืนชีพทันที — ต้องรอให้ฉากโจมตี(ถ้ามี)จบก่อน แล้วค่อยฟื้น+ขึ้นวีดีโอ (ดู endTurn() จุดที่ตั้งค่า yunaLongingPendingId)
   //  Type Mercury: ยูนะไม่ทำงานในโหมด Raid (ตายแล้วเลือกตัวใหม่แทน)
-  if (!mercury.mercuryActive() && !match.yunaLongingUsed && match.roundNumber >= 1 && match.roundNumber <= 10) {
+  //  SE.RA.PH: ยูนะปิดทั้งโหมด — วันดวลแรกตรงกับเทิร์น 7 ผู้แพ้ดวลจะถูกชุบกลับมาแทนที่จะตกรอบ
+  if (!mercury.mercuryActive() && !Seraph.active() && !match.yunaLongingUsed && match.roundNumber >= 1 && match.roundNumber <= 10) {
     match.yunaLongingUsed = true;
     match.yunaLongingPendingId = p.id;
   }
@@ -536,7 +537,7 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   return final;
 }
 function tryYunaLongingForTwin(p) {
-  if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
+  if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || Seraph.active() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
   if (!CHAR_HOOKS.hisakawa_sister.anyTwinDead(p)) return false;
   match.yunaLongingUsed = true;
   return YunaMod.reviveWithLonging(engine, p);
@@ -592,6 +593,7 @@ function dealMixed(p, n, isNormalAttack) { // เกราะก่อนแล�
 //  ที่ [ดูดซับเวท] (ผู้สังหารเมจ) ต้องตอบสนอง ไม่ใส่ให้แต้มพื้นฐานจบเทิร์น/ค่าชดเชยการแพ้/การโอนแต้มระหว่างผู้เล่น
 function addSkill(p, n, src) {
   if (mercury.isOrt(p)) return;
+  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: แต้มสกิลคงที่ 0 (SERAPH_MOONCELL.md §5) — ปิดทุกช่องทางที่จุดเดียว
   // ชะงัก (โอกูริ Rework): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง ระหว่างติดสถานะนี้
   if (((p.statuses && p.statuses.stagger) || 0) > 0) return;
   if (((p.statuses && p.statuses.manaSeal) || 0) > 0) return; // ผนึกพลังงาน (Universal): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง
@@ -876,13 +878,16 @@ function resetCombat(p) {
 // SE.RA.PH จบรอบ: ล้างของจากวันดวลทั้งหมด (สถานะ/ร่าง/คูลดาวน์/ท่าไม้ตายที่ค้าง/ตัวนับเฉพาะตัวละคร)
 //  ไม่งั้นของพวกนี้ทำงานต่อในวันที่ 1-6 ของรอบใหม่ (ตีฟรีของ Echo, เลือดไหล, เพลงร่างของ Kim ฯลฯ)
 //  เก็บไว้เฉพาะที่ SERAPH_MOONCELL.md §8 บอกให้คงอยู่: ฟิลด์ sc* ของโหมด · เงิน · ไอเทม (รวมชุด Mark 42)
-//  + วีดีโอที่เล่นไปแล้ว (ครั้งเดียวต่อแมตช์) — เลือด/เกราะ/แต้มสกิล Seraph.endCycle ตั้งต่อเอง
+//  + วีดีโอที่เล่นไปแล้ว (ครั้งเดียวต่อแมตช์) · เลือด/เกราะเต็มตามความจุของโหมด
 const CYCLE_KEEP = ["gold", "inventory", "mark42", "mark42Owned", "mark42BuyLock", "cutsceneShown"];
 function resetCycleCombat(p) {
   const keep = {};
   for (const k of Object.keys(p)) if (/^sc[A-Z]/.test(k) || CYCLE_KEEP.includes(k)) keep[k] = p[k];
   resetCombat(p);
   Object.assign(p, keep);
+  // resetCombat คิดเลือด/เกราะตอนที่ฟิลด์ sc* ยังถูกล้างอยู่ (ความจุจากโบสถ์หาย) -> คิดใหม่หลังคืนค่า
+  p.hp = maxHpOf(p);
+  p.armor = maxArmorOf(p);
 }
 
 Object.assign(module.exports, { TEMARI_ANATA_DRAWS, DEBUFF_KEYS });

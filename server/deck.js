@@ -77,6 +77,7 @@ function calculateScore(cards) {
 const YELLOW_CARD_SKILL_BONUS = 2; // ไพ่เหลืองครบ 3 ใบ 1 ชุด = แต้มสกิล +2 (เดิม +1)
 // สีการ์ดครบ 3 ใบ: บลูทำงานทันที (ต้านสถานะผิดปกติ), แดง/เขียว/เหลืองทำงานตอนเปิดไพ่ (ดู applyLockColorTriggers)
 function checkBlueTrigger(p) {
+  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: ไม่มีทริกเกอร์สี (§5)
   const blueCount = p.cards.filter((c) => c.color === "blue").length;
   const shouldHave = Math.floor(blueCount / 3);
   while (p.colorTrigger.blue < shouldHave) {
@@ -104,6 +105,7 @@ function onCardDrawn(p, card) {
 }
 // แดง/เขียว/เหลือง ครบ 3 ใบ: ประเมินครั้งเดียวตอนเปิดไพ่ (lock) จากมือสุดท้ายทั้งหมด
 function applyLockColorTriggers(p) {
+  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: ไม่มีทริกเกอร์สี (§5)
   // ไพ่ฟ้าทำงานตอนจั่วเท่านั้น (กติกากลาง) — ข้อยกเว้นเดียว: มือที่ถูก "นางเงือกน้อยของฉัน" (แอนเดอร์เซน)
   //  เปลี่ยนเป็นสีฟ้าในเทิร์นนี้ ได้ผลตอนเปิดไพ่ (checkBlueTrigger นับชุดที่ให้ผลไปแล้ว จึงไม่ให้ผลซ้ำ)
   if (p.colorTrigger && p.andBlueRound === match.roundNumber) checkBlueTrigger(p);
