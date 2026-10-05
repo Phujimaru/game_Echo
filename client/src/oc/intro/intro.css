@@ -123,3 +123,23 @@
   animation: ocx-warp-flash var(--warp) linear both;
 }
 @keyframes ocx-warp-flash { 0%, 86% { opacity: 0; } 97%, 100% { opacity: 1; } }
+
+/* ---------- Moon Cell: บินอ้อมโลกไปดวงจันทร์ (MatchIntro โหมด moon · moonFlight.js) ---------- */
+.ocx.is-moon .ocx-title { opacity: 0; transition: opacity 0.5s; }
+/* ฟ้าหลังโลกเข้มขึ้นเป็นอวกาศฟ้าอ่อน ให้ดวงจันทร์ขาวเด่น */
+.ocx.is-moon .ocd-bg { transition: background 1.6s ease; background: radial-gradient(120% 90% at 60% 40%, #dbe9f7 0%, #a9c6e6 55%, #6f97c9 100%); }
+.ocx-moon-tag {
+  position: absolute; left: 0; right: 0; top: 18%; z-index: 30; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0;
+  animation: ocx-moon-tag var(--moon) ease both;
+}
+.ocx-moon-tag span { font: 500 13px/1 var(--oc-f-ui); color: var(--oc-ink-2); }
+.ocx-moon-tag b { font: 400 clamp(28px, 4vw, 48px)/1 var(--oc-f-logo); color: var(--oc-ink); letter-spacing: 0.32em; }
+@keyframes ocx-moon-tag { 0%, 40% { opacity: 0; transform: translateY(14px); } 52%, 74% { opacity: 1; transform: none; } 86%, 100% { opacity: 0; transform: scale(1.08); } }
+.ocx-moon-flash {
+  position: absolute; inset: 0; z-index: 41; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #eef5fc 55%, #dce9f6 100%);
+  animation: ocx-moon-flash var(--moon) linear both;
+}
+@keyframes ocx-moon-flash { 0%, 88% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ocx-moon-tag { animation: none; opacity: 0; } }

@@ -61,12 +61,13 @@ function DayPips({ day, duelDay = 7, pairingDay = 5 }) {
   );
 }
 
-// ---------- บูตระบบ (เข้าโหมดครั้งแรก) · 4.6s ----------
+// ---------- บูตระบบ (ต่อจากฉากบินไปดวงจันทร์) · 4.6s ----------
 export function SeraphBoot({ players = [], cycleRound = 1, onDone }) {
   useTimeline([[0, () => playSfx("sc_noti")], [2600, () => playSfx("sc_noti2")], [4600, () => onDone?.()]]);
   return (
     <Stage onSkip={onDone} className="scx-boot">
-      <div className="scx-boot-globe"><GlobeCanvas shared={false} drag={false} autoSpin={0.35} layout={{ x: 0, y: 0.25, s: 0.9 }} /></div>
+      {/* มาถึงดวงจันทร์แล้ว (ต่อจากฉากเปิดแมตช์ที่บินอ้อมโลก) — วงข้อมูลหมุนแทนลูกโลก */}
+      <span className="scx-boot-moon" aria-hidden />
       <div className="scx-boot-logo">
         <span className="scx-latin">SE.RA.PH</span>
         <b className="scx-latin">MOON <em>CELL</em></b>

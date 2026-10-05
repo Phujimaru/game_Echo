@@ -33,6 +33,11 @@ function startSeraph(chars) {
   seat(chars);
   match.gameMode = 'seraph';
   lobby.startMatch();
+  // ฉากเปิดแมตช์ (เปิดตัวผู้เล่น + บินไปดวงจันทร์) — server พักเกมไว้ในเฟส CUTSCENE ที่ไม่มีคลิป
+  assert.equal(match.gameState, 'CUTSCENE');
+  assert.equal(Seraph.stateFor(engine, 'P1').intro, true);
+  runTimer();
+  assert.equal(Seraph.stateFor(engine, 'P1').intro, false);
 }
 const other = (st, id) => st.players.find((p) => p.id === id);
 
@@ -61,7 +66,8 @@ test('กลับห้องรอหลัง Moon Cell: ปิดโหม�
 test('ไม่เล่นวีดีโอเปิดตัวตัวละครใน Moon Cell (คลิปบอกว่าใครอยู่ในแมตช์)', () => {
   startSeraph(['conner', 'daisuke', 'kotone']);
   assert.deepEqual(match.cutsceneQueue, []);
-  assert.notEqual(match.gameState, 'CUTSCENE');
+  assert.equal(match.cutsceneInfo, null);
+  assert.equal(match.gameState, 'SERAPH_PLACE');
 });
 
 test('ผู้เล่นที่ยังถูกซ่อน: ไม่ส่งฟิลด์เฉพาะตัวละคร / avatar / สถานะ ให้ผู้ชม', () => {

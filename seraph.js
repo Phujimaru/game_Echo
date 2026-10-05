@@ -26,6 +26,7 @@ const PAIRING_DAY = 5;         // จบวันนี้ = ประกาศ�
 const DUEL_DAY = DAYS_PER_CYCLE;
 
 const DUEL_START_SKILL = 4;    // แต้มสกิลตอนเริ่มดวล
+const INTRO_SECONDS = 6;       // ฉากเปิดแมตช์: บินอ้อมโลกไปดวงจันทร์ (client MOON_MS 5.6 วิ) — พักเพิ่มจากช่วงเปิดตัวผู้เล่น
 const CYCLE_END_GOLD = 5;      // จบรอบทุกคนได้ +5
 
 // โบสถ์: เข้า 1 ครั้งอัปได้ 2 ครั้ง (ความจุพลังชีวิต + เกราะรวมกันไม่เกิน 10) · ห้องสมุด: อัปได้ 3 ครั้ง
@@ -79,6 +80,7 @@ let ready = {};          // ยืนยันจบวันแล้ว: ซ�
 let pairs = [];          // มีได้แค่ 1 คู่ต่อรอบ (กติกา: วันที่ 7 ดวลคู่เดียวแล้ววนกลับ)
 let byeIds = [];         // ทุกคนที่เหลือ = ผ่านเข้ารอบถัดไปโดยไม่ต้องดวล
 let duelIndex = 0;       // คู่ที่กำลังลงสนาม
+let introActive = false; // เริ่มแมตช์: server พักเกมรอฉากเปิด (เปิดตัวผู้เล่น + บินไปดวงจันทร์)
 let duelNight = false;   // หลังดวลวันที่ 7 จบ = คืนวันที่ 7 (เดินแมพ · เข้าได้แค่ห้องพัก + ร้านค้า) แล้วค่อยจบรอบ
 let pickups = [];        // ของในแมพวันนี้ { id, kind: "matrix"|"coin", x }
 let pickupSeq = 0;
@@ -87,7 +89,7 @@ let pendingLog = [];
 function reset() {
   on = false; day = 1; cycleRound = 1; phase = "draw";
   places = {}; placeDone = {}; ready = {}; pairs = []; byeIds = []; duelIndex = 0;
-  pickups = []; pickupSeq = 0; duelNight = false;
+  pickups = []; pickupSeq = 0; duelNight = false; introActive = false;
   onAllPlaced = null;
   pendingLog = [];
 }
@@ -142,6 +144,9 @@ function resetFields(p) {
   p.scX = null; p.scFace = 1; p.scMoveAt = 0;
   p.scStat = null;
 }
+
+/** ฉากเปิดแมตช์กำลังเล่น (lobby.startMatch ตั้ง · จบเมื่อพักครบ) */
+function setIntro(v) { introActive = !!v; }
 
 // ============================================================
 //  เพดานค่าสถานะ — ทับค่าเฉพาะตัวละครทุกตัว (SERAPH_MOONCELL.md §2 + §14 ข้อ 4)
@@ -640,6 +645,7 @@ function stateFor(engine, viewerId) {
     // ภาพกลางวัน/กลางคืน: วันที่ 1-6 กลางวัน · คืนวันที่ 7 กลางคืน · สนามดวลสลับตามรอบ (รอบเลขคู่ = กลางคืน)
     night: duelNight || (isDuelDay() && isNight()),
     duelNight,
+    intro: introActive,
     phase,
     noCombat: noCombat(),
     daysTotal: DAYS_PER_CYCLE,
@@ -738,11 +744,11 @@ module.exports = {
   // ค่าคงที่
   START_HP, START_ARMOR, START_SKILL_CAP, MAX_SKILL_CAP, START_GOLD,
   START_SKILL_LEVEL, MAX_SKILL_LEVEL, MATRIX_MAX, MATRIX_PER_TARGET,
-  INVESTIGATION_DAYS, DAYS_PER_CYCLE, PAIRING_DAY, DUEL_DAY, DUEL_START_SKILL,
+  INVESTIGATION_DAYS, DAYS_PER_CYCLE, PAIRING_DAY, DUEL_DAY, DUEL_START_SKILL, INTRO_SECONDS,
   CYCLE_END_GOLD, UNLOCK_AT, TIER_COST, PLACES, DAILY_PLACES, PLACE_NAME,
   CHURCH_PICKS, LIBRARY_PICKS, HP_ARMOR_CAP, WORLD_W, DOORS, DOOR_REACH, PICK_REACH, MATRIX_PICKUPS,
   // สถานะโหมด
-  active, reset, startMatch, initPlayer, resetFields,
+  active, reset, startMatch, initPlayer, resetFields, setIntro,
   currentDay, currentCycle, currentPhase, isDuelDay, isDuelNight, noCombat, isNight,
   // กติกา
   maxHp, maxArmor, maxSkill, tierUnlocked, costOf, deckCards,

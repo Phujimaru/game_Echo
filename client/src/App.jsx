@@ -4,6 +4,7 @@ import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker, purgeMusic, isMatchPhase } from "./audioPolicy";
 import { WARP_MS } from "./purge/warpGalaxy";
+import { MOON_MS } from "./oc/intro/moonFlight";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
@@ -64,6 +65,7 @@ export default function App() {
   const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอช่วงเปิดตัวผู้เล่นจบก่อน
   const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (startPendingJourney อ่านว่าช่วงพักยังไม่หมด)
   const purgeSceneRef = useRef(null);      // Purge: ฉากเปิดของโหมดยังพักเกมรออยู่ไหม (ปลายฉากลูกโลกเป็นเส้นพุ่งออกสู่ทางช้างเผือก)
+  const seraphIntroRef = useRef(false);   // Moon Cell: server ยังพักเกมรอฉากเปิด (ปลายฉากลูกโลกบินไปดวงจันทร์)
   const prevGameStateRef = useRef(null);
   const screenKeyRef = useRef("setup"); // หน้าปัจจุบัน (navigate ใช้ตัดสินว่าต้องมีม่านไหม)
   const [roster, setRoster] = useState([]);
@@ -133,6 +135,7 @@ export default function App() {
       // การเดินทาง: ช่วงพักรอฉากลูกโลกเริ่มใหม่ -> start รอช่วงเปิดตัวผู้เล่นจบก่อน · advance เล่นทันที
       journeyStateRef.current = s.journey || null;
       purgeSceneRef.current = s.purge?.scene || null;
+      seraphIntroRef.current = !!s.seraph?.intro;
       const jScene = s.journey?.scene;
       if (jScene?.active && jScene.seq !== journeySeqRef.current) {
         journeySeqRef.current = jScene.seq;
@@ -148,7 +151,8 @@ export default function App() {
       } else if (!wasInMatch && nowInMatch && s.mercury) {
         // เข้ากลาง Raid (รีคอนเนกต์) — ไม่มีฉากเปิดตัวผู้เล่นด้วย
         curtainRef.current?.skip("game");
-      } else if (!wasInMatch && nowInMatch && !s.seraph) {
+      } else if (!wasInMatch && nowInMatch && (!s.seraph || s.seraph.intro)) {
+        // Moon Cell: ฉากเปิดแมตช์เล่นเฉพาะตอน server พักรอฉากนี้ (เริ่มแมตช์) — การ์ดของคนอื่นเป็น ??? (server ซ่อนตัวละครไว้แล้ว)
         curtainRef.current?.skip("gameintro");
         ghostScreen(".ocl"); // หน้าเลือกโหมด/จัดทีมจางหายแทนการหายวับ (ลูกโลกอยู่ต่อในฉากเปิดแมตช์)
         setIntro({ key: Date.now(), players: s.players, area: s.journey?.scene?.area || 1 });
@@ -386,6 +390,8 @@ export default function App() {
     // Purge: ปลายฉากเปิดตัว = เส้นพุ่งออกจากโลก กล้องตามไปสู่ทางช้างเผือก แล้วฉากท่อรับช่วงต่อ
     const pg = purgeSceneRef.current;
     if (pg?.active && pg.kind === "intro") return { warp: true, durationMs: WARP_MS };
+    // Moon Cell: กล้องโค้งอ้อมหลังโลก เห็นดวงจันทร์ แล้วซูมเข้า (server พักเกมรอ Seraph.INTRO_SECONDS)
+    if (seraphIntroRef.current) return { moon: true, durationMs: MOON_MS };
     const pending = pendingJourneyRef.current;
     pendingJourneyRef.current = null;
     const live = journeyStateRef.current?.scene;

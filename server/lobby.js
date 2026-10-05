@@ -326,6 +326,18 @@ function startMatch() {
     view.broadcastState();
     return;
   }
+  // Moon Cell: ฉากเปิดตัวผู้เล่น (ตัวละครคนอื่นเป็น ???) แล้วบินอ้อมโลกไปดวงจันทร์ — พักรวมทั้งสองฉาก แล้วค่อยเข้าวันที่ 1
+  if (Seraph.active()) {
+    Seraph.setIntro(true);
+    match.cutsceneInfo = null;
+    match.gameState = "CUTSCENE";
+    timers.startPhaseTimer(gameIntroHoldSeconds() + Seraph.INTRO_SECONDS, () => {
+      Seraph.setIntro(false);
+      draw.dealRound();
+    });
+    view.broadcastState();
+    return;
+  }
   // Purge: ทุกคนเริ่มช่อง 0 · ฉากเปิดของท่อเล่นต่อจากฉากเปิดตัวผู้เล่น — พักรวมทั้งสองฉากแบบเดียวกับการเดินทาง
   if (purge.purgeActive()) {
     purge.startPurge();

@@ -6,6 +6,8 @@
 
 import { useMemo, useState } from "react";
 import SeraphGame from "./SeraphGame";
+import MatchIntro from "../oc/intro/MatchIntro";
+import { MOON_MS } from "../oc/intro/moonFlight";
 import { PlaceScreen, StatusWindow } from "./places";
 import { SeraphBoot, DayBanner, PairingScene, DuelIntro, CharacterReveal, FaceOffScene, DeletionScene, CycleEndScene, FinalWinnerScene } from "./scenes";
 
@@ -60,6 +62,7 @@ function demoSc({ night, day, duelNight }) {
 }
 
 const TABS = [
+  ["intro", "ฉากเปิด (บินไปดวงจันทร์)"],
   ["world", "เกม: ทางเดิน"], ["world6", "เกม: วันที่ 6"], ["night", "เกม: คืนวันที่ 7"], ["duel", "เกม: ดวล"],
   ["church", "โบสถ์"], ["library", "ห้องสมุด"], ["room", "ห้องพัก"], ["park", "สวน"], ["store", "ร้านค้า"], ["status", "สถานะ"],
   ["boot", "บูต"], ["day", "เปิดวัน"], ["pairing", "ประกาศคู่"], ["duelIntro", "เข้าวันดวล"], ["reveal", "เปิดเผย"], ["faceoff", "ประจันหน้า"],
@@ -83,7 +86,10 @@ export default function SeraphPreview() {
   const done = () => setRun((r) => r + 1);
   const k = `${tab}${night}${run}`;
   let body = null;
-  if (["world", "world6", "night", "duel"].includes(tab)) body = <SeraphGame key={k} state={state} lowQ={false} skillConfirmOn roster={null} pairRole={null} onSceneChange={() => {}} />;
+  // ฉากเปิดแมตช์: การ์ดคนอื่นเป็น ??? (server ซ่อนตัวละคร) → บินอ้อมโลกไปดวงจันทร์
+  const masked = PLAYERS.map((p, i) => (i === 0 ? { ...p, position: 1 } : { ...p, position: i + 1, img: null, character: { name: "???" } }));
+  if (tab === "intro") body = <MatchIntro key={k} players={masked} area={1} onOutro={() => ({ moon: true, durationMs: MOON_MS })} onHandoff={() => {}} onDone={done} />;
+  else if (["world", "world6", "night", "duel"].includes(tab)) body = <SeraphGame key={k} state={state} lowQ={false} skillConfirmOn roster={null} pairRole={null} onSceneChange={() => {}} />;
   else if (["church", "library", "room", "park", "store"].includes(tab)) body = <PlaceScreen key={k} place={tab} sc={sc} me={me} players={PLAYERS} youId="p1" shop={SHOP} onLeave={done} />;
   else if (tab === "status") body = <StatusWindow key={k} sc={sc} me={me} players={PLAYERS} onClose={done} />;
   else if (tab === "boot") body = <SeraphBoot key={k} players={PLAYERS} cycleRound={1} onDone={done} />;
