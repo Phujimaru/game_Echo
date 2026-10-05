@@ -91,7 +91,7 @@ function validGameMode(mode, count = Object.keys(match.players).length) {
   return false;
 }
 // โหมดที่ "พักใช้งาน" — โค้ดยังอยู่ครบ แต่ไม่โผล่ในหน้าโหวตโหมด และโหวตเข้าไม่ได้
-const SUSPENDED_MODES = new Set(["seraph"]); // Moon Cell (SE.RA.PH): พักใช้งานชั่วคราว
+const SUSPENDED_MODES = new Set(); // โหมดที่พักใช้งานชั่วคราว (ตอนนี้ไม่มี — Moon Cell เปิดใหม่ 5.1.28)
 // group: "normal" = สงครามทั่วไป · "special" = สงครามพิเศษ (หน้าโหวตแยกเป็น 2 ชั้น)
 //  โหมดที่พักใช้งานยังโผล่ในหมวดของมัน แต่เป็นปุ่มสีเทาพร้อมป้าย "พักใช้งาน" (suspended) และโหวตไม่ได้
 function modeOptionsFor(count = Object.keys(match.players).length) {

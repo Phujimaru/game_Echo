@@ -94,8 +94,8 @@ test('Type Mercury: solo player enters the raid, ORT spawns, turns run, surrende
     const byMode = Object.fromEntries(tm.modeOptions.map((o) => [o.mode, o]));
     assert.equal(byMode.ffa.group, 'normal');
     assert.equal(byMode.mercury.group, 'special');
-    assert.equal(byMode.seraph.suspended, true, 'SE.RA.PH shows as suspended');
-    assert.equal(byMode.seraph.enabled, false);
+    assert.equal(byMode.seraph.suspended, false, 'Moon Cell is open again');
+    assert.equal(byMode.seraph.enabled, false, 'Moon Cell needs at least 2 players');
     assert.equal(byMode.ffa.enabled, true, 'ffa is playable solo as a test match');
     assert.equal(byMode.duo.enabled, false, 'duo needs 4 or 6 players');
     assert.equal(byMode.mercury.enabled, true, 'raid works solo');
