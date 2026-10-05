@@ -27,7 +27,10 @@ test('voice announcements and mandatory clips stay silent in low quality; privat
 test('investigation and rest music ignore combat skills; regular game retains normal music', () => {
   const day = { ...moon, skillMusic: 'shiki', seraph: { ...moon.seraph, day: 6 } };
   assert.equal(policy.musicForState(day).name, 'sc_day');
-  assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }).name, 'sc_rest');
+  // เดินแมพ = เพลงวันสืบสวน · เข้าสถานที่ / คืนวันที่ 7 = เพลงพัก
+  assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }).name, 'sc_day');
+  assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }, { scene: 'place' }).name, 'sc_rest');
+  assert.equal(policy.musicForState({ ...moon, gameState: 'SERAPH_PLACE', seraph: { ...moon.seraph, noCombat: true, duelNight: true } }).name, 'sc_rest');
   assert.equal(policy.musicForState({ gameState: 'PLAYING', cycle: 'day' }).name, 'new_morning');
   assert.equal(policy.musicForState(null).name, 'lobby5');
   assert.equal(policy.musicForState({ ...moon, gameState: 'LOBBY', skillMusic: 'shiki' }).name, 'lobby5');

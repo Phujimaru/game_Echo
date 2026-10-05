@@ -1,162 +1,114 @@
 // ============================================================
-//  หน้าดูฉาก SE.RA.PH ทั้งหมด — เปิดด้วย  ?seraph  ต่อท้าย URL
-//    dev:   http://localhost:5173/?seraph
-//    build: <ที่อยู่เซิร์ฟเวอร์>/?seraph
-//
-//  เป็นหน้าทดสอบงานภาพล้วน ๆ ใช้ข้อมูลปลอมในไฟล์นี้ ไม่ต่อ socket ไม่แตะ state เกมจริง
-//  -> ดูฉากได้ก่อนที่ฝั่ง server ของโหมดจะมีอยู่จริง
+//  หน้าดูฉาก Moon Cell — เปิดด้วย  ?seraph  ต่อท้าย URL (dev: http://localhost:5173/?seraph)
+//  ใช้ state จำลองในไฟล์นี้ (ไม่ต่อ server) · แท็บด้านล่างสลับฉาก / กลางวัน-กลางคืน · ?tab=<key> เปิดแท็บตรง
+//  แท็บ "เกม: …" ใช้ SeraphGame ตัวจริงทั้งดุ้น (HUD/แผงสถานที่/หน้าต่างสถานะ/กระดานวันดวล)
 // ============================================================
 
-import { useEffect, useState } from "react";
-import { playMusic, stopMusic } from "../audio";
-import { preloadWave1, preloadWave2, preloadWave3 } from "./assets";
-import { SeraphBackground, DayRail, MatrixSlots, ShadowPortrait, WatchedFrame, ToastStack, useToasts, DataCube } from "./ui";
-import { SeraphBoot, DayBanner, PairingScene, DuelIntro, CharacterReveal, DeletionScene } from "./scenes";
-import PlaceSelect from "./PlaceSelect";
-import MatrixRadar from "./MatrixRadar";
+import { useMemo, useState } from "react";
+import SeraphGame from "./SeraphGame";
+import { PlaceScreen, StatusWindow } from "./places";
+import { SeraphBoot, DayBanner, PairingScene, DuelIntro, CharacterReveal, FaceOffScene, DeletionScene, CycleEndScene, FinalWinnerScene } from "./scenes";
 
-const PD = "var(--font-p-display)";
-
-// ---------- ข้อมูลปลอมสำหรับดูฉาก ----------
-const AVATAR = (n) => `/characters/hakuno/hakuno.png#${n}`; // ถ้าไม่มีไฟล์ -> <img> ล้มเหลว แสดงพื้นดำ (ยังดูฉากได้)
-const P = (i, name, color) => ({ id: `p${i}`, name, color, img: AVATAR(i), character: { name: `ตัวละคร ${i}`, img: AVATAR(i) } });
+const DOORS = [
+  { key: "room", x: 380 }, { key: "library", x: 940 }, { key: "store", x: 1500 },
+  { key: "church", x: 2080 }, { key: "park", x: 2660 }
+];
+const sk = (id, n, name, cost) => ({ name, cost, desc: `ผลของ ${name}`, img: `/characters/${id}/${id}_skill${n}.jpg` });
+function mkPlayer(id, name, color, ch, chName, me) {
+  return {
+    id, name, color, img: `/characters/${ch}/${ch}.${ch === "eiji" ? "webp" : "jpg"}`, connected: true, alive: true, locked: false,
+    character: { id: ch, img: `/characters/${ch}/${ch}.jpg`, name: chName, passive: { name: "สกิลติดตัว", desc: "ผลติดตัว" }, basic: sk(ch, 1, "สกิลพื้นฐาน A", 2), secondary: sk(ch, 2, "สกิลรอง B", 4), ultimate: sk(ch, 3, "ท่าไม้ตาย C", 6) },
+    hp: 5, maxHp: 5, armor: 3, maxArmor: 3, skillPoints: me ? 4 : 4, maxSkill: 6, statuses: {}, statusAmt: {},
+    cards: me ? [{ value: 7, color: "red" }, { value: 5, color: "blue" }, { value: 6, color: "green" }] : [{ value: 3, color: "yellow" }, { value: 9, color: "red" }],
+    score: me ? 18 : null, cardCount: me ? null : 2,
+    inventory: me ? [{ uid: "a", type: "heal", name: "ชุดปฐมพยาบาล", amount: 2 }, { uid: "b", type: "armor", name: "เกราะสำรอง", amount: 2 }] : [],
+    gold: 14, teamId: null, scHidden: false,
+  };
+}
 const PLAYERS = [
-  P(1, "ฮาคุโนะ", "#22d3ee"), P(2, "ชิกิ", "#f97316"), P(3, "โคโตเนะ", "#a3e635"),
-  P(4, "ไบเลธ", "#e83e8c"), P(5, "คอนเนอร์", "#9b4f96"), P(6, "อิกนิส", "#e5b33b")
+  mkPlayer("p1", "คุณ", "#3d8bd9", "kotone", "ฟุจิตะ โคโตเนะ", true),
+  mkPlayer("p2", "Rin", "#d2455b", "satoru", "ซาโตรุ อาเคฟุ"),
+  mkPlayer("p3", "Kaze", "#2f9e8f", "eiji", "เอจิ"),
+  mkPlayer("p4", "Nox", "#6a5acd", "satoru", "ซาโตรุ")
 ];
-const PAIRS = [
-  { a: "p1", b: "p2", aName: "ฮาคุโนะ", bName: "ชิกิ", aImg: AVATAR(1), bImg: AVATAR(2) },
-  { a: "p3", b: "p4", aName: "โคโตเนะ", bName: "ไบเลธ", aImg: AVATAR(3), bImg: AVATAR(4) },
-  { a: "p5", b: "p6", aName: "คอนเนอร์", bName: "อิกนิส", aImg: AVATAR(5), bImg: AVATAR(6) }
+const SHOP = [
+  { id: 1, type: "skill", size: "small", amount: 2, price: 3 }, { id: 2, type: "armor", value: 1, price: 3 },
+  { id: 3, type: "heal", amount: 1, price: 4 }, { id: 4, type: "resist", turns: 2, price: 4 }
 ];
-const ME = { matrixHeld: 3, gold: 14, skillLevel: 2, hp: 3, armor: 2, skillCap: 4, cheapestItem: 3 };
-const RADAR_TARGETS = PLAYERS.slice(1).map((p, i) => ({
-  id: p.id, name: p.name, img: p.img, charName: p.character.name,
-  revealed: i === 0, isOpponent: i === 2
-}));
 
-const SCENES = [
-  { key: "board", label: "S2 กระดานวัน 1-6", music: "sc_day" },
-  { key: "boot", label: "S0 บูตระบบ", music: null },
-  { key: "day1", label: "S1 เปิดวัน (วันแรก)", music: "sc_day" },
-  { key: "day6", label: "S1 เปิดวัน (วันที่ 6)", music: "sc_day" },
-  { key: "place", label: "S4 เลือกสถานที่", music: "sc_rest" },
-  { key: "radar", label: "S5.3 สวนสาธารณะ (Matrix)", music: "sc_rest" },
-  { key: "pairing", label: "S6 ประกาศคู่ดวล", music: null },
-  { key: "day7", label: "S7 เข้าวันที่ 7", music: null },
-  { key: "reveal", label: "S8c เปิดเผยตัวละคร", music: "sc_duel_day" },
-  { key: "revealSeen", label: "S8c (เคยเห็นแล้ว)", music: "sc_duel_day" },
-  { key: "deletion", label: "S10 ตกรอบ", music: "sc_duel_night" }
+function demoSc({ night, day, duelNight }) {
+  const paired = day >= 6 || duelNight;
+  const duel = day === 7 && !duelNight;
+  return {
+    day, cycleRound: night ? 2 : 1, night: duelNight || (duel && night), duelNight, duelDay: 7, daysTotal: 7, pairingDay: 5,
+    noCombat: !duel, matrixHeld: 2, matrixMax: 4, shopOpen: !duel, ready: false, place: null, dailyUsed: false,
+    readyCount: 1, totalPlayers: 4, myOpponent: paired ? "p2" : null, skillLevel: 4, caps: { hp: 5, armor: 3, skill: 5 },
+    upgradePicks: { church: 2, library: 3 }, hpArmorCap: 10, matrixPlaced: { p2: 2 },
+    pairs: paired ? [{ a: "p1", b: "p2", aName: "คุณ", bName: "Rin" }] : [], byes: paired ? [{ id: "p3", name: "Kaze" }, { id: "p4", name: "Nox" }] : [],
+    duelPair: paired ? { a: "p1", b: "p2" } : null, spectating: false, eliminated: false,
+    places: ["room", "church", "park", "library"].map((k) => ({ key: k, available: duelNight ? k === "room" : true, daily: k !== "park" })),
+    finalBoard: PLAYERS.map((p, i) => ({ id: p.id, name: p.name, charName: p.character.name, eliminated: i > 0, stat: { duelWins: 3 - i, matrixFound: 6 - i } })),
+    world: duel ? null : {
+      w: 3100, doors: DOORS,
+      pickups: duelNight ? [] : [
+        { id: "m1", kind: "matrix", x: 640 }, { id: "c1", kind: "coin", x: 820 }, { id: "m2", kind: "matrix", x: 1200 },
+        { id: "c2", kind: "coin", x: 1760 }, { id: "m3", kind: "matrix", x: 2360 }, { id: "c3", kind: "coin", x: 2900 }
+      ],
+      players: [{ id: "p1", x: 200, f: 1 }, { id: "p2", x: 520, f: -1 }, { id: "p3", x: 1100, f: 1 }, { id: "p4", x: 2450, f: -1 }]
+    }
+  };
+}
+
+const TABS = [
+  ["world", "เกม: ทางเดิน"], ["world6", "เกม: วันที่ 6"], ["night", "เกม: คืนวันที่ 7"], ["duel", "เกม: ดวล"],
+  ["church", "โบสถ์"], ["library", "ห้องสมุด"], ["room", "ห้องพัก"], ["park", "สวน"], ["store", "ร้านค้า"], ["status", "สถานะ"],
+  ["boot", "บูต"], ["day", "เปิดวัน"], ["pairing", "ประกาศคู่"], ["duelIntro", "เข้าวันดวล"], ["reveal", "เปิดเผย"], ["faceoff", "ประจันหน้า"],
+  ["deletion", "ถูกลบ"], ["cycleEnd", "จบรอบ"], ["final", "ผู้ชนะ"]
 ];
 
 export default function SeraphPreview() {
-  const [scene, setScene] = useState("board");
-  const [runId, setRunId] = useState(0);
-  const [night, setNight] = useState(false);
-  const [watched, setWatched] = useState(false);
-  const [toasts, pushToast] = useToasts();
-
-  useEffect(() => { preloadWave1().then(preloadWave2).then(() => preloadWave3(night)); }, [night]);
-
-  useEffect(() => {
-    const m = SCENES.find((s) => s.key === scene)?.music;
-    const key = m === "sc_duel_day" && night ? "sc_duel_night" : m;
-    if (key) playMusic(key, runId); else stopMusic();
-    return () => {};
-  }, [scene, runId, night]);
-
-  const replay = () => setRunId((n) => n + 1);
-  const go = (k) => { setScene(k); setRunId((n) => n + 1); };
-  const done = () => go("board");
-
+  const q = new URLSearchParams(location.search);
+  const [tab, setTab] = useState(q.get("tab") || "world");
+  const [night, setNight] = useState(q.get("night") === "1");
+  const [run, setRun] = useState(0);
+  const [atk, setAtk] = useState(null);
+  const day = tab === "world6" ? 6 : tab === "duel" || tab === "night" ? 7 : 3;
+  const sc = useMemo(() => demoSc({ night, day, duelNight: tab === "night" }), [night, day, tab]);
+  const state = {
+    gameState: "SERAPH_PLACE", youId: "p1", players: PLAYERS, roundNumber: 3, cycle: night ? "night" : "day", shop: SHOP, gameMode: "seraph", deckLedger: [],
+    seraph: sc, attack: atk,
+    ...(tab === "duel" ? { gameState: atk ? "ATTACKING" : "PLAYING" } : {})
+  };
+  const me = PLAYERS[0];
+  const done = () => setRun((r) => r + 1);
+  const k = `${tab}${night}${run}`;
+  let body = null;
+  if (["world", "world6", "night", "duel"].includes(tab)) body = <SeraphGame key={k} state={state} lowQ={false} skillConfirmOn roster={null} pairRole={null} onSceneChange={() => {}} />;
+  else if (["church", "library", "room", "park", "store"].includes(tab)) body = <PlaceScreen key={k} place={tab} sc={sc} me={me} players={PLAYERS} youId="p1" shop={SHOP} onLeave={done} />;
+  else if (tab === "status") body = <StatusWindow key={k} sc={sc} me={me} players={PLAYERS} onClose={done} />;
+  else if (tab === "boot") body = <SeraphBoot key={k} players={PLAYERS} cycleRound={1} onDone={done} />;
+  else if (tab === "day") body = <DayBanner key={k} day={night ? 7 : 3} night={night} cycleRound={1} onDone={done} />;
+  else if (tab === "pairing") body = <PairingScene key={k} pairs={demoSc({ day: 6 }).pairs} byes={demoSc({ day: 6 }).byes} players={PLAYERS} myId="p1" onDone={done} />;
+  else if (tab === "duelIntro") body = <DuelIntro key={k} onDone={done} />;
+  else if (tab === "reveal") body = <CharacterReveal key={k} player={PLAYERS[1]} onDone={done} />;
+  else if (tab === "faceoff") body = <FaceOffScene key={k} a={PLAYERS[0]} b={PLAYERS[1]} onDone={done} />;
+  else if (tab === "deletion") body = <DeletionScene key={k} loser={PLAYERS[1]} winner={PLAYERS[0]} onDone={done} />;
+  else if (tab === "cycleEnd") body = <CycleEndScene key={k} cycleRound={1} matrixHeld={2} onDone={done} />;
+  else if (tab === "final") body = <FinalWinnerScene key={k} winner={PLAYERS[0]} board={sc.finalBoard} onDone={done} />;
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: "var(--color-sc-void)" }}>
-      {/* ---------- ฉากที่กำลังดู ---------- */}
-      {scene === "board" && (
-        <>
-          <SeraphBackground phase="draw" night={night} />
-          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-6 px-4">
-            <div className="text-center">
-              <div className="sc-sysline text-xs mb-1">{"> IDENTITY MASK : ENABLED"}</div>
-              <div className="text-white/60 text-sm">กระดานวันที่ 1–6 — ทุกคนเป็นเงาดำ ไม่มีหลอดเลือด/เกราะ/สกิล</div>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4">
-              {PLAYERS.map((p, i) => <ShadowPortrait key={p.id} name={p.name} img={p.img} revealed={i === 0} color={p.color} />)}
-            </div>
-            {/* HUD ที่มาแทนหลอดเลือด/แถบสกิล */}
-            <div className="flex flex-wrap items-center justify-center gap-4 px-4 py-2" style={{ background: "rgba(4,7,12,.7)", border: "1px solid var(--color-sc-line)" }}>
-              <span className="flex items-center gap-2 text-xs text-white/80">◆ <MatrixSlots held={2} /></span>
-              <span className="text-xs text-white/80">🪙 14</span>
-              <span className="text-xs text-white/80">📘 ระดับ 2</span>
-              <span className="text-xs text-white/80">⚡ ความจุ 4/8</span>
-            </div>
-          </div>
-        </>
-      )}
-
-      {scene === "boot" && <SeraphBoot key={runId} players={PLAYERS} onDone={done} />}
-      {scene === "day1" && <><SeraphBackground phase="draw" night={night} /><DayBanner key={runId} day={1} onDone={done} /></>}
-      {scene === "day6" && <><SeraphBackground phase="draw" night={night} /><DayBanner key={runId} day={6} onDone={done} /></>}
-      {scene === "place" && (
-        <PlaceSelect
-          key={runId} me={ME} day={3} night={night} seconds={20} placedCount={4} totalPlayers={6}
-          onPick={(k) => { pushToast(`เลือก ${k}`, "📍"); setTimeout(done, 900); }}
-        />
-      )}
-      {scene === "radar" && (
-        <MatrixRadar
-          key={runId} targets={RADAR_TARGETS} held={ME.matrixHeld} placed={{ p2: 1 }}
-          onPlace={() => pushToast("ลงแต้ม Matrix", "◆")} onDone={done}
-        />
-      )}
-      {scene === "pairing" && <PairingScene key={runId} pairs={PAIRS} myId="p1" byes={[{ id: "p7", name: "ยูนะ", img: AVATAR(7) }]} onDone={done} />}
-      {scene === "day7" && <DuelIntro key={runId} players={PLAYERS} night={night} onDone={done} />}
-      {scene === "reveal" && <CharacterReveal key={runId} player={{ ...PLAYERS[0], night }} onDone={done} />}
-      {scene === "revealSeen" && <CharacterReveal key={runId} player={{ ...PLAYERS[1], night }} seen onDone={done} />}
-      {scene === "deletion" && <DeletionScene key={runId} loser={PLAYERS[1]} winner={PLAYERS[0]} onDone={done} />}
-
-      <WatchedFrame on={watched} />
-      <ToastStack toasts={toasts} />
-
-      {/* ---------- แผงควบคุมของหน้าทดสอบ ---------- */}
-      <div className="fixed left-2 bottom-2 z-[99] p-panel p-scroll p-2.5 max-w-[248px] max-h-[62vh] overflow-auto flex flex-col gap-1.5">
-        <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className="sc-sysline text-[10px]">SE.RA.PH SCENE PREVIEW</span>
-          <DayRail day={3} compact />
-        </div>
-        {SCENES.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => go(s.key)}
-            className="p-btn-cut text-left px-2.5 py-1.5 text-[11px] font-bold"
-            style={{
-              background: scene === s.key ? "var(--color-p-accent)" : "rgba(255,255,255,.06)",
-              color: "#fff"
-            }}
-          >
-            {s.label}
-          </button>
+    <div className="fixed inset-0" style={{ background: "#f7fafd" }}>
+      {body}
+      <div className="fixed bottom-2 left-2 right-2 z-[300] flex gap-1.5 flex-wrap justify-center pointer-events-auto">
+        {TABS.map(([key, label]) => (
+          <button key={key} type="button" onClick={() => { setTab(key); setRun((r) => r + 1); }} className="sc-prev-btn" data-on={tab === key || undefined}>{label}</button>
         ))}
-        <div className="h-px my-1" style={{ background: "var(--color-sc-line)" }} />
-        <button type="button" onClick={replay} className="p-btn-cut px-2.5 py-1.5 text-[11px] font-bold text-black" style={{ background: "var(--color-sc-cyan)" }}>
-          ▶ เล่นฉากนี้ซ้ำ
-        </button>
-        <label className="flex items-center gap-2 text-[11px] text-white/80 px-1">
-          <input type="checkbox" checked={night} onChange={(e) => setNight(e.target.checked)} />
-          รอบกลางคืน (สลับฉากหลัง+เพลง)
-        </label>
-        <label className="flex items-center gap-2 text-[11px] text-white/80 px-1">
-          <input type="checkbox" checked={watched} onChange={(e) => setWatched(e.target.checked)} />
-          S9 · โดน Matrix ระดับ 3 จ้องอยู่
-        </label>
-        <button type="button" onClick={() => pushToast("Matrix +1 · เหรียญ +1", "◆")} className="p-btn-cut px-2.5 py-1.5 text-[11px] font-bold text-white" style={{ background: "rgba(255,255,255,.1)" }}>
-          ทดสอบ T0 Toast
-        </button>
-        <div className="flex items-center justify-center gap-2 pt-1">
-          <DataCube size={22} />
-          <span className="sc-sysline text-[9px] opacity-60">อ้างอิง SERAPH_SCENES.md</span>
-        </div>
+        <button type="button" onClick={() => setNight((v) => !v)} className="sc-prev-btn">{night ? "กลางคืน" : "กลางวัน"}</button>
+        {tab === "duel" && (
+          <>
+            <button type="button" className="sc-prev-btn" onClick={() => setAtk({ id: Date.now(), byId: "p1", targetId: "p2", dmg: 2, byName: "คุณ", targetName: "Rin", skills: [] })}>เราตี</button>
+            <button type="button" className="sc-prev-btn" onClick={() => setAtk({ id: Date.now(), byId: "p2", targetId: "p1", dmg: 2, byName: "Rin", targetName: "คุณ", skills: [] })}>โดนตี</button>
+          </>
+        )}
       </div>
     </div>
   );

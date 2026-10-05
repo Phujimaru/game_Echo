@@ -10,8 +10,8 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
   if (cs?.kind === "echoQueen" && state.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
   const mandatory = cs?.kind === "overloadForce";
   const sc = state?.seraph;
-  // SE.RA.PH วันที่ 1-6: หน้าจอวันสืบสวนไม่มีที่เล่นคลิป — คัตซีนไม่ตัดเพลง (ตัดแล้วจะเงียบเปล่า ๆ ตามความยาวคลิป)
-  const scInvestigation = !!sc && sc.day !== (sc.duelDay || sc.daysTotal);
+  // Moon Cell วันที่ 1-6 + คืนวันที่ 7 (เดินแมพ): ไม่มีที่เล่นคลิป — คัตซีนไม่ตัดเพลง (ตัดแล้วจะเงียบเปล่า ๆ ตามความยาวคลิป)
+  const scInvestigation = !!sc && (sc.noCombat ?? sc.day !== (sc.duelDay || sc.daysTotal));
   if (cs && !scInvestigation && (!lowQ || mandatory || cs.announce)) return { name: null };
   if (sc) {
     // จบแมตช์: เงียบ ให้ฉากผู้ชนะคนสุดท้ายเล่นเสียงของตัวเอง (เพลงดวลต้องไม่วนค้างใต้ฉาก)
@@ -23,7 +23,8 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
       if (phase === "ATTACK" || phase === "ATTACKING") return { name: "battle_phase", seq: attackSeq };
       return { name: sc.night ? "sc_duel_night" : "sc_duel_day", seq: sc.cycleRound };
     }
-    return { name: phase === "SERAPH_PLACE" ? "sc_rest" : "sc_day" };
+    // เดินแมพ = เพลงวันสืบสวน · อยู่ในสถานที่ / คืนวันที่ 7 = เพลงพัก
+    return { name: scene === "place" || sc.duelNight ? "sc_rest" : "sc_day" };
   }
   // การเดินทาง: ฉากเปลี่ยนภูมิภาค (ลูกโลก) ไม่มีเพลงของตัวเอง — state.journey เป็นภูมิภาคปลายทางแล้ว
   //  เพลงประจำภูมิภาคใหม่จึงเริ่มตั้งแต่ฉากเริ่ม (App ขยับ cycleSeq เมื่อภูมิภาค/ช่วงเวลาเปลี่ยน)

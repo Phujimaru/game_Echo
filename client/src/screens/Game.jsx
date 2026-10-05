@@ -675,9 +675,8 @@ function ArenaBackground({ area, night, lowQ, spec }) {
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
 function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey, arena, hidden }) {
-  // SE.RA.PH: โหมดนี้วาดฉากหลังของตัวเองไว้ข้างล่างแล้ว (สนามดวลวันที่ 5 กลางวัน/กลางคืน)
-  //  ถ้าปล่อยให้กระดานเดิมวาดทับ จะกลายเป็นฉากหลังของเกมปกติแทน
-  if (seraph) return null;
+  // SE.RA.PH บนจอแคบ (ไม่มีสนาม 2.5D): ไม่วาดฉากหลังของเกมปกติ
+  if (seraph && !arena) return null;
   // hidden: สนามราชินีของ Echo บังทั้งจอ — ซ่อนแบบยังค้าง mount (ถอดออกแล้ว mount ใหม่ = สนาม 2.5D เล่นฉากพุ่งลงซ้ำ)
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden" style={hidden ? { visibility: "hidden" } : undefined}>
@@ -4193,7 +4192,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // Purge: ระหว่างปะทะ (สนามประลองของภูมิภาคที่ช่องนั้น) ที่นั่งมีเฉพาะคู่ปะทะ — คนอื่นเป็นผู้ชม
   const purgeFight = state.purge?.fight && !state.purge.scene?.active ? state.purge.fight : null;
   const purgeArena = purgeFight ? { area: Math.min(5, Math.floor((state.purge.board?.nodes?.find((n) => n.id === purgeFight.node)?.prog ?? 0) / 30) + 1), night: state.cycle === "night" } : null;
-  const arenaJourney = state.journey || purgeArena;
+  // Moon Cell วันดวล: สนาม 2.5D ของโหมดเอง (สนาม 8 · journey/arena/areas/area8.js) — จอคอมเท่านั้น
+  const seraphArena = state.seraph && vp.w >= 768 ? { area: 8, night: !!state.seraph.night } : null;
+  const arenaJourney = state.journey || purgeArena || seraphArena;
   const seatOthers = purgeFight ? others.filter((p) => purgeFight.ids.includes(p.id))
     : (raid || invader) ? others.filter((p) => !p.isBoss) : others;
   const slots = raid ? raidSlots(seatOthers.length)
