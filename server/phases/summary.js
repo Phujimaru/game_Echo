@@ -218,8 +218,6 @@ function resolveRound() {
     }
     // ระบบเหรียญ (patch 2.2 full): ชนะการจั่วได้เหรียญเพิ่ม +1 (เพดาน 30)
     shop.addGold(w, GOLD_WIN_BONUS);
-    // SE.RA.PH วันที่ 1-6: รางวัลผู้ชนะคือ Matrix +1 (มาแทนเฟสโจมตีของเกมปกติ)
-    Seraph.onRoundWinner(engine, w);
     // Purge: ผู้ชนะการปะทะ (ไม่เสมอ) — คนอื่นในจุดนั้นถอยหลัง
     purge.onFightResult(w);
     // patch 2.1.3.5: ชนะจั่วการ์ดไม่ได้แต้มสกิลอีกต่อไป

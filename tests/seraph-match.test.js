@@ -13,7 +13,9 @@ const socketLayer = require('../server/socket');
 const Seraph = require('../seraph');
 const { CHAR_BY_ID } = require('../characters');
 
-timers.startPhaseTimer = (sec) => { match.timeLeft = sec; };
+let pendingTimer = null; // callback ของตัวจับเวลาล่าสุด — runTimer() เรียกแทนการรอเวลาจริง
+timers.startPhaseTimer = (sec, cb) => { match.timeLeft = sec; pendingTimer = cb || null; };
+function runTimer() { const cb = pendingTimer; pendingTimer = null; if (cb) cb(); }
 timers.clearPhaseTimer = () => {};
 engine.startPhaseTimer = timers.startPhaseTimer;
 engine.clearPhaseTimer = timers.clearPhaseTimer;
@@ -182,4 +184,49 @@ test('Moon Cell: ยูนะทางเดียวที่เหลือค
   assert.equal(match.yunaEffect, 'beatbark');
   combat.instantDeath(match.players.P2, true);
   assert.equal(match.yunaLongingPendingId, null); // ตายในเทิร์น 1-10 ก็ไม่มี Longing มาชุบ
+});
+
+test('วันที่ 1-6 ไม่มีจั่วไพ่: เข้าแมพตั้งแต่ต้นวัน · ประกาศคู่ตอนจบวันที่ 5 · วันที่ 7 แจกไพ่ให้คู่ดวลเท่านั้น', () => {
+  startSeraph(['kotone', 'satoru', 'cayenne']);
+  const ids = ['P1', 'P2', 'P3'];
+  for (let d = 1; d <= 6; d++) {
+    assert.equal(Seraph.currentDay(), d);
+    assert.equal(match.gameState, 'SERAPH_PLACE', `วันที่ ${d} ต้องเป็นแมพ`);
+    for (const id of ids) assert.deepEqual(match.players[id].cards, [], `วันที่ ${d} ต้องไม่มีใครได้ไพ่`);
+    const st = view.buildStateFor('P1');
+    assert.ok(st.seraph.world, 'มีข้อมูลแมพ');
+    assert.equal(st.seraph.world.players.length, 3);
+    assert.equal(st.seraph.pairs.length, d >= 6 ? 1 : 0, `วันที่ ${d}: คู่ดวลประกาศหลังจบวันที่ 5`);
+    for (const id of ids) Seraph.readyPlace(engine, id);
+    assert.equal(match.gameState, 'TRANSITION');
+    runTimer(); // dealRound ของวันถัดไป
+  }
+  assert.ok(Seraph.isDuelDay());
+  assert.equal(match.gameState, 'PLAYING');
+  assert.equal(view.buildStateFor('P1').seraph.world, null, 'วันดวลไม่มีแมพ');
+  const pair = Seraph.stateFor(engine, 'P1').duelPair;
+  for (const id of ids) {
+    const inDuel = id === pair.a || id === pair.b;
+    assert.equal(match.players[id].cards.length > 0, inDuel, `${id} ${inDuel ? 'ต้องได้ไพ่' : 'เป็นผู้ชม ไม่ได้ไพ่'}`);
+  }
+
+  // ดวลจบ -> คืนวันที่ 7: เดินแมพ ไม่มีของ เข้าได้แค่ห้องพัก (ร้านค้าเปิด) -> พร้อมครบ -> รอบใหม่วันที่ 1
+  match.players[pair.a].alive = false;
+  require('../server/modes/seraph').seraphAdvance();
+  assert.equal(match.gameState, 'TRANSITION');
+  runTimer();
+  assert.equal(match.gameState, 'SERAPH_PLACE');
+  assert.ok(Seraph.isDuelNight());
+  const night = view.buildStateFor(pair.b).seraph;
+  assert.equal(night.night, true);
+  assert.equal(night.world.pickups.length, 0, 'คืนวันที่ 7 ไม่มีของในแมพ');
+  assert.deepEqual(night.places.filter((p) => p.available).map((p) => p.key), ['room']);
+  assert.equal(night.shopOpen, true);
+  const left = ids.filter((id) => id !== pair.a);
+  for (const id of left) Seraph.readyPlace(engine, id);
+  runTimer();
+  assert.equal(Seraph.currentCycle(), 2);
+  assert.equal(Seraph.currentDay(), 1);
+  assert.equal(match.gameState, 'SERAPH_PLACE');
+  assert.equal(view.buildStateFor(pair.b).seraph.night, false, 'วันที่ 1-6 เป็นกลางวัน');
 });

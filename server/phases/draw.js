@@ -24,6 +24,7 @@ const echoFreeHit = require("./echoFreeHit");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
+const seraphMode = require("../modes/seraph");
 const overload = require("../overload");
 const qteSystem = require("../qte");
 const shop = require("../shop");
@@ -59,6 +60,12 @@ function dealRound() {
   if (Seraph.active()) { if (Seraph.currentDay() === 1) shop.openShop(); } // เปิดครั้งเดียวต่อรอบ ใช้สต็อกเดิมทั้งรอบ
   else if (match.roundNumber % SHOP_INTERVAL_TURNS === 0) shop.openShop();
   else shop.refreshShopForJourney(); // การเดินทาง: ผลต่อร้านค้าตามช่วงเวลาของเทิร์นนี้ (ร้านค้างมาจากเทิร์นก่อน)
+  // SE.RA.PH วันที่ 1-6: ไม่มีการจั่วไพ่ — เข้าแมพเดินสำรวจทันที (server/modes/seraph.js)
+  if (Seraph.noCombat()) {
+    for (const p of Object.values(match.players)) { combat.resetRoundDisplay(p); p.cards = []; p.locked = true; p.busted = false; }
+    seraphMode.beginSeraphPlacePhase();
+    return;
+  }
   // ยูนะ ไอดอลประจำสนาม: ม้วนลูกเต๋าทุกๆ 5 เทิร์น เริ่มจากเทิร์นที่ 16 (16, 21, 26, ...)
   //  เอจิ: ระหว่างท่าไม้ตาย ไม่ว่ายังก็ตาม บังคับเปิดสนามอยู่ ยูนะจะไม่เกิดขึ้นเองแบบปกติ
   //  SE.RA.PH: ยูนะปิดทั้งโหมด (SERAPH_MOONCELL.md §12)

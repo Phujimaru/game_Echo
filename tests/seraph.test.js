@@ -28,6 +28,13 @@ function startWith(n = 4) {
 
 test.afterEach(() => Seraph.reset());
 
+// เดินไปยืนหน้าประตูแล้วเข้าสถานที่ (server รับเฉพาะคนที่ยืนหน้าประตูจริง)
+const doorX = (key) => Seraph.DOORS.find((d) => d.key === key).x;
+function visit(e, id, key, opts = {}) {
+  e.players[id].scX = doorX(key);
+  Seraph.choosePlace(e, id, key, opts);
+}
+
 test("startMatch: ทุกคนเริ่มเท่ากันหมด 3/2/แต้มสกิล 0/เงิน 10/ระดับ 1 (ค่าพลังเดิมของตัวละครถูกละทิ้ง)", () => {
   const e = startWith(4);
   for (const p of Object.values(e.players)) {
@@ -65,64 +72,150 @@ test("วันที่ 1-6 คือช่วงไม่มีการต่
   assert.strictEqual(Seraph.noCombat(), false);
 });
 
-test("ผู้ชนะวันธรรมดาได้ Matrix +1 · เพดาน 4 แล้วไม่เกิน", () => {
-  const e = startWith(4);
-  const w = e.players.p1;
-  for (let i = 0; i < 6; i++) Seraph.onRoundWinner(e, w);
-  assert.strictEqual(w.scMatrix, 4);
-  assert.ok(e.logs.some((m) => m.includes("Matrix เต็มแล้ว")));
+test("แมพ: ต้นวันมีชิ้นส่วน Matrix 5 ชิ้น + เหรียญเท่าจำนวนผู้เล่น · ทุกคนยืนต้นทางเดิน", () => {
+  const e = startWith(3);
+  Seraph.startPlacePhase(e, () => {});
+  const w = Seraph.stateFor(e, "p1").world;
+  assert.strictEqual(w.pickups.filter((k) => k.kind === "matrix").length, Seraph.MATRIX_PICKUPS);
+  assert.strictEqual(w.pickups.filter((k) => k.kind === "coin").length, 3);
+  assert.strictEqual(w.players.length, 3);
+  assert.ok(w.players.every((o) => o.x < 300), "ทุกคนเริ่มที่ต้นทางเดิน");
+  // ของไม่ทับประตู (เดินผ่านประตูแล้วเก็บของโดยไม่ตั้งใจไม่ได้)
+  for (const k of w.pickups) assert.ok(Seraph.DOORS.every((d) => Math.abs(d.x - k.x) > 90));
 });
 
-test("ผู้ชนะไม่ได้ Matrix ในวันที่ 7 (รางวัลมีเฉพาะวันธรรมดา)", () => {
-  const e = startWith(4);
-  for (let d = 1; d <= 6; d++) Seraph.advanceDay(e);
-  Seraph.beginDuelDay(e);
-  const w = e.players.p1;
-  const before = w.scMatrix || 0;
-  Seraph.onRoundWinner(e, w);
-  assert.strictEqual(w.scMatrix, before);
+test("แมพ: เก็บของได้เฉพาะตอนยืนใกล้ · ใครถึงก่อนได้ก่อน · Matrix เต็ม 4 แล้วของยังอยู่ให้คนอื่น", () => {
+  const e = startWith(2);
+  Seraph.startPlacePhase(e, () => {});
+  const [p1, p2] = [e.players.p1, e.players.p2];
+  const m = Seraph.stateFor(e, "p1").world.pickups.find((k) => k.kind === "matrix");
+  p1.scX = m.x + 200;
+  assert.strictEqual(Seraph.pickup(e, "p1", m.id), false, "ไกลเกินเก็บไม่ได้");
+  p1.scX = m.x; p2.scX = m.x;
+  assert.strictEqual(Seraph.pickup(e, "p1", m.id), true);
+  assert.strictEqual(p1.scMatrix, 1);
+  assert.strictEqual(Seraph.pickup(e, "p2", m.id), false, "ชิ้นที่ถูกเก็บไปแล้วเก็บซ้ำไม่ได้");
+
+  const m2 = Seraph.stateFor(e, "p1").world.pickups.find((k) => k.kind === "matrix");
+  p1.scMatrix = 4; p1.scX = m2.x;
+  assert.strictEqual(Seraph.pickup(e, "p1", m2.id), false, "Matrix เต็มแล้วเก็บไม่ได้");
+  assert.ok(Seraph.stateFor(e, "p1").world.pickups.some((k) => k.id === m2.id), "ของยังอยู่ในแมพ");
+
+  const c = Seraph.stateFor(e, "p1").world.pickups.find((k) => k.kind === "coin");
+  const gold = p2.gold;
+  p2.scX = c.x;
+  assert.strictEqual(Seraph.pickup(e, "p2", c.id), true);
+  assert.strictEqual(p2.gold, gold + 1, "เหรียญ +1");
 });
 
-test("โบสถ์: เพิ่มความจุได้ทีละ 1 อย่าง · ความจุแต้มสกิลตันที่ 8", () => {
+test("แมพ: ส่งพิกัดวาร์ปไกลเกินความเร็วเดินไม่ได้ · เดินนอกเฟสแมพไม่ได้", () => {
+  const e = startWith(2);
+  Seraph.startPlacePhase(e, () => {});
+  const p = e.players.p1;
+  assert.ok(Seraph.move(e, "p1", 200, 1));
+  assert.strictEqual(p.scX, 200);
+  assert.ok(Seraph.move(e, "p1", 3000, 1));
+  assert.ok(p.scX < 600, `วาร์ปต้องถูกตัด (ได้ ${p.scX})`);
+  Seraph.finishPlacePhase(e);
+  assert.strictEqual(Seraph.move(e, "p1", 100, -1), false);
+});
+
+test("เข้าสถานที่ได้เฉพาะตอนยืนหน้าประตู", () => {
+  const e = startWith(2);
+  Seraph.startPlacePhase(e, () => {});
+  const p = e.players.p1;
+  p.scX = doorX("room") + 400;
+  Seraph.choosePlace(e, "p1", "room", {});
+  assert.strictEqual(p.inventory.length, 0);
+  visit(e, "p1", "room");
+  assert.strictEqual(p.inventory.length, 1);
+});
+
+test("โบสถ์: เข้า 1 ครั้งอัปได้ 2 ครั้ง (เลือกซ้ำได้) · พลังชีวิต + เกราะรวมกันไม่เกิน 10", () => {
   const e = startWith(2);
   const p = e.players.p1;
   Seraph.startPlacePhase(e, () => {});
-  Seraph.choosePlace(e, "p1", "church", { option: "hp" });
-  assert.strictEqual(p.scCapHp, 4);
+  visit(e, "p1", "church", { picks: ["hp", "armor", "hp"] });
+  assert.strictEqual(p.scCapHp, 4, "ได้แค่ 2 ครั้ง");
+  assert.strictEqual(p.scCapArmor, 3);
+  assert.strictEqual(p.hp, 4);
+  assert.strictEqual(p.armor, 3);
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 6; i++) {
     Seraph.startPlacePhase(e, () => {});
-    Seraph.choosePlace(e, "p1", "church", { option: "skill" });
+    visit(e, "p1", "church", { picks: ["hp", "hp"] });
   }
-  assert.strictEqual(p.scCapSkill, 8, "ความจุแต้มสกิลต้องตันที่ 8");
+  assert.strictEqual(p.scCapHp + p.scCapArmor, 10, "เพดานรวม 10");
+  assert.strictEqual(Seraph.placeAvailable(e, p, "church"), false, "เต็มเพดานแล้วเข้าโบสถ์ไม่ได้");
 });
 
-test("ห้องสมุด: ระดับทักษะ +1 ปลดล็อกสกิลรองที่ 3 และท่าไม้ตายที่ 6 (ตันที่ 6)", () => {
+test("โบสถ์: เหลือที่ว่าง 1 ช่อง สิทธิ์ครั้งที่สองหายไป", () => {
   const e = startWith(2);
   const p = e.players.p1;
-  assert.strictEqual(Seraph.tierUnlocked(p, "basic"), true);
-  assert.strictEqual(Seraph.tierUnlocked(p, "secondary"), false);
-
-  for (let i = 0; i < 8; i++) {
-    Seraph.startPlacePhase(e, () => {});
-    Seraph.choosePlace(e, "p1", "library", {});
-  }
-  assert.strictEqual(p.scSkillLevel, 6, "ระดับทักษะต้องตันที่ 6");
-  assert.strictEqual(Seraph.tierUnlocked(p, "secondary"), true);
-  assert.strictEqual(Seraph.tierUnlocked(p, "ultimate"), true);
-  // ปลดท่าไม้ตายแล้วยังร่ายไม่ได้เพราะความจุแค่ 4 — ต้องมีคำเตือน (นี่คือความตั้งใจของดีไซน์)
-  assert.ok(e.logs.some((m) => m.includes("ท่าไม้ตายต้องการ 6")));
+  p.scCapHp = 6; p.scCapArmor = 3;
+  Seraph.startPlacePhase(e, () => {});
+  visit(e, "p1", "church", { picks: ["armor", "hp"] });
+  assert.strictEqual(p.scCapArmor, 4);
+  assert.strictEqual(p.scCapHp, 6);
 });
 
-test("ห้องสมุดกดไม่ได้เมื่อระดับเต็ม · สวนสาธารณะกดไม่ได้เมื่อไม่มี Matrix", () => {
+test("ห้องสมุด: เข้า 1 ครั้งอัปได้ 3 ครั้ง · ระดับทักษะตันที่ 6 · ความจุแต้มสกิลตันที่ 8", () => {
+  const e = startWith(2);
+  const p = e.players.p1;
+  assert.strictEqual(Seraph.tierUnlocked(p, "secondary"), false);
+  Seraph.startPlacePhase(e, () => {});
+  visit(e, "p1", "library", { picks: ["level", "level", "skill", "level"] });
+  assert.strictEqual(p.scSkillLevel, 3, "ได้แค่ 3 ครั้ง (ระดับ +2)");
+  assert.strictEqual(p.scCapSkill, 5);
+  assert.strictEqual(Seraph.tierUnlocked(p, "secondary"), true);
+  assert.strictEqual(p.scPlaceResult.unlock, "secondary");
+
+  for (let i = 0; i < 4; i++) {
+    Seraph.startPlacePhase(e, () => {});
+    visit(e, "p1", "library", { picks: ["level", "level", "level"] });
+  }
+  assert.strictEqual(p.scSkillLevel, 6, "ระดับทักษะต้องตันที่ 6");
+  assert.strictEqual(Seraph.tierUnlocked(p, "ultimate"), true);
+  for (let i = 0; i < 3; i++) {
+    Seraph.startPlacePhase(e, () => {});
+    visit(e, "p1", "library", { picks: ["skill", "skill", "skill"] });
+  }
+  assert.strictEqual(p.scCapSkill, 8, "ความจุแต้มสกิลต้องตันที่ 8");
+  assert.strictEqual(Seraph.placeAvailable(e, p, "library"), false, "เต็มทั้งสองอย่างแล้วเข้าห้องสมุดไม่ได้");
+});
+
+test("ห้องสมุด: ปลดท่าไม้ตายแต่ความจุไม่ถึง 6 ต้องมีป้ายเตือน", () => {
+  const e = startWith(2);
+  const p = e.players.p1;
+  p.scSkillLevel = 4;
+  Seraph.startPlacePhase(e, () => {});
+  visit(e, "p1", "library", { picks: ["level", "level", "skill"] });
+  assert.strictEqual(p.scSkillLevel, 6);
+  assert.strictEqual(p.scCapSkill, 5);
+  assert.ok(p.scPlaceResult.warn);
+});
+
+test("สวนสาธารณะกดไม่ได้เมื่อไม่มี Matrix · ห้องพักเข้าได้เสมอ", () => {
   const e = startWith(2);
   const p = e.players.p1;
   assert.strictEqual(Seraph.placeAvailable(e, p, "park"), false, "ไม่มีแต้มก็เข้าสวนไม่ได้");
   p.scMatrix = 1;
   assert.strictEqual(Seraph.placeAvailable(e, p, "park"), true);
-  p.scSkillLevel = 6;
-  assert.strictEqual(Seraph.placeAvailable(e, p, "library"), false);
   assert.strictEqual(Seraph.placeAvailable(e, p, "room"), true, "ห้องพักเข้าได้เสมอ");
+});
+
+test("สวนสาธารณะไม่นับเป็นสถานที่ประจำวัน — แวะแล้วยังเข้าที่อื่นได้ และแวะซ้ำได้", () => {
+  const e = startWith(3);
+  const p = e.players.p1;
+  p.scMatrix = 3;
+  Seraph.startPlacePhase(e, () => {});
+  visit(e, "p1", "park", { targets: ["p2"] });
+  visit(e, "p1", "park", { targets: ["p3"] });
+  assert.deepStrictEqual(p.scPlaced, { p2: 1, p3: 1 });
+  assert.strictEqual(p.scPlace, null, "ยังไม่ได้ใช้สถานที่ประจำวัน");
+  visit(e, "p1", "room");
+  assert.strictEqual(p.scPlace, "room");
+  assert.strictEqual(p.inventory.length, 1);
 });
 
 test("ราคาสกิลมาจากระดับทักษะ ไม่ใช่ค่าของตัวละคร — 2 / 4 / 6", () => {
@@ -137,7 +230,7 @@ test("สวนสาธารณะ: ลง Matrix ได้สูงสุด 
   p.scMatrix = 4;
   Seraph.startPlacePhase(e, () => {});
   // พยายามลง 5 แต้มใส่ p2 คนเดียว -> ได้แค่ 3 (เพดานต่อเป้าหมาย)
-  Seraph.choosePlace(e, "p1", "park", { targets: ["p2", "p2", "p2", "p2", "p2"] });
+  visit(e, "p1", "park", { targets: ["p2", "p2", "p2", "p2", "p2"] });
   assert.strictEqual(p.scPlaced.p2, 3);
   assert.strictEqual(p.scMatrix, 1, "ใช้ไป 3 จาก 4");
 });
@@ -169,6 +262,19 @@ test("ตัวตนถูกซ่อนจนกว่าจะลงดว�
   // คนที่ไม่ได้ลงสนามยังถูกซ่อนอยู่
   const other = Object.values(e.players).find((p) => p.id !== pair.a && p.id !== pair.b);
   if (other) assert.strictEqual(Seraph.canSee(e.players[pair.a], other), false);
+});
+
+test("ประกาศคู่ดวลตอนจบวันที่ 5 (ก่อนหน้านั้นยังไม่มีคู่)", () => {
+  const e = startWith(4);
+  for (let d = 1; d <= 4; d++) {
+    Seraph.advanceDay(e);
+    assert.strictEqual(Seraph.stateFor(e, "p1").pairs.length, 0, `จบวันที่ ${d} ยังไม่มีคู่`);
+  }
+  assert.strictEqual(Seraph.currentDay(), 5);
+  const { next } = Seraph.advanceDay(e);
+  assert.strictEqual(next, "pairing");
+  assert.strictEqual(Seraph.currentDay(), 6);
+  assert.strictEqual(Seraph.stateFor(e, "p1").pairs.length, 1);
 });
 
 test("จับคู่: ดวลแค่ 1 คู่ต่อรอบ ที่เหลือผ่านฟรีทั้งหมด", () => {
@@ -280,9 +386,9 @@ test("เฟสเลือกสถานที่: ครบทุกคนแ
   Seraph.startPlacePhase(e, () => { fired++; });
   assert.strictEqual(Seraph.placePending(e).length, 2);
 
-  Seraph.choosePlace(e, "p1", "room", {});
+  visit(e, "p1", "room");
   assert.strictEqual(fired, 0, "ยังไม่ครบทุกคน");
-  Seraph.choosePlace(e, "p2", "room", {});
+  visit(e, "p2", "room");
   assert.strictEqual(fired, 0, "เลือกสถานที่ครบแล้วยังซื้อของต่อได้");
   Seraph.readyPlace(e, "p1");
   assert.strictEqual(fired, 0);
@@ -302,14 +408,16 @@ test("เลือกสถานที่ซ้ำในวันเดีย�
   const e = startWith(2);
   const p = e.players.p1;
   Seraph.startPlacePhase(e, () => {});
-  Seraph.choosePlace(e, "p1", "church", { option: "hp" });
-  assert.strictEqual(p.scCapHp, 4);
-  Seraph.choosePlace(e, "p1", "church", { option: "hp" }); // ครั้งที่ 2 ต้องไม่มีผล
-  assert.strictEqual(p.scCapHp, 4, "เลือกได้วันละครั้งเดียว");
+  visit(e, "p1", "church", { picks: ["hp", "hp"] });
+  assert.strictEqual(p.scCapHp, 5);
+  visit(e, "p1", "church", { picks: ["hp", "hp"] }); // ครั้งที่ 2 ต้องไม่มีผล
+  assert.strictEqual(p.scCapHp, 5, "เลือกได้วันละครั้งเดียว");
+  visit(e, "p1", "library", { picks: ["level"] });
+  assert.strictEqual(p.scSkillLevel, 1, "ใช้สถานที่ประจำวันไปแล้ว เข้าห้องสมุดไม่ได้");
 
   e.players.p2.scEliminated = true;
   Seraph.startPlacePhase(e, () => {});
-  Seraph.choosePlace(e, "p2", "library", {});
+  visit(e, "p2", "library", { picks: ["level"] });
   assert.strictEqual(e.players.p2.scSkillLevel, 1, "คนตกรอบเลือกไม่ได้");
 });
 
@@ -317,7 +425,7 @@ test("ห้องพัก: ได้ของฟรีเข้ากระเ
   const e = startWith(2);
   const p = e.players.p1;
   Seraph.startPlacePhase(e, () => {});
-  Seraph.choosePlace(e, "p1", "room", {});
+  visit(e, "p1", "room");
   assert.strictEqual(p.inventory.length, 1);
   assert.strictEqual(p.inventory[0].free, true, "ของจากห้องพักต้องมีธง free (คนละคลังกับร้านค้า)");
 });

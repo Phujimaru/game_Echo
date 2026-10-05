@@ -415,11 +415,22 @@ io.on('connection', (socket) => {
     draw.checkAllLocked();
   }, 4);
   onPlayerEvent(socket, 'attack', (id, { targetId } = {}) => attack.doAttack(id, targetId), 6);
-  // SE.RA.PH: เลือกสถานที่ประจำวัน (option = แท่นที่โบสถ์ · targets = เป้าหมายที่ลง Matrix ที่สวนสาธารณะ)
-  onPlayerEvent(socket, 'seraphPlace', (id, { key, option, targets } = {}) => {
+  // SE.RA.PH: เข้าสถานที่ในแมพ (picks = ลำดับการอัปเกรดที่โบสถ์/ห้องสมุด · targets = เป้าหมายที่ลง Matrix ที่สวนสาธารณะ)
+  onPlayerEvent(socket, 'seraphPlace', (id, { key, picks, targets } = {}) => {
     if (match.gameState !== 'SERAPH_PLACE') return;
-    combat.withEffectSource(match.players[id], () => Seraph.choosePlace(engine, id, key, { option, targets }));
+    combat.withEffectSource(match.players[id], () => Seraph.choosePlace(engine, id, key, { picks, targets }));
   }, 8);
+  // SE.RA.PH: เดินในแมพ — ส่งต่อตำแหน่งแบบเบาให้ทุกคน (ไม่ broadcast state ทั้งก้อน ซึ่งหนักและถี่เกิน)
+  onPlayerEvent(socket, 'seraphMove', (id, { x, f } = {}) => {
+    if (match.gameState !== 'SERAPH_PLACE') return;
+    const p = match.players[id];
+    if (Seraph.move(engine, id, Number(x), Number(f))) io.emit('seraphPos', { id, x: p.scX, f: p.scFace });
+  }, 30);
+  // SE.RA.PH: เก็บชิ้นส่วน Matrix / เหรียญในแมพ (ใครถึงก่อนได้ก่อน)
+  onPlayerEvent(socket, 'seraphPickup', (id, { pid } = {}) => {
+    if (match.gameState !== 'SERAPH_PLACE') return;
+    if (Seraph.pickup(engine, id, String(pid || ''))) view.broadcastState();
+  }, 10);
   onPlayerEvent(socket, 'seraphReady', (id) => {
     if (match.gameState === 'SERAPH_PLACE') Seraph.readyPlace(engine, id);
   }, 4);

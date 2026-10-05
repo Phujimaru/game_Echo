@@ -1,4 +1,4 @@
-// SE.RA.PH Moon Cell: เฟสเลือกสถานที่ + ตัวเดินวัน/รอบ
+// SE.RA.PH Moon Cell: เฟสแมพวันสืบสวน + ตัวเดินวัน/รอบ
 // export ก่อน require: ไฟล์ใน server/ require วนกันเอง — function declaration ถูก hoist จึงพร้อมใช้ตั้งแต่บรรทัดแรก
 Object.assign(module.exports, {
   beginSeraphPlacePhase, seraphAdvance,
@@ -14,8 +14,8 @@ const endTurnPhase = require("../phases/endTurn");
 const timers = require("../timers");
 const view = require("../view");
 
-// ---------- SE.RA.PH: เฟสเลือกสถานที่ (SERAPH_MOONCELL.md §5 ขั้นที่ 3 · ฉาก S4) ----------
-//  เปิดหลังสรุปแต้มของวันที่ 1-6 · ทุกคนเลือกพร้อมกัน · ครบคนหรือหมดเวลาแล้วจึงขึ้นวันถัดไป
+// ---------- SE.RA.PH: เฟสแมพวันสืบสวน (SERAPH_MOONCELL.md §5) ----------
+//  เปิดตั้งแต่ต้นวันที่ 1-6 (draw.dealRound ไม่แจกไพ่) · ทุกคนเดิน/เก็บของ/เข้าสถานที่พร้อมกัน · ครบคนกดพร้อมแล้วจึงขึ้นวันถัดไป
 function beginSeraphPlacePhase() {
   timers.clearPhaseTimer();
   Seraph.startPlacePhase(engine, finishSeraphPlacePhase);
@@ -63,6 +63,17 @@ function seraphAdvance() {
     return false;
   };
 
+  // คืนวันที่ 7 จบ (ทุกคนกดพร้อม) -> จบรอบ ฟื้นเลือด/เกราะ แจกเหรียญ แล้วขึ้นวันที่ 1 ของรอบใหม่
+  if (Seraph.isDuelNight()) {
+    if (finish()) return true;
+    clearCombatState();
+    Seraph.endCycle(engine);
+    match.gameState = "TRANSITION";
+    timers.startPhaseTimer(TRANSITION_TIME, draw.dealRound);
+    view.broadcastState();
+    return true;
+  }
+
   if (Seraph.isDuelDay()) {
     // วันที่ 7: คู่นี้จบหรือยัง
     const st = Seraph.checkDuelProgress(engine);
@@ -74,18 +85,18 @@ function seraphAdvance() {
       view.broadcastState();
       return true;
     }
-    // หมดคิวคู่ดวลแล้ว -> จบรอบ
+    // ดวลจบ -> คืนวันที่ 7 (เดินแมพ · ห้องพัก + ร้านค้า) ก่อนจบรอบ
     if (finish()) return true;
-    // ล้างของจากวันดวลก่อน แล้ว endCycle ค่อยฟื้นเลือด/เกราะ + แจกเหรียญจบรอบ
+    // ล้างของจากวันดวลก่อน (endCycle ฟื้นเลือด/เกราะ + แจกเหรียญตอนจบคืนนี้)
     clearCombatState();
-    Seraph.endCycle(engine);
+    Seraph.beginDuelNight(engine);
     match.gameState = "TRANSITION";
     timers.startPhaseTimer(TRANSITION_TIME, draw.dealRound);
     view.broadcastState();
     return true;
   }
 
-  // วันที่ 1-6: ขึ้นวันถัดไป (จบวันที่ 2 = ประกาศคู่ดวล · จบวันที่ 6 = เข้าวันดวล)
+  // วันที่ 1-6: ขึ้นวันถัดไป (จบวันที่ 5 = ประกาศคู่ดวล · จบวันที่ 6 = เข้าวันดวล)
   //  ตาข่าย: วันสืบสวนไม่มีสถานะ/สกิลติดตัว — อะไรที่ hook ของตัวละครแอบสร้างไว้ระหว่างวันถูกล้างทิ้ง
   //  ก่อนขึ้นวันใหม่ (และก่อน beginDuelDay แจกแต้มสกิลเริ่มดวล) จึงเข้าวันดวลด้วยสภาพสะอาดเสมอ
   clearCombatState();

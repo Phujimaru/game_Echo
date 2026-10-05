@@ -15,6 +15,12 @@ test.beforeEach(() => {
   Seraph.startPlacePhase(engine, () => {});
 });
 
+// เดินไปยืนหน้าประตูก่อนเข้า (server รับเฉพาะคนที่ยืนหน้าประตู)
+function visit(id, key, opts = {}) {
+  engine.players[id].scX = Seraph.DOORS.find((d) => d.key === key).x;
+  Seraph.choosePlace(engine, id, key, opts);
+}
+
 test.afterEach(() => {
   Seraph.reset();
   engine.clearPhaseTimer();
@@ -30,12 +36,12 @@ test('shopping before and after a visit preserves one location per day; ready lo
   engine.buyShopItem(p.id, 1);
   assert.equal(p.inventory.length, 1);
   assert.equal(p.scPlace, null);
-  Seraph.choosePlace(engine, p.id, 'library');
+  visit(p.id, 'library', { picks: ['level'] });
   engine.buyShopItem(p.id, 2);
   assert.equal(p.scSkillLevel, 2);
   assert.equal(p.inventory.length, 2);
   assert.equal(p.gold, 6);
-  Seraph.choosePlace(engine, p.id, 'church', { option: 'hp' });
+  visit(p.id, 'church', { picks: ['hp'] });
   assert.equal(p.scCapHp, 3);
   Seraph.readyPlace(engine, p.id);
   engine.buyShopItem(p.id, 3);
@@ -53,7 +59,7 @@ test('ready without a location skips the visit and the final shopper controls da
   let finished = 0;
   Seraph.startPlacePhase(engine, () => { finished++; Seraph.finishPlacePhase(engine); });
   Seraph.readyPlace(engine, 'p1');
-  Seraph.choosePlace(engine, 'p1', 'room');
+  visit('p1', 'room');
   assert.equal(engine.players.p1.inventory.length, 0);
   assert.equal(finished, 0);
   engine.buyShopItem('p2', 1);
@@ -87,7 +93,7 @@ test('purchases reject other phases, eliminated players, sold stock, and duel da
 });
 
 test('safety timeout never grants a second location to players who already visited', () => {
-  Seraph.choosePlace(engine, 'p1', 'library');
+  visit('p1', 'library', { picks: ['level'] });
   Seraph.finishPlacePhase(engine);
   assert.equal(engine.players.p1.scSkillLevel, 2);
   assert.equal(engine.players.p1.scPlace, 'library');
