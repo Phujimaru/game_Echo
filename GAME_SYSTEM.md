@@ -57,7 +57,7 @@ tests/                           node --test (ไม่มี dep เพิ่�
 | `phases/endTurn.js` | `endTurn` |
 | `phases/echoFreeHit.js` | Echo: เฟสโจมตีย่อยของตีฟรีกลางช่วงจั่วไพ่ (`pickFreeHit`, `startFreeHit`, `finishFreeHit`, `runPendingBeforeReveal`, `runPendingOnLock`) |
 | `modes/mercury.js` | Type Mercury (ORT): `mercuryActive`, `isOrt`, `mercuryPick`, โหวตยอมแพ้ |
-| `modes/seraph.js` | SE.RA.PH: เฟสเลือกสถานที่ + `seraphAdvance` |
+| `modes/seraph.js` | Moon Cell: เฟสแมพวันสืบสวน (`SERAPH_PLACE`) + `seraphAdvance` (วัน → คืนวันที่ 7 → จบรอบ) |
 
 **กติกาเวลาแก้โค้ดใน server/**
 - สถานะแมตช์อ่าน/เขียนผ่าน `match.<ชื่อ>` เสมอ (`match.gameState = "SUMMARY"`) — ห้าม destructure ออกมาเก็บ ค่าจะไม่อัปเดต
@@ -895,10 +895,10 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 
 ## 9. เศรษฐกิจ + ร้านค้า
 
-- **Moon Cell (`seraph`)**: สืบสวนวันที่ 1–6 แล้วดวลวันที่ 7 · เลือกสถานที่ได้วันละไม่เกิน 1 แห่ง
-  ร้านค้าเป็นกิจกรรมแยก ซื้อก่อนหรือหลังเลือกสถานที่ได้ในเฟส `SERAPH_PLACE` จนกด `seraphReady`
-  ทุกคนกดพร้อมครบจึงขึ้นวันใหม่ · เซิร์ฟเวอร์เก็บสถานที่และสถานะพร้อมต่อผู้เล่น รีเฟรชไม่คืนสิทธิ์
-  `Seraph.canShop()` บล็อกคนพร้อมแล้ว/ตกรอบ/นอกเฟสเลือกสถานที่ และ `buyShopItem()` ตรวจเฟสเกมซ้ำ
+- **Moon Cell (`seraph`)**: วันที่ 1–6 เดินแมพ (ไม่มีจั่วไพ่) แล้วดวลวันที่ 7 → คืนวันที่ 7 → รอบใหม่ — กติกาเต็มใน [SERAPH_MOONCELL.md](SERAPH_MOONCELL.md)
+  `draw.dealRound()` ของวันเดินแมพไม่แจกไพ่ เข้าเฟส `SERAPH_PLACE` ทันที · เหรียญมาจากของในแมพ (`Seraph.pickup` → `addGold`) + จบรอบ +5
+  สถานที่ประจำวัน (ห้องพัก/โบสถ์/ห้องสมุด) วันละ 1 แห่ง · สวนสาธารณะ/ร้านค้าแวะได้ไม่จำกัดจนกด `seraphReady`
+  `Seraph.canShop()` บล็อกคนพร้อมแล้ว/ตกรอบ/นอกเฟสแมพ และ `buyShopItem()` ตรวจเฟสเกมซ้ำ
   Overload Force ปิดทั้งโหมด รวมวันดวล (กันทั้งจุดทอยและ `triggerOverloadForce()`)
 
 - **เหรียญ**: จบเทิร์น +1 ทุกคน · ชนะจั่ว +1 · การ์ด King +10 · เพดาน `goldCapOf(p)` = 30 (โคโตเนะ 45 จากสกิลติดตัว)
@@ -1025,7 +1025,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · ฉาก `ort` พัก CUTSCENE `ortSceneSeconds(scene) + 0.5` (**สูตรต้องตรงกับ client — มีเทสต์เทียบ**) · ORT ยังไม่โผล่และไม่มีใครโดน = ข้ามฉาก
 - **จุดปะทะ** = ผู้เล่น 2+ คนอยู่ช่องเดียวกัน (ไม่นับช่องเริ่ม) หลังฉาก ORT · `startFight()` ซูมเข้า 3 วิ → การ์ด 2 รอบ (`dealRound`, `roundNumber = turn - 1`)
   คนที่ไม่อยู่ในจุดนั้นเป็น**ผู้ชม** `benched(p)`: ไม่ได้ไพ่ · ไม่นับใน `resolveRound`/`attackableTargets` (`combatants()`) · กดสกิล/ใช้ไอเทม/โจมตี/ถูกเล็งไม่ได้
-  · นับผู้ชนะแต่ละรอบ (`onFightResult()` ถัดจาก `Seraph.onRoundWinner` · ไพ่แตกพร้อมกัน = รอบนั้นไม่มีใครได้)
+  · นับผู้ชนะแต่ละรอบ (`onFightResult()` ถัดจากเหรียญผู้ชนะจั่ว · ไพ่แตกพร้อมกัน = รอบนั้นไม่มีใครได้)
   · ครบ 2 รอบ: มีผู้ชนะมากสุดคนเดียว → คนอื่นถอย 2 · เสมอ = ถอยทั้งหมด 2 (`PURGE_FIGHT_KNOCKBACK`) → จุดถัดไป/เทิร์นเต๋าใหม่ (`purgeAdvance()` ท้าย `endTurn()`)
 - เลือดหมด = ล้มลง ถอย 2 เลือด/เกราะเต็ม (`tryKnockBack()` ใน `instantDeath()` ก่อน `p.alive = false`) · ไม่มี Overload Force
 - จบเกม: ถึงประตูผนึก = ได้อันดับตามลำดับ (`finished`) · เกมจบเมื่อทุกคนเข้าเส้นชัยหรือโดนกิน (`maybeEnd`) · `result "ranked"` (`winnerId = finished[0]`) / `"allLost"`

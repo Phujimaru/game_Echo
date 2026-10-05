@@ -1,0 +1,1267 @@
+<title>Moon Cell สตอรี่บอร์ด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Kanit:wght@300;400;500&family=Michroma&display=swap">
+<style>
+/* Layout: ORDEAL CALL dossier — snow page with survey grid, header logo, rule ledger, nine scene boards in cycle order (canvas with corner ticks, notes under), open questions last */
+:root{
+  --snow:#f7fafd; --paper:#eef3f9; --frost:#dce7f3; --ice:#bee3f8; --sky:#7fb8e6; --azure:#3d8bd9;
+  --ink:#1c3f6e; --ink-2:#4f6e95; --ink-3:#8ba3c2;
+  --echo:#9b4f96; --echo-deep:#6e2c7a; --hp:#d2455b;
+  --line:rgba(61,139,217,.28);
+  --f-logo:'Michroma','Chakra Petch',sans-serif;
+  --f-ui:'Chakra Petch','Kanit',system-ui,sans-serif;
+  --f-body:'Kanit','Chakra Petch',system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--snow);color:var(--ink)}
+body{
+  font:300 15px/1.7 var(--f-body);
+  background:
+    linear-gradient(rgba(61,139,217,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(61,139,217,.055) 1px,transparent 1px),
+    radial-gradient(120% 90% at 50% 20%,#fff 0%,var(--snow) 46%,#e2ecf7 100%);
+  background-size:48px 48px,48px 48px,100% 100%;
+  background-attachment:scroll;
+}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:48px 96px;display:flex;flex-direction:column;gap:56px}
+header{display:flex;flex-direction:column;gap:10px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.mark{font:500 11px/1 var(--f-ui);letter-spacing:.14em;color:var(--ink-2)}
+.mark b{color:var(--azure);font-weight:600}
+h1{font:400 clamp(30px,6vw,54px)/1.1 var(--f-logo);letter-spacing:.32em;margin:0;color:var(--ink)}
+h1 span{color:var(--azure)}
+.lede{max-width:62ch;color:var(--ink-2);margin:0}
+
+.panel{position:relative;background:rgba(255,255,255,.9);border:1px solid var(--line);box-shadow:0 24px 60px -30px rgba(28,63,110,.35)}
+.panel::before,.panel::after{content:"";position:absolute;width:12px;height:12px;border:2px solid var(--azure);pointer-events:none}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+
+h2.sec{font:600 15px/1.2 var(--f-ui);color:var(--ink-2);margin:0 0 12px}
+.ledger{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:0}
+.ledger div{padding:14px 18px;display:flex;flex-direction:column;gap:2px;min-width:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ledger b{font:600 13px/1.3 var(--f-ui);color:var(--azure)}
+.ledger span{font-size:14px;font-weight:400}
+.ledger .new{color:var(--echo)}
+
+.scene{display:flex;flex-direction:column;gap:14px}
+.sh{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.no{font:600 14px/1 var(--f-ui);color:var(--azure);font-variant-numeric:tabular-nums}
+.sh h3{font:600 26px/1.2 var(--f-ui);margin:0;color:var(--ink)}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 12px/1 var(--f-ui);padding:6px 8px;border:1px solid var(--line);color:var(--ink-2);background:#fff}
+.chip i{width:7px;height:7px;transform:rotate(45deg);background:var(--azure);display:inline-block}
+.chip.duel{color:var(--hp);border-color:rgba(210,69,91,.35)} .chip.duel i{background:var(--hp)}
+.chip.echo{color:var(--echo);border-color:rgba(155,79,150,.35)} .chip.echo i{background:var(--echo)}
+.stage{position:relative}
+.stage .tk{position:absolute;width:22px;height:22px;border:1.5px solid var(--sky);pointer-events:none}
+.stage .tl{top:-8px;left:-8px;border-right:0;border-bottom:0}.stage .tr{top:-8px;right:-8px;border-left:0;border-bottom:0}
+canvas{display:block;width:100%;max-width:100%;aspect-ratio:16/9;background:var(--paper);border:1px solid var(--line);outline:none;box-shadow:0 24px 60px -34px rgba(28,63,110,.45)}
+canvas:focus-visible{outline:2px solid var(--azure);outline-offset:3px}
+.hint{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink-2)}
+.pad{display:flex;gap:6px}
+.pad button{font:600 14px/1 var(--f-ui);background:#fff;color:var(--ink);border:1px solid var(--line);padding:9px 16px;cursor:pointer;touch-action:none;user-select:none;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.pad button:hover{background:var(--paper)}
+.pad button:focus-visible{outline:2px solid var(--azure);outline-offset:3px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 32px}
+.notes > div{min-width:0}
+.notes h4{font:600 13px/1.3 var(--f-ui);margin:0 0 4px;color:var(--azure)}
+.notes .q h4{color:var(--echo)}
+.notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-weight:400;color:var(--ink)}
+.notes li::marker{color:var(--sky)}
+.open{padding:24px 26px}
+.open ol{margin:0;padding-left:24px;display:flex;flex-direction:column;gap:8px;max-width:75ch;font-weight:400}
+.open ol li::marker{font:600 14px var(--f-ui);color:var(--echo)}
+.open p{margin:0 0 12px;color:var(--ink-2)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark">SE.RA.PH <b>/</b> ORDEAL CALL</div>
+    <h1>MOON <span>CELL</span></h1>
+    <p class="lede">ร่างทุกฉากของ Moon Cell รอบใหม่ วางโครงแบบ Fate/EXTRA แต่ใช้สีและแอนิเมชันชุดเดียวกับ Ordeal Call ทั้งพื้นขาวอมฟ้า กริดสำรวจ แผงกระจกน้ำเงิน ตราหกเหลี่ยม แถบประกาศกลางจอ และคลื่นวงแหวน ฉากที่เลื่อนผ่านจะเล่นฉากเข้าใหม่ทุกครั้ง</p>
+  </header>
+
+  <section>
+    <h2 class="sec">กติกาที่เปลี่ยน</h2>
+    <div class="ledger panel">
+      <div><b>วันที่ 1–6</b><span class="new">ไม่มีจั่วไพ่ · เดินในแมพซ้าย/ขวา</span></div>
+      <div><b>สถานที่</b><span>เข้าได้วันละ 1 ที่ · ร้านค้าไม่นับ</span></div>
+      <div><b>Matrix</b><span class="new">เก็บชิ้นส่วนในแมพ ใครถึงก่อนได้ก่อน</span></div>
+      <div><b>ผู้เล่นอื่น</b><span>เห็นเป็นร่างเงา + ตราผนึก + ชื่อ</span></div>
+      <div><b>โบสถ์</b><span class="new">อัป 2 ครั้ง · พลังชีวิต/เกราะ · รวมไม่เกิน 10</span></div>
+      <div><b>ห้องสมุด</b><span class="new">อัป 2 ครั้ง · ความจุแต้มสกิล/ระดับทักษะ</span></div>
+      <div><b>ประกาศคู่ดวล</b><span class="new">ย้ายไปวันที่ 5</span></div>
+      <div><b>วันที่ 7</b><span>ดวล 1 คู่ต่อรอบ · สนาม 2.5D</span></div>
+      <div><b>ฉาก GIF</b><span class="new">ถอดออกทั้งหมด</span></div>
+    </div>
+  </section>
+
+  <section class="scene" id="corridor">
+    <div class="sh"><span class="no">01</span><h3>ทางเดินอาคารเรียน</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span>
+      <canvas id="cv-corridor" data-scene="corridor" tabindex="0" aria-label="ทางเดินอาคารเรียน เดินซ้ายขวาเก็บ Matrix และเข้าสถานที่"></canvas>
+      <div class="hint">
+        <span>คลิกที่ฉากแล้วกด ← → เพื่อเดิน กด ↑ เพื่อเข้าสถานที่ หรือใช้ปุ่มนี้</span>
+        <span class="pad"><button type="button" id="pad-l" data-k="l" aria-label="เดินซ้าย">←</button><button type="button" id="pad-u" data-k="u">↑ เข้า</button><button type="button" id="pad-r" data-k="r" aria-label="เดินขวา">→</button></span>
+      </div>
+    </div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>ทางเดินยาวต่อเนื่อง มีประตู 5 บาน คือ ห้องพัก ห้องสมุด ร้านค้า โบสถ์ และสวนสาธารณะ</li>
+        <li>เข้าสถานที่ไปแล้ว 1 ที่ ประตูอื่นจะปิด ยกเว้นร้านค้า จากนั้นกด "พร้อม" เพื่อจบวัน</li>
+        <li>ชิ้นส่วน Matrix ลอยอยู่ตามทาง เดินผ่านแล้วเก็บได้เลย ถือได้สูงสุด 4</li>
+        <li>ผู้เล่นอื่นเห็นเป็นร่างเงากับตราผนึกหกเหลี่ยม แบบเดียวกับห้องรอ</li>
+      </ul></div>
+      <div><h4>แอนิเมชัน</h4><ul>
+        <li>ตอนเก็บชิ้นส่วน มีวงแหวนขยายออกพร้อมเส้นแสงพุ่ง</li>
+        <li>ตอนเข้าประตู มีแฟลชขาว วงแหวน และแถบชื่อสถานที่กลางจอ เหมือนตอนดิ่งลงสนาม</li>
+        <li>ประตูที่ยืนอยู่หน้า เส้นขอบจะเป็นเส้นประวิ่งแบบห้องรอ</li>
+      </ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul>
+        <li>ชิ้นส่วน Matrix เกิดวันละกี่ชิ้น ร่างนี้ใช้ 5 ชิ้น</li>
+        <li>ถ้าเหลือคนเดียวที่ยังไม่กดพร้อม จะมีเวลานับถอยหลังบังคับไหม</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="room">
+    <div class="sh"><span class="no">02</span><h3>ห้องพัก</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-room" data-scene="room" tabindex="0" aria-label="ห้องพัก การ์ดของฟรีพลิกเปิด"></canvas>
+      <div class="hint"><span>กด "สุ่มอีกครั้ง" เพื่อดูการ์ดพลิกใหม่</span></div></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>สุ่มได้ของฟรี 1 ชิ้นจากคลังของห้องพัก ซึ่งแยกจากของในร้าน</li>
+        <li>กดรับแล้วของเข้ากระเป๋า เก็บไว้ใช้ในวันดวล</li>
+      </ul></div>
+      <div><h4>แอนิเมชัน</h4><ul><li>การ์ดลอยขึ้นแล้วพลิก ด้านหลังเป็นตราผนึกน้ำเงิน พอพลิกเปิดมีวงแหวนกระจายออก</li></ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>ใช้ของ 6 ชนิดเดิมของห้องพักต่อไหม</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="church">
+    <div class="sh"><span class="no">03</span><h3>โบสถ์</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-church" data-scene="church" tabindex="0" aria-label="โบสถ์ อัปเกรดพลังชีวิตและเกราะ 2 ครั้ง"></canvas>
+      <div class="hint"><span>กด +1 เพื่อใช้สิทธิ์อัปเกรด ตัวอย่างนี้เริ่มที่พลังชีวิต 5 เกราะ 3</span></div></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>เข้า 1 ครั้งได้อัป 2 ครั้ง แต่ละครั้งเลือกพลังชีวิต +1 หรือเกราะ +1 จะเลือกอย่างเดิมซ้ำก็ได้</li>
+        <li>ความจุพลังชีวิตกับเกราะรวมกันไม่เกิน 10 ถ้าเริ่มจาก 3 + 2 จะอัปได้อีก 5 ครั้ง</li>
+        <li>แถบ 10 ช่องแสดงสัดส่วนพลังชีวิต (แดง) กับเกราะ (ฟ้า)</li>
+      </ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>ถ้าเหลือที่ว่างแค่ 1 ช่อง สิทธิ์ครั้งที่สองหายไปเลยไหม</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="library">
+    <div class="sh"><span class="no">04</span><h3>ห้องสมุด</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-library" data-scene="library" tabindex="0" aria-label="ห้องสมุด อัปเกรดความจุแต้มสกิลและระดับทักษะ 2 ครั้ง"></canvas>
+      <div class="hint"><span>ตัวอย่างนี้เริ่มที่ความจุแต้มสกิล 5 ระดับทักษะ 4 ลองอัประดับทักษะ 2 ครั้งดูป้ายเตือน</span></div></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>เข้า 1 ครั้งได้อัป 2 ครั้ง เลือกความจุแต้มสกิล +1 (4 ถึง 8) หรือระดับทักษะ +1 (1 ถึง 6)</li>
+        <li>ระดับทักษะ 3 ปลดล็อกสกิลรอง ระดับ 6 ปลดล็อกท่าไม้ตาย</li>
+        <li>ท่าไม้ตายใช้ 6 แต้ม ถ้าความจุยังไม่ถึง 6 จะขึ้นป้ายเตือน</li>
+        <li>ถ้าจะใช้ท่าไม้ตายต้องอัป 7 ครั้ง หรือเข้าห้องสมุด 4 ครั้ง</li>
+      </ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>เพดานความจุ 8 และระดับทักษะ 6 คงไว้ตามเดิมไหม</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="park">
+    <div class="sh"><span class="no">05</span><h3>สวนสาธารณะ</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-park" data-scene="park" tabindex="0" aria-label="สวนสาธารณะ ลงแต้ม Matrix ใส่เป้าหมาย"></canvas>
+      <div class="hint"><span>กดที่ชื่อเพื่อลง Matrix 1 แต้ม</span></div></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>ลง Matrix ใส่ผู้เล่นอื่น เลือกได้จากชื่อเท่านั้น เพราะยังไม่รู้ตัวละคร</li>
+        <li>ลง 1 แต้ม เห็นจำนวนไพ่ · 2 แต้ม ลดดาเมจจากคนนั้น 1 · 3 แต้ม เห็นแต้มไพ่ แต่เป้าหมายรู้ตัว</li>
+        <li>เมื่อประกาศคู่ดวลในวันที่ 5 แล้ว ชื่อคู่ดวลจะมีป้ายกำกับ ทำให้วันที่ 5–6 เล็งได้ตรงตัว</li>
+      </ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>การเข้าสวนนับเป็นสถานที่ประจำวันไหม ร่างนี้ให้นับ</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="shop">
+    <div class="sh"><span class="no">06</span><h3>ร้านค้า</h3><span class="chip"><i></i>วันที่ 1–6</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-shop" data-scene="shop" tabindex="0" aria-label="ร้านค้า ซื้อของด้วยเหรียญ"></canvas>
+      <div class="hint"><span>กดที่ของเพื่อซื้อ</span></div></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>เข้าร้านไม่เสียสิทธิ์สถานที่ของวันนั้น</li>
+        <li>ร้านใช้ของชุดเดียวกันทั้งรอบ ของที่ขายแล้วจะขึ้นป้ายว่าขายแล้ว</li>
+      </ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>ไม่มีเหรียญจากการชนะจั่วแล้ว เหลือรายได้แค่ 10 ตอนเริ่มเกมกับ +5 ต่อรอบ จะวางเหรียญให้เก็บในแมพเหมือนชิ้นส่วน Matrix ไหม</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="board">
+    <div class="sh"><span class="no">07</span><h3>ประกาศคู่ดวล</h3><span class="chip echo"><i></i>เริ่มวันที่ 5</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-board" data-scene="board" tabindex="0" aria-label="ประกาศคู่ดวลวันที่ 7 ขึ้นตอนเริ่มวันที่ 5"></canvas></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>ตอนเริ่มวันที่ 5 ประกาศจะเด้งขึ้นกลางทางเดิน แล้วค้างไว้บนบอร์ดจนถึงวันที่ 7</li>
+        <li>ดวลรอบละ 1 คู่ คนอื่นผ่านรอบนี้ไปเลย</li>
+        <li>ประกาศแสดงแค่ชื่อกับตราผนึก ยังไม่บอกว่าเป็นตัวละครอะไร</li>
+      </ul></div>
+      <div><h4>แอนิเมชัน</h4><ul><li>แถบประกาศกลางจอขึ้นก่อน จากนั้นกระดาษประกาศค่อยลอยขึ้นพร้อมวงแหวน ใช้จังหวะเดียวกับแถบชื่อภูมิภาคตอนดิ่ง</li></ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul><li>ประกาศตอนเริ่มวันที่ 5 (ร่างนี้) หรือตอนจบวันที่ 5</li></ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="arena">
+    <div class="sh"><span class="no">08</span><h3>สนามดวล 2.5D</h3><span class="chip duel"><i></i>วันที่ 7</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-arena" data-scene="arena" tabindex="0" aria-label="สนามดวล 2.5D"></canvas></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>กล้องมองเฉียงแบบสนาม 55° ของ Ordeal Call ตัวเราอยู่ใกล้กล้อง ฝ่ายตรงข้ามอยู่ลึกเข้าไป</li>
+        <li>ตัวละครของทั้งสองคนเปิดเผยตอนลงสนาม ผู้ชมเห็นเฉพาะคู่ที่กำลังดวล</li>
+        <li>ผล Matrix ขึ้นใต้แถบของฝ่ายตรงข้าม เช่น จำนวนไพ่หรือการลดดาเมจ</li>
+        <li>สกิลมี 3 ช่องตามระดับทักษะ ช่องที่ยังไม่ปลดล็อกจะมีแม่กุญแจ</li>
+      </ul></div>
+      <div><h4>แอนิเมชัน</h4><ul><li>ทั้งสองคนร่อนลงแท่นทีละคน พอลงถึงแท่นมีวงแหวนกระแทก แล้วแถบ "ดวล" ขึ้นกลางจอ</li></ul></div>
+      <div class="q"><h4>ต้องตัดสิน</h4><ul>
+        <li>ภาพตัวละครในสนามจะใช้รูปเดิมจาก R2 หรือทำ sprite ใหม่</li>
+        <li>เกราะฟื้น +1 ทุกเทิร์นเลขคู่ยังใช้ในวันดวลไหม</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="scene" id="delete">
+    <div class="sh"><span class="no">09</span><h3>การลบ</h3><span class="chip duel"><i></i>จบการดวล</span></div>
+    <div class="stage"><span class="tk tl"></span><span class="tk tr"></span><canvas id="cv-delete" data-scene="del" tabindex="0" aria-label="ผู้แพ้ถูกลบหลังกำแพงหกเหลี่ยม"></canvas></div>
+    <div class="notes">
+      <div><h4>กติกาในฉาก</h4><ul>
+        <li>กำแพงหกเหลี่ยมสีแดงแบ่งสนามเป็นสองฝั่ง ผู้แพ้สลายเป็นพิกเซลจากหัวลงเท้า</li>
+        <li>ถ้าตายพร้อมกัน ทั้งสองฝั่งจะสลาย แล้วตกรอบทั้งคู่</li>
+        <li>จบฉากแล้วทุกคนกลับไปทางเดินของวันที่ 1 รอบใหม่</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="open panel">
+    <h2 class="sec" style="color:var(--echo)">คำถามที่ยังค้าง</h2>
+    <p>ร่างนี้ใช้คำตอบในวงเล็บไปก่อน เปลี่ยนได้ทุกข้อ</p>
+    <ol>
+      <li>ประกาศคู่ดวลตอนเริ่มหรือตอนจบวันที่ 5 (ตอนเริ่ม)</li>
+      <li>ชิ้นส่วน Matrix เกิดวันละกี่ชิ้น (5 ชิ้น)</li>
+      <li>เหรียญจะหาได้จากไหนบ้าง เพราะเลิกจั่วไพ่แล้ว (ยังไม่มี)</li>
+      <li>การเข้าสวนสาธารณะนับเป็นสถานที่ประจำวันไหม (นับ)</li>
+      <li>โบสถ์เหลือที่ว่าง 1 ช่อง สิทธิ์ครั้งที่สองจะเป็นอย่างไร (หายไป)</li>
+      <li>เพดานความจุแต้มสกิล 8 และระดับทักษะ 6 คงไว้ไหม (คงไว้)</li>
+      <li>ภาพตัวละครในสนาม 2.5D ใช้รูปเดิมหรือทำ sprite ใหม่ (ยังไม่ได้เลือก)</li>
+      <li>เกราะฟื้นทุกเทิร์นเลขคู่ในวันดวล (ยังใช้)</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(() => {
+const W = 960, H = 540, TAU = Math.PI * 2;
+// โทเคน ORDEAL CALL (client/src/oc/theme.css)
+const C = {
+  snow:'#f7fafd', paper:'#eef3f9', frost:'#dce7f3', ice:'#bee3f8', sky:'#7fb8e6', azure:'#3d8bd9',
+  ink:'#1c3f6e', ink2:'#4f6e95', ink3:'#8ba3c2', echo:'#9b4f96', echoDeep:'#6e2c7a', echoGlow:'#c99ad6',
+  hp:'#d2455b', warn:'#e8590c', navy:'rgba(18,38,72,.92)', navyLine:'rgba(127,184,230,.35)', navyText:'#eaf3fc', navyMute:'#9db8da'
+};
+const AZ = 'rgba(61,139,217,A)', EC = 'rgba(155,79,150,A)', HP = 'rgba(210,69,91,A)', WT = 'rgba(255,255,255,A)', IC = 'rgba(190,227,248,A)';
+const FD = "'Chakra Petch','Kanit',sans-serif", FB = "'Kanit','Chakra Petch',sans-serif", FL = "'Michroma','Chakra Petch',sans-serif";
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = (p) => 1 - Math.pow(1 - clamp(p, 0, 1), 3);         // ≈ cubic-bezier(.2,.8,.2,1) ของ oc-rise
+const PCOL = { Rin: C.hp, Kaze: '#2f9e8f', Nox: '#6a5acd', Mio: C.warn };
+
+// ---------- ตัวช่วยวาด ----------
+function T(c, s, x, y, o = {}) {
+  c.font = `${o.w || 500} ${o.size || 16}px ${o.fam || FD}`;
+  c.fillStyle = o.color || C.ink; c.textAlign = o.align || 'left'; c.textBaseline = o.base || 'alphabetic';
+  if ('letterSpacing' in c) c.letterSpacing = (o.ls || 0) + 'px';   // ใช้ ls กับตัวอังกฤษเท่านั้น
+  c.fillText(s, x, y);
+}
+function cutPath(c, x, y, w, h, k = 10) {
+  c.beginPath(); c.moveTo(x + k, y); c.lineTo(x + w, y); c.lineTo(x + w, y + h - k);
+  c.lineTo(x + w - k, y + h); c.lineTo(x, y + h); c.lineTo(x, y + k); c.closePath();
+}
+function ticks(c, x, y, w, h, col = C.azure, s = 12) {
+  c.strokeStyle = col; c.lineWidth = 2; c.beginPath();
+  c.moveTo(x, y + s); c.lineTo(x, y); c.lineTo(x + s, y);
+  c.moveTo(x + w - s, y + h); c.lineTo(x + w, y + h); c.lineTo(x + w, y + h - s); c.stroke();
+}
+// แผงกระจกน้ำเงินในเกม (.oc-navy)
+function navy(c, x, y, w, h, o = {}) {
+  cutPath(c, x, y, w, h, o.k ?? 10); c.fillStyle = C.navy; c.fill();
+  c.strokeStyle = o.line || C.navyLine; c.lineWidth = 1; c.stroke();
+  if (o.accent !== false) { c.strokeStyle = o.accent || C.sky; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y + (o.k ?? 10) + 12); c.lineTo(x, y + (o.k ?? 10)); c.lineTo(x + (o.k ?? 10), y); c.lineTo(x + (o.k ?? 10) + 12, y); c.stroke(); }
+}
+// แผงกระดาษขาว (.oc-panel)
+function paper(c, x, y, w, h) {
+  c.save(); c.shadowColor = 'rgba(28,63,110,.28)'; c.shadowBlur = 30; c.shadowOffsetY = 14;
+  c.fillStyle = 'rgba(255,255,255,.96)'; c.fillRect(x, y, w, h); c.restore();
+  c.strokeStyle = 'rgba(61,139,217,.28)'; c.lineWidth = 1; c.strokeRect(x + .5, y + .5, w - 1, h - 1);
+  ticks(c, x, y, w, h);
+}
+function rr(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+const inR = (p, x, y, w, h) => p && p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
+// ปุ่ม: บนแผงน้ำเงิน · primary = ม่วง ECHO
+function btn(sc, x, y, w, h, label, act, o = {}) {
+  const c = sc.c, hov = !o.disabled && inR(sc.mouse, x, y, w, h);
+  c.save(); if (o.disabled) c.globalAlpha *= .45;
+  cutPath(c, x, y, w, h, 8);
+  c.fillStyle = o.primary ? (hov ? C.echoDeep : C.echo) : (hov ? 'rgba(127,184,230,.26)' : 'rgba(127,184,230,.1)'); c.fill();
+  c.strokeStyle = o.primary ? C.echo : C.navyLine; c.lineWidth = 1; c.stroke();
+  T(c, label, x + w / 2, y + h / 2 + 1, { size: o.size || 16, w: 600, align: 'center', base: 'middle', color: o.primary ? '#fff' : C.navyText });
+  c.restore();
+  sc.regions.push({ x, y, w, h, act, disabled: o.disabled });
+}
+function heartP(c, x, y, r) { c.beginPath(); c.moveTo(x, y + r * .9); c.bezierCurveTo(x - r * 1.7, y - r * .2, x - r * .6, y - r * 1.3, x, y - r * .4); c.bezierCurveTo(x + r * .6, y - r * 1.3, x + r * 1.7, y - r * .2, x, y + r * .9); c.closePath(); }
+function shieldP(c, x, y, r) { c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * .85, y - r * .62); c.lineTo(x + r * .72, y + r * .3); c.lineTo(x, y + r); c.lineTo(x - r * .72, y + r * .3); c.lineTo(x - r * .85, y - r * .62); c.closePath(); }
+function diamondP(c, x, y, r) { c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * .68, y); c.lineTo(x, y + r); c.lineTo(x - r * .68, y); c.closePath(); }
+function starP(c, x, y, r) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); } c.closePath(); }
+function hexP(c, x, y, r) { c.beginPath(); for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); }
+function icon(c, type, x, y, r, color) {
+  c.save(); c.fillStyle = color; c.strokeStyle = color; c.lineWidth = Math.max(1.5, r * .18);
+  if (type === 'heal') { c.fillRect(x - r * .25, y - r * .8, r * .5, r * 1.6); c.fillRect(x - r * .8, y - r * .25, r * 1.6, r * .5); }
+  else if (type === 'armor') { shieldP(c, x, y, r); c.fill(); }
+  else if (type === 'skill') { diamondP(c, x, y, r); c.fill(); }
+  else if (type === 'resist') { c.beginPath(); c.arc(x, y, r * .8, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(x - r * .55, y + r * .55); c.lineTo(x + r * .55, y - r * .55); c.stroke(); }
+  else if (type === 'fortune') { starP(c, x, y, r); c.fill(); }
+  else if (type === 'guard') { hexP(c, x, y, r * .9); c.stroke(); hexP(c, x, y, r * .45); c.fill(); }
+  else if (type === 'hp') { heartP(c, x, y, r * .75); c.fill(); }
+  c.restore();
+}
+function lockIcon(c, x, y, s, color) {
+  c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = s * .16;
+  c.beginPath(); c.arc(x, y - s * .25, s * .32, Math.PI, 0); c.stroke(); rr(c, x - s * .45, y - s * .25, s * .9, s * .7, s * .1); c.fill(); c.restore();
+}
+function eyeIcon(c, x, y, s, color) {
+  c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x - s, y); c.quadraticCurveTo(x, y - s * .9, x + s, y); c.quadraticCurveTo(x, y + s * .9, x - s, y); c.stroke();
+  c.beginPath(); c.arc(x, y, s * .32, 0, TAU); c.fill(); c.restore();
+}
+function coin(c, x, y, r) { c.save(); c.fillStyle = '#e9b949'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.strokeStyle = '#9a7420'; c.lineWidth = 1.3; c.beginPath(); c.arc(x, y, r * .58, 0, TAU); c.stroke(); c.restore(); }
+function glow(c, x, y, r, col, a) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col.replace('A', a)); g.addColorStop(1, col.replace('A', 0)); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+// กริดสำรวจ 48px (.oc-screen::before)
+function survey(c, x0, y0, w, h, off = 0, a = .055) {
+  c.save(); c.beginPath(); c.rect(x0, y0, w, h); c.clip(); c.strokeStyle = `rgba(61,139,217,${a})`; c.lineWidth = 1;
+  for (let x = x0 - (((off % 48) + 48) % 48); x < x0 + w; x += 48) { c.beginPath(); c.moveTo(x + .5, y0); c.lineTo(x + .5, y0 + h); c.stroke(); }
+  for (let y = y0; y < y0 + h; y += 48) { c.beginPath(); c.moveTo(x0, y + .5); c.lineTo(x0 + w, y + .5); c.stroke(); }
+  c.restore();
+}
+// ลูกโลกเส้นลวดแบบลูกโลกร่วมของ Ordeal Call
+function globe(c, x, y, r, t, a = 1) {
+  c.save(); c.globalAlpha = a;
+  glow(c, x, y, r * 1.8, IC, .5);
+  const g = c.createRadialGradient(x - r * .3, y - r * .35, r * .1, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d7e8f6');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+  c.beginPath(); c.arc(x, y, r, 0, TAU); c.clip();
+  c.strokeStyle = 'rgba(61,139,217,.45)'; c.lineWidth = 1;
+  const rot = (t * .08) % 1;
+  for (let k = 0; k < 6; k++) { const f = (k + rot) / 6; c.beginPath(); c.ellipse(x, y, Math.abs(Math.cos(f * Math.PI)) * r, r, 0, 0, TAU); c.stroke(); }
+  for (let j = -3; j <= 3; j++) { const yy = y + j * r / 4, hw = Math.sqrt(Math.max(0, r * r - (yy - y) * (yy - y))); c.beginPath(); c.ellipse(x, yy, hw, hw * .12, 0, 0, TAU); c.stroke(); }
+  c.restore();
+  c.save(); c.globalAlpha = a; c.strokeStyle = 'rgba(61,139,217,.6)'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r, 0, TAU); c.stroke(); c.restore();
+}
+// คลื่นวงแหวน (ocd-shock) · p = 0..1
+function shock(c, x, y, p, col = AZ, maxR = 160, flat = 1) {
+  if (p <= 0 || p >= 1) return;
+  const r = 6 + ease(p) * maxR;
+  c.save(); c.globalAlpha = 1 - p; c.strokeStyle = col.replace('A', 1); c.lineWidth = 2;
+  c.shadowColor = col.replace('A', .45); c.shadowBlur = 16;
+  c.beginPath(); c.ellipse(x, y, r, r * flat, 0, 0, TAU); c.stroke(); c.restore();
+}
+// เส้นแสงพุ่ง (ocd-streak)
+function streaks(c, x, y, p, col = AZ, n = 10, len = 90) {
+  if (p <= 0 || p >= 1) return;
+  c.save(); c.strokeStyle = col.replace('A', (1 - p) * .9); c.lineWidth = 1.6; c.lineCap = 'round';
+  for (let i = 0; i < n; i++) { const a = i * TAU / n + .3, d0 = 10 + ease(p) * len * .4, d1 = d0 + len * (.2 + .8 * ease(p)) * .5; c.beginPath(); c.moveTo(x + Math.cos(a) * d0, y + Math.sin(a) * d0); c.lineTo(x + Math.cos(a) * d1, y + Math.sin(a) * d1); c.stroke(); }
+  c.restore();
+}
+// แฟลชขาว (ocd-flash) · d = วินาทีหลังเริ่ม
+function flash(c, d, dur = .6, max = .85) {
+  if (d < 0 || d > dur) return; const k = d / dur;
+  const a = k < .07 ? k / .07 : k < .26 ? 1 : 1 - (k - .26) / .74;
+  c.fillStyle = `rgba(255,255,255,${a * max})`; c.fillRect(0, 0, W, H);
+}
+// แถบประกาศกลางจอ (ocd-banner) + เส้นแสงแนวนอน (ocd-flare)
+function banner(c, d, kicker, title, col = C.ink, dur = 2) {
+  if (d < 0 || d > dur) return; const k = d / dur;
+  const a = k < .16 ? k / .16 : k < .66 ? 1 : 1 - (k - .66) / .34;
+  const s = k < .16 ? 1.06 - .06 * (k / .16) : 1;
+  c.save(); c.globalAlpha = a;
+  const g = c.createLinearGradient(0, 0, W, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.28, 'rgba(255,255,255,.88)'); g.addColorStop(.72, 'rgba(255,255,255,.88)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.fillRect(0, H / 2 - 50, W, 100);
+  c.translate(W / 2, H / 2); c.scale(s, s);
+  T(c, kicker, 0, -16, { size: 15, w: 600, align: 'center', base: 'middle', color: C.ink2 });
+  T(c, title, 0, 16, { size: 34, w: 700, align: 'center', base: 'middle', color: col });
+  c.restore();
+  const fk = clamp(d / .6, 0, 1);
+  if (fk < 1) { c.save(); c.globalAlpha = 1 - fk * fk; const lw = W * ease(fk); const lg = c.createLinearGradient(W / 2 - lw / 2, 0, W / 2 + lw / 2, 0); lg.addColorStop(0, 'rgba(61,139,217,0)'); lg.addColorStop(.3, C.azure); lg.addColorStop(.5, '#fff'); lg.addColorStop(.7, C.azure); lg.addColorStop(1, 'rgba(61,139,217,0)'); c.fillStyle = lg; c.fillRect(W / 2 - lw / 2, H / 2 - 1, lw, 2); c.restore(); }
+}
+// ฉากเข้าแบบ oc-rise: เลื่อนขึ้น 14px + จางเข้า
+function rise(sc, delay = 0, dur = .6) { if (REDUCE) return { a: 1, dy: 0 }; const e = ease((sc.t - sc.enterT - delay) / dur); return { a: e, dy: 14 * (1 - e) }; }
+function withRise(c, r, fn) { c.save(); c.globalAlpha *= r.a; c.translate(0, r.dy); fn(); c.restore(); }
+// ร่างคน: เท้าอยู่ที่ (x,y) สูงราว 120*s
+function figure(c, x, y, s, o = {}) {
+  c.save(); c.translate(x, y); c.scale(s * (o.face || 1), s);
+  const mv = o.moving ? 1 : 0, sw = Math.sin(o.walk || 0);
+  c.lineCap = 'round'; if (o.glow) { c.shadowColor = o.glow; c.shadowBlur = 14; }
+  c.strokeStyle = o.fill; c.fillStyle = o.fill; c.lineWidth = 10;
+  c.beginPath(); c.moveTo(-5, -46); c.lineTo(-5 + sw * 11 * mv, -4); c.moveTo(5, -46); c.lineTo(5 - sw * 11 * mv, -4); c.stroke();
+  c.lineWidth = 7; c.beginPath(); c.moveTo(-13, -86); c.lineTo(-17 - sw * 7 * mv, -54); c.moveTo(13, -86); c.lineTo(17 + sw * 7 * mv, -54); c.stroke();
+  const body = () => { c.beginPath(); c.moveTo(-15, -93); c.quadraticCurveTo(0, -99, 15, -93); c.lineTo(20, -42); c.quadraticCurveTo(0, -38, -20, -42); c.closePath(); };
+  body(); c.fill(); c.beginPath(); c.arc(0, -109, 12.5, 0, TAU); c.fill();
+  c.shadowBlur = 0;
+  if (o.stroke) { c.strokeStyle = o.stroke; c.lineWidth = 1.6 / s; c.beginPath(); c.arc(0, -109, 12.5, 0, TAU); c.stroke(); body(); c.stroke(); }
+  if (o.visor) { c.fillStyle = o.visor; c.fillRect(2, -112, 9, 2.5); }
+  c.restore();
+}
+function floorShadow(c, x, y, rx, a = .18) { c.save(); c.fillStyle = `rgba(28,63,110,${a})`; c.beginPath(); c.ellipse(x, y, rx, rx * .22, 0, 0, TAU); c.fill(); c.restore(); }
+// ตราผนึกหกเหลี่ยม (ห้องรอ: คนอื่น = ตราผนึก เพราะตัวละครถูกซ่อน)
+function seal(c, x, y, r, col) {
+  hexP(c, x, y, r); c.fillStyle = col; c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 1.4; hexP(c, x, y, r * .68); c.stroke();
+  c.beginPath(); c.moveTo(x - r * .3, y); c.lineTo(x + r * .3, y); c.moveTo(x, y - r * .3); c.lineTo(x, y + r * .3); c.stroke();
+}
+function nameTag(c, name, x, y, col) {
+  c.font = `600 13px ${FD}`; const w = c.measureText(name).width + 34;
+  cutPath(c, x - w / 2, y - 12, w, 24, 6); c.fillStyle = 'rgba(255,255,255,.92)'; c.fill(); c.strokeStyle = 'rgba(61,139,217,.28)'; c.lineWidth = 1; c.stroke();
+  seal(c, x - w / 2 + 13, y, 7, col);
+  T(c, name, x + 8, y + 1, { size: 13, w: 600, align: 'center', base: 'middle', color: C.ink });
+}
+function hud(c, o) {
+  navy(c, 16, 14, 226, 50);
+  T(c, 'วันที่', 32, 46, { size: 14, color: C.navyMute });
+  T(c, String(o.day), 74, 50, { size: 30, w: 700, color: C.navyText });
+  T(c, '/7', 96, 50, { size: 14, color: C.navyMute });
+  for (let i = 1; i <= 7; i++) {
+    const px = 128 + (i - 1) * 15;
+    c.fillStyle = i === 7 ? (i <= o.day ? C.hp : 'rgba(210,69,91,.45)') : i < o.day ? C.sky : i === o.day ? '#fff' : 'rgba(157,184,218,.3)';
+    diamondP(c, px, 39, 6); c.fill();
+    if (i === 5) { c.strokeStyle = C.echoGlow; c.lineWidth = 1.2; c.beginPath(); c.moveTo(px - 5, 50); c.lineTo(px + 5, 50); c.stroke(); }
+  }
+  navy(c, W - 236, 14, 220, 50, { accent: C.echoGlow });
+  T(c, 'Matrix', W - 222, 44, { size: 13, color: C.navyMute });
+  for (let i = 0; i < 4; i++) {
+    diamondP(c, W - 156 + i * 17, 39, 7);
+    if (i < o.matrix) { c.fillStyle = C.echoGlow; c.fill(); } else { c.strokeStyle = 'rgba(201,154,214,.45)'; c.lineWidth = 1.2; c.stroke(); }
+  }
+  coin(c, W - 74, 39, 8);
+  T(c, String(o.gold), W - 60, 45, { size: 17, w: 600, color: C.navyText });
+}
+function edgeFog(c, a = .5) {
+  const g = c.createRadialGradient(W / 2, H / 2, H * .4, W / 2, H / 2, H * .95);
+  g.addColorStop(0, 'rgba(226,236,247,0)'); g.addColorStop(1, `rgba(206,222,240,${a})`); c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+function placeTitle(c, sc, name) {
+  withRise(c, rise(sc, 0), () => { navy(c, 16, 78, 226, 50); T(c, name, 32, 111, { size: 24, w: 700, color: C.navyText }); });
+}
+function toast(c, sc, t) {
+  if (!sc.msg) return; const d = t - sc.msg.at; if (d < 0 || d > 1.8) return;
+  const a = d < .2 ? d / .2 : d > 1.4 ? 1 - (d - 1.4) / .4 : 1, dy = 10 * (1 - ease(d / .3));
+  c.save(); c.globalAlpha = a; c.translate(0, dy);
+  c.font = `600 17px ${FD}`; const w = Math.max(190, c.measureText(sc.msg.text).width + 52);
+  paper(c, W / 2 - w / 2, 80, w, 40);
+  T(c, sc.msg.text, W / 2, 101, { size: 17, w: 600, align: 'center', base: 'middle', color: sc.msg.color || C.ink });
+  c.restore();
+}
+function say(sc, text, color) { sc.msg = { text, color, at: sc.t || 0 }; }
+function lcg(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+const CARD_COL = { red: '#e0565a', blue: '#3d8bd9', green: '#2f9e6f', yellow: '#e0a92b' };
+function card(c, x, y, w, h, v, col, back) {
+  rr(c, x, y, w, h, 6);
+  if (back) { c.fillStyle = '#12264a'; c.fill(); c.strokeStyle = C.sky; c.lineWidth = 1.2; c.stroke(); hexP(c, x + w / 2, y + h / 2, w * .26); c.strokeStyle = 'rgba(127,184,230,.7)'; c.stroke(); return; }
+  c.save(); c.shadowColor = 'rgba(28,63,110,.25)'; c.shadowBlur = 10; c.shadowOffsetY = 4; c.fillStyle = '#fff'; c.fill(); c.restore();
+  c.strokeStyle = 'rgba(61,139,217,.35)'; c.lineWidth = 1; c.stroke();
+  c.save(); rr(c, x, y, w, h, 6); c.clip(); c.fillStyle = CARD_COL[col]; c.fillRect(x, y, w, h * .13); c.restore();
+  T(c, String(v), x + w / 2, y + h * .6, { size: h * .42, w: 700, align: 'center', base: 'middle', color: C.ink });
+}
+// พื้นห้องแบบเปอร์สเปกทีฟสีขาวอมฟ้า
+function floorPlane(c, y0, off = 0, vx = W / 2) {
+  const fg = c.createLinearGradient(0, y0, 0, H); fg.addColorStop(0, '#e8f0f8'); fg.addColorStop(1, '#d3e1ef');
+  c.fillStyle = fg; c.fillRect(0, y0, W, H - y0);
+  c.strokeStyle = 'rgba(61,139,217,.13)'; c.lineWidth = 1;
+  for (let i = -14; i <= 14; i++) { const sx = vx + i * 80 - (off % 80); c.beginPath(); c.moveTo(sx, y0); c.lineTo(sx + (sx - vx) * .9, H); c.stroke(); }
+  for (const f of [.08, .22, .42, .7]) { const y = y0 + (H - y0) * f; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  c.fillStyle = 'rgba(61,139,217,.35)'; c.fillRect(0, y0, W, 1.5);
+}
+
+// ============================================================
+//  01 ทางเดิน
+// ============================================================
+const corridor = {
+  init() {
+    this.worldW = 3100; this.px = 180; this.face = 1; this.ph = 0; this.keys = {}; this.matrix = 1;
+    this.used = null; this.ready = false; this.moving = false; this.fx = null;
+    this.doors = [
+      { x: 380, key: 'room', name: 'ห้องพัก' }, { x: 940, key: 'library', name: 'ห้องสมุด' },
+      { x: 1500, key: 'shop', name: 'ร้านค้า', free: true }, { x: 2080, key: 'church', name: 'โบสถ์' },
+      { x: 2660, key: 'park', name: 'สวนสาธารณะ' }
+    ];
+    this.frags = [640, 1200, 1780, 2360, 2920].map((x) => ({ x, got: false, at: -9 }));
+    this.others = [
+      { n: 'Rin', x: 840, a: 600, b: 1320, d: 1, sp: 44, ph: 0 },
+      { n: 'Kaze', x: 1950, a: 1620, b: 2520, d: -1, sp: 36, ph: 1 },
+      { n: 'Nox', x: 2760, a: 2440, b: 3000, d: 1, sp: 30, ph: 2 }
+    ];
+  },
+  key(e, down) {
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') { this.keys.l = down; return true; }
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') { this.keys.r = down; return true; }
+    if (k === 'ArrowUp' || k === 'w' || k === 'W' || k === 'Enter') { if (down && !e.repeat) this.enter(); return true; }
+    return false;
+  },
+  near() { return this.doors.find((d) => Math.abs(d.x - this.px) < 58); },
+  enter() {
+    const d = this.near(); if (!d) return;
+    if (this.ready) return say(this, 'กดพร้อมแล้ว', C.ink2);
+    if (!d.free && this.used === d.key) return say(this, 'เข้าไปแล้ว', C.ink2);
+    if (!d.free && this.used) return say(this, 'วันนี้เข้าสถานที่ไปแล้ว', C.hp);
+    if (!d.free) this.used = d.key;
+    this.fx = { at: this.t, door: d };
+  },
+  update(dt) {
+    const v = ((this.keys.r ? 1 : 0) - (this.keys.l ? 1 : 0)) * 200;
+    this.moving = v !== 0; if (v) this.face = v > 0 ? 1 : -1;
+    this.px = clamp(this.px + v * dt, 60, this.worldW - 60);
+    this.ph += Math.abs(v) * dt * .055;
+    for (const o of this.others) { o.x += o.d * o.sp * dt; o.ph += o.sp * dt * .055; if (o.x > o.b) o.d = -1; if (o.x < o.a) o.d = 1; }
+    for (const f of this.frags) {
+      if (!f.got && Math.abs(f.x - this.px) < 30) {
+        if (this.matrix < 4) { f.got = true; f.at = this.t; this.matrix++; say(this, `Matrix ${this.matrix}/4`, C.echo); }
+        else if (!this.msg || this.t - this.msg.at > 1.8) say(this, 'Matrix เต็ม', C.ink2);
+      }
+    }
+  },
+  draw(c, t) {
+    const cx = clamp(this.px - W / 2, 0, this.worldW - W), S = (wx) => wx - cx;
+    // ท้องฟ้านอกหน้าต่าง + ลูกโลก Moon Cell
+    const sg = c.createLinearGradient(0, 40, 0, 160); sg.addColorStop(0, '#ffffff'); sg.addColorStop(1, '#d6e8f7');
+    c.fillStyle = sg; c.fillRect(0, 40, W, 130);
+    globe(c, 700 - cx * .12, 128, 70, t, .9);
+    // ผนังเจาะหน้าต่าง
+    const wg = c.createLinearGradient(0, 40, 0, 380); wg.addColorStop(0, '#f9fbfe'); wg.addColorStop(1, '#e6eef7');
+    c.fillStyle = wg; c.beginPath(); c.rect(0, 40, W, 340);
+    const ws = Math.floor((cx - 200) / 200) * 200 + 40;
+    for (let wx = ws; wx < cx + W + 200; wx += 200) c.rect(S(wx), 60, 128, 84);
+    c.fill('evenodd');
+    survey(c, 0, 40, W, 262, cx);
+    c.strokeStyle = 'rgba(61,139,217,.45)'; c.lineWidth = 2;
+    for (let wx = ws; wx < cx + W + 200; wx += 200) { c.strokeRect(S(wx), 60, 128, 84); c.beginPath(); c.moveTo(S(wx) + 64, 60); c.lineTo(S(wx) + 64, 144); c.stroke(); }
+    // เพดาน + ไฟ
+    c.fillStyle = C.frost; c.fillRect(0, 0, W, 40); c.fillStyle = 'rgba(61,139,217,.3)'; c.fillRect(0, 39, W, 1);
+    for (let wx = Math.floor(cx / 260) * 260; wx < cx + W + 260; wx += 260) { glow(c, S(wx), 42, 80, IC, .7); c.fillStyle = '#fff'; c.fillRect(S(wx) - 38, 36, 76, 5); }
+    // บัวผนัง
+    c.fillStyle = '#e1eaf5'; c.fillRect(0, 302, W, 78); c.fillStyle = 'rgba(61,139,217,.45)'; c.fillRect(0, 302, W, 1.5);
+    // ประตู
+    const near = this.near();
+    for (const d of this.doors) {
+      const x = S(d.x); if (x < -120 || x > W + 120) continue;
+      const blocked = !d.free && this.used && this.used !== d.key, used = !d.free && this.used === d.key;
+      const lit = near === d && !blocked && !used && !this.ready;
+      c.fillStyle = '#ffffff'; c.fillRect(x - 58, 194, 116, 186);
+      c.fillStyle = C.paper; c.fillRect(x - 51, 201, 49, 179); c.fillRect(x + 2, 201, 49, 179);
+      c.strokeStyle = 'rgba(79,110,149,.35)'; c.lineWidth = 1; c.strokeRect(x - 51, 201, 49, 179); c.strokeRect(x + 2, 201, 49, 179);
+      c.fillStyle = 'rgba(190,227,248,.8)'; c.fillRect(x - 43, 218, 33, 46); c.fillRect(x + 10, 218, 33, 46);
+      c.fillStyle = C.ink3; c.fillRect(x - 8, 292, 3, 16); c.fillRect(x + 5, 292, 3, 16);
+      c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.5; c.strokeRect(x - 58, 194, 116, 186);
+      if (lit) {
+        glow(c, x, 470, 120, d.free ? EC : AZ, .16);
+        c.save(); c.setLineDash([6, 6]); c.lineDashOffset = REDUCE ? 0 : -t * 24; c.strokeStyle = d.free ? C.echo : C.azure; c.lineWidth = 2;
+        c.strokeRect(x - 63, 189, 126, 196); c.restore();
+      }
+      if (used) { c.strokeStyle = C.echo; c.lineWidth = 2.5; c.strokeRect(x - 58, 194, 116, 186); }
+      if (blocked || (this.ready && !used && !d.free)) { c.fillStyle = 'rgba(247,250,253,.72)'; c.fillRect(x - 58, 194, 116, 186); lockIcon(c, x, 290, 20, C.ink3); }
+      // ป้าย (แผงน้ำเงินในเกม)
+      navy(c, x - 66, 154, 132, 30, { k: 6, accent: d.free ? C.echoGlow : C.sky });
+      T(c, d.name, x, 170, { size: 15, w: 600, align: 'center', base: 'middle', color: C.navyText });
+      if (used) T(c, 'ใช้แล้ว', x, 397, { size: 12, w: 600, align: 'center', color: C.echo });
+    }
+    floorPlane(c, 380, cx % 80);
+    // ร่างเงาผู้เล่นอื่น
+    for (const o of this.others) {
+      const x = S(o.x); if (x < -60 || x > W + 60) continue;
+      floorShadow(c, x, 452, 22);
+      figure(c, x, 452, .86, { fill: 'rgba(139,163,194,.55)', stroke: 'rgba(79,110,149,.45)', face: o.d, walk: o.ph, moving: true });
+      nameTag(c, o.n, x, 332, PCOL[o.n]);
+    }
+    // ชิ้นส่วน Matrix
+    for (const f of this.frags) {
+      const x = S(f.x); if (x < -60 || x > W + 60) continue;
+      if (!f.got) {
+        const y = 418 + Math.sin(t * 2.2 + f.x) * 6;
+        c.fillStyle = 'rgba(155,79,150,.12)'; c.fillRect(x - 1, 300, 2, 170);
+        glow(c, x, y, 34, EC, .3);
+        c.save(); c.translate(x, y); c.rotate(Math.sin(t * 1.5 + f.x) * .25);
+        diamondP(c, 0, 0, 12); c.fillStyle = '#fff'; c.fill(); c.strokeStyle = C.echo; c.lineWidth = 2; c.stroke();
+        diamondP(c, 0, 0, 5); c.fillStyle = C.echo; c.fill(); c.restore();
+        c.save(); c.strokeStyle = `rgba(155,79,150,${.3 + .15 * Math.sin(t * 3)})`; c.beginPath(); c.ellipse(x, 474, 20, 5, 0, 0, TAU); c.stroke(); c.restore();
+      } else {
+        const p = (t - f.at) / .8; shock(c, x, 418, p, EC, 70); streaks(c, x, 418, p, EC, 10, 110);
+      }
+    }
+    // ตัวเรา
+    const px = S(this.px);
+    floorShadow(c, px, 476, 28, .22);
+    figure(c, px, 476, 1, { fill: C.ink, stroke: C.azure, glow: 'rgba(61,139,217,.45)', face: this.face, walk: this.ph, moving: this.moving, visor: C.ice });
+    if (near && !this.ready && (near.free || !this.used)) {
+      navy(c, px - 44, 326, 88, 26, { k: 6, accent: near.free ? C.echoGlow : C.sky });
+      T(c, '↑ เข้า', px, 340, { size: 14, w: 600, align: 'center', base: 'middle', color: C.navyText });
+    }
+    // แผนที่ย่อ
+    const mx = 300, mw = 360, my = 30;
+    navy(c, mx - 14, 14, mw + 28, 34, { k: 6 });
+    c.save(); c.setLineDash([4, 4]); c.lineDashOffset = REDUCE ? 0 : -t * 16; c.strokeStyle = 'rgba(157,184,218,.6)'; c.lineWidth = 1; c.beginPath(); c.moveTo(mx, my); c.lineTo(mx + mw, my); c.stroke(); c.restore();
+    const M = (wx) => mx + wx / this.worldW * mw;
+    c.strokeStyle = 'rgba(190,227,248,.55)'; c.strokeRect(M(cx), my - 9, W / this.worldW * mw, 18);
+    for (const d of this.doors) { c.fillStyle = (d.free || this.used === d.key) ? C.echoGlow : C.navyText; c.fillRect(M(d.x) - 1.5, my - 6, 3, 12); }
+    for (const f of this.frags) if (!f.got) { diamondP(c, M(f.x), my, 4); c.fillStyle = C.echoGlow; c.fill(); }
+    for (const o of this.others) { hexP(c, M(o.x), my + 9, 3.2); c.fillStyle = PCOL[o.n]; c.fill(); }
+    c.fillStyle = C.ice; c.beginPath(); c.arc(M(this.px), my + 9, 3.6, 0, TAU); c.fill();
+    hud(c, { day: 3, matrix: this.matrix, gold: 12 });
+    if (this.used) {
+      if (!this.ready) btn(this, W - 156, H - 62, 136, 44, 'พร้อม', () => { this.ready = true; say(this, 'รอผู้เล่นอื่น 2/4', C.ink2); }, { primary: true });
+      else { navy(c, W - 156, H - 62, 136, 44, { accent: C.echoGlow }); T(c, 'รอ 2/4', W - 88, H - 39, { size: 16, w: 600, align: 'center', base: 'middle', color: C.navyText }); }
+    }
+    edgeFog(c, .35);
+    // เข้าประตู: แฟลช + วงแหวน + แถบชื่อสถานที่
+    if (this.fx) {
+      const d = t - this.fx.at, dx = S(this.fx.door.x);
+      shock(c, dx, 300, d / .9, this.fx.door.free ? EC : AZ, 260, .55);
+      flash(c, d - .05, .55, .7);
+      banner(c, d - .1, this.fx.door.free ? 'แวะ' : 'สถานที่', this.fx.door.name, this.fx.door.free ? C.echo : C.ink);
+    }
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  02 ห้องพัก
+// ============================================================
+const ROOM_ITEMS = [
+  { n: 'ชุดปฐมพยาบาล', d: 'พลังชีวิต +2', ic: 'heal', col: C.hp },
+  { n: 'เกราะสำรอง', d: 'เกราะ +2', ic: 'armor', col: C.azure },
+  { n: 'แคปซูลเวทเข้มข้น', d: 'แต้มสกิล +3', ic: 'skill', col: C.echo },
+  { n: 'ยาต้านสถานะ', d: 'กันสถานะ 2 เทิร์น', ic: 'resist', col: '#6a5acd' },
+  { n: 'เครื่องรางโชคลาภ', d: 'โชค 2 เทิร์น', ic: 'fortune', col: '#d9a52b' },
+  { n: 'เครื่องกำบังสนาม', d: 'โล่ 1 · 2 เทิร์น', ic: 'guard', col: '#2f9e8f' }
+];
+const room = {
+  init() { this.item = 0; this.start = -9; this.taken = false; },
+  onEnter() { this.start = this.t; this.taken = false; },
+  draw(c, t) {
+    c.fillStyle = C.snow; c.fillRect(0, 0, W, H); survey(c, 0, 0, W, 360);
+    // หน้าต่างใหญ่ + ลูกโลก
+    const sg = c.createLinearGradient(0, 70, 0, 320); sg.addColorStop(0, '#fff'); sg.addColorStop(1, '#d4e7f7');
+    c.fillStyle = sg; c.fillRect(60, 70, 300, 250);
+    c.save(); c.beginPath(); c.rect(60, 70, 300, 250); c.clip(); globe(c, 230, 190, 82, t); c.restore();
+    c.strokeStyle = 'rgba(61,139,217,.55)'; c.lineWidth = 3; c.strokeRect(60, 70, 300, 250);
+    c.beginPath(); c.moveTo(210, 70); c.lineTo(210, 320); c.moveTo(60, 195); c.lineTo(360, 195); c.stroke();
+    c.fillStyle = 'rgba(190,227,248,.7)';
+    c.beginPath(); c.moveTo(40, 56); c.lineTo(94, 56); c.quadraticCurveTo(78, 200, 98, 340); c.lineTo(40, 340); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(380, 56); c.lineTo(326, 56); c.quadraticCurveTo(342, 200, 322, 340); c.lineTo(380, 340); c.closePath(); c.fill();
+    floorPlane(c, 360);
+    // เตียง + โต๊ะ (เส้นน้ำเงินบนกระดาษ)
+    c.fillStyle = '#ffffff'; c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(650, 350); c.lineTo(920, 350); c.lineTo(948, 440); c.lineTo(622, 440); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = C.ice; rr(c, 664, 330, 90, 28, 10); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff'; c.fillRect(40, 398, 210, 14); c.strokeRect(40, 398, 210, 14);
+    c.fillStyle = C.ink3; c.fillRect(52, 412, 8, 92); c.fillRect(230, 412, 8, 92);
+    // การ์ด
+    const it = ROOM_ITEMS[this.item], age = REDUCE ? 9 : t - this.start;
+    const up = ease(age / .6), ang = clamp((age - .5) / .7, 0, 1) * Math.PI;
+    const sx = Math.abs(Math.cos(ang)), face = ang > Math.PI / 2;
+    const cx = 480, cy = 250 + 18 * (1 - up) + Math.sin(t * 1.4) * 3, cw = 176, ch = 240;
+    shock(c, cx, cy, (age - .85) / .9, AZ, 220);
+    if (face) glow(c, cx, cy, 200, IC, .6);
+    for (let i = 0; i < 16; i++) {
+      const k = ((t * .22 + i / 16) % 1), x = cx + Math.sin(i * 7.3) * 120, y = cy + 140 - k * 300;
+      c.fillStyle = `rgba(61,139,217,${(1 - k) * .4})`; c.fillRect(x, y, 3, 3);
+    }
+    c.save(); c.globalAlpha = up; c.translate(cx, cy); c.scale(Math.max(.02, sx), 1);
+    cutPath(c, -cw / 2, -ch / 2, cw, ch, 14);
+    if (!face) {
+      c.fillStyle = '#12264a'; c.fill(); c.strokeStyle = C.sky; c.lineWidth = 2; c.stroke();
+      c.strokeStyle = 'rgba(127,184,230,.6)'; c.lineWidth = 1.5; hexP(c, 0, 0, 52); c.stroke(); hexP(c, 0, 0, 30); c.stroke();
+      c.beginPath(); c.moveTo(-16, 0); c.lineTo(16, 0); c.moveTo(0, -16); c.lineTo(0, 16); c.stroke();
+    } else {
+      c.save(); c.shadowColor = 'rgba(28,63,110,.3)'; c.shadowBlur = 24; c.shadowOffsetY = 10; c.fillStyle = '#fff'; c.fill(); c.restore();
+      c.strokeStyle = 'rgba(61,139,217,.4)'; c.lineWidth = 1; c.stroke();
+      ticks(c, -cw / 2, -ch / 2, cw, ch);
+      hexP(c, 0, -36, 46); c.fillStyle = C.paper; c.fill(); c.strokeStyle = 'rgba(61,139,217,.35)'; c.stroke();
+      icon(c, it.ic, 0, -36, 26, it.col);
+      T(c, it.n, 0, 44, { size: 17, w: 700, align: 'center', base: 'middle' });
+      T(c, it.d, 0, 72, { size: 14, align: 'center', base: 'middle', color: C.ink2, fam: FB, w: 400 });
+      T(c, 'ของฟรี', 0, 100, { size: 12, w: 600, align: 'center', base: 'middle', color: C.echo });
+    }
+    c.restore();
+    placeTitle(c, this, 'ห้องพัก');
+    hud(c, { day: 3, matrix: 2, gold: 12 });
+    withRise(c, rise(this, .9), () => {
+      navy(c, cx - 156, 396, 312, 60);
+      if (!this.taken) btn(this, cx - 144, 404, 140, 44, 'รับ', () => { this.taken = true; say(this, 'เก็บเข้ากระเป๋าแล้ว', C.echo); }, { primary: true, disabled: !face });
+      else { T(c, 'รับแล้ว', cx - 74, 427, { size: 16, w: 600, align: 'center', base: 'middle', color: C.echoGlow }); }
+      btn(this, cx + 4, 404, 140, 44, 'สุ่มอีกครั้ง', () => { this.item = (this.item + 1 + Math.floor(Math.random() * 4)) % ROOM_ITEMS.length; this.start = this.t; this.taken = false; });
+    });
+    edgeFog(c, .3);
+    toast(c, this, t);
+  }
+};
+
+// ---------- แผงอัปเกรด (โบสถ์/ห้องสมุดใช้ร่วม) ----------
+function upgradeHeader(c, sc, X, Y, title, picks) {
+  T(c, title, X + 22, Y + 44, { size: 28, w: 700, color: C.navyText });
+  T(c, 'อัปเกรด', X + 196, Y + 40, { size: 14, color: C.navyMute });
+  for (let i = 0; i < 2; i++) {
+    hexP(c, X + 270 + i * 26, Y + 35, 10);
+    if (i < picks) { c.fillStyle = C.echo; c.fill(); c.strokeStyle = C.echoGlow; c.lineWidth = 1.2; c.stroke(); }
+    else { c.strokeStyle = 'rgba(201,154,214,.55)'; c.lineWidth = 1.2; c.stroke(); }
+  }
+}
+function confirmFx(c, sc, x, y) { if (sc.okAt != null) { const d = sc.t - sc.okAt; shock(c, x, y, d / .8, EC, 200); } }
+
+// ============================================================
+//  03 โบสถ์
+// ============================================================
+const CAP_TOTAL = 10;
+const church = {
+  init() { this.hp = 5; this.ar = 3; this.picks = []; this.done = false; this.okAt = null; },
+  add(k) { if (this.done || this.picks.length >= 2 || this.total() >= CAP_TOTAL) return; this.picks.push(k); },
+  total() { return this.hp + this.ar + this.picks.length; },
+  draw(c, t) {
+    c.fillStyle = C.snow; c.fillRect(0, 0, W, H); survey(c, 0, 0, 600, 300, 0, .04);
+    c.strokeStyle = 'rgba(61,139,217,.12)'; c.lineWidth = 2;
+    for (let i = 0; i < 5; i++) { c.beginPath(); c.ellipse(300, 330, 260 - i * 44, 300 - i * 52, 0, Math.PI, 0); c.stroke(); }
+    // หน้าต่างกุหลาบ
+    const wx = 300, wy = 138, R = 92;
+    glow(c, wx, wy, R * 2.3, IC, .7);
+    const cols = [C.ice, C.sky, '#ffffff', C.echoGlow, '#d6e8f7', C.azure];
+    for (let i = 0; i < 16; i++) {
+      c.beginPath(); c.moveTo(wx, wy); c.arc(wx, wy, R, i * TAU / 16, (i + 1) * TAU / 16); c.closePath();
+      c.globalAlpha = .6 + .3 * Math.sin(t * .9 + i); c.fillStyle = cols[i % cols.length]; c.fill(); c.globalAlpha = 1;
+    }
+    c.strokeStyle = C.ink; c.lineWidth = 2.2;
+    for (let i = 0; i < 16; i++) { const a = i * TAU / 16; c.beginPath(); c.moveTo(wx, wy); c.lineTo(wx + Math.cos(a) * R, wy + Math.sin(a) * R); c.stroke(); }
+    for (const r of [R * .35, R * .68, R]) { c.beginPath(); c.arc(wx, wy, r, 0, TAU); c.stroke(); }
+    hexP(c, wx, wy, R * .16); c.fillStyle = '#fff'; c.fill(); c.stroke();
+    // ลำแสง
+    for (let i = 0; i < 3; i++) {
+      const sw = Math.sin(t * .4 + i) * 10, g = c.createLinearGradient(wx, wy, wx + 140, 520);
+      g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(wx - 30 + i * 30, wy + 20); c.lineTo(wx + 10 + i * 30, wy + 20); c.lineTo(wx + 150 + i * 60 + sw, 540); c.lineTo(wx + 40 + i * 60 + sw, 540); c.closePath(); c.fill();
+    }
+    for (const x of [40, 520]) { c.fillStyle = '#ffffff'; c.fillRect(x, 40, 34, 420); c.strokeStyle = 'rgba(61,139,217,.35)'; c.lineWidth = 1; c.strokeRect(x, 40, 34, 420); }
+    // ทางเดินกลาง + ม้านั่ง
+    c.fillStyle = '#e4edf7'; c.beginPath(); c.moveTo(0, 540); c.lineTo(230, 300); c.lineTo(370, 300); c.lineTo(600, 540); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(155,79,150,.10)'; c.beginPath(); c.moveTo(280, 300); c.lineTo(320, 300); c.lineTo(360, 540); c.lineTo(240, 540); c.closePath(); c.fill();
+    for (let i = 0; i < 6; i++) {
+      const k = i / 5, y = 330 + k * k * 190, sp = 40 + k * 110, w = 40 + k * 120, h = 6 + k * 14;
+      c.fillStyle = '#ffffff'; c.strokeStyle = 'rgba(61,139,217,.45)'; c.lineWidth = 1;
+      c.fillRect(300 - sp - w, y, w, h); c.strokeRect(300 - sp - w, y, w, h); c.fillRect(300 + sp, y, w, h); c.strokeRect(300 + sp, y, w, h);
+    }
+    c.fillStyle = '#fff'; c.fillRect(256, 286, 88, 22); c.strokeStyle = C.azure; c.strokeRect(256, 286, 88, 22);
+    for (const x of [266, 300, 334]) { const f = .7 + .3 * Math.sin(t * 9 + x); glow(c, x, 272, 20, EC, .3 * f); c.fillStyle = C.ink3; c.fillRect(x - 2, 274, 4, 12); c.fillStyle = C.echo; c.beginPath(); c.ellipse(x, 270, 2.2, 4 * f, 0, 0, TAU); c.fill(); }
+    // ---- แผง ----
+    const X = 600, Y = 76, PW = 340;
+    withRise(c, rise(this, .1), () => {
+      navy(c, X, Y, PW, 440);
+      upgradeHeader(c, this, X, Y, 'โบสถ์', this.picks.length);
+      const full = this.done || this.picks.length >= 2 || this.total() >= CAP_TOTAL;
+      [{ k: 'hp', label: 'พลังชีวิต', base: this.hp, col: C.hp, ic: 'hp' }, { k: 'ar', label: 'เกราะ', base: this.ar, col: C.sky, ic: 'armor' }].forEach((r, i) => {
+        const y = Y + 76 + i * 92, add = this.picks.filter((p) => p === r.k).length;
+        c.fillStyle = 'rgba(127,184,230,.07)'; c.fillRect(X + 16, y, PW - 32, 78);
+        icon(c, r.ic, X + 42, y + 30, 15, r.col);
+        T(c, r.label, X + 66, y + 36, { size: 18, w: 600, color: C.navyText });
+        T(c, String(r.base), X + 66, y + 64, { size: 16, color: C.navyMute });
+        if (add) { T(c, '→', X + 84, y + 64, { size: 15, color: C.navyMute }); T(c, String(r.base + add), X + 104, y + 64, { size: 16, color: r.col, w: 700 }); }
+        btn(this, X + PW - 76, y + 17, 52, 44, '+1', () => this.add(r.k), { disabled: full, size: 17 });
+      });
+      const by = Y + 280, segW = (PW - 44 - 9 * 4) / 10;
+      T(c, 'รวม', X + 22, by, { size: 14, color: C.navyMute });
+      T(c, `${this.total()} / ${CAP_TOTAL}`, X + PW - 22, by, { size: 16, w: 600, align: 'right', color: this.total() >= CAP_TOTAL ? C.echoGlow : C.navyText });
+      const order = [];
+      for (let i = 0; i < this.hp; i++) order.push(['hp', 0]); for (const p of this.picks) if (p === 'hp') order.push(['hp', 1]);
+      for (let i = 0; i < this.ar; i++) order.push(['ar', 0]); for (const p of this.picks) if (p === 'ar') order.push(['ar', 1]);
+      for (let i = 0; i < 10; i++) {
+        const x = X + 22 + i * (segW + 4), o = order[i]; cutPath(c, x, by + 12, segW, 22, 4);
+        if (!o) { c.fillStyle = 'rgba(255,255,255,.06)'; c.fill(); continue; }
+        c.fillStyle = o[0] === 'hp' ? C.hp : C.sky; c.globalAlpha *= o[1] ? .7 + .3 * Math.sin(t * 5) : 1; c.fill(); c.globalAlpha = 1;
+        if (o[1]) { c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke(); }
+      }
+      if (this.total() >= CAP_TOTAL && !this.done) T(c, 'เต็มเพดาน', X + 22, by + 58, { size: 13, w: 600, color: C.echoGlow });
+      if (!this.done) {
+        btn(this, X + 22, Y + 376, 130, 44, 'ล้าง', () => { this.picks = []; }, { disabled: !this.picks.length });
+        btn(this, X + 168, Y + 376, PW - 190, 44, 'ยืนยัน', () => {
+          this.hp += this.picks.filter((p) => p === 'hp').length; this.ar += this.picks.filter((p) => p === 'ar').length;
+          this.picks = []; this.done = true; this.okAt = this.t; say(this, 'อัปเกรดแล้ว', C.echo);
+        }, { primary: true, disabled: !this.picks.length });
+      } else btn(this, X + 22, Y + 376, PW - 44, 44, 'เริ่มตัวอย่างใหม่', () => this.init());
+      confirmFx(c, this, X + PW / 2, Y + 300);
+    });
+    hud(c, { day: 3, matrix: 2, gold: 12 });
+    edgeFog(c, .3);
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  04 ห้องสมุด
+// ============================================================
+const LIB = (() => { const r = lcg(42), a = []; for (let i = 0; i < 260; i++) a.push([r(), r(), r()]); return a; })();
+const BOOK = ['#bee3f8', '#7fb8e6', '#c99ad6', '#dce7f3', '#8ba3c2', '#a9c9ea'];
+const library = {
+  init() { this.cap = 5; this.lv = 4; this.picks = []; this.done = false; this.okAt = null; },
+  proj() { return { cap: this.cap + this.picks.filter((p) => p === 'cap').length, lv: this.lv + this.picks.filter((p) => p === 'lv').length }; },
+  add(k) { if (this.done || this.picks.length >= 2) return; const p = this.proj(); if (k === 'cap' && p.cap >= 8) return; if (k === 'lv' && p.lv >= 6) return; this.picks.push(k); },
+  draw(c, t) {
+    c.fillStyle = C.snow; c.fillRect(0, 0, W, H);
+    // ชั้นหนังสือผนังหลัง
+    c.fillStyle = '#ffffff'; c.fillRect(150, 40, 420, 330); c.strokeStyle = 'rgba(61,139,217,.4)'; c.lineWidth = 1; c.strokeRect(150, 40, 420, 330);
+    let n = 0;
+    for (let row = 0; row < 6; row++) {
+      const y = 52 + row * 52; c.fillStyle = 'rgba(61,139,217,.45)'; c.fillRect(150, y + 44, 420, 2);
+      for (let x = 156; x < 562;) { const s = LIB[n++ % LIB.length], w = 7 + s[0] * 9, h = 30 + s[1] * 12; c.fillStyle = BOOK[Math.floor(s[2] * BOOK.length)]; c.fillRect(x, y + 44 - h, w, h); x += w + 1.5; }
+    }
+    // ผนังซ้ายเปอร์สเปกทีฟ
+    c.fillStyle = '#edf3fa'; c.beginPath(); c.moveTo(0, 0); c.lineTo(150, 40); c.lineTo(150, 370); c.lineTo(0, 470); c.closePath(); c.fill();
+    for (let row = 0; row < 6; row++) {
+      const ty = 52 + row * 52 + 44, by = ty + (ty - 200) * .65;
+      c.strokeStyle = 'rgba(61,139,217,.45)'; c.lineWidth = 2; c.beginPath(); c.moveTo(150, ty); c.lineTo(0, by); c.stroke();
+      for (let i = 0; i < 14; i++) { const s = LIB[(row * 14 + i) % LIB.length], k = i / 14, x = 150 - k * 150, yb = ty + (by - ty) * k, hh = (26 + s[1] * 10) * (1 + k * .7); c.fillStyle = BOOK[Math.floor(s[2] * BOOK.length)]; c.fillRect(x - 9, yb - hh, 8 * (1 + k * .6), hh); }
+    }
+    // พื้น + โต๊ะ
+    const fg = c.createLinearGradient(0, 370, 0, H); fg.addColorStop(0, '#e8f0f8'); fg.addColorStop(1, '#d3e1ef');
+    c.fillStyle = fg; c.beginPath(); c.moveTo(0, 470); c.lineTo(150, 370); c.lineTo(600, 370); c.lineTo(600, H); c.lineTo(0, H); c.closePath(); c.fill();
+    glow(c, 360, 410, 200, IC, .7);
+    c.fillStyle = '#fff'; c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(220, 420); c.lineTo(500, 420); c.lineTo(540, 456); c.lineTo(180, 456); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = C.ink3; c.fillRect(196, 456, 8, 70); c.fillRect(516, 456, 8, 70);
+    // หนังสือเปิด + ตัวอักษรลอยเป็นวงหกเหลี่ยม
+    c.fillStyle = C.paper; c.beginPath(); c.moveTo(300, 418); c.lineTo(360, 410); c.lineTo(420, 418); c.lineTo(360, 426); c.closePath(); c.fill(); c.stroke();
+    for (let i = 0; i < 12; i++) {
+      const k = ((t * .16 + i / 12) % 1), x = 360 + Math.sin(i * 3.1 + t * .5) * 70, y = 410 - k * 270;
+      c.globalAlpha = (1 - k) * .8; hexP(c, x, y, 5 + (i % 3)); c.strokeStyle = i % 3 ? C.azure : C.echo; c.lineWidth = 1.2; c.stroke(); c.globalAlpha = 1;
+    }
+    // ---- แผง ----
+    const X = 600, Y = 76, PW = 340, p = this.proj();
+    withRise(c, rise(this, .1), () => {
+      navy(c, X, Y, PW, 440);
+      upgradeHeader(c, this, X, Y, 'ห้องสมุด', this.picks.length);
+      const lockAll = this.done || this.picks.length >= 2;
+      let y = Y + 70;
+      c.fillStyle = 'rgba(127,184,230,.07)'; c.fillRect(X + 16, y, PW - 32, 96);
+      T(c, 'ความจุแต้มสกิล', X + 30, y + 28, { size: 17, w: 600, color: C.navyText });
+      T(c, `${p.cap}/8`, X + 30, y + 52, { size: 14, color: C.navyMute });
+      for (let i = 0; i < 8; i++) {
+        const px = X + 38 + i * 26, on = i < this.cap, pend = !on && i < p.cap;
+        diamondP(c, px, y + 76, 9);
+        if (on) { c.fillStyle = C.sky; c.fill(); }
+        else if (pend) { c.globalAlpha *= .6 + .4 * Math.sin(t * 5); c.fillStyle = '#fff'; c.fill(); c.globalAlpha = 1; }
+        else { c.strokeStyle = 'rgba(127,184,230,.45)'; c.lineWidth = 1.2; c.stroke(); }
+      }
+      btn(this, X + PW - 76, y + 26, 52, 44, '+1', () => this.add('cap'), { disabled: lockAll || p.cap >= 8, size: 17 });
+      y = Y + 178;
+      c.fillStyle = 'rgba(127,184,230,.07)'; c.fillRect(X + 16, y, PW - 32, 112);
+      T(c, 'ระดับทักษะ', X + 30, y + 28, { size: 17, w: 600, color: C.navyText });
+      T(c, `${p.lv}/6`, X + 30, y + 52, { size: 14, color: C.navyMute });
+      const tx = X + 36, tw = 196;
+      c.strokeStyle = 'rgba(157,184,218,.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(tx, y + 76); c.lineTo(tx + tw, y + 76); c.stroke();
+      c.strokeStyle = C.sky; c.beginPath(); c.moveTo(tx, y + 76); c.lineTo(tx + (this.lv - 1) / 5 * tw, y + 76); c.stroke();
+      for (let i = 1; i <= 6; i++) {
+        const nx = tx + (i - 1) / 5 * tw, on = i <= this.lv, pend = !on && i <= p.lv, key = i === 3 || i === 6;
+        hexP(c, nx, y + 76, key ? 9 : 6);
+        if (on) { c.fillStyle = key ? C.echoGlow : C.sky; c.fill(); }
+        else if (pend) { c.globalAlpha *= .6 + .4 * Math.sin(t * 5); c.fillStyle = key ? C.echoGlow : '#fff'; c.fill(); c.globalAlpha = 1; }
+        else { c.fillStyle = C.navy; c.fill(); c.strokeStyle = key ? 'rgba(201,154,214,.7)' : 'rgba(157,184,218,.5)'; c.lineWidth = 1.4; c.stroke(); }
+        if (key) T(c, i === 3 ? 'สกิลรอง' : 'ท่าไม้ตาย', nx, y + 102, { size: 12, w: 600, align: 'center', color: p.lv >= i ? C.echoGlow : C.navyMute });
+      }
+      btn(this, X + PW - 76, y + 26, 52, 44, '+1', () => this.add('lv'), { disabled: lockAll || p.lv >= 6, size: 17 });
+      y = Y + 304;
+      [['สกิลพื้นฐาน', 2, 1], ['สกิลรอง', 4, 3], ['ท่าไม้ตาย', 6, 6]].forEach(([name, cost, need], i) => {
+        const x = X + 22 + i * 102, ok = p.lv >= need, short = ok && p.cap < cost;
+        cutPath(c, x, y, 94, 52, 6); c.fillStyle = ok ? 'rgba(127,184,230,.12)' : 'rgba(255,255,255,.03)'; c.fill();
+        c.strokeStyle = short ? C.hp : ok ? C.navyLine : 'rgba(157,184,218,.18)'; c.lineWidth = 1; c.stroke();
+        T(c, name, x + 10, y + 22, { size: 13, w: 600, color: ok ? C.navyText : C.navyMute });
+        T(c, String(cost), x + 10, y + 43, { size: 14, w: 600, color: short ? '#ff8a9a' : ok ? C.sky : C.navyMute });
+        if (!ok) lockIcon(c, x + 78, y + 38, 14, C.navyMute);
+        if (short) T(c, 'แต้มไม่พอ', x + 84, y + 43, { size: 11, w: 600, align: 'right', color: '#ff8a9a' });
+      });
+      if (!this.done) {
+        btn(this, X + 22, Y + 376, 130, 44, 'ล้าง', () => { this.picks = []; }, { disabled: !this.picks.length });
+        btn(this, X + 168, Y + 376, PW - 190, 44, 'ยืนยัน', () => { const q = this.proj(); this.cap = q.cap; this.lv = q.lv; this.picks = []; this.done = true; this.okAt = this.t; say(this, 'อัปเกรดแล้ว', C.echo); }, { primary: true, disabled: !this.picks.length });
+      } else btn(this, X + 22, Y + 376, PW - 44, 44, 'เริ่มตัวอย่างใหม่', () => this.init());
+      confirmFx(c, this, X + PW / 2, Y + 230);
+    });
+    hud(c, { day: 4, matrix: 2, gold: 12 });
+    edgeFog(c, .3);
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  05 สวนสาธารณะ
+// ============================================================
+const LEVEL_TXT = ['', 'จำนวนไพ่', 'ลดดาเมจ 1', 'เห็นแต้ม'];
+const park = {
+  init() { this.held = 3; this.placed = { Rin: 1, Kaze: 0, Nox: 0, Mio: 0 }; this.base = { ...this.placed }; this.baseHeld = 3; this.hitAt = {}; },
+  add(n) { if (this.held <= 0 || this.placed[n] >= 3) return; this.placed[n]++; this.held--; this.hitAt[n] = this.t; },
+  draw(c, t) {
+    const sg = c.createLinearGradient(0, 0, 0, 330); sg.addColorStop(0, '#ffffff'); sg.addColorStop(1, '#d9eaf7');
+    c.fillStyle = sg; c.fillRect(0, 0, W, 330); survey(c, 0, 0, W, 330);
+    globe(c, 430, 120, 74, t);
+    c.fillStyle = 'rgba(139,163,194,.35)'; for (let i = 0; i < 24; i++) { const h = 30 + ((i * 53) % 70); c.fillRect(i * 42 - 10, 330 - h, 36, h); }
+    const gg = c.createLinearGradient(0, 320, 0, H); gg.addColorStop(0, '#e1eef2'); gg.addColorStop(1, '#cbdde9');
+    c.fillStyle = gg; c.fillRect(0, 320, W, H - 320);
+    c.fillStyle = '#f4f8fc'; c.beginPath(); c.moveTo(250, 330); c.lineTo(330, 330); c.lineTo(520, 540); c.lineTo(120, 540); c.closePath(); c.fill();
+    // ต้นไม้แบบกระดาษตัด
+    c.fillStyle = C.ink3; c.fillRect(94, 230, 14, 140);
+    for (const [x, y, r, col] of [[100, 200, 70, C.ice], [52, 238, 50, '#cfe6f6'], [150, 236, 56, '#a9d3f0'], [100, 150, 52, '#d9eef9'], [140, 180, 44, C.ice], [58, 186, 46, '#bfe0f5']]) {
+      c.fillStyle = col; c.beginPath(); c.arc(x + Math.sin(t * .6 + x) * 2, y, r, 0, TAU); c.fill(); c.strokeStyle = 'rgba(61,139,217,.35)'; c.lineWidth = 1; c.stroke();
+    }
+    // น้ำพุ
+    const fx = 380, fy = 380;
+    c.fillStyle = '#fff'; c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.5; c.beginPath(); c.ellipse(fx, fy, 110, 26, 0, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(127,184,230,.4)'; c.beginPath(); c.ellipse(fx, fy - 4, 96, 20, 0, 0, TAU); c.fill();
+    c.fillStyle = '#fff'; c.fillRect(fx - 8, fy - 70, 16, 66); c.strokeRect(fx - 8, fy - 70, 16, 66);
+    for (let i = 0; i < 36; i++) { const k = ((t * .9 + i / 36) % 1), dir = (i % 2 ? 1 : -1) * (.4 + (i % 5) / 5), x = fx + dir * k * 70, y = fy - 74 - Math.sin(k * Math.PI) * 50 + k * 60; c.fillStyle = `rgba(61,139,217,${(1 - k) * .6})`; c.fillRect(x, y, 2.2, 2.2); }
+    for (const x of [230, 540]) { c.fillStyle = C.ink3; c.fillRect(x - 2, 240, 4, 140); glow(c, x, 238, 40, IC, .9); hexP(c, x, 238, 7); c.fillStyle = '#fff'; c.fill(); c.strokeStyle = C.azure; c.stroke(); }
+    // ---- แผง ----
+    const X = 600, Y = 76, PW = 340;
+    withRise(c, rise(this, .1), () => {
+      navy(c, X, Y, PW, 440, { accent: C.echoGlow });
+      T(c, 'สวนสาธารณะ', X + 22, Y + 44, { size: 26, w: 700, color: C.navyText });
+      T(c, 'Matrix', X + 22, Y + 78, { size: 14, color: C.navyMute });
+      for (let i = 0; i < 4; i++) { diamondP(c, X + 90 + i * 22, Y + 73, 9); if (i < this.held) { c.fillStyle = C.echoGlow; c.fill(); } else { c.strokeStyle = 'rgba(201,154,214,.45)'; c.lineWidth = 1.2; c.stroke(); } }
+      Object.keys(this.placed).forEach((n, i) => {
+        const y = Y + 100 + i * 62, lv = this.placed[n], can = this.held > 0 && lv < 3, hov = can && inR(this.mouse, X + 16, y, PW - 32, 54);
+        const duel = n === 'Rin';
+        cutPath(c, X + 16, y, PW - 32, 54, 6); c.fillStyle = hov ? 'rgba(201,154,214,.18)' : 'rgba(127,184,230,.07)'; c.fill();
+        c.strokeStyle = duel ? 'rgba(210,69,91,.6)' : lv ? C.navyLine : 'rgba(157,184,218,.15)'; c.lineWidth = 1; c.stroke();
+        seal(c, X + 40, y + 27, 13, PCOL[n]);
+        T(c, n, X + 64, y + 25, { size: 16, w: 600, color: C.navyText });
+        if (duel) { cutPath(c, X + 64 + 34, y + 12, 52, 18, 4); c.fillStyle = 'rgba(210,69,91,.85)'; c.fill(); T(c, 'คู่ดวล', X + 124, y + 21, { size: 11, w: 600, align: 'center', base: 'middle', color: '#fff' }); }
+        T(c, lv ? LEVEL_TXT[lv] : '—', X + 64, y + 44, { size: 12, color: lv === 3 ? C.echoGlow : lv ? C.sky : C.navyMute });
+        for (let k = 0; k < 3; k++) {
+          diamondP(c, X + PW - 96 + k * 24, y + 27, 9);
+          if (k < lv) { c.fillStyle = k === 2 ? C.echoGlow : C.sky; c.fill(); } else { c.strokeStyle = 'rgba(127,184,230,.4)'; c.lineWidth = 1.2; c.stroke(); }
+        }
+        if (this.hitAt[n] != null) shock(c, X + PW - 96 + (lv - 1) * 24, y + 27, (t - this.hitAt[n]) / .6, EC, 34);
+        if (lv === 3) eyeIcon(c, X + PW - 26, y + 27, 7, C.echoGlow);
+        this.regions.push({ x: X + 16, y, w: PW - 32, h: 54, act: () => this.add(n), disabled: !can });
+      });
+      btn(this, X + 22, Y + 376, 130, 44, 'ล้าง', () => { this.placed = { ...this.base }; this.held = this.baseHeld; });
+      btn(this, X + 168, Y + 376, PW - 190, 44, 'ยืนยัน', () => { this.base = { ...this.placed }; this.baseHeld = this.held; say(this, 'ลงแต้มแล้ว', C.echo); }, { primary: true });
+    });
+    hud(c, { day: 5, matrix: this.held, gold: 12 });
+    edgeFog(c, .3);
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  06 ร้านค้า
+// ============================================================
+const SHOP = [
+  { n: 'แคปซูลเวท', d: 'แต้มสกิล +2', ic: 'skill', col: C.echo, p: 3 },
+  { n: 'เกราะเสริม', d: 'เกราะ +1', ic: 'armor', col: C.azure, p: 3 },
+  { n: 'ยาฟื้นฟู', d: 'พลังชีวิต +1', ic: 'heal', col: C.hp, p: 4 },
+  { n: 'ยาต้านสถานะ', d: '2 เทิร์น', ic: 'resist', col: '#6a5acd', p: 4 },
+  { n: 'เครื่องรางโชค', d: '2 เทิร์น', ic: 'fortune', col: '#d9a52b', p: 5 },
+  { n: 'เครื่องกำบัง', d: 'โล่ 1', ic: 'guard', col: '#2f9e8f', p: 6 }
+];
+const shop = {
+  init() { this.gold = 12; this.sold = { 3: true }; this.buyAt = {}; },
+  buy(i) { if (this.sold[i]) return; if (this.gold < SHOP[i].p) return say(this, 'เหรียญไม่พอ', C.hp); this.gold -= SHOP[i].p; this.sold[i] = true; this.buyAt[i] = this.t; say(this, SHOP[i].n, C.echo); },
+  draw(c, t) {
+    c.fillStyle = C.snow; c.fillRect(0, 0, W, H); survey(c, 0, 0, 600, 380);
+    c.fillStyle = '#fff'; c.fillRect(80, 30, 420, 5); glow(c, 290, 34, 240, IC, .8);
+    const r = lcg(7);
+    for (let row = 0; row < 4; row++) {
+      const y = 80 + row * 62; c.fillStyle = 'rgba(61,139,217,.45)'; c.fillRect(60, y + 48, 460, 2);
+      for (let x = 66; x < 510;) { const w = 18 + r() * 22, h = 22 + r() * 22; c.fillStyle = BOOK[Math.floor(r() * BOOK.length)]; c.fillRect(x, y + 48 - h, w, h); c.strokeStyle = 'rgba(61,139,217,.3)'; c.lineWidth = 1; c.strokeRect(x, y + 48 - h, w, h); x += w + 4; }
+    }
+    figure(c, 290, 410, 1.15, { fill: 'rgba(139,163,194,.7)', stroke: 'rgba(79,110,149,.5)' });
+    c.fillStyle = '#fff'; c.fillRect(20, 380, 560, 160); c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.5; c.strokeRect(20, 380, 560, 160);
+    c.fillStyle = C.frost; c.beginPath(); c.moveTo(0, 380); c.lineTo(580, 380); c.lineTo(560, 360); c.lineTo(20, 360); c.closePath(); c.fill(); c.stroke();
+    survey(c, 20, 380, 560, 160, 0, .05);
+    const X = 600, Y = 76, PW = 340;
+    withRise(c, rise(this, .1), () => {
+      navy(c, X, Y, PW, 440, { accent: C.echoGlow });
+      T(c, 'ร้านค้า', X + 22, Y + 44, { size: 28, w: 700, color: C.navyText });
+      coin(c, X + PW - 76, Y + 36, 9); T(c, String(this.gold), X + PW - 60, Y + 42, { size: 18, w: 600, color: C.navyText });
+      SHOP.forEach((it, i) => {
+        const cx = X + 16 + (i % 2) * 158, cy = Y + 66 + Math.floor(i / 2) * 104, w = 150, h = 96;
+        const sold = this.sold[i], hov = !sold && inR(this.mouse, cx, cy, w, h), poor = !sold && this.gold < it.p;
+        cutPath(c, cx, cy, w, h, 8);
+        c.fillStyle = sold ? 'rgba(255,255,255,.04)' : hov ? '#ffffff' : 'rgba(247,250,253,.94)'; c.fill();
+        c.strokeStyle = hov ? C.echo : 'rgba(127,184,230,.4)'; c.lineWidth = hov ? 2 : 1; c.stroke();
+        c.save(); if (sold) c.globalAlpha *= .3;
+        hexP(c, cx + 26, cy + 30, 16); c.fillStyle = C.paper; c.fill(); icon(c, it.ic, cx + 26, cy + 30, 10, it.col);
+        T(c, it.n, cx + 48, cy + 31, { size: 14, w: 600, base: 'middle', color: sold ? C.navyText : C.ink });
+        T(c, it.d, cx + 14, cy + 62, { size: 12, w: 400, fam: FB, color: sold ? C.navyMute : C.ink2 });
+        coin(c, cx + 20, cy + 82, 6); T(c, String(it.p), cx + 31, cy + 87, { size: 14, w: 600, color: poor ? C.hp : sold ? C.navyText : C.ink });
+        c.restore();
+        if (sold) T(c, 'ขายแล้ว', cx + w - 12, cy + 86, { size: 13, w: 700, align: 'right', color: C.navyMute });
+        if (this.buyAt[i] != null) shock(c, cx + w / 2, cy + h / 2, (t - this.buyAt[i]) / .6, EC, 90);
+        this.regions.push({ x: cx, y: cy, w, h, act: () => this.buy(i), disabled: sold });
+      });
+      btn(this, X + 22, Y + 384, PW - 44, 40, 'ออกจากร้าน', () => say(this, 'กลับทางเดิน', C.ink2));
+    });
+    hud(c, { day: 3, matrix: 2, gold: this.gold });
+    edgeFog(c, .3);
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  07 ประกาศคู่ดวล (เริ่มวันที่ 5)
+// ============================================================
+const board = {
+  draw(c, t) {
+    const sg = c.createLinearGradient(0, 40, 0, 160); sg.addColorStop(0, '#fff'); sg.addColorStop(1, '#d6e8f7');
+    c.fillStyle = sg; c.fillRect(0, 40, W, 130); globe(c, 820, 110, 54, t, .9);
+    const wg = c.createLinearGradient(0, 40, 0, 400); wg.addColorStop(0, '#f9fbfe'); wg.addColorStop(1, '#e6eef7');
+    c.fillStyle = wg; c.beginPath(); c.rect(0, 40, W, 360); for (let x = 40; x < W; x += 200) c.rect(x, 60, 128, 84); c.fill('evenodd');
+    survey(c, 0, 40, W, 360);
+    c.strokeStyle = 'rgba(61,139,217,.45)'; c.lineWidth = 2; for (let x = 40; x < W; x += 200) c.strokeRect(x, 60, 128, 84);
+    c.fillStyle = C.frost; c.fillRect(0, 0, W, 40);
+    floorPlane(c, 400);
+    // บอร์ด + ประกาศเก่า
+    c.fillStyle = '#ffffff'; c.fillRect(180, 160, 600, 236); c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 2; c.strokeRect(180, 160, 600, 236);
+    for (const [x, y, a] of [[200, 178, -.06], [236, 270, .05], [690, 186, .07], [700, 286, -.04]]) {
+      c.save(); c.translate(x + 30, y + 40); c.rotate(a); c.fillStyle = C.paper; c.fillRect(-30, -40, 64, 80); c.strokeStyle = 'rgba(61,139,217,.3)'; c.lineWidth = 1; c.strokeRect(-30, -40, 64, 80);
+      c.fillStyle = 'rgba(79,110,149,.25)'; for (let i = 0; i < 5; i++) c.fillRect(-22, -28 + i * 12, 48 - (i % 2) * 14, 3); c.restore();
+    }
+    // คนยืนดู (หันหลัง)
+    for (const [x, s, n] of [[200, 1.25, 'Kaze'], [770, 1.3, 'Nox']]) { floorShadow(c, x, 520, 30); figure(c, x, 520, s, { fill: 'rgba(139,163,194,.6)', stroke: 'rgba(79,110,149,.45)' }); nameTag(c, n, x, 352, PCOL[n]); }
+    floorShadow(c, 480, 536, 32, .22); figure(c, 480, 536, 1.4, { fill: C.ink, stroke: C.azure, glow: 'rgba(61,139,217,.4)' });
+    hud(c, { day: 5, matrix: 2, gold: 12 });
+    // ลำดับ: แถบประกาศ → กระดาษลอยขึ้น + วงแหวน · วน 9 วินาที
+    const d = REDUCE ? 9 : (t - (this.enterT || 0)) % 9;
+    const pd = d - 1.6, up = REDUCE ? 1 : ease(pd / .6);
+    const X = 300, Y = 150, PW = 360, PH = 250;
+    if (pd > 0 || REDUCE) {
+      shock(c, X + PW / 2, Y + PH / 2, pd / .9, AZ, 300, .6);
+      c.save(); c.globalAlpha = up; c.translate(0, 14 * (1 - up));
+      paper(c, X, Y, PW, PH);
+      T(c, 'การดวลวันที่ 7', X + PW / 2, Y + 34, { size: 21, w: 700, align: 'center', base: 'middle' });
+      T(c, 'รอบที่ 2', X + PW / 2, Y + 58, { size: 13, color: C.ink2, align: 'center', base: 'middle' });
+      for (const [i, nm] of [[0, 'Rin'], [1, 'คุณ']]) {
+        const fx = X + 92 + i * 176, fy = Y + 128, col = i ? C.azure : PCOL.Rin;
+        const ring = REDUCE ? 1 : ease((pd - .3 - i * .15) / .5);
+        c.save(); c.globalAlpha *= ring; seal(c, fx, fy, 42, col); c.restore();
+        c.save(); c.setLineDash([5, 5]); c.lineDashOffset = REDUCE ? 0 : -t * 16; c.strokeStyle = 'rgba(61,139,217,.5)'; c.lineWidth = 1.2; hexP(c, fx, fy, 52); c.stroke(); c.restore();
+        T(c, nm, fx, fy + 74, { size: 17, w: 600, align: 'center', base: 'middle', color: i ? C.azure : C.ink });
+      }
+      T(c, 'VS', X + PW / 2, Y + 130, { size: 28, w: 700, align: 'center', base: 'middle', color: C.echo, fam: FL, ls: 2 });
+      c.fillStyle = 'rgba(61,139,217,.2)'; c.fillRect(X + 24, Y + PH - 40, PW - 48, 1);
+      T(c, 'ผ่านรอบนี้  Kaze · Nox', X + PW / 2, Y + PH - 20, { size: 13, color: C.ink2, align: 'center', base: 'middle' });
+      c.restore();
+    }
+    edgeFog(c, .3);
+    if (!REDUCE) { flash(c, d, .5, .6); banner(c, d - .05, 'วันที่ 5', 'ประกาศคู่ดวล', C.ink, 1.9); }
+  }
+};
+
+// ============================================================
+//  08 สนามดวล 2.5D (มุมกล้อง 55° แบบสนาม Ordeal Call)
+// ============================================================
+const arena = {
+  init() { this.drawn = [[7, 'red'], [5, 'blue'], [6, 'green']]; this.stand = false; },
+  draw(c, t) {
+    const HZ = 200, d = REDUCE ? 9 : t - (this.enterT || 0);
+    // ฟ้าขาว + ลูกโลกตกขอบฟ้า
+    const sg = c.createLinearGradient(0, 0, 0, HZ); sg.addColorStop(0, '#ffffff'); sg.addColorStop(1, '#d8e9f7');
+    c.fillStyle = sg; c.fillRect(0, 0, W, HZ); survey(c, 0, 0, W, HZ, t * 6);
+    globe(c, W / 2, HZ + 30, 170, t, .55);
+    // ชั้นฉากไกล: เสาข้อมูล + หมอก
+    for (let i = 0; i < 22; i++) { const h = 18 + ((i * 37) % 60), x = i * 46 + 6; c.fillStyle = 'rgba(127,184,230,.28)'; c.fillRect(x, HZ - h, 14, h); c.fillStyle = 'rgba(61,139,217,.4)'; c.fillRect(x, HZ - h, 14, 1.5); }
+    // พื้นยกเป็นชั้น (2.5D หลอกตา)
+    const fg = c.createLinearGradient(0, HZ, 0, H); fg.addColorStop(0, '#e4eef8'); fg.addColorStop(1, '#c9dbec');
+    c.fillStyle = fg; c.fillRect(0, HZ, W, H - HZ);
+    const VP = 120, sc = (HZ - VP) / (H - VP);
+    for (let i = -22; i <= 22; i++) { const xb = W / 2 + i * 64, xt = W / 2 + i * 64 * sc; c.strokeStyle = `rgba(61,139,217,${.16 - Math.abs(i) * .004})`; c.lineWidth = 1; c.beginPath(); c.moveTo(xt, HZ); c.lineTo(xb, H); c.stroke(); }
+    const scroll = REDUCE ? 0 : (t * .2) % 1;
+    for (let k = 0; k < 16; k++) { const f = (k + scroll) / 16, y = HZ + (H - HZ) * Math.pow(f, 2.1); c.strokeStyle = `rgba(61,139,217,${.04 + f * .14})`; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+    const fog = c.createLinearGradient(0, HZ - 10, 0, HZ + 70); fog.addColorStop(0, 'rgba(255,255,255,.9)'); fog.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = fog; c.fillRect(0, HZ - 10, W, 80);
+    // แท่นหกเหลี่ยมยกสูง
+    const plinth = (x, y, r, col, a) => {
+      c.save(); c.translate(x, y); c.scale(1, .3);
+      hexP(c, 0, 16, r); c.fillStyle = 'rgba(28,63,110,.12)'; c.fill();
+      hexP(c, 0, 0, r); c.fillStyle = '#ffffff'; c.fill(); c.strokeStyle = col.replace('A', .55 + a * .3); c.lineWidth = 3; c.stroke();
+      hexP(c, 0, 0, r * .74); c.strokeStyle = col.replace('A', .35 + a * .3); c.lineWidth = 2; c.stroke();
+      c.restore();
+    };
+    const pul = .5 + .5 * Math.sin(t * 2);
+    // ร่อนลงทีละคน + วงแหวนกระแทก
+    const land = (delay) => REDUCE ? 1 : ease((d - delay) / .7);
+    const ex = 670, ey = 318, mx = 292, my = 452, le = land(.2), lm = land(.7);
+    plinth(ex, ey, 74, HP, pul);
+    shock(c, ex, ey, (d - .9) / .8, HP, 120, .3);
+    if (le > 0) {
+      c.save(); c.globalAlpha = le;
+      figure(c, ex, ey - 160 * (1 - le) + Math.sin(t * 1.6) * 1.5, .92, { fill: '#5a2333', stroke: C.hp, glow: 'rgba(210,69,91,.4)', face: -1, visor: '#ffd0d6' });
+      c.restore();
+    }
+    for (let i = 0; i < 3; i++) card(c, ex + 52 + i * 16, ey - 150 + i * 2, 26, 36, 0, '', true);
+    navy(c, ex + 46, ey - 104, 92, 24, { k: 5, accent: false }); eyeIcon(c, ex + 62, ey - 92, 7, C.echoGlow); T(c, '3 ใบ', ex + 78, ey - 91, { size: 13, w: 600, base: 'middle', color: C.navyText });
+    plinth(mx, my, 116, AZ, pul);
+    shock(c, mx, my, (d - 1.4) / .8, AZ, 190, .3);
+    if (lm > 0) {
+      c.save(); c.globalAlpha = lm;
+      figure(c, mx, my - 220 * (1 - lm) + Math.sin(t * 1.6 + 1) * 2, 1.42, { fill: C.ink, stroke: C.azure, glow: 'rgba(61,139,217,.5)', face: 1, visor: C.ice });
+      c.restore();
+    }
+    // ของบังหน้ากล้อง (เสาโปร่งด้านซ้ายหน้า)
+    c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(0, 0, 26, H); c.fillStyle = 'rgba(61,139,217,.25)'; c.fillRect(26, 0, 1.5, H);
+    // แถบสถานะ
+    const bar = (x, L, name, ch, hp, hpMax, ar, arMax, acc) => {
+      navy(c, x, 14, 300, 70, { accent: acc });
+      T(c, name, L ? x + 18 : x + 282, 38, { size: 16, w: 700, align: L ? 'left' : 'right', color: C.navyText });
+      c.font = `700 16px ${FD}`; const nw = c.measureText(name).width;
+      T(c, ch, L ? x + 28 + nw : x + 272 - nw, 38, { size: 13, align: L ? 'left' : 'right', color: acc });
+      for (let i = 0; i < hpMax; i++) { const px = L ? x + 26 + i * 22 : x + 274 - i * 22; heartP(c, px, 58, 7); c.fillStyle = i < hp ? C.hp : 'rgba(210,69,91,.25)'; c.fill(); }
+      for (let i = 0; i < arMax; i++) { const px = L ? x + 34 + (hpMax + i) * 22 : x + 266 - (hpMax + i) * 22; shieldP(c, px, 58, 8); c.fillStyle = i < ar ? C.sky : 'rgba(127,184,230,.22)'; c.fill(); }
+    };
+    withRise(c, rise(this, 1.6), () => {
+      bar(16, true, 'คุณ', 'เอจิ', 5, 5, 2, 3, C.sky);
+      bar(W - 316, false, 'Rin', 'โคโตเนะ', 3, 4, 1, 3, '#ff8a9a');
+      navy(c, W - 316, 88, 170, 24, { k: 5, accent: false });
+      for (let i = 0; i < 2; i++) { diamondP(c, W - 300 + i * 14, 100, 6); c.fillStyle = C.echoGlow; c.fill(); }
+      T(c, 'ลดดาเมจ 1', W - 266, 101, { size: 12, w: 600, base: 'middle', color: C.navyText });
+      navy(c, W / 2 - 70, 14, 140, 54, { accent: false });
+      T(c, 'เทิร์น 4', W / 2, 34, { size: 17, w: 700, align: 'center', base: 'middle', color: C.navyText });
+      for (let i = 0; i < 2; i++) { hexP(c, W / 2 - 26 + i * 13, 54, 5); c.fillStyle = [PCOL.Kaze, PCOL.Nox][i]; c.fill(); }
+      T(c, 'ผู้ชม 2', W / 2 - 6, 55, { size: 12, base: 'middle', color: C.navyMute });
+    });
+    withRise(c, rise(this, 1.8), () => {
+      const score = this.drawn.reduce((s, q) => s + q[0], 0), bust = score > 21;
+      this.drawn.forEach((q, i) => card(c, 350 + i * 46, 418 - i * 3, 60, 84, q[0], q[1]));
+      const sx = 350 + this.drawn.length * 46 + 34;
+      hexP(c, sx, 446, 26); c.fillStyle = bust ? C.hp : C.navy; c.fill(); c.strokeStyle = bust ? '#fff' : C.sky; c.lineWidth = 2; c.stroke();
+      T(c, String(score), sx, 447, { size: 20, w: 700, align: 'center', base: 'middle', color: '#fff' });
+      const off = this.stand || bust || this.drawn.length >= 5;
+      navy(c, sx - 54, 478, 108, 52, { accent: false });
+      btn(this, sx - 46, 484, 92, 40, this.stand ? 'หยุดแล้ว' : 'จั่ว', () => { this.drawn.push([1 + Math.floor(Math.random() * 10), ['red', 'blue', 'green', 'yellow'][Math.floor(Math.random() * 4)]]); }, { disabled: off });
+      const X = 652, Y = 396;
+      navy(c, X, Y, 292, 130);
+      T(c, 'แต้มสกิล', X + 16, Y + 26, { size: 13, color: C.navyMute });
+      for (let i = 0; i < 6; i++) { diamondP(c, X + 92 + i * 18, Y + 21, 7); if (i < 4) { c.fillStyle = C.sky; c.fill(); } else { c.strokeStyle = 'rgba(127,184,230,.45)'; c.lineWidth = 1.2; c.stroke(); } }
+      btn(this, X + 210, Y + 8, 68, 28, 'หยุด', () => { this.stand = true; }, { disabled: off, size: 14 });
+      [['พื้นฐาน', 2, true], ['รอง', 4, true], ['ท่าไม้ตาย', 6, false]].forEach(([n, cost, ok], i) => {
+        const x = X + 14 + i * 92, y = Y + 46, hov = ok && inR(this.mouse, x, y, 84, 70);
+        cutPath(c, x, y, 84, 70, 8); c.fillStyle = !ok ? 'rgba(255,255,255,.03)' : hov ? 'rgba(127,184,230,.26)' : 'rgba(127,184,230,.1)'; c.fill();
+        c.strokeStyle = ok ? C.navyLine : 'rgba(157,184,218,.18)'; c.lineWidth = 1; c.stroke();
+        T(c, n, x + 42, y + 28, { size: 14, w: 600, align: 'center', base: 'middle', color: ok ? C.navyText : C.navyMute });
+        if (ok) { diamondP(c, x + 34, y + 52, 6); c.fillStyle = C.sky; c.fill(); T(c, String(cost), x + 46, y + 53, { size: 14, w: 600, base: 'middle', color: C.navyText }); }
+        else lockIcon(c, x + 42, y + 54, 16, C.navyMute);
+        if (ok) this.regions.push({ x, y, w: 84, h: 70, act: () => say(this, n, C.azure) });
+      });
+      if (bust || this.stand) btn(this, 40, 492, 130, 36, 'เริ่มใหม่', () => this.init(), { size: 14 });
+    });
+    edgeFog(c, .35);
+    if (!REDUCE) { flash(c, d - .9, .4, .45); banner(c, d - 2.1, 'วันที่ 7', 'ดวล', C.hp, 1.7); }
+    toast(c, this, t);
+  }
+};
+
+// ============================================================
+//  09 การลบ
+// ============================================================
+const DEL = (() => { const r = lcg(99), a = []; for (let i = 0; i < 220; i++) a.push([(r() - .5) * 52, r(), r()]); return a; })();
+const del = {
+  draw(c, t) {
+    c.fillStyle = C.snow; c.fillRect(0, 0, W, H); survey(c, 0, 0, W, 300);
+    floorPlane(c, 300);
+    c.fillStyle = 'rgba(210,69,91,.05)'; c.fillRect(W / 2, 0, W / 2, H);
+    const loop = REDUCE ? 3 : (t - (this.enterT || 0)) % 7;
+    // กำแพงหกเหลี่ยม
+    const wallIn = REDUCE ? 1 : ease(loop / .6), fl = REDUCE ? 1 : .85 + .15 * Math.sin(t * 9);
+    c.save(); c.beginPath(); c.rect(420, H * (1 - wallIn), 120, H * wallIn); c.clip();
+    c.fillStyle = `rgba(210,69,91,${.1 * fl})`; c.fillRect(420, 0, 120, H);
+    c.strokeStyle = `rgba(210,69,91,${.55 * fl})`; c.lineWidth = 1;
+    for (let y = -20, row = 0; y < H + 20; y += 24, row++) for (let x = 420; x < 560; x += 28) { hexP(c, x + (row % 2 ? 14 : 0), y, 13); c.stroke(); }
+    c.restore();
+    c.fillStyle = `rgba(210,69,91,${.9 * fl})`; c.fillRect(W / 2 - 1.5, H * (1 - wallIn), 3, H * wallIn);
+    // ผู้ชนะ
+    floorShadow(c, 250, 450, 30, .22);
+    figure(c, 250, 450, 1.3, { fill: C.ink, stroke: C.azure, glow: 'rgba(61,139,217,.45)', face: 1, visor: C.ice });
+    // ผู้แพ้ สลายจากหัวลงเท้า
+    const lx = 710, ly = 450, top = ly - 128 * 1.3, hgt = 128 * 1.3;
+    const p = REDUCE ? .55 : clamp((loop - .9) / 3.6, 0, 1), cut = top + p * (hgt + 10);
+    c.save(); c.beginPath(); c.rect(lx - 80, cut, 160, H); c.clip();
+    floorShadow(c, lx, ly, 30, .22 * (1 - p));
+    figure(c, lx, ly, 1.3, { fill: '#5a2333', stroke: C.hp, glow: 'rgba(210,69,91,.4)', face: -1, visor: '#ffd0d6' });
+    c.restore();
+    if (p > 0 && p < 1) { c.fillStyle = 'rgba(210,69,91,.8)'; c.fillRect(lx - 40, cut, 80, 1.5); }
+    for (const [dx, fy, rnd] of DEL) {
+      const py = top + fy * hgt; if (py > cut) continue;
+      const age = (cut - py) / 70; if (age > 2.2) continue;
+      c.fillStyle = rnd > .6 ? `rgba(61,139,217,${1 - age / 2.2})` : `rgba(210,69,91,${1 - age / 2.2})`;
+      c.fillRect(lx + dx + Math.sin(rnd * 20 + age * 2) * age * 14, py - age * 70, 3, 3);
+    }
+    withRise(c, REDUCE ? { a: 1, dy: 0 } : { a: ease((loop - 4.6) / .6), dy: 14 * (1 - ease((loop - 4.6) / .6)) }, () => {
+      navy(c, 586, 470, 340, 52, { accent: '#ff8a9a' });
+      T(c, 'Rin ตกรอบ', 756, 497, { size: 18, w: 700, align: 'center', base: 'middle', color: '#ff9fac' });
+      navy(c, 80, 470, 340, 52);
+      T(c, 'คุณ ผ่านเข้ารอบถัดไป', 250, 497, { size: 18, w: 700, align: 'center', base: 'middle', color: C.navyText });
+    });
+    edgeFog(c, .3);
+    if (!REDUCE) { shock(c, W / 2, H / 2, loop / .9, HP, 300); flash(c, loop, .5, .7); banner(c, loop - 4.4, 'SE.RA.PH', 'ถูกลบ', C.hp, 2.2); }
+  }
+};
+
+// ============================================================
+//  ตัวจัดฉาก
+// ============================================================
+const SCENES = { corridor, room, church, library, park, shop, board, arena, del };
+const visible = new Set();
+const t0 = performance.now();
+const toLocal = (cv, e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; };
+const hit = (sc, p) => { for (let i = sc.regions.length - 1; i >= 0; i--) { const r = sc.regions[i]; if (inR(p, r.x, r.y, r.w, r.h)) return r; } return null; };
+function render(sc, dt = 0) { sc.regions = []; if (sc.update) sc.update(dt); sc.c.clearRect(0, 0, W, H); sc.draw(sc.c, sc.t); }
+document.querySelectorAll('canvas[data-scene]').forEach((cv) => {
+  const sc = SCENES[cv.dataset.scene], dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  sc.c = cv.getContext('2d'); sc.c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sc.t = 20; sc.enterT = 0; sc.regions = []; sc.mouse = null; sc.keys = {};   // t เริ่ม 20 = ภาพนิ่งแรกเป็นสภาพหลังเล่นฉากเข้าจบแล้ว
+  if (sc.init) sc.init();
+  cv.addEventListener('pointermove', (e) => { sc.mouse = toLocal(cv, e); const r = hit(sc, sc.mouse); cv.style.cursor = r && !r.disabled ? 'pointer' : ''; });
+  cv.addEventListener('pointerleave', () => { sc.mouse = null; });
+  cv.addEventListener('click', (e) => { const r = hit(sc, toLocal(cv, e)); if (r && !r.disabled) r.act(); render(sc); });
+  if (sc.key) { cv.addEventListener('keydown', (e) => { if (sc.key(e, true)) e.preventDefault(); }); cv.addEventListener('keyup', (e) => sc.key(e, false)); cv.addEventListener('blur', () => { sc.keys = {}; }); }
+  sc.cv = cv;
+});
+// ฉากที่ใช้ "เวลาตั้งต้น" ของตัวเอง: เริ่มนับจาก t=20 ให้ภาพนิ่งแรกสมบูรณ์
+room.start = 0; board.enterT = 12; arena.enterT = 0; del.enterT = 15;
+document.querySelectorAll('.pad button').forEach((b) => {
+  const k = b.dataset.k;
+  const on = (e) => { e.preventDefault(); if (k === 'u') corridor.enter(); else corridor.keys[k] = true; };
+  const off = () => { if (k !== 'u') corridor.keys[k] = false; };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (k === 'u') corridor.enter(); else { corridor.keys[k] = true; setTimeout(off, 220); } } });
+});
+// เลื่อนฉากเข้าจอ = เล่นฉากเข้าใหม่ (ยกเว้นฉากที่เห็นอยู่แล้วตอนโหลดหน้า)
+const io = new IntersectionObserver((ents) => {
+  for (const en of ents) {
+    const sc = SCENES[en.target.dataset.scene];
+    if (en.isIntersecting) { if (!visible.has(sc) && performance.now() - t0 > 400) { sc.enterT = sc.t; if (sc.onEnter) sc.onEnter(); } visible.add(sc); }
+    else visible.delete(sc);
+  }
+}, { threshold: .35 });
+Object.values(SCENES).forEach((sc) => { render(sc); io.observe(sc.cv); });
+let last = performance.now();
+function frame(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; for (const sc of visible) { sc.t += dt; render(sc, dt); } requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+if (document.fonts && document.fonts.load) {
+  Promise.all([
+    document.fonts.load(`600 16px 'Chakra Petch'`, 'กขค ABC'), document.fonts.load(`700 16px 'Chakra Petch'`, 'กขค ABC'),
+    document.fonts.load(`400 16px 'Kanit'`, 'กขค'), document.fonts.load(`400 16px 'Michroma'`, 'VS')
+  ]).catch(() => {}).then(() => Object.values(SCENES).forEach((sc) => render(sc)));
+}
+})();
+</script>
