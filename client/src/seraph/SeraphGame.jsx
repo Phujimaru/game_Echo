@@ -10,8 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
-import { playMusic, playSfx, stopMusic, resetMusicPositions, stopLoopSfx } from "../audio";
-import { musicForState } from "../audioPolicy";
+import { playSfx, stopLoopSfx } from "../audio";
 import Game from "../screens/Game";
 import Arena from "./Arena";
 import PlaceSelect from "./PlaceSelect";
@@ -26,7 +25,7 @@ import { FaceOffScene, CycleEndScene, FinalWinnerScene } from "./finale";
 const PD = "var(--font-p-display)";
 const PLACE_ICON = { room: "🛏️", church: "⛪", park: "🌳", library: "📚", store: "🏪" };
 
-export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
+export default function SeraphGame({ state, lowQ, skillConfirmOn, roster, pairRole, onSceneChange }) {
   const sc = state.seraph;
   const me = state.players.find((p) => p.id === state.youId);
   const duelDay = sc.duelDay || sc.daysTotal;
@@ -36,15 +35,10 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
 
   const prevDay = useRef(null);
   const prevCycle = useRef(null);
-  const prevDuelIndex = useRef(null);
   const seenPairing = useRef(false);
   const bootShown = useRef(false);
-  const prevOut = useRef(null);
 
-  useEffect(() => {
-    resetMusicPositions();
-    return () => { stopLoopSfx(); stopMusic(); };
-  }, []);
+  useEffect(() => () => stopLoopSfx(), []);
 
   // ---------- โหลดสื่อเป็นระลอกตามที่กำลังจะใช้จริง (assets.js) ----------
   //  ห้ามยิงทุกระลอกพร้อมกัน: สื่อทั้งชุด ~33 MB ถ้าโหลดพร้อมกันตอนเข้าเกมจะแย่งแบนด์วิดท์
@@ -59,13 +53,10 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
   useEffect(() => { if (sc && sc.day >= duelDay - 1) preloadWave3(sc.night); }, [sc && sc.day, sc && sc.night]);
 
   // ---------- เพลง (SERAPH_SCENES.md §6) ----------
-  //  คิดเป็น "แทร็กเดียวที่ควรดังตอนนี้" แล้วค่อยสั่งครั้งเดียว — กันเพลงซ้อน
-  //  S6/S7 เปิดด้วยความเงียบ (null) เพราะความเงียบเป็นส่วนหนึ่งของฉาก
-  const { name: wantTrack, seq: trackSeq } = musicForState(state, { lowQ, scene: scene?.kind });
-  useEffect(() => {
-    if (!wantTrack) { stopMusic(); return; }
-    playMusic(wantTrack, trackSeq);
-  }, [wantTrack, trackSeq]);
+  //  App.jsx เป็นเจ้าของเพลงคนเดียวทุกโหมด (audioPolicy.musicForState) — ที่นี่แค่บอกว่ากำลังเล่นฉากอะไร
+  //  S6/S7/S12 เงียบ เพราะความเงียบเป็นส่วนหนึ่งของฉาก
+  useEffect(() => { if (onSceneChange) onSceneChange(scene?.kind ?? null); }, [scene?.kind]);
+  useEffect(() => () => { if (onSceneChange) onSceneChange(null); }, []);
 
   // ---------- ล้างตัวเลือกค้างเมื่อเข้าเฟสเลือกสถานที่รอบใหม่ ----------
   useEffect(() => {
@@ -81,7 +72,6 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
       bootShown.current = true;
       prevDay.current = sc.day;
       prevCycle.current = sc.cycleRound;
-      prevDuelIndex.current = sc.duelIndex;
       setScene({ kind: "boot" });
       return;
     }
@@ -119,33 +109,52 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
       return;
     }
     prevDay.current = sc.day;
-
-    // S8c เปิดเผยตัวละคร — ขึ้นคู่ใหม่ในวันที่ 7
-    if (sc.day === duelDay && sc.duelPair && prevDuelIndex.current !== sc.duelIndex) {
-      prevDuelIndex.current = sc.duelIndex;
-      const a = state.players.find((p) => p.id === sc.duelPair.a);
-      const b = state.players.find((p) => p.id === sc.duelPair.b);
-      if (a && b) { setScene({ kind: "reveal", queue: [a, b], all: [a, b] }); return; }
-    }
-    prevDuelIndex.current = sc.duelIndex;
-  }, [sc && sc.day, sc && sc.cycleRound, sc && sc.duelIndex, sc && sc.pairs.length]);
+    // S8c เปิดเผยตัวละคร — เชนต่อจาก S7 ใน onDone ของ DuelIntro (ดูด้านล่าง)
+  }, [sc && sc.day, sc && sc.cycleRound, sc && sc.pairs.length]);
 
   // ---------- S10 ตกรอบ: มีคนถูกลบเพิ่ม ----------
+  //  server จบรอบ (วันกลับเป็น 1 · ล้างคู่ดวล) ในการส่ง state ครั้งเดียวกับที่ประกาศผู้แพ้
+  //  จึงจับจาก "รายชื่อคนตกรอบที่เพิ่มขึ้น" โดยไม่ดูวัน และจำคู่ดวลล่าสุดไว้เองเพื่อหาผู้ชนะ
+  //  ฉากนี้เล่นก่อนฉากที่ตั้งพร้อมกัน (จบรอบ / ผู้ชนะคนสุดท้าย) แล้วค่อยเชนต่อด้วย next
   const outKey = state.players.filter((p) => p.scEliminated).map((p) => p.id).sort().join(",");
+  const prevOut = useRef(outKey); // ค่าตอนเข้าโหมด (หรือต่อสายใหม่) ไม่นับเป็นการตกรอบใหม่
+  const lastPair = useRef(null);
+  // ต้องประกาศก่อน effect ตกรอบด้านล่าง (effect รันตามลำดับ) — คู่ดวลยังอยู่ใน state ตั้งแต่ก่อนผลแพ้มาถึงแล้ว
+  useEffect(() => { if (sc && sc.duelPair) lastPair.current = sc.duelPair; }, [sc && sc.duelPair && sc.duelPair.a, sc && sc.duelPair && sc.duelPair.b]);
   useEffect(() => {
-    if (!sc || sc.day !== duelDay) return;
-    if (prevOut.current === null) { prevOut.current = outKey; return; }
-    if (outKey !== prevOut.current) {
-      const before = prevOut.current.split(",").filter(Boolean);
-      const added = state.players.find((p) => p.scEliminated && !before.includes(p.id));
-      prevOut.current = outKey;
-      if (added) {
-        const pr = sc.pairs.find((x) => x.a === added.id || x.b === added.id);
-        const winnerId = pr ? (pr.a === added.id ? pr.b : pr.a) : null;
-        setScene({ kind: "deletion", loser: added, winner: state.players.find((p) => p.id === winnerId) });
-      }
-    }
+    if (outKey === prevOut.current) return;
+    const before = prevOut.current.split(",").filter(Boolean);
+    prevOut.current = outKey;
+    const added = state.players.filter((p) => p.scEliminated && !before.includes(p.id));
+    if (!added.length) return;
+    const pr = lastPair.current;
+    const both = added.length > 1; // ตายพร้อมกันทั้งคู่ = ไม่มีผู้ชนะ
+    const winnerOf = (loser) => {
+      if (both || !pr) return null;
+      const wid = pr.a === loser.id ? pr.b : pr.b === loser.id ? pr.a : null;
+      return state.players.find((p) => p.id === wid) || null;
+    };
+    setScene((prev) => added.reduceRight(
+      (next, loser) => ({ kind: "deletion", loser, winner: winnerOf(loser), next }),
+      prev
+    ));
   }, [outKey]);
+
+  // ---------- S3 ผู้ชนะประจำวัน (วันที่ 1-6) ----------
+  const winKey = sc && state.gameState === "SUMMARY" && state.winnerId && sc.day !== duelDay
+    ? `${sc.cycleRound}-${sc.day}-${state.winnerId}` : null;
+  const prevWin = useRef(null);
+  useEffect(() => {
+    if (!winKey || prevWin.current === winKey) return;
+    prevWin.current = winKey;
+    const winner = state.players.find((p) => p.id === state.winnerId);
+    if (!winner) return;
+    const scores = state.players
+      .filter((p) => p.alive && !p.scEliminated && (p.score != null || p.busted))
+      .map((p) => ({ id: p.id, name: p.name, score: p.score, busted: !!p.busted }));
+    // ฉากอื่นที่กำลังเล่น (เช่นแบนเนอร์วัน) มาก่อนเสมอ — ไม่แทรก
+    setScene((prev) => prev || { kind: "winner", winner, scores });
+  }, [winKey]);
 
   // ---------- แจ้งผลของสถานที่ที่เพิ่งไปมา ----------
   //  server ส่ง sc.placeResult มาให้เฉพาะเจ้าของ — โชว์เป็นแบนเนอร์ตอนกลับเข้าสนาม
@@ -178,7 +187,10 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
     if (!sc || state.gameState !== "GAMEOVER" || shownFinal.current) return;
     shownFinal.current = true;
     const left = state.players.filter((p) => !p.scEliminated && p.alive);
-    setScene({ kind: "final", winner: left[0] || null });
+    const fin = { kind: "final", winner: left[0] || null };
+    // ฉากผู้แพ้ของดวลสุดท้ายตั้งไว้ในการส่ง state เดียวกัน -> ให้มันเล่นก่อน แล้วเชนต่อมาที่นี่
+    const attach = (sc0) => (sc0 && sc0.kind === "deletion" ? { ...sc0, next: sc0.next ? attach(sc0.next) : fin } : fin);
+    setScene((prev) => attach(prev));
   }, [state.gameState]);
 
   const closeScene = () => setScene(null);
@@ -189,7 +201,18 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
   if (scene) {
     if (scene.kind === "boot") overlay = <SeraphBoot players={state.players} day={sc.day} cycleRound={sc.cycleRound} onDone={closeScene} />;
     else if (scene.kind === "day") overlay = <DayBanner duelDay={duelDay} day={scene.day} short={scene.short} onDone={closeScene} />;
-    else if (scene.kind === "duelIntro") overlay = <DuelIntro day={duelDay} players={state.players} night={sc.night} onDone={closeScene} />;
+    else if (scene.kind === "duelIntro") {
+      // S7 -> S8c เปิดเผยตัวละครของคู่ที่ลงสนาม -> S8d ประจันหน้า
+      const pair = sc.duelPair;
+      const a = pair && state.players.find((p) => p.id === pair.a);
+      const b = pair && state.players.find((p) => p.id === pair.b);
+      overlay = (
+        <DuelIntro
+          day={duelDay} players={state.players} night={sc.night}
+          onDone={() => setScene(a && b ? { kind: "reveal", queue: [a, b], all: [a, b] } : null)}
+        />
+      );
+    }
     else if (scene.kind === "pairing") {
       overlay = (
         <PairingScene
@@ -240,7 +263,7 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
         />
       );
     } else if (scene.kind === "deletion") {
-      overlay = <DeletionScene loser={scene.loser} winner={scene.winner} onDone={closeScene} />;
+      overlay = <DeletionScene key={scene.loser.id} loser={scene.loser} winner={scene.winner} onDone={() => setScene(scene.next || null)} />;
     } else if (scene.kind === "winner") {
       overlay = (
         <DayWinnerScene
@@ -271,8 +294,10 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
     main = (
       <>
         <SeraphBackground phase="duel" night={sc.night} hot grid="full" />
-        <div className="relative z-10">
-          <Game state={boardState} lowQ={lowQ} skillConfirmOn={skillConfirmOn} />
+        {/* ห้ามใส่ z-index ที่ wrapper นี้ — จะกลายเป็น stacking context ที่ขังคลิปคัตซีน/หน้าต่างยืนยัน/หน้าจบเกมของ
+            กระดานไว้ใต้แถบผู้ชมและป้ายของโหมด (relative เฉย ๆ พอให้วาดทับฉากหลังตามลำดับใน DOM) */}
+        <div className="relative">
+          <Game state={boardState} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} pairRole={pairRole} />
         </div>
 
         <SpectatorRail players={state.players} duelPair={sc.duelPair} youId={state.youId} />
@@ -324,6 +349,7 @@ export default function SeraphGame({ state, lowQ, skillConfirmOn }) {
             }))}
           held={sc.matrixHeld}
           placed={sc.matrixPlaced}
+          onCancel={() => setPendingPlace(null)}
           onDone={(placedMap) => {
             // แปลง "แผนที่ระดับ" กลับเป็นลิสต์เป้าหมายทีละแต้ม (server นับทีละแต้ม)
             const targets = [];

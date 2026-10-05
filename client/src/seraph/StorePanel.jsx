@@ -16,7 +16,7 @@ export default function StorePanel({ shop = [], gold = 0, inventoryCount = 0, in
   const items = shop.filter((it) => !it.sold);
 
   return (
-    <div className="fixed inset-0 z-[84] overflow-hidden">
+    <div className="fixed inset-0 z-[62] overflow-hidden">
       {/* ภาพร้านเป็นฉากหลัง (มืดลงเพื่อให้อ่านราคาออก) */}
       <div className="sc-bg">
         <img src={SC_PLACE.store.img} alt="" className="sc-bg-img sc-kenburns" />
@@ -27,14 +27,14 @@ export default function StorePanel({ shop = [], gold = 0, inventoryCount = 0, in
       </div>
 
       <div className="absolute inset-0 flex flex-col">
-        <div className="pl-5 pr-16 pt-3 flex items-start justify-between gap-3">
+        <div className="px-5 pt-3 flex items-start justify-between gap-3">
           <div>
             <SystemLines lines={["> CONVENIENCE STORE"]} speed={16} className="text-[11px]" />
             <div className="text-2xl sm:text-4xl font-black italic text-white leading-tight" style={{ fontFamily: PD }}>
               ร้านสะดวกซื้อ
             </div>
           </div>
-          <div className="text-right shrink-0">
+          <div className="text-right shrink-0 mt-12">
             <div className="sc-sysline text-[10px] opacity-70">เหรียญของเจ้า</div>
             <div className="text-3xl font-black leading-none text-echo-gold" style={{ fontFamily: PD }}>🪙 {gold}</div>
             <div className="text-[10px] text-white/60 mt-1">ในกระเป๋า {inventoryCount} ชิ้น</div>

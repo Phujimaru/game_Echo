@@ -2459,7 +2459,7 @@ function EchoBossBar({ p, phase, targetable, onAttack, onInspect }) {
   );
 }
 
-function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null }) {
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null, cardCount = null }) {
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
   // นักบินปริศนา (เห็นเฉพาะเพื่อนร่วมทีม): ซ่อนตัวสิงร่างอยู่ = การ์ดจางลง + ป้ายบอกว่าสิงใคร
@@ -2556,6 +2556,10 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
         <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-ice" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
           {p.busted ? "แตก!" : `${p.score} แต้ม`}{p.connorScanned && !summary ? " 🧠" : ""}
         </div>
+      )}
+      {/* SE.RA.PH Matrix ระดับ 1: จำนวนไพ่ในมือของคู่ต่อสู้ (server ส่งมาเฉพาะคนที่มีสิทธิ์เห็น) */}
+      {cardCount != null && !summary && (
+        <span className="text-xs font-bold text-white/85" title="ไพ่ในมือ">🂠 {cardCount} ใบ</span>
       )}
     </div>
   );
@@ -4221,7 +4225,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const iAmAttacker = phase === "ATTACK" && state.attackerId === state.youId && pairPilot;
   const attacker = state.players.find((p) => p.id === state.attackerId);
   // นักบินปริศนา (sliver_bullet) ที่ยังซ่อนตัว/กดเตรียมพร้อมแล้วไม่ได้ลงแข่งรอบนี้ (sitOut) — ไม่นับในฉากสรุปผล
-  const rankedTiers = rankTiers(state.players.filter((p) => !sliverHiddenOf(p) && !p.sliver_bullet?.sitOut));
+  // SE.RA.PH: ผู้ชมวันดวลไม่ได้ลงแข่ง (แต้ม 0 ของตัวเองไม่นับเป็นผู้แพ้/ผู้ชนะ)
+  const rankedTiers = rankTiers(state.players.filter((p) => !sliverHiddenOf(p) && !p.sliver_bullet?.sitOut && !p.scSpectator));
   const summaryWinners = rankedTiers[0]?.players || [];
   const summaryLosers = rankedTiers.slice(1).flatMap((t) => t.players);
   const done = me && (me.locked || !me.alive);
@@ -4270,12 +4275,13 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   }, [phase, state.roundNumber, muteScenes, pushScene]);
   // ร้านค้ามายา (patch 2.2 full): เด้งหน้าร้านค้าอัตโนมัติครั้งเดียวทุกครั้งที่มีสินค้าชุดใหม่ (รอบร้านค้าเปลี่ยน)
   useEffect(() => {
+    if (state.seraph) return; // SE.RA.PH: ร้านเปิดเฉพาะช่วงเลือกสถานที่ (หน้าของโหมดเอง) — วันดวลห้ามเด้งป้ายร้านค้า
     const seq = state.shop?.[0]?.id?.split("_")[1];
     if (seq && shopAutoShown.current !== seq) {
       shopAutoShown.current = seq;
       pushScene("shop"); // ไม่ต้องหน่วง 2.7 วิเองแล้ว คิวจัดลำดับให้ต่อท้ายฉากต้นเทิร์นเอง
     }
-  }, [state.shop, pushScene]);
+  }, [state.shop, state.seraph, pushScene]);
   // ผู้เล่นที่กำลังเปิดดูสถานะ (ข้อมูลสดจาก state ทุกครั้งที่ re-render)
   const statusView = statusViewId ? state.players.find((x) => x.id === statusViewId) : null;
   // กลางวัน/กลางคืน (patch 1.7): สลับทุก 3 เทิร์น — โอเบรอนสลับร่าง/ท่าไม้ตายตามช่วงเวลา
@@ -4369,7 +4375,9 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: server ส่งล็อก/คูลดาวน์รายช่องมาเป็นก้อนกลาง (skillLocks)
   const giftLocks = me?.skillLocks || {};
   const giftCd = (t) => (giftLocks[t] && giftLocks[t].cd) || 0;
-  const giftLocked = (t) => !!(giftLocks[t] && (giftLocks[t].locked || giftLocks[t].cd > 0));
+  // SE.RA.PH วันดวล: ช่องที่ระดับทักษะยังไม่ปลดล็อก (server ปัดทิ้งเงียบ ๆ) + ผู้ชมกดสกิลไม่ได้
+  const scLocked = (t) => !!state.seraph && (!!state.seraph.spectating || state.seraph.unlocked?.[t] === false);
+  const giftLocked = (t) => scLocked(t) || !!(giftLocks[t] && (giftLocks[t].locked || giftLocks[t].cd > 0));
   // free = ช่องนี้ไม่กินโควตา 1 สกิล/เทิร์น (ไททัน ของว่าง · ทักต์ บรรเลงเสียงสวรรค์) — skillUsed แล้วยังกดได้
   const giftFree = (t) => !!(giftLocks[t] && giftLocks[t].free);
   // อาซาฮินะ ทักต์: มิวสิคคาร์ทในพันธะที่สลับโหมดได้ (มีบทเพลง · ยังไม่สลับเทิร์นนี้) / ที่รับบทเพลงได้ (ยังไม่มีบทเพลง)
@@ -5683,7 +5691,8 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* ผู้เล่นคนอื่น (โหมด Raid: เพื่อนร่วมทีมเรียงแถวใต้ ORT และเห็นแต้มกันตลอด) */}
       {cardOthers.map((p, i) => (
         <OtherPlayer
-          alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
+          alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId) || (!!state.seraph && (p.scMatrixLevel || 0) >= 3)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด · SE.RA.PH Matrix ระดับ 3
+          cardCount={state.seraph && !p.scSpectator ? p.cardCount : null}
           // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
           key={arenaSlots ? `${p.id}-l${arenaLandSeq}` : p.id}
           enterDelay={arenaSlots && !lowQ && arenaSeatDelay0 != null ? arenaSeatDelay0 + i * 0.09 : null}
@@ -6076,6 +6085,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               }
               bagCount={me.inventory?.length || 0}
               onBag={() => { clickSound(); setBagOpen(true); }}
+              showBag={!state.seraph?.spectating} // SE.RA.PH: ผู้ชมใช้ไอเทมไม่ได้
               gold={me.gold ?? 0}
               // SE.RA.PH: วันดวลซื้อของไม่ได้ — ซ่อนปุ่มร้านค้าทิ้งไปเลย (server กันซ้ำอีกชั้นที่ buyShopItem)
               showShop={!state.seraph}

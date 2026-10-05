@@ -263,6 +263,8 @@ export default function App() {
   // ---------- เพลงพื้นหลัง + เสียงเปลี่ยนเทิร์น ----------
   const soundTracker = useRef(createPhaseSoundTracker());
   const prevInMatch = useRef(false);
+  // SE.RA.PH: ฉากซ้อนทับที่ SeraphGame กำลังเล่น (pairing/duelIntro/final เงียบ) — App คุมเพลงที่เดียวทุกโหมด
+  const [seraphScene, setSeraphScene] = useState(null);
   const prevCycle = useRef(null); // ช่วงเวลาเดิม (day/night) — เปลี่ยนเมื่อไหร่ เพลงประจำช่วงต้องเริ่มใหม่จากต้น
   const cycleSeq = useRef(0);     // seq เพลงกลางวัน/กลางคืน: +1 ทุกครั้งที่สลับช่วงเวลา -> เริ่มเพลงใหม่
   const attackSeq = useRef(0);    // seq เพลงช่วงโจมตี: +1 ทุกครั้งที่เข้าช่วงโจมตี -> เริ่มเพลงใหม่เสมอ
@@ -283,14 +285,11 @@ export default function App() {
   useEffect(() => {
     // CUTSCENE: หยุดเพลงพื้นหลัง ปล่อยให้เสียงในวีดีโอเล่น (เพลงสกิลมาหลังวีดีโอ)
     // ร่างแปลง (Ginga/Unicorn): เพลงสกิลทับ | ช่วงต่อสู้: เพลงกลางวัน/กลางคืน | อื่นๆ: main_home
-    const seraphMode = stage === "connected" && !!state?.seraph && !["LOBBY", "TEAM_MODE", "TEAM_SETUP"].includes(phase);
     const inMatch = isMatchPhase(phase);
 
     // ขอบเขตแมตช์: เริ่มเกมใหม่ / จบเกม -> รีเซ็ตตำแหน่งเพลงทั้งหมด เริ่มเพลงใหม่จากต้น
     // (การเล่นต่อจากจุดเดิมนับเฉพาะภายในแมตช์เดียวกันเท่านั้น)
-    // ⚠️ resetMusicPositions() สั่ง pause() ทุกแทร็ก และ effect ของลูกทำงาน "ก่อน" ของพ่อ
-    //  ถ้าปล่อยให้ทำงานในโหมด SE.RA.PH เพลงที่ SeraphGame เพิ่งสั่งเล่นจะถูกหยุดทันที
-    if (!seraphMode && inMatch !== prevInMatch.current) resetMusicPositions();
+    if (inMatch !== prevInMatch.current) resetMusicPositions();
     prevInMatch.current = inMatch;
 
     // เพลงกลางวัน/กลางคืน (patch พิเศษ): กลางวัน = new_morning | กลางคืน = new_night
@@ -306,13 +305,13 @@ export default function App() {
     if (inAttackPhase && !prevAttackPhase.current) attackSeq.current++;
     prevAttackPhase.current = inAttackPhase;
 
-    // เพลงพื้นหลัง: โหมด SE.RA.PH คุมของตัวเองใน SeraphGame — ตรงนี้ต้องไม่ยุ่งด้วย
-    //  แต่ "เสียงเอฟเฟกต์" ด้านล่างต้องทำงานทุกโหมด (เดิม early-return ตรงนี้ทำให้เสียงหายไปทั้งโหมด)
-    if (!seraphMode) {
-      // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
-      // 5.1: เข้าห้องแล้ว (ตั้งแต่หน้าเลือกลำดับ) เปลี่ยนเป็นเพลงห้องรอ lobby5 ทันที — main5 อยู่แค่ใน launcher · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็น lobby5 (intro)
+    // เพลงพื้นหลัง: ที่เดียวสำหรับทุกโหมด รวม SE.RA.PH (เดิม SeraphGame คุมเองแยก = กติกาไม่ตรงกัน เพลงค้าง/ซ้อน)
+    // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
+    // 5.1: เข้าห้องแล้ว (ตั้งแต่หน้าเลือกลำดับ) เปลี่ยนเป็นเพลงห้องรอ lobby5 ทันที — main5 อยู่แค่ใน launcher · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็น lobby5 (intro)
+    {
       const track = musicForState(stage === "connected" ? state : null, {
         lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: introOn,
+        scene: state?.seraph ? seraphScene : null,
       });
       if (track.name) playMusic(track.name, track.seq);
       else stopMusic();
@@ -332,7 +331,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn, purgeTrackNow, purgeSceneNow]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn, purgeTrackNow, purgeSceneNow, seraphScene, state?.seraph?.day, state?.seraph?.cycleRound]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);
@@ -468,7 +467,7 @@ export default function App() {
     screenKey = "gameintro";
   } else if (state.seraph) {
     // SE.RA.PH Moon Cell: มีฉาก/HUD ของตัวเอง (วันที่ 5 ส่งต่อให้ <Game> ข้างในอีกที)
-    screen = <SeraphGame state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} />;
+    screen = <SeraphGame state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} pairRole={pairRole} onSceneChange={setSeraphScene} />;
     screenKey = "game";
   } else {
     screen = <Game state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} pairRole={pairRole} />;

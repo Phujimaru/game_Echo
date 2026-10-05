@@ -80,7 +80,7 @@ export default function PlaceSelect({
   const hoverPlace = SC_PLACE[hover];
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-hidden">
+    <div className="fixed inset-0 z-[60] overflow-hidden">
       <SeraphBackground phase="place" night={night} grid="full" />
 
       {/* หัวจอ */}
@@ -91,7 +91,7 @@ export default function PlaceSelect({
             เลือกสถานที่
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2 mt-12">
           <DayRail day={day} duelDay={duelDay} />
           {/* เฟสนี้ไปต่อเมื่อทุกคนกดพร้อมครบ
               จึงบอกว่า "เหลืออีกกี่คน" แทนที่จะกดดันด้วยนาฬิกา */}

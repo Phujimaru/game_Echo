@@ -40,7 +40,7 @@ export function SeraphBoot({ players = [], day = 1, cycleRound = 1, onDone }) {
     "> CONNECTING ...",
     `> PARTICIPANTS : ${players.length}`,
     "> IDENTITY MASK : ENABLED",
-    "> ELIMINATION CYCLE : 5 DAYS"
+    "> ELIMINATION CYCLE : 7 DAYS"
   ], [players.length]);
 
   return (
@@ -281,7 +281,7 @@ export function PairingScene({ pairs = [], byes = [], myId = null, onDone }) {
             </div>
           )}
           {stage === 3 && (
-            <div className="sc-vs text-4xl sm:text-6xl mt-2" style={{ fontFamily: PD }}>อีก 3 วัน</div>
+            <div className="sc-vs text-4xl sm:text-6xl mt-2" style={{ fontFamily: PD }}>ดวลวันที่ 7</div>
           )}
         </div>
       )}

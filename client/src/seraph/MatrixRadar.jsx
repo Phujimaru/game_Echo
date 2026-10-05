@@ -26,7 +26,8 @@ export default function MatrixRadar({
   held = 0,           // แต้ม Matrix ที่ถืออยู่
   placed = {},        // { [id]: จำนวนแต้มที่ลงไปแล้ว }
   onPlace,            // (targetId) => void
-  onDone
+  onDone,
+  onCancel            // กลับไปเลือกสถานที่อื่น (ยังไม่เสียสิทธิ์ของวันนี้)
 }) {
   const [local, setLocal] = useState(placed);
   const [remain, setRemain] = useState(held);
@@ -65,7 +66,7 @@ export default function MatrixRadar({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-hidden">
+    <div className="fixed inset-0 z-[60] overflow-hidden">
       {/* ภาพสวนจางลงเป็นพื้นดำ แล้วเรดาร์ขึ้นมาแทน */}
       <div className="sc-bg">
         <img src={SC_PLACE.park.img} alt="" className="sc-bg-img sc-kenburns" style={{ filter: "brightness(0.28) saturate(0.7)" }} />
@@ -81,7 +82,7 @@ export default function MatrixRadar({
           <SystemLines lines={["> DEEP SCAN INTERFACE"]} speed={16} className="text-[11px] sm:text-xs" />
           <div className="text-2xl sm:text-3xl font-black italic text-white" style={{ fontFamily: PD }}>สวนสาธารณะ</div>
         </div>
-        <div className="text-right">
+        <div className="text-right mt-12">
           <div className="sc-sysline text-[10px] opacity-70">MATRIX BUFFER</div>
           <div className="text-2xl font-black" style={{ fontFamily: PD, color: "var(--color-sc-cyan)" }}>{remain}</div>
         </div>
@@ -184,9 +185,16 @@ export default function MatrixRadar({
             </span>
           ))}
         </div>
-        <button type="button" className="p-btn-cut p-slash-btn px-6 py-2 text-sm font-black text-white" onClick={() => onDone && onDone(local)}>
-          เสร็จสิ้น
-        </button>
+        <div className="flex gap-3">
+          {onCancel && (
+            <button type="button" className="p-btn-cut px-4 py-2 text-xs font-bold text-white/70 border border-white/20" onClick={onCancel}>
+              เลือกสถานที่อื่น
+            </button>
+          )}
+          <button type="button" className="p-btn-cut p-slash-btn px-6 py-2 text-sm font-black text-white" onClick={() => onDone && onDone(local)}>
+            เสร็จสิ้น
+          </button>
+        </div>
       </div>
 
       {/* แผงยืนยันแต้มที่ 3 — ห้ามข้าม */}

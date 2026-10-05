@@ -9,12 +9,18 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
   // Echo: ฉากเปิดตัวร่างยักษ์ (kind "echoQueen" — จะเพิ่มตอนย้ายฉากจากต้นแบบเข้าเกม) เล่นเพลงราชินีตั้งแต่ต้นฉาก ไม่เงียบแบบคัตซีนอื่น
   if (cs?.kind === "echoQueen" && state.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
   const mandatory = cs?.kind === "overloadForce";
-  if (cs && (!lowQ || mandatory || cs.announce)) return { name: null };
   const sc = state?.seraph;
+  // SE.RA.PH วันที่ 1-6: หน้าจอวันสืบสวนไม่มีที่เล่นคลิป — คัตซีนไม่ตัดเพลง (ตัดแล้วจะเงียบเปล่า ๆ ตามความยาวคลิป)
+  const scInvestigation = !!sc && sc.day !== (sc.duelDay || sc.daysTotal);
+  if (cs && !scInvestigation && (!lowQ || mandatory || cs.announce)) return { name: null };
   if (sc) {
+    // จบแมตช์: เงียบ ให้ฉากผู้ชนะคนสุดท้ายเล่นเสียงของตัวเอง (เพลงดวลต้องไม่วนค้างใต้ฉาก)
+    if (phase === "GAMEOVER" || scene === "final") return { name: null };
     if (scene === "pairing" || scene === "duelIntro") return { name: null };
-    if (sc.day === (sc.duelDay || sc.daysTotal)) {
+    if (!scInvestigation) {
+      // วันดวลเรียงลำดับแบบเกมหลัก: เพลงสกิล -> เพลงช่วงโจมตี -> เพลงดวลของโหมด
       if (state.skillMusic) return { name: state.skillMusic, seq: state.skillMusicSeq };
+      if (phase === "ATTACK" || phase === "ATTACKING") return { name: "battle_phase", seq: attackSeq };
       return { name: sc.night ? "sc_duel_night" : "sc_duel_day", seq: sc.cycleRound };
     }
     return { name: phase === "SERAPH_PLACE" ? "sc_rest" : "sc_day" };
@@ -42,8 +48,9 @@ export function musicForState(state, { lowQ = false, scene = null, cycleSeq = 0,
 
 // เฟสที่นับว่า "อยู่ในแมตช์" — ข้ามขอบนี้เมื่อไหร่ App รีเซ็ตตำแหน่งเพลงทั้งหมด (เพลงเริ่มจากต้น)
 //  PURGE_ROLL ต้องอยู่ในนี้ ไม่งั้นทุกเทิร์นของ Purge (ทอยเต๋า ↔ ฉาก ORT) เพลงด่านจะเริ่มใหม่
+//  SERAPH_PLACE ก็เช่นกัน (Moon Cell เข้าเฟสเลือกสถานที่ทุกวัน)
 export function isMatchPhase(phase) {
-  return ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE", "PURGE_ROLL"].includes(phase);
+  return ["PLAYING", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "CUTSCENE", "PURGE_ROLL", "SERAPH_PLACE"].includes(phase);
 }
 
 // Purge: เพลงด่านตามสถานการณ์ในท่อ (ลำดับความสำคัญจากบนลงล่าง)

@@ -93,3 +93,20 @@ test('Purge: เฟสทอยเต๋านับว่าอยู่ใน�
   for (const ph of ['PURGE_ROLL', 'CUTSCENE', 'PLAYING', 'SUMMARY', 'ATTACK', 'ATTACKING', 'TRANSITION']) assert.equal(isMatchPhase(ph), true, ph);
   for (const ph of ['LOBBY', 'TEAM_MODE', 'GAMEOVER', undefined]) assert.equal(isMatchPhase(ph), false, String(ph));
 });
+
+test('Moon Cell: จบแมตช์เงียบ · เฟสโจมตีวันดวลเล่นเพลงช่วงโจมตีแบบเกมหลัก · คัตซีนวันสืบสวนไม่ตัดเพลง', () => {
+  assert.equal(policy.musicForState({ ...moon, gameState: 'GAMEOVER' }).name, null);
+  assert.equal(policy.musicForState({ ...moon, gameState: 'GAMEOVER', skillMusic: 'kim_awake' }).name, null);
+  assert.equal(policy.musicForState(moon, { scene: 'final' }).name, null);
+  const atk = policy.musicForState({ ...moon, gameState: 'ATTACK' }, { attackSeq: 3 });
+  assert.equal(atk.name, 'battle_phase');
+  assert.equal(atk.seq, 3);
+  assert.equal(policy.musicForState({ ...moon, gameState: 'ATTACKING', skillMusic: 'dummy' }).name, 'dummy');
+  const day3 = { ...moon, gameState: 'CUTSCENE', cutscene: { id: 2, video: 'intro.mp4' }, seraph: { ...moon.seraph, day: 3 } };
+  assert.equal(policy.musicForState(day3).name, 'sc_day');
+});
+
+test('Moon Cell: เฟสเลือกสถานที่นับว่าอยู่ในแมตช์ (เพลงไม่เริ่มใหม่ทุกวัน)', async () => {
+  const { isMatchPhase } = await import('../client/src/audioPolicy.js');
+  assert.equal(isMatchPhase('SERAPH_PLACE'), true);
+});
