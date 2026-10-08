@@ -10,7 +10,6 @@ const { SPELLBURDEN_MAX, statusAmtOf, blindActive } = require("../characters/_un
 const YunaMod = require("../characters/yuna");
 const Mark42 = require("../characters/_mark42");
 const Journey = require("../characters/_journey");
-const Seraph = require("../seraph");
 const { io } = require("./app");
 const {
   DOOM_BALLISTA_TARGET_DMG, DOOM_DRAIN_DMG, DOOM_DRAIN_TURNS, DOOM_LOCKON_BONUS,
@@ -303,7 +302,7 @@ function publicStatuses(p) {
   return out;
 }
 function buildStateFor(viewerId) {
-  const revealAll = match.gameState !== "PLAYING" && match.gameState !== "SERAPH_PLACE" && match.gameState !== "LOBBY" && match.gameState !== "TEAM_MODE" && match.gameState !== "TEAM_SETUP";
+  const revealAll = match.gameState !== "PLAYING" && match.gameState !== "LOBBY" && match.gameState !== "TEAM_MODE" && match.gameState !== "TEAM_SETUP";
   // เพลง ANATA WAAAAAAAA ทับทุกเพลงระหว่างช่วงจั่วการ์ด — จบลงเมื่อทุกคนพร้อมเปิดไพ่แล้ว
   const nightNow = dayNight.isNightRound(match.roundNumber);
   // คาซามะ/โซ (Clock Up): ไรเดอร์ที่ยังแช่สนามอยู่ (เปิดอยู่และยังไม่ได้เปิดไพ่)
@@ -350,8 +349,6 @@ function buildStateFor(viewerId) {
   // FULL FORCE: ไรเดอร์สองคนขึ้นไป Clock Up พร้อมกัน — เพลงสนามเปลี่ยนทั้งสนาม
   //  ยังแพ้เพลงสกิล/ท่าไม้ตายที่กำลังเล่นอยู่
   if (!sm && fullForce) sm = { music: "full_force", at: 0 };
-  // SE.RA.PH วันที่ 1-6: ไม่มีเพลงสกิล — เพลงประจำร่าง (เช่น Ultraman Trigger เล่นตลอดตราบที่ยังอยู่) บอกตัวตนได้
-  if (Seraph.noCombat()) sm = null;
   const viewer = match.players[viewerId];
   let connorArrestAsk = null; // คอนเนอร์ RK800: คำขาดจับกุมขั้นเด็ดขาดที่รอผู้ชมคนนี้ตอบ
   let locaOffer = null;
@@ -414,8 +411,6 @@ function buildStateFor(viewerId) {
     overloadForce: match.overloadForceActive,
     deckEmpty: match.centralDeck.length === 0,
     cycle: nightNow ? "night" : "day", // กลางวัน/กลางคืน (สลับทุก 3 เทิร์น)
-    // SE.RA.PH Moon Cell — ก้อนข้อมูลของโหมด (per-viewer ทั้งก้อน ดู SERAPH_SCENES.md §8)
-    seraph: Seraph.stateFor(engine, viewerId),
     // Type Mercury (Raid Boss ORT): ข้อมูลโหมด + บอส + โหวตยอมแพ้ + ตัวที่เลือกลงสนามได้ (per-viewer)
     mercury: mercury.mercuryStateFor(viewer),
     ortArrival: { seq: match.ortArrivalSeq, active: match.ortArrivalActive }, // ฉากเปิดตัว ORT (Raid)
@@ -459,7 +454,7 @@ function buildStateFor(viewerId) {
     attack: match.gameState === "ATTACKING" ? match.lastAttack : null,
     // นักบินปริศนา: บรรทัดที่มีชื่อเขาซึ่งเกิดระหว่างซ่อนตัว ไม่ส่งให้ผู้ชมที่ไม่ใช่ตัวเอง/เพื่อนร่วมทีม
     log: (match.gameState === "SUMMARY" || match.gameState === "TRANSITION" || match.gameState === "GAMEOVER")
-      ? seraphFilterLog(CHAR_HOOKS.sliver_bullet.filterLog(engine, match.lastLog, viewer), viewer) : [],
+      ? CHAR_HOOKS.sliver_bullet.filterLog(engine, match.lastLog, viewer) : [],
     shop: match.shopItems, // ร้านค้ามายา (patch 2.3): สินค้าส่วนกลางร้านเดียว เห็นเหมือนกันทุกคน
     deckLedger, // สมุดการ์ด 43 ใบ + สถานะจั่วแล้ว/ยัง (ของรอบปัจจุบัน) — กดที่กองการ์ดกลางเพื่อดู
     // นักบินปริศนา: ระหว่างซ่อนตัว ศัตรูไม่ได้รับข้อมูลของเขาเลย (ไม่มีที่นั่ง/ชื่อ/เลือด/สถานะ) — ตัวเอง + เพื่อนร่วมทีมเห็นปกติ
@@ -610,8 +605,7 @@ function buildStateFor(viewerId) {
       //  ซ้อนกับกระแสเวท/ภาระเวทได้ แต่ตัวปรับขาขึ้นรวมกันแล้วต้องไม่ดันราคาเกิน SKILL_COST_MAX
       //  (สกิลที่ค่าใช้พลังงานถึงเพดานอยู่แล้วจะไม่แพงขึ้นไปอีก — ต้องตรงกับ useSkill() เป๊ะ)
       const showCost = (pub, tierName) => {
-        // SE.RA.PH: ฐานราคามาจากระดับทักษะ (2/4/6) ไม่ใช่ค่าของตัวละคร — ต้องตรงกับ useSkill() เป๊ะ
-        const baseCost = Seraph.active() ? Seraph.costOf(tierName) : pub.cost;
+        const baseCost = pub.cost;
         return Math.min(
           CHAR_HOOKS.striker.costCap(p, SKILL_COST_MAX), // ยูเรก้า: เพดาน 16 — ต้องตรงกับ useSkill()
           Math.max(0, baseCost - spellflowAmt) + spellburdenAmt + (p.nightTaxTier === tierName ? 1 : 0)
@@ -645,21 +639,11 @@ function buildStateFor(viewerId) {
         ultimatePub.cost = 0;
         ultimatePub.name = `${ultimatePub.name} — ระเบิดทันที`;
       }
-      // ---------- SE.RA.PH: ตัวละครถูกซ่อนจนกว่าจะลงดวล (SERAPH_MOONCELL.md §9) ----------
-      //  per-viewer: คนที่เคยเห็นตัวละครนั้นลงสนามแล้วจะเห็นตลอดไป คนที่ยังไม่เคยเห็น = ไม่มีข้อมูลเลย
-      //  ชื่อ "ผู้เล่น" ไม่ใช่ความลับ — ที่ซ่อนคือ "ตัวละคร" (ภาพ/ชื่อ/สกิลทั้งชุด)
-      const scHidden = Seraph.active() && !Seraph.canSee(viewer, p);
-      if (scHidden) { basicPub = null; secondaryPub = null; ultimatePub = null; }
-      const out = {
+      return {
         id: p.id,
         name: p.name,
         avatar: p.avatar,
-        img: scHidden ? null : displayImg(p, mine),
-        scHidden,                                   // client วาดเป็นเงาดำ + ??? (ดู .sc-silhouette)
-        scSpectator: Seraph.active() ? !!p.scSpectator : undefined,
-        scEliminated: Seraph.active() ? !!p.scEliminated : undefined,
-        // Matrix ระดับ 1: ผู้ชมคนนี้เห็นจำนวนไพ่ในมือของคนนี้แบบเรียลไทม์
-        scMatrixLevel: Seraph.active() && viewer ? Seraph.matrixLevelOn(viewer, p) : undefined,
+        img: displayImg(p, mine),
         position: p.position,
         color: lobby.colorOf(p),
         teamId: p.teamId || null,
@@ -710,17 +694,9 @@ function buildStateFor(viewerId) {
         locked: p.locked,
         busted: (show || promoShow || connorReads || teamReveal) ? cardDeck.bustedOf(p) : false,
         result: p.result,
-        // SE.RA.PH วันดวล: จำนวนไพ่ในมือของ "คู่ต่อสู้" เป็นความลับ — เห็นได้ต่อเมื่อ
-        //  ลง Matrix ไว้บนเขาอย่างน้อย 1 แต้ม (นี่คือผลของ Matrix ระดับ 1 ตาม §6)
-        //  ผู้ชมไม่โดนกฎนี้ เพราะสเปก §7 ให้ผู้ชมเห็นคู่ที่ลงสนามได้เต็ม ๆ
-        cardCount: (Seraph.isDuelDay() && viewer && !mine && !viewer.scSpectator
-          && Seraph.inCurrentDuel(viewer) && Seraph.matrixLevelOn(viewer, p) < 1)
-          ? null : p.cards.length,
+        cardCount: p.cards.length,
         cards: blackout ? null : (mine ? p.cards : null),
-        // SE.RA.PH Matrix ระดับ 3: ผู้ชมที่ลงครบ 3 แต้มบนคนนี้ เห็นแต้มของเขาตลอดเวลา (§6)
-        //  (ระดับ 1 "เห็นจำนวนไพ่" ใช้ cardCount ที่ส่งให้ทุกคนอยู่แล้ว — client เป็นคนเลือกโชว์ตามระดับ)
-        score: blackout ? null : ((show || promoShow || connorReads || teamReveal
-          || (Seraph.active() && viewer && Seraph.matrixLevelOn(viewer, p) >= 3)) ? cardDeck.scoreOf(p) : null),
+        score: blackout ? null : ((show || promoShow || connorReads || teamReveal) ? cardDeck.scoreOf(p) : null),
         // Locacaca (ซาโตรุ): Max HP ลดถาวรได้ / ทาคุมิ: บังตาระหว่างท่าไม้ตายทำงาน (null = ซ่อนทั้งแถบ)
         // แบทแมนร่างรถแบทโมบิล: ส่ง 0/0 เพื่อให้ "ไม่มีพลังชีวิต เหลือแต่เกราะ" ตามสเปค
         //  (LifeBar วาดหัวใจตามจำนวน maxHp — 0 = ไม่มีหัวใจสักดวง แต่ยังไม่ใช่ null จึงไม่ขึ้น "???")
@@ -909,7 +885,7 @@ function buildStateFor(viewerId) {
         alive: p.alive,
         statuses: show ? { ...p.statuses } : publicStatuses(p),
         statusAmt: p.statusAmt || {}, // จำนวน (amount) ของบัฟ/ดีบัฟพื้นฐาน (patch 2.0.8)
-        character: scHidden ? { id: null, img: null, name: "???", passive: null, passive2: null, passive3: null, basic: null, secondary: null, ultimate: null } : {
+        character: {
           // โอเบรอน: กลางคืนสลับชื่อ + สกิลรอง/ท่าไม้ตายเป็นเวอร์ชันกลางคืน (ฝันร้ายยามค่ำคืน / Lie Like Vortigern)
           id: ch.id,
           // ภาพประจำตัวละคร (ไม่ผูกกับร่าง/แฝดที่กำลังคุมอยู่) — ฉากเปิดตัวตอนแมตช์เริ่มใช้ภาพนี้
@@ -927,54 +903,10 @@ function buildStateFor(viewerId) {
         dmgHp: p.dmgHp, dmgArmor: p.dmgArmor, gainedSkill: p.gainedSkill,
         wasAttacked: p.wasAttacked, isWinner: p.isWinner, isLoser: p.isLoser,
       };
-      return scHidden ? seraphMaskHidden(out, p) : out;
     }),
   };
 }
 
-// ---------- SE.RA.PH: ผู้เล่นที่ผู้ชมยังไม่เคยเห็นตัวละคร (SERAPH_MOONCELL.md §9) ----------
-//  ส่งเฉพาะฟิลด์กลางที่ทุกตัวละครมีเหมือนกัน — ฟิลด์เฉพาะตัวละคร (echoQueen/kim/piggy/connorStress ฯลฯ)
-//  แค่ "มีค่า" ก็บอกได้แล้วว่าเป็นใคร จึงใช้รายการอนุญาตแทนการไล่ปิดทีละฟิลด์ (ตัวละครใหม่จะไม่รั่วเพิ่มเอง)
-const SC_PUBLIC_KEYS = new Set([
-  "id", "name", "img", "scHidden", "scSpectator", "scEliminated", "scMatrixLevel",
-  "position", "color", "teamId", "teamConfirmed", "isBoss", "modeVote",
-  "locked", "busted", "result", "cardCount", "cards", "score",
-  "hp", "maxHp", "armor", "maxArmor", "mark42", "shield", "tempHp",
-  "skillPoints", "maxSkill", "gold", "goldMax", "atCap", "skillUsed",
-  "ready", "connected", "alive", "character",
-  "dmgHp", "dmgArmor", "gainedSkill", "wasAttacked", "isWinner", "isLoser",
-]);
-function seraphMaskHidden(out, p) {
-  const masked = {};
-  // อาร์เรย์ส่งเป็นอาร์เรย์ว่าง (client บางจุด .length/.map ของทุกคน) · ที่เหลือตัดทิ้ง
-  for (const [k, v] of Object.entries(out)) masked[k] = SC_PUBLIC_KEYS.has(k) ? v : (Array.isArray(v) ? [] : undefined);
-  masked.avatar = null;
-  masked.statuses = {};
-  masked.statusAmt = {};
-  masked.inventory = []; // ของเฉพาะตัวละคร (เช่น Black Sparklence ของ Ignis) อยู่ในช่องเก็บของ
-  // ค่าที่ถูกปรับตามตัวละคร (ซาโตรุซ่อนแต้มสกิล -1 · ชิโดโชว์หลอดเต็ม · รถแบทแมนโชว์เลือด 0) -> ใช้ค่าจริงแทน
-  if (out.skillPoints != null) masked.skillPoints = p.skillPoints;
-  if (out.hp != null && !Mark42.suited(p)) { masked.hp = p.hp; masked.maxHp = combat.maxHpOf(p); }
-  return masked;
-}
-
-// SE.RA.PH: บรรทัด log ที่มีชื่อตัวละคร/ชื่อสกิลของคนที่ผู้ชมยังไม่เคยเห็น = รั่วตัวตน (SERAPH_MOONCELL.md §14 ข้อ 2)
-function seraphFilterLog(lines, viewer) {
-  if (!Seraph.active() || !viewer) return lines;
-  const words = [];
-  for (const p of Object.values(match.players)) {
-    if (Seraph.canSee(viewer, p)) continue;
-    const ch = CHAR_BY_ID[p.characterId];
-    if (!ch) continue;
-    // ชื่อตัวละคร + ชื่อสกิล/สกิลติดตัวทุกแบบ (รวมเวอร์ชันกลางคืน/ร่างที่สอง เช่น basicNight, basic2)
-    for (const part of [ch, ...Object.values(ch)]) {
-      if (!part || typeof part !== "object") continue;
-      for (const w of [part.name, part.nightName]) if (typeof w === "string" && w.trim().length >= 3) words.push(w.trim());
-    }
-  }
-  if (!words.length) return lines;
-  return lines.filter((line) => typeof line !== "string" || !words.some((w) => line.includes(w)));
-}
 function broadcastState() {
   CHAR_HOOKS.usagi.syncPause(engine); // อุซากิ: โจทย์คณิตหยุดนับเวลาระหว่างที่ไม่ได้อยู่เฟสจั่วไพ่ (คัตซีนคั่น)
   CHAR_HOOKS.recruit.syncPause(engine); // Recruit: QTE หยุดนับเวลาระหว่างคัตซีนคั่น

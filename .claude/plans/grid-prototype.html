@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECHO กระดานต่อสู้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azure:#3d8bd9; --navy:rgba(18,38,72,.93); --navy-solid:#12264a; --line:rgba(127,184,230,.35);
+  --text:#eaf3fc; --mute:#9db8da; --echo:#7b4ddb; --hp:#e0564f; --armor:#5fa8ee; --gold:#e6b44c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#d9e6f3;font-family:"Chakra Petch","Kanit",system-ui,sans-serif;color:var(--text)}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:50% 50%;user-select:none;overflow:hidden}
+#cv{position:absolute;left:0;top:0;width:1280px;height:720px}
+.panel{position:absolute;background:var(--navy);border:1px solid var(--line)}
+.panel::before,.panel::after{content:"";position:absolute;width:10px;height:10px;border:2px solid var(--azure);pointer-events:none}
+.panel::before{left:-2px;top:-2px;border-right:0;border-bottom:0}
+.panel::after{right:-2px;bottom:-2px;border-left:0;border-top:0}
+.hide{display:none!important}
+
+#region{left:18px;top:16px;padding:8px 18px 8px 14px;display:flex;gap:12px;align-items:baseline}
+#region b{font-size:20px;font-weight:600}
+#region span{font-size:14px;color:var(--mute)}
+
+#order{left:50%;top:10px;transform:translateX(-50%);display:flex;gap:6px;padding:7px 9px}
+.chip{position:relative;width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .25s,opacity .25s}
+.chip .pf{width:46px;height:46px;background-size:cover;background-position:50% 15%;border:2px solid var(--c);background-color:#2a3f63}
+.chip .sc{font-size:17px;font-weight:700;line-height:1.05}
+.chip .nm{font-size:11px;color:var(--mute);white-space:nowrap;line-height:1}
+.chip .no{position:absolute;left:3px;top:-3px;font-size:11px;font-weight:600;background:var(--navy-solid);padding:0 4px;border:1px solid var(--line)}
+.chip .bust{position:absolute;right:3px;top:30px;background:var(--hp);color:#fff;font-size:10px;font-weight:600;padding:0 4px}
+.chip.cur{transform:translateY(3px)}
+.chip.cur .pf{box-shadow:0 0 0 2px #fff,0 0 14px 2px var(--azure)}
+.chip.done{opacity:.55}
+.chip.dead{opacity:.25}
+
+#unit{left:18px;bottom:16px;width:340px;padding:10px;display:flex;gap:12px}
+#unit .pf{width:84px;height:96px;flex:none;background-size:cover;background-position:50% 15%;border:2px solid var(--c);background-color:#2a3f63}
+#unit .nm{font-size:19px;font-weight:600;line-height:1.2}
+#unit .row{display:flex;gap:14px;font-size:13px;color:var(--mute);margin-top:4px}
+#unit .row b{color:var(--text);font-weight:600}
+.pips{display:flex;gap:3px;margin-top:6px;align-items:center}
+.pip{width:13px;height:13px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06)}
+.pip.h{background:var(--hp);border-color:#ff9b94}
+.pip.a{background:var(--armor);border-color:#a8d4ff;transform:rotate(45deg) scale(.82)}
+.pip.lose{animation:blink .7s steps(2) infinite}
+.pip.sep{width:6px;border:0;background:none}
+@keyframes blink{50%{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25)}}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.tag{font-size:11px;padding:1px 6px;border:1px solid var(--line);color:var(--text)}
+.tag.red{background:rgba(224,86,79,.35)} .tag.green{background:rgba(79,179,122,.35)}
+.tag.yellow{background:rgba(230,180,76,.35)} .tag.blue{background:rgba(95,168,238,.35)} .tag.bust{background:var(--hp)}
+
+#act{left:50%;bottom:16px;transform:translateX(-50%);padding:12px 16px;min-width:300px;display:flex;align-items:center;gap:16px}
+.hand{display:flex;gap:5px}
+.card{width:34px;height:48px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,.5);animation:deal .25s ease-out}
+.card.red{background:linear-gradient(160deg,#ef7a6f,#b8352f)} .card.blue{background:linear-gradient(160deg,#7fbaf2,#2f6fb8)}
+.card.green{background:linear-gradient(160deg,#76cc98,#2d8a55)} .card.yellow{background:linear-gradient(160deg,#f2cf7d,#c2902a);color:#3a2a06}
+@keyframes deal{from{transform:translateY(-14px);opacity:0}}
+.big{font-size:30px;font-weight:700;line-height:1;min-width:70px;text-align:center}
+.big small{display:block;font-size:12px;color:var(--mute);font-weight:500}
+.big.bust{color:#ff8a82}
+.btns{display:flex;gap:8px}
+button{font:inherit;font-size:16px;font-weight:600;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);padding:8px 18px;cursor:pointer}
+button:hover{background:rgba(255,255,255,.14)}
+button.pri{background:var(--echo);border-color:#a98af0}
+button.pri:hover{background:#8b5ff0}
+button.atk{background:#c94a44;border-color:#ff9b94}
+button.atk:hover{background:#dd5852}
+.who{font-size:17px;font-weight:600}
+.timer{width:120px;height:5px;background:rgba(255,255,255,.12);margin-top:6px}
+.timer i{display:block;height:100%;background:var(--azure)}
+
+/* forecast */
+.fc{display:flex;align-items:stretch;gap:14px}
+.fc .side{width:178px}
+.fc .side .nm{font-size:16px;font-weight:600;display:flex;gap:8px;align-items:center}
+.fc .side .nm i{width:30px;height:30px;background-size:cover;background-position:50% 15%;border:2px solid var(--c);display:block}
+.fc .mid{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:120px;text-align:center}
+.arw{font-size:15px;font-weight:600;padding:2px 8px}
+.arw.go{color:#9fd0ff;border-bottom:2px solid var(--azure)}
+.arw.back{color:#ff9b94;border-bottom:2px solid var(--hp)}
+.arw.none{color:var(--mute)}
+.arw.push{color:#ffd27a}
+
+#tile{right:18px;bottom:16px;padding:8px 16px;font-size:15px;font-weight:600;min-width:120px;text-align:center}
+
+#banner{position:absolute;left:0;right:0;top:300px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.93) 22%,rgba(255,255,255,.93) 78%,rgba(255,255,255,0))}
+#banner small{font-size:14px;color:#4a6a92;font-weight:600}
+#banner b{font-size:44px;color:#12264a;font-weight:700;line-height:1.15}
+#banner.on{animation:ban 1.7s ease forwards}
+@keyframes ban{0%{opacity:0;transform:scaleY(.3)}10%{opacity:1;transform:scaleY(1)}75%{opacity:1}100%{opacity:0}}
+#banner.stay{opacity:1;pointer-events:auto}
+#banner.stay button{margin-top:10px;color:#fff}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="region" class="panel"><b>ภูมิภาค 1</b><span id="turnNo">เทิร์น 1</span></div>
+  <div id="order" class="panel"></div>
+  <div id="unit" class="panel"></div>
+  <div id="act" class="panel"></div>
+  <div id="tile" class="panel hide"></div>
+  <div id="banner"></div>
+</div>
+<script>
+"use strict";
+// ---------------------------------------------------------------- data
+const W = 1280, HT = 720, COLS = 16, ROWS = 12;
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+const R2 = "https://pub-246229b6130d42e19ea95765c029663e.r2.dev/characters/";
+const HP_MAX = 7, ARMOR_MAX = 3, ACT_SECONDS = 20;
+const ROSTER = [
+  { id: "hikaru",  name: "ฮิคารุ",     img: "hikaru/hikaru_ginga.jpg",            mov: 4, rmin: 1, rmax: 1, color: "#3d8bd9", x: 2,  y: 9, human: true },
+  { id: "nanaya",  name: "นานายะ",     img: "nanaya/nanaya.png",                  mov: 5, rmin: 1, rmax: 1, color: "#e0564f", x: 13, y: 9 },
+  { id: "temari",  name: "เทมาริ",     img: "temari/temari.webp",                 mov: 3, rmin: 2, rmax: 2, color: "#4fb37a", x: 13, y: 2 },
+  { id: "artoria", name: "อาร์โทเรีย", img: "artoria_caster/artoria_caster.webp", mov: 3, rmin: 2, rmax: 2, color: "#e6b44c", x: 2,  y: 2 },
+];
+const key = (x, y) => x + "," + y;
+const TERR = {};
+[[5,3],[6,3],[5,4],[10,8],[10,9],[11,9],[3,6],[12,5],[12,4],[7,9],[8,2],[14,6],[1,5],[9,5],[6,7]]
+  .forEach(([x, y]) => (TERR[key(x, y)] = "rock"));
+[[7,6],[8,4]].forEach(([x, y]) => (TERR[key(x, y)] = "heal"));
+const TERR_NAME = { rock: "หิน", heal: "จุดฟื้นฟู" };
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+const COLORS = ["red", "blue", "green", "yellow"];
+
+// ---------------------------------------------------------------- state
+const G = { turn: 0, phase: "draw", units: [], order: [], cur: -1, actor: null, deck: [], over: false, preview: null };
+let ME = null, H = null, busy = false, hoverTile = null, hoverUnit = null, timerEnd = 0, timerId = 0;
+const fx = [], floats = [];
+
+function makeUnits() {
+  G.units = ROSTER.map(r => {
+    const img = new Image();
+    img.src = R2 + r.img;
+    return { ...r, imgEl: img, hp: HP_MAX, armor: ARMOR_MAX, alive: true, deathT: 0, hitT: -1e9,
+      rx: r.x, ry: r.y, ox: 0, oy: 0, cards: [], score: 0, bust: false, stood: false, atkBonus: 0, tags: [], acted: false, human: !!r.human };
+  });
+  ME = G.units.find(u => u.human);
+}
+
+// ---------------------------------------------------------------- helpers
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const inB = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS;
+const man = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const blocked = (x, y) => !inB(x, y) || TERR[key(x, y)] === "rock";
+const unitAt = (x, y) => G.units.find(u => u.alive && u.x === x && u.y === y);
+const inRange = (u, d) => d >= u.rmin && d <= u.rmax;
+const alive = () => G.units.filter(u => u.alive);
+function tween(dur, fn) {
+  return new Promise(res => {
+    const t0 = performance.now();
+    (function f(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      fn(p);
+      p < 1 ? requestAnimationFrame(f) : res();
+    })(t0);
+  });
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function reach(u) {
+  const mv = Math.max(0, u.mov - (u.bust ? 1 : 0));
+  const R = new Map(), start = { x: u.x, y: u.y, d: 0, prev: null };
+  R.set(key(u.x, u.y), start);
+  const q = [start];
+  while (q.length) {
+    const c = q.shift();
+    if (c.d >= mv) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = c.x + dx, ny = c.y + dy, k = key(nx, ny);
+      if (blocked(nx, ny) || R.has(k)) continue;
+      const o = unitAt(nx, ny);
+      if (o && o !== u) continue;
+      const n = { x: nx, y: ny, d: c.d + 1, prev: c };
+      R.set(k, n); q.push(n);
+    }
+  }
+  return R;
+}
+function pathOf(node) { const a = []; while (node) { a.unshift(node); node = node.prev; } return a; }
+function attackTiles(x, y, u) {
+  const s = [];
+  for (let dx = -u.rmax; dx <= u.rmax; dx++) for (let dy = -u.rmax; dy <= u.rmax; dy++) {
+    const d = Math.abs(dx) + Math.abs(dy);
+    if (inRange(u, d) && inB(x + dx, y + dy)) s.push(key(x + dx, y + dy));
+  }
+  return s;
+}
+function threatOf(u, R) {
+  const t = new Set();
+  for (const n of R.values()) for (const k of attackTiles(n.x, n.y, u)) if (!R.has(k)) t.add(k);
+  return t;
+}
+// attacker standing at (ax,ay) gets countered by d -> knocked 1 tile away from d
+function pushInfo(ax, ay, d, self) {
+  const dx = ax - d.x, dy = ay - d.y, sx = Math.sign(dx), sy = Math.sign(dy);
+  let dirs;
+  if (Math.abs(dx) > Math.abs(dy)) dirs = [[sx, 0]];
+  else if (Math.abs(dy) > Math.abs(dx)) dirs = [[0, sy]];
+  else dirs = [[0, sy], [sx, 0]];
+  const free = ([ux, uy]) => { const nx = ax + ux, ny = ay + uy; if (blocked(nx, ny)) return false; const o = unitAt(nx, ny); return !o || o === self; };
+  const dir = dirs.find(free) || dirs[0];
+  return { x: ax + dir[0], y: ay + dir[1], collide: !free(dir) };
+}
+function afterDmg(u, n) { let a = u.armor, h = u.hp; for (let i = 0; i < n; i++) a > 0 ? a-- : h--; return { a, h: Math.max(0, h) }; }
+// full forecast of attacker at tile (ax,ay) hitting d
+function forecast(a, ax, ay, d) {
+  const dist = Math.abs(ax - d.x) + Math.abs(ay - d.y);
+  const hit = 1 + a.atkBonus;
+  const dAfter = afterDmg(d, hit);
+  const counter = dAfter.h > 0 && inRange(d, dist);
+  const back = counter ? 1 + d.atkBonus : 0;
+  const push = counter ? pushInfo(ax, ay, d, a) : null;
+  const selfLoss = back + (push && push.collide ? 1 : 0);
+  return { hit, dAfter, counter, back, push, aAfter: afterDmg(a, selfLoss) };
+}
+
+// ---------------------------------------------------------------- projection (tilted camera)
+const PITCH = 56 * Math.PI / 180, SN = Math.sin(PITCH), CS = Math.cos(PITCH);
+const CAM_D = 21, FOC = 1000, OX = 640, OY = 300;
+function P(x, y, z = 0) {
+  const X = x - COLS / 2, Y = y - ROWS / 2, depth = CAM_D - Y * CS - z * SN, s = FOC / depth;
+  return [OX + X * s, OY + (Y * SN - z * CS) * s, s];
+}
+function unproject(sx, sy) {
+  const v = (sy - OY) / FOC, Y = v * CAM_D / (SN + v * CS), s = FOC / (CAM_D - Y * CS);
+  return { x: (sx - OX) / s + COLS / 2, y: Y + ROWS / 2 };
+}
+function quad(g, x, y, inset = 0, z = 0) {
+  const a = P(x + inset, y + inset, z), b = P(x + 1 - inset, y + inset, z), c = P(x + 1 - inset, y + 1 - inset, z), d = P(x + inset, y + 1 - inset, z);
+  g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.lineTo(d[0], d[1]); g.closePath();
+}
+function groundEllipse(g, cx, cy, r) {
+  g.beginPath();
+  for (let i = 0; i <= 28; i++) { const t = i / 28 * Math.PI * 2, p = P(cx + Math.cos(t) * r, cy + Math.sin(t) * r); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }
+  g.closePath();
+}
+
+// ---------------------------------------------------------------- baked board
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+cv.width = W * DPR; cv.height = HT * DPR;
+const bake = document.createElement("canvas");
+function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646; }
+function bakeBoard() {
+  bake.width = W * DPR; bake.height = HT * DPR;
+  const g = bake.getContext("2d"); g.scale(DPR, DPR);
+  const R = rng(7);
+  let gr = g.createLinearGradient(0, 0, 0, HT);
+  gr.addColorStop(0, "#a9c9ea"); gr.addColorStop(.45, "#e6f0fa"); gr.addColorStop(1, "#cfe0f2");
+  g.fillStyle = gr; g.fillRect(0, 0, W, HT);
+  g.strokeStyle = "rgba(61,139,217,.07)"; g.lineWidth = 1;
+  for (let x = 0; x < W; x += 48) { g.beginPath(); g.moveTo(x + .5, 0); g.lineTo(x + .5, HT); g.stroke(); }
+  for (let y = 0; y < HT; y += 48) { g.beginPath(); g.moveTo(0, y + .5); g.lineTo(W, y + .5); g.stroke(); }
+  // distant ridges
+  [["rgba(120,160,205,.35)", 150, 46, .006], ["rgba(96,140,192,.45)", 175, 34, .011], ["rgba(80,122,176,.5)", 200, 22, .019]].forEach(([c, base, amp, f], i) => {
+    g.fillStyle = c; g.beginPath(); g.moveTo(0, HT);
+    for (let x = 0; x <= W; x += 8) g.lineTo(x, base - Math.abs(Math.sin(x * f + i * 1.7)) * amp - Math.sin(x * f * 3.1 + i) * amp * .3);
+    g.lineTo(W, HT); g.closePath(); g.fill();
+  });
+  // haze below the island
+  gr = g.createLinearGradient(0, 380, 0, HT);
+  gr.addColorStop(0, "rgba(236,244,252,0)"); gr.addColorStop(1, "rgba(236,244,252,.95)");
+  g.fillStyle = gr; g.fillRect(0, 380, W, HT - 380);
+  // clouds
+  for (let i = 0; i < 26; i++) {
+    const cx = R() * W, cy = 560 + R() * 160, r = 40 + R() * 90;
+    const rg = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+    rg.addColorStop(0, "rgba(255,255,255,.8)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = rg; g.beginPath(); g.ellipse(cx, cy, r * 1.8, r * .6, 0, 0, Math.PI * 2); g.fill();
+  }
+  // island cliff (front face, jagged)
+  const fl = P(0, ROWS), fr = P(COLS, ROWS);
+  gr = g.createLinearGradient(0, fl[1], 0, fl[1] + 120);
+  gr.addColorStop(0, "#7b6248"); gr.addColorStop(.5, "#5c4835"); gr.addColorStop(1, "rgba(80,90,110,0)");
+  g.fillStyle = gr; g.beginPath(); g.moveTo(fl[0], fl[1]);
+  for (let i = 0; i <= 40; i++) { const t = i / 40, x = fl[0] + (fr[0] - fl[0]) * t; g.lineTo(x, fl[1] + 60 + Math.sin(i * 1.9) * 14 + R() * 26); }
+  g.lineTo(fr[0], fr[1]); g.closePath(); g.fill();
+  g.strokeStyle = "rgba(40,30,20,.25)";
+  for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(fl[0], fl[1] + 12 + i * 11); g.lineTo(fr[0], fr[1] + 12 + i * 11); g.stroke(); }
+  // tiles
+  const pathY = x => Math.round(6 + 2.4 * Math.sin(x * .45 + .6));
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const n = R(), dirt = (pathY(x) === y || pathY(x) === y - 1 && n < .4) && !TERR[key(x, y)];
+    const base = dirt ? [176 + n * 14, 148 + n * 12, 102 + n * 10] : [92 + n * 22, 152 + n * 22, 74 + n * 14];
+    if ((x + y) % 2) { base[0] -= 6; base[1] -= 6; base[2] -= 4; }
+    g.fillStyle = `rgb(${base.map(v => v | 0)})`; quad(g, x, y); g.fill();
+    g.strokeStyle = "rgba(20,45,20,.18)"; g.lineWidth = .8; g.stroke();
+    // grass tufts / pebbles
+    for (let k = 0; k < 7; k++) {
+      const px = x + .1 + R() * .8, py = y + .1 + R() * .8, [sx, sy, s] = P(px, py);
+      g.fillStyle = dirt ? "rgba(120,96,64,.45)" : (R() < .5 ? "rgba(40,90,34,.55)" : "rgba(170,215,120,.55)");
+      g.fillRect(sx, sy, Math.max(1, s * .04), Math.max(1, s * .07));
+    }
+    if (!dirt && R() < .12) for (let k = 0; k < 4; k++) {
+      const [sx, sy, s] = P(x + .2 + R() * .6, y + .2 + R() * .6);
+      g.fillStyle = ["#fff6c8", "#ffd1e3", "#d8e8ff"][k % 3]; g.beginPath(); g.arc(sx, sy, s * .035, 0, 7); g.fill();
+    }
+    if (TERR[key(x, y)] === "heal") {
+      g.fillStyle = "rgba(90,230,210,.35)"; quad(g, x, y, .04); g.fill();
+      g.strokeStyle = "rgba(220,255,250,.9)"; g.lineWidth = 1.6; groundEllipse(g, x + .5, y + .5, .34); g.stroke();
+      g.lineWidth = 1; groundEllipse(g, x + .5, y + .5, .22); g.stroke();
+    }
+  }
+  // lit front edge
+  g.strokeStyle = "rgba(255,255,240,.55)"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(fl[0], fl[1]); g.lineTo(fr[0], fr[1]); g.stroke();
+}
+
+// ---------------------------------------------------------------- drawing
+function cover(img, x, y, w, h) {
+  if (!img.complete || !img.naturalWidth) { ctx.fillStyle = "#2a3f63"; ctx.fillRect(x, y, w, h); return; }
+  const iw = img.naturalWidth, ih = img.naturalHeight, ir = iw / ih, r = w / h;
+  let sw, sh, sx, sy;
+  if (ir > r) { sh = ih; sw = sh * r; sx = (iw - sw) / 2; sy = 0; } else { sw = iw; sh = sw / r; sx = 0; sy = (ih - sh) * .12; }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+function tileFill(x, y, fill, stroke, inset = .05) {
+  quad(ctx, x, y, inset); ctx.fillStyle = fill; ctx.fill();
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke(); }
+}
+function drawRock(x, y) {
+  const [cx, cy, s] = P(x + .5, y + .55, 0);
+  ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(cx, cy + s * .04, s * .48, s * .2, 0, 0, 7); ctx.fill();
+  const blob = (bx, by, rx, ry, l) => {
+    const rg = ctx.createRadialGradient(bx - rx * .35, by - ry * .45, rx * .1, bx, by, rx * 1.1);
+    rg.addColorStop(0, `hsl(210,8%,${l + 22}%)`); rg.addColorStop(.6, `hsl(210,9%,${l}%)`); rg.addColorStop(1, `hsl(215,12%,${l - 14}%)`);
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(bx, by, rx, ry, 0, 0, 7); ctx.fill();
+  };
+  blob(cx + s * .14, cy - s * .16, s * .26, s * .22, 44);
+  blob(cx - s * .08, cy - s * .26, s * .34, s * .32, 52);
+  ctx.fillStyle = "rgba(90,140,70,.6)"; ctx.beginPath(); ctx.ellipse(cx - s * .14, cy - s * .48, s * .12, s * .04, -.3, 0, 7); ctx.fill();
+}
+function drawUnit(u, now) {
+  let alpha = 1;
+  if (!u.alive) { alpha = 1 - (now - u.deathT) / 800; if (alpha <= 0) return; }
+  let jx = 0, jy = 0;
+  const hitAge = now - u.hitT;
+  if (hitAge < 280) { const k = 1 - hitAge / 280; jx = (Math.random() - .5) * .14 * k; jy = (Math.random() - .5) * .1 * k; }
+  const wx = u.rx + .5 + u.ox + jx, wy = u.ry + .5 + u.oy + jy;
+  const [bx, by, s] = P(wx, wy, 0);
+  const isCur = G.phase === "action" && G.actor === u;
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; groundEllipse(ctx, wx + .06, wy + .08, .4); ctx.fill();
+  groundEllipse(ctx, wx, wy, .4);
+  ctx.fillStyle = u.color + "55"; ctx.fill();
+  ctx.strokeStyle = u.color; ctx.lineWidth = isCur ? 3.5 : 2.5; ctx.stroke();
+  if (isCur) {
+    const p = (now / 1100) % 1;
+    ctx.globalAlpha = alpha * (1 - p); groundEllipse(ctx, wx, wy, .4 + p * .35);
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = alpha;
+  }
+  const bob = isCur ? Math.sin(now / 280) * s * .035 : 0;
+  const cw = s * .78, ch = s * 1.18, x0 = bx - cw / 2, y0 = by - ch - s * .1 + bob;
+  ctx.fillStyle = "#0d1c36"; ctx.fillRect(x0 - 2, y0 - 2, cw + 4, ch + 4);
+  cover(u.imgEl, x0, y0, cw, ch);
+  const gl = ctx.createLinearGradient(0, y0, 0, y0 + ch);
+  gl.addColorStop(0, "rgba(255,255,255,.18)"); gl.addColorStop(.35, "rgba(255,255,255,0)"); gl.addColorStop(1, "rgba(0,0,0,.25)");
+  ctx.fillStyle = gl; ctx.fillRect(x0, y0, cw, ch);
+  ctx.fillStyle = u.color; ctx.fillRect(x0, y0 + ch - s * .08, cw, s * .08);
+  if (hitAge < 140) { ctx.fillStyle = `rgba(255,255,255,${.8 * (1 - hitAge / 140)})`; ctx.fillRect(x0, y0, cw, ch); }
+  // hp / armor bar
+  const seg = HP_MAX + ARMOR_MAX, bw = Math.max(cw + 10, 60), gap = 1.5, sw = (bw - gap * (seg - 1)) / seg, hy = y0 - 10;
+  ctx.fillStyle = "rgba(10,22,44,.85)"; ctx.fillRect(bx - bw / 2 - 2, hy - 2, bw + 4, 8);
+  for (let i = 0; i < seg; i++) {
+    const isArmor = i >= HP_MAX, on = isArmor ? i - HP_MAX < u.armor : i < u.hp;
+    ctx.fillStyle = on ? (isArmor ? "#6fb4f5" : "#ef5a52") : "rgba(255,255,255,.12)";
+    ctx.fillRect(bx - bw / 2 + i * (sw + gap), hy, sw, 4);
+  }
+  if (isCur) {
+    const ay = hy - 12 + Math.sin(now / 200) * 3;
+    ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(bx - 7, ay - 8); ctx.lineTo(bx + 7, ay - 8); ctx.lineTo(bx, ay); ctx.closePath(); ctx.fill();
+  }
+  u._box = [x0, y0, cw, ch];
+  ctx.globalAlpha = 1;
+}
+function arrowOnGround(x0, y0, x1, y1, color) {
+  const a = P(x0 + .5, y0 + .5), b = P(x1 + .5, y1 + .5);
+  ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), L = 14;
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(b[0] + Math.cos(ang) * 6, b[1] + Math.sin(ang) * 6);
+  ctx.lineTo(b[0] + Math.cos(ang + 2.5) * L, b[1] + Math.sin(ang + 2.5) * L);
+  ctx.lineTo(b[0] + Math.cos(ang - 2.5) * L, b[1] + Math.sin(ang - 2.5) * L); ctx.closePath(); ctx.fill();
+}
+function drawPushPreview(ax, ay, push) {
+  if (!push) return;
+  if (push.collide) {
+    const [cx, cy, s] = P(push.x + .5, push.y + .5);
+    if (inB(push.x, push.y)) tileFill(push.x, push.y, "rgba(255,170,60,.35)", "rgba(255,200,120,.9)");
+    ctx.strokeStyle = "#ffb347"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(cx - s * .2, cy - s * .12); ctx.lineTo(cx + s * .2, cy + s * .12);
+    ctx.moveTo(cx + s * .2, cy - s * .12); ctx.lineTo(cx - s * .2, cy + s * .12); ctx.stroke();
+  } else {
+    tileFill(push.x, push.y, "rgba(255,190,80,.3)", "rgba(255,210,130,.9)");
+    arrowOnGround(ax, ay, push.x, push.y, "#ffb347");
+  }
+}
+function drawOverlays(now) {
+  const a = G.actor;
+  if (G.phase === "action" && a === ME && H && !busy) {
+    if (H.sub === "move") {
+      for (const n of H.reach.values()) tileFill(n.x, n.y, "rgba(61,139,217,.42)", "rgba(160,205,250,.75)");
+      for (const k of H.threat) { const [x, y] = k.split(",").map(Number); tileFill(x, y, "rgba(224,86,79,.36)", "rgba(255,150,140,.65)"); }
+      if (hoverTile && H.reach.has(key(hoverTile.x, hoverTile.y))) {
+        const path = pathOf(H.reach.get(key(hoverTile.x, hoverTile.y)));
+        ctx.fillStyle = "#ffffff";
+        for (const n of path) { const [px, py, s] = P(n.x + .5, n.y + .5); ctx.beginPath(); ctx.ellipse(px, py, s * .08, s * .05, 0, 0, 7); ctx.fill(); }
+      }
+    } else if (H.sub === "attack") {
+      for (const k of attackTiles(a.x, a.y, a)) { const [x, y] = k.split(",").map(Number); tileFill(x, y, "rgba(224,86,79,.36)", "rgba(255,150,140,.65)"); }
+    } else if (H.sub === "confirm" && H.target) {
+      tileFill(H.target.x, H.target.y, "rgba(224,86,79,.55)", "#ffb0a8");
+      drawPushPreview(a.x, a.y, forecast(a, a.x, a.y, H.target).push);
+    }
+  } else if (G.preview) {
+    const { att, def } = G.preview;
+    tileFill(def.x, def.y, "rgba(224,86,79,.55)", "#ffb0a8");
+    drawPushPreview(att.x, att.y, forecast(att, att.x, att.y, def).push);
+  } else if (hoverUnit && hoverUnit.alive && !busy && G.phase !== "action" || (hoverUnit && hoverUnit.alive && G.actor !== ME && !busy)) {
+    const R = reach(hoverUnit);
+    for (const n of R.values()) tileFill(n.x, n.y, "rgba(61,139,217,.25)");
+    for (const k of threatOf(hoverUnit, R)) { const [x, y] = k.split(",").map(Number); tileFill(x, y, "rgba(224,86,79,.25)"); }
+  }
+  if (hoverTile && inB(hoverTile.x, hoverTile.y)) { quad(ctx, hoverTile.x, hoverTile.y, .02); ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 2; ctx.stroke(); }
+  // heal glow pulse
+  const pl = .5 + .5 * Math.sin(now / 500);
+  for (const k in TERR) if (TERR[k] === "heal") {
+    const [x, y] = k.split(",").map(Number), [cx, cy, s] = P(x + .5, y + .5, .3);
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * .7);
+    rg.addColorStop(0, `rgba(160,255,235,${.25 + .2 * pl})`); rg.addColorStop(1, "rgba(160,255,235,0)");
+    ctx.fillStyle = rg; ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+  }
+}
+function drawFx(now) {
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i], p = (now - f.t0) / f.dur;
+    if (p >= 1) { fx.splice(i, 1); continue; }
+    if (p < 0) continue;
+    if (f.type === "slash") {
+      const [cx, cy, s] = P(f.x + .5, f.y + .5, .75);
+      ctx.strokeStyle = `rgba(255,255,255,${1 - p})`; ctx.lineWidth = 4 * (1 - p) + 1;
+      ctx.beginPath(); ctx.moveTo(cx - s * .5, cy - s * .4 + p * 8); ctx.lineTo(cx + s * .5, cy + s * .3 + p * 8); ctx.stroke();
+      ctx.strokeStyle = `rgba(${f.rgb},${1 - p})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(cx, cy, s * (.2 + p * .7), s * (.12 + p * .4), 0, 0, 7); ctx.stroke();
+    } else if (f.type === "shot") {
+      const a = P(f.x0 + .5, f.y0 + .5, .8), b = P(f.x1 + .5, f.y1 + .5, .8);
+      const t = Math.min(1, p * 1.15), hx = a[0] + (b[0] - a[0]) * t, hy = a[1] + (b[1] - a[1]) * t - Math.sin(t * Math.PI) * 30;
+      const tx = a[0] + (b[0] - a[0]) * Math.max(0, t - .25), ty = a[1] + (b[1] - a[1]) * Math.max(0, t - .25) - Math.sin(Math.max(0, t - .25) * Math.PI) * 30;
+      const lg = ctx.createLinearGradient(tx, ty, hx, hy); lg.addColorStop(0, `rgba(${f.rgb},0)`); lg.addColorStop(1, "rgba(255,255,255,1)");
+      ctx.strokeStyle = lg; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, 7); ctx.fill();
+    } else if (f.type === "bump") {
+      const [cx, cy, s] = P(f.x + .5, f.y + .5, .4);
+      ctx.strokeStyle = `rgba(255,180,70,${1 - p})`; ctx.lineWidth = 3;
+      for (let k = 0; k < 6; k++) { const an = k / 6 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * s * .2, cy + Math.sin(an) * s * .15); ctx.lineTo(cx + Math.cos(an) * s * (.3 + p * .4), cy + Math.sin(an) * s * (.22 + p * .3)); ctx.stroke(); }
+    }
+  }
+}
+function drawFloats(now) {
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i], p = (now - f.t0) / 1300;
+    if (p >= 1) { floats.splice(i, 1); continue; }
+    if (p < 0) continue;
+    const [x, y] = P(f.x + .5, f.y + .5, 2.05 + p * .5);
+    ctx.globalAlpha = p < .75 ? 1 : 1 - (p - .75) / .25;
+    ctx.font = `700 ${f.size || 22}px "Chakra Petch","Kanit",sans-serif`;
+    ctx.lineWidth = 5; ctx.strokeStyle = "rgba(10,20,40,.85)"; ctx.strokeText(f.text, x, y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, x, y);
+  }
+  ctx.globalAlpha = 1;
+}
+function frame(now) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.drawImage(bake, 0, 0, W, HT);
+  drawOverlays(now);
+  const items = [];
+  for (const k in TERR) if (TERR[k] === "rock") { const [x, y] = k.split(",").map(Number); items.push({ d: y + .5, f: () => drawRock(x, y) }); }
+  for (const u of G.units) items.push({ d: u.ry + u.oy + .5 + .01, f: () => drawUnit(u, now) });
+  items.sort((a, b) => a.d - b.d).forEach(i => i.f());
+  drawFx(now); drawFloats(now);
+  if (G.phase === "action" && G.actor === ME && H && !busy) updateTimerBar();
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- combat
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
+function float(u, text, color, size, delay = 0) { floats.push({ x: u.x, y: u.y, text, color, size, t0: performance.now() + delay }); }
+function damage(u, n) {
+  for (let i = 0; i < n; i++) u.armor > 0 ? u.armor-- : u.hp--;
+  u.hitT = performance.now();
+  if (u.hp <= 0 && u.alive) { u.hp = 0; u.alive = false; u.deathT = performance.now() + 250; float(u, "ล้ม", "#ffffff", 26, 300); }
+}
+async function strike(a, d, isCounter) {
+  const dx = d.x - a.x, dy = d.y - a.y, L = Math.hypot(dx, dy) || 1, ranged = man(a, d) > 1;
+  if (ranged) {
+    await tween(120, p => { a.ox = -dx / L * .12 * p; a.oy = -dy / L * .12 * p; });
+    fx.push({ type: "shot", x0: a.x, y0: a.y, x1: d.x, y1: d.y, t0: performance.now(), dur: 300, rgb: hexRgb(a.color) });
+    tween(160, p => { a.ox = -dx / L * .12 * (1 - p); a.oy = -dy / L * .12 * (1 - p); });
+    await wait(280);
+  } else {
+    await tween(130, p => { a.ox = dx / L * .38 * p; a.oy = dy / L * .38 * p; });
+  }
+  const n = 1 + a.atkBonus;
+  fx.push({ type: "slash", x: d.x, y: d.y, t0: performance.now(), dur: 380, rgb: hexRgb(a.color) });
+  damage(d, n);
+  float(d, (isCounter ? "สวน " : "") + "-" + n, isCounter ? "#ffb0a8" : "#ffffff", isCounter ? 22 : 26);
+  if (!ranged) await tween(170, p => { a.ox = dx / L * .38 * (1 - p); a.oy = dy / L * .38 * (1 - p); });
+  else await wait(120);
+}
+async function doAttack(a, d) {
+  busy = true; ui();
+  const dist = man(a, d);
+  await strike(a, d, false);
+  if (d.alive && inRange(d, dist)) {
+    await wait(260);
+    await strike(d, a, true);
+    if (a.alive) {
+      await wait(140);
+      const push = pushInfo(a.x, a.y, d, a);
+      if (push.collide) {
+        fx.push({ type: "bump", x: a.x, y: a.y, t0: performance.now(), dur: 420 });
+        await tween(90, p => { a.ox = (push.x - a.x) * .25 * p; a.oy = (push.y - a.y) * .25 * p; });
+        damage(a, 1); float(a, "ชน -1", "#ffc56b", 22);
+        await tween(120, p => { a.ox = (push.x - a.x) * .25 * (1 - p); a.oy = (push.y - a.y) * .25 * (1 - p); });
+      } else {
+        const fx0 = a.x, fy0 = a.y;
+        await tween(220, p => { const e = 1 - Math.pow(1 - p, 3); a.rx = fx0 + (push.x - fx0) * e; a.ry = fy0 + (push.y - fy0) * e; });
+        a.x = push.x; a.y = push.y; a.rx = a.x; a.ry = a.y;
+        float(a, "ถอย", "#ffd27a", 18);
+      }
+    }
+  }
+  await wait(450);
+  busy = false; ui();
+}
+async function walk(u, path) {
+  busy = true; ui();
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i];
+    await tween(115, p => { u.rx = a.x + (b.x - a.x) * p; u.ry = a.y + (b.y - a.y) * p; });
+  }
+  const last = path[path.length - 1];
+  u.x = u.rx = last.x; u.y = u.ry = last.y;
+  busy = false; ui();
+}
+
+// ---------------------------------------------------------------- turn flow
+function scoreOf(u) { return u.cards.reduce((s, c) => s + c.n, 0); }
+function drawCard(u) {
+  const c = G.deck.pop(); if (!c) return;
+  u.cards.push(c); u.score = scoreOf(u); u.bust = u.score > 21;
+}
+function banner(sub, big) {
+  const b = document.getElementById("banner");
+  b.className = ""; b.innerHTML = `${sub ? `<small>${sub}</small>` : ""}<b>${big}</b>`;
+  void b.offsetWidth; b.className = "on";
+}
+async function newTurn() {
+  if (G.over) return;
+  G.turn++; G.phase = "draw"; G.actor = null; G.cur = -1; H = null;
+  G.deck = shuffle(COLORS.flatMap(c => Array.from({ length: 10 }, (_, i) => ({ c, n: i + 1 }))));
+  for (const u of G.units) Object.assign(u, { cards: [], score: 0, bust: false, stood: false, atkBonus: 0, tags: [], acted: false });
+  alive().forEach(drawCard);
+  document.getElementById("turnNo").textContent = "เทิร์น " + G.turn;
+  banner("ภูมิภาค 1", "เทิร์น " + G.turn);
+  ui();
+  botsDraw();
+}
+async function botsDraw() {
+  for (const u of alive().filter(u => !u.human)) {
+    const stop = 15 + ((Math.random() * 4) | 0);
+    while (u.score < stop) { await wait(380); drawCard(u); ui(); }
+    await wait(250); u.stood = true; ui();
+  }
+  checkAllStood();
+}
+function humanHit() { if (G.phase !== "draw" || ME.stood || !ME.alive) return; drawCard(ME); ui(); }
+function humanStand() { if (G.phase !== "draw" || ME.stood) return; ME.stood = true; ui(); checkAllStood(); }
+function checkAllStood() { if (G.phase === "draw" && alive().every(u => u.stood)) reveal(); }
+async function reveal() {
+  G.phase = "reveal";
+  for (const u of alive()) {
+    const cnt = {}; u.cards.forEach(c => (cnt[c.c] = (cnt[c.c] || 0) + 1));
+    COLORS.forEach(col => {
+      const n = Math.floor((cnt[col] || 0) / 3); if (!n) return;
+      if (col === "red") { u.atkBonus = n; u.tags.push(["red", "ATK +" + n]); }
+      if (col === "green") { u.hp = Math.min(HP_MAX, u.hp + n); u.tags.push(["green", "ฟื้นเลือด +" + n]); }
+      if (col === "yellow") u.tags.push(["yellow", "แต้มสกิล +" + 2 * n]);
+      if (col === "blue") u.tags.push(["blue", "กันสถานะ"]);
+    });
+    if (u.bust) u.tags.push(["bust", "แตก · เดิน -1"]);
+    u.tags.forEach((t, i) => float(u, t[1], { red: "#ff9b94", green: "#8ff0b4", yellow: "#ffd98a", blue: "#a8d4ff", bust: "#ff8a82" }[t[0]], 17, 200 + i * 350));
+  }
+  const live = alive().map(u => ({ u, r: Math.random() }));
+  live.sort((a, b) => (a.u.bust - b.u.bust) || (a.u.bust ? a.r - b.r : (b.u.score - a.u.score) || (a.r - b.r)));
+  G.order = live.map(o => o.u);
+  ui();
+  banner("", "ลำดับเดิน");
+  await wait(1900);
+  nextActor();
+}
+async function nextActor() {
+  if (G.over) return;
+  G.cur++;
+  if (G.cur >= G.order.length) { G.actor = null; ui(); await wait(500); return newTurn(); }
+  const u = G.order[G.cur];
+  if (!u.alive) return nextActor();
+  G.phase = "action"; G.actor = u;
+  if (u.human) {
+    const R = reach(u);
+    H = { sub: "move", reach: R, threat: threatOf(u, R), origin: { x: u.x, y: u.y }, target: null };
+    timerEnd = performance.now() + ACT_SECONDS * 1000;
+    clearTimeout(timerId); timerId = setTimeout(() => { if (G.actor === ME && !busy) endActor(); }, ACT_SECONDS * 1000);
+    ui();
+  } else { H = null; ui(); botAct(u); }
+}
+async function endActor() {
+  clearTimeout(timerId);
+  const u = G.actor;
+  if (!u) return;
+  G.actor = null; H = null;
+  if (u.alive) {
+    u.acted = true;
+    if (TERR[key(u.x, u.y)] === "heal" && u.hp < HP_MAX) { u.hp++; float(u, "+1", "#8ff0b4", 22); await wait(500); }
+  }
+  ui();
+  if (checkOver()) return;
+  await wait(250);
+  nextActor();
+}
+function checkOver() {
+  const live = alive();
+  if (!ME.alive || live.length <= 1) {
+    G.over = true; G.phase = "over"; ui();
+    setTimeout(() => {
+      const b = document.getElementById("banner");
+      b.className = "stay";
+      b.innerHTML = `<small>ภูมิภาค 1 · เทิร์น ${G.turn}</small><b>${ME.alive ? "ชนะ" : "แพ้"}</b><button class="pri" onclick="restart()">เริ่มใหม่</button>`;
+    }, 900);
+    return true;
+  }
+  return false;
+}
+function restart() {
+  document.getElementById("banner").className = "";
+  G.over = false; G.turn = 0; G.order = []; fx.length = 0; floats.length = 0;
+  makeUnits(); newTurn();
+}
+
+// ---------------------------------------------------------------- bot brain
+function botPlan(u, R) {
+  let best = null;
+  for (const n of R.values()) for (const e of alive()) {
+    if (e === u) continue;
+    const d = Math.abs(n.x - e.x) + Math.abs(n.y - e.y);
+    if (!inRange(u, d)) continue;
+    const f = forecast(u, n.x, n.y, e);
+    let sc = 100 - n.d * .4;
+    if (f.dAfter.h <= 0) sc += 40;
+    sc += (HP_MAX + ARMOR_MAX - e.hp - e.armor) * 2.5;
+    if (f.counter) sc -= 22;
+    if (f.push && f.push.collide) sc -= 18;
+    if (f.aAfter.h <= 0) sc -= 90;
+    if (TERR[key(n.x, n.y)] === "heal") sc += 4;
+    sc += Math.random() * 3;
+    if (!best || sc > best.sc) best = { sc, node: n, target: e };
+  }
+  if (best) return best;
+  let mv = null;
+  for (const n of R.values()) {
+    let dmin = 99;
+    for (const e of alive()) if (e !== u) dmin = Math.min(dmin, Math.abs(n.x - e.x) + Math.abs(n.y - e.y));
+    const sc = -Math.abs(dmin - u.rmax) * 3 + (TERR[key(n.x, n.y)] === "heal" ? 3 : 0) + Math.random();
+    if (!mv || sc > mv.sc) mv = { sc, node: n, target: null };
+  }
+  return mv;
+}
+async function botAct(u) {
+  await wait(600);
+  const plan = botPlan(u, reach(u));
+  if (plan && plan.node) await walk(u, pathOf(plan.node));
+  if (plan && plan.target && plan.target.alive) {
+    G.preview = { att: u, def: plan.target }; await wait(650); G.preview = null;
+    await doAttack(u, plan.target);
+  }
+  await wait(250);
+  endActor();
+}
+
+// ---------------------------------------------------------------- human input
+function bestSpotFor(u, e, R) {
+  let best = null;
+  for (const n of R.values()) {
+    const d = Math.abs(n.x - e.x) + Math.abs(n.y - e.y);
+    if (!inRange(u, d)) continue;
+    const f = forecast(u, n.x, n.y, e);
+    const sc = -n.d - (f.counter ? 5 : 0) - (f.push && f.push.collide ? 3 : 0);
+    if (!best || sc > best.sc) best = { sc, n };
+  }
+  return best && best.n;
+}
+async function onClick() {
+  if (busy || G.phase !== "action" || G.actor !== ME || !H) return;
+  const u = hoverUnit && hoverUnit.alive ? hoverUnit : null, t = hoverTile;
+  if (H.sub === "move") {
+    if (u && u !== ME) {
+      const spot = bestSpotFor(ME, u, H.reach);
+      if (!spot) return;
+      await walk(ME, pathOf(spot));
+      H.sub = "confirm"; H.target = u; ui(); return;
+    }
+    if (t && H.reach.has(key(t.x, t.y))) { await walk(ME, pathOf(H.reach.get(key(t.x, t.y)))); H.sub = "attack"; ui(); }
+  } else if (H.sub === "attack") {
+    if (u && u !== ME && inRange(ME, man(ME, u))) { H.sub = "confirm"; H.target = u; ui(); }
+  }
+}
+function undoMove() {
+  if (busy || !H) return;
+  ME.x = ME.rx = H.origin.x; ME.y = ME.ry = H.origin.y;
+  const R = reach(ME);
+  Object.assign(H, { sub: "move", reach: R, threat: threatOf(ME, R), target: null });
+  ui();
+}
+function cancelTarget() { if (!H || busy) return; H.target = null; H.sub = "attack"; ui(); }
+async function confirmAttack() {
+  if (!H || !H.target || busy) return;
+  const t = H.target; H.sub = "done";
+  clearTimeout(timerId);
+  await doAttack(ME, t);
+  endActor();
+}
+function readyNow() { if (busy || G.actor !== ME) return; endActor(); }
+
+// ---------------------------------------------------------------- HTML ui
+const $ = id => document.getElementById(id);
+const pf = u => `background-image:url('${R2 + u.img}');--c:${u.color}`;
+function pips(u, after) {
+  let h = "";
+  for (let i = 0; i < HP_MAX; i++) h += `<i class="pip ${i < u.hp ? "h" : ""} ${after && i < u.hp && i >= after.h ? "lose" : ""}"></i>`;
+  h += `<i class="pip sep"></i>`;
+  for (let i = 0; i < ARMOR_MAX; i++) h += `<i class="pip ${i < u.armor ? "a" : ""} ${after && i < u.armor && i >= after.a ? "lose" : ""}"></i>`;
+  return `<div class="pips">${h}</div>`;
+}
+function ui() {
+  // order bar
+  const list = G.phase === "draw" ? G.units.filter(u => u.alive || u.deathT) : G.order;
+  $("order").innerHTML = list.map((u, i) => {
+    const showScore = G.phase !== "draw" || u.human;
+    const sc = !u.alive ? "—" : showScore ? u.score : (u.stood ? "พอ" : "…");
+    const cls = ["chip", G.actor === u ? "cur" : "", u.acted && G.phase === "action" ? "done" : "", !u.alive ? "dead" : ""].join(" ");
+    return `<div class="${cls}" style="--c:${u.color}">${G.phase !== "draw" ? `<span class="no">${i + 1}</span>` : ""}
+      <div class="pf" style="${pf(u)}"></div>${u.bust && showScore && u.alive ? `<span class="bust">แตก</span>` : ""}
+      <div class="sc">${sc}</div><div class="nm">${u.name}</div></div>`;
+  }).join("");
+  // unit panel
+  const su = (hoverUnit && (hoverUnit.alive || hoverUnit === ME)) ? hoverUnit : (G.actor || ME);
+  const pos = G.order.indexOf(su);
+  $("unit").innerHTML = `<div class="pf" style="${pf(su)}"></div><div>
+    <div class="nm">${su.name}</div>${pips(su)}
+    <div class="row"><span>เดิน <b>${su.mov - (su.bust ? 1 : 0)}</b></span><span>ระยะ <b>${su.rmin === su.rmax ? su.rmax : su.rmin + "–" + su.rmax}</b></span>${pos >= 0 && G.phase !== "draw" ? `<span>ลำดับ <b>${pos + 1}</b></span>` : ""}</div>
+    <div class="tags">${su.tags.map(t => `<span class="tag ${t[0]}">${t[1]}</span>`).join("")}</div></div>`;
+  // action panel
+  const act = $("act");
+  act.classList.remove("hide");
+  $("unit").classList.toggle("hide", !!(H && H.sub === "confirm"));
+  if (G.phase === "draw") {
+    if (!ME.alive) { act.classList.add("hide"); }
+    else act.innerHTML = `<div class="hand">${ME.cards.map(c => `<div class="card ${c.c}">${c.n}</div>`).join("")}</div>
+      <div class="big ${ME.bust ? "bust" : ""}">${ME.score}<small>${ME.bust ? "แตก" : "แต้ม"}</small></div>
+      ${ME.stood ? `<div class="who">รอ…</div>` : `<div class="btns"><button onclick="humanHit()">จั่ว</button><button class="pri" onclick="humanStand()">พอ</button></div>`}`;
+  } else if (G.phase === "reveal") {
+    act.innerHTML = `<div class="hand">${ME.cards.map(c => `<div class="card ${c.c}">${c.n}</div>`).join("")}</div>
+      <div class="big ${ME.bust ? "bust" : ""}">${ME.score}<small>ลำดับ ${G.order.indexOf(ME) + 1}</small></div>`;
+  } else if (G.phase === "action" && G.actor === ME && H) {
+    if (H.sub === "confirm" && H.target) {
+      const t = H.target, f = forecast(ME, ME.x, ME.y, t);
+      act.innerHTML = `<div class="fc">
+        <div class="side"><div class="nm" style="--c:${ME.color}"><i style="${pf(ME)}"></i>${ME.name}</div>${pips(ME, f.aAfter)}</div>
+        <div class="mid"><span class="arw go">ตี ${f.hit} →</span>
+          ${f.counter ? `<span class="arw back">← สวน ${f.back}</span><span class="arw push">${f.push.collide ? "ชน -1" : "ถอย 1 ช่อง"}</span>` : `<span class="arw none">ไม่สวน</span>`}</div>
+        <div class="side"><div class="nm" style="--c:${t.color}"><i style="${pf(t)}"></i>${t.name}</div>${pips(t, f.dAfter)}</div>
+        <div class="btns" style="flex-direction:column"><button class="atk" onclick="confirmAttack()">โจมตี</button><button onclick="cancelTarget()">ยกเลิก</button></div></div>`;
+    } else if (H.sub === "done") {
+      act.innerHTML = `<div class="who">${ME.name}</div>`;
+    } else {
+      const moved = ME.x !== H.origin.x || ME.y !== H.origin.y || H.sub === "attack";
+      act.innerHTML = `<div><div class="who">ตาของคุณ</div><div class="timer"><i id="tbar"></i></div></div>
+        <div class="btns">${moved ? `<button onclick="undoMove()">ย้อน</button>` : ""}<button class="pri" onclick="readyNow()">พร้อม</button></div>`;
+    }
+  } else if (G.phase === "action" && G.actor) {
+    act.innerHTML = `<div class="who">ตาของ ${G.actor.name}</div>`;
+  } else act.classList.add("hide");
+  // tile info
+  const ti = $("tile");
+  if (hoverTile && inB(hoverTile.x, hoverTile.y)) { ti.classList.remove("hide"); ti.textContent = TERR_NAME[TERR[key(hoverTile.x, hoverTile.y)]] || "พื้นปกติ"; }
+  else ti.classList.add("hide");
+}
+function updateTimerBar() {
+  const el = $("tbar"); if (!el) return;
+  el.style.width = Math.max(0, (timerEnd - performance.now()) / (ACT_SECONDS * 1000) * 100) + "%";
+}
+
+// ---------------------------------------------------------------- stage + events
+const stage = $("stage");
+function fit() { const s = Math.min(innerWidth / W, innerHeight / HT); stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
+addEventListener("resize", fit); fit();
+cv.addEventListener("mousemove", e => {
+  const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width * W, my = (e.clientY - r.top) / r.height * HT;
+  let hu = null;
+  const byDepth = G.units.filter(u => u.alive && u._box).sort((a, b) => b.ry - a.ry);
+  for (const u of byDepth) { const [x, y, w, h] = u._box; if (mx >= x && mx <= x + w && my >= y && my <= y + h) { hu = u; break; } }
+  const g = unproject(mx, my), tx = Math.floor(g.x), ty = Math.floor(g.y);
+  let ht = inB(tx, ty) ? { x: tx, y: ty } : null;
+  if (!hu && ht) hu = unitAt(tx, ty) || null;
+  if (hu) ht = { x: hu.x, y: hu.y };
+  const changed = hu !== hoverUnit || (ht && hoverTile ? ht.x !== hoverTile.x || ht.y !== hoverTile.y : ht !== hoverTile);
+  hoverUnit = hu; hoverTile = ht;
+  cv.style.cursor = hu || (H && H.sub === "move" && ht && H.reach.has(key(ht.x, ht.y))) ? "pointer" : "default";
+  if (changed) ui();
+});
+cv.addEventListener("mouseleave", () => { hoverUnit = null; hoverTile = null; ui(); });
+cv.addEventListener("click", onClick);
+
+bakeBoard();
+makeUnits();
+requestAnimationFrame(frame);
+document.fonts && document.fonts.load("600 16px 'Chakra Petch'", "กขค").then(() => ui());
+newTurn();
+</script>
+</body>
+</html>

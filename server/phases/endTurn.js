@@ -8,7 +8,6 @@ const CHAR_HOOKS = require("../../characters/index");
 const { tickEvadeStacks } = require("../../characters/_universal_status");
 const YunaMod = require("../../characters/yuna");
 const Journey = require("../../characters/_journey");
-const Seraph = require("../../seraph");
 const { GOLD_PER_TURN, TAKUTO_STAR_NEED, TRANSITION_TIME } = require("../constants");
 const match = require("../match");
 const { engine } = require("../engine");
@@ -20,13 +19,9 @@ const draw = require("./draw");
 const echoFreeHit = require("./echoFreeHit");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
-const seraphMode = require("../modes/seraph");
 const shop = require("../shop");
 const timers = require("../timers");
 const view = require("../view");
-
-// SE.RA.PH วันดวล: คนดู/คนตกรอบไม่อยู่บนสนาม (combat.alivePlayers ใช้เกณฑ์เดียวกัน)
-const seraphOffField = (p) => Seraph.active() && (p.scSpectator || p.scEliminated);
 
 function endTurn() {
   // Echo (นี่มันเกมของฉัน): หมัดตีฟรีกลางช่วงจั่วไพ่จบลงที่นี่ (ถูกหลบ/ลบล้าง/สะท้อน ฯลฯ) — คืนเฟสจั่วไพ่ ไม่ใช่จบเทิร์น
@@ -62,9 +57,7 @@ function endTurn() {
   CHAR_HOOKS.conner.cleanupChase(engine);
   CHAR_HOOKS.brian.cleanupDuel(engine); // ไบรอัน: การแข่งล่มกลางคัน -> ปลดธง "ถูกแช่" ของทุกคนเสมอ
   CHAR_HOOKS.dio.cleanupTurn(engine); // ดิโอ: Last stand ล่มกลางคัน -> ปลดธง "ถูกแช่" · THE WORLD ไม่ข้ามเทิร์น
-  // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัว (§5) — ที่หลุดลอดอื่นถูกล้างทิ้งท้ายวันใน seraphAdvance
-  if (!Seraph.noCombat()) for (const p of Object.values(match.players)) {
-    if (seraphOffField(p)) continue; // วันดวล: คนดู/คนตกรอบไม่ได้รับผลท้ายเทิร์นของตัวละคร (เช่น Solar ของเอสคานอร์)
+  for (const p of Object.values(match.players)) {
     // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): ความเครียดลดลง 1 ต่อเทิร์น (ไพ่แตกในเทิร์นนี้ลดเพิ่มอีก 1)
     //  ต้องอ่านค่า p.busted ก่อน dealRound() รีเซ็ต — จึงอยู่ท้ายเทิร์นตรงนี้
     CHAR_HOOKS.conner.onEndTurnDecay(engine, p);
@@ -238,7 +231,7 @@ function endTurn() {
     ? `🗺️ ${Journey.AREAS[Journey.areaOf(match.roundNumber) - 1].name} — ทุกคนได้แต้มสกิลเพิ่ม +${dayBonus}`
     : "☀️ จบเทิร์นช่วงกลางวัน — ทุกคนได้แต้มสกิลเพิ่ม +1");
   // ระบบเหรียญ (patch 2.2 full): จบเทิร์น +1 เหรียญให้ทุกคน (เพดาน 30 — เต็มแล้วไม่ได้เพิ่มจน spending ลดลง)
-  if (!Seraph.active()) for (const p of combat.livingPlayers()) {
+  for (const p of combat.livingPlayers()) {
     const goldGain = GOLD_PER_TURN + Journey.goldBonus(engine) + (p.characterId === "hisakawa_sister" ? CHAR_HOOKS.hisakawa_sister.extraGoldRegen(p) : 0) + (p.characterId === "ignis" ? CHAR_HOOKS.ignis.extraGoldRegen(engine, p) : 0);
     // เท็นโนจิ โคทาโร่ (สลับพลังงาน): กลืนเหรียญที่ควรได้ไปทำเป็นแต้มสกิลแทน
     shop.addGold(p, goldGain);
@@ -288,7 +281,7 @@ function endTurn() {
   // Ultraman Trigger: นับเทิร์นหลังผลท้ายเทิร์นทั้งหมดจบแล้ว เพื่อให้ครบ 10 เทิร์นเต็ม
   // เมื่อหมดเวลา คืน snapshot ก่อนแปลงร่าง (ค่าที่เกิดในร่าง Trigger จึงไม่ติดกลับไป)
   for (const p of Object.values(match.players)) {
-    if (p.characterId !== "ultraman_trigger" || !p.alive || seraphOffField(p)) continue;
+    if (p.characterId !== "ultraman_trigger" || !p.alive) continue;
     p.statuses.triggerForm = Math.max(0, (p.statuses.triggerForm || 0) - 1);
     if (p.statuses.triggerForm <= 0) CHAR_HOOKS.ultraman_trigger.restore(engine, p, false);
   }
@@ -306,10 +299,6 @@ function endTurn() {
       if (CHAR_HOOKS.shido.applyRewind(engine, sp)) shidoRewound = true;
     }
 
-    // ---------- SE.RA.PH: เดินวัน / จบคู่ดวล / จบรอบ / ประกาศผู้ชนะคนสุดท้าย ----------
-    if (Seraph.active()) {
-      if (seraphMode.seraphAdvance()) return;
-    }
     // ---------- Type Mercury: ORT ตาย = ชนะ · ตัวละครหมดและไม่มีใครในสนาม = แพ้ · ตายหมดแต่ยังเลือกตัวได้ = หยุดรอ ----------
     //  ไม่ใช้เงื่อนไข "เหลือคนสุดท้าย" ของโหมดปกติ (ORT นับเป็นผู้เล่น 1 คนใน alivePlayers)
     if (mercury.mercuryActive() && !shidoRewound) {

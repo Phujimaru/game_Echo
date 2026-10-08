@@ -13,12 +13,12 @@ import { dirFromLonLat, regionDir, COLORS } from "../../globe/globeCore";
 import { JOURNEY_AREAS } from "../../journey/areas";
 import { OcButton, OcPanel } from "../ui";
 
-const MODE_TITLES = { ffa: "อิสระ", duo: "คู่หู", trio: "สหายทั้ง 3 เอ๋ย", seraph: "Moon Cell", mercury: "Type Mercury", purge: "Purge" };
-const MODE_SUBTITLES = { ffa: "ทุกคนสู้กันเอง", duo: "ทีมละ 2 คน", trio: "ทีมละ 3 คน", seraph: "SE.RA.PH", mercury: "เรดบอส ORT · ทุกคนร่วมทีม", purge: "หนี ORT ในอุโมงค์ท่อ" };
-const MODE_NEED = { ffa: "2 คนขึ้นไป", duo: "4 หรือ 6 คน", trio: "6 คน", seraph: "2 คนขึ้นไป", mercury: "1–7 คน", purge: "1–7 คน" };
-const MODE_GEO = { ffa: [2, 30], duo: [26, 4], trio: [48, 30], mercury: [322, -10], seraph: [334, 46], purge: [290, 22] };
+const MODE_TITLES = { ffa: "อิสระ", duo: "คู่หู", trio: "สหายทั้ง 3 เอ๋ย", mercury: "Type Mercury", purge: "Purge" };
+const MODE_SUBTITLES = { ffa: "ทุกคนสู้กันเอง", duo: "ทีมละ 2 คน", trio: "ทีมละ 3 คน", mercury: "เรดบอส ORT · ทุกคนร่วมทีม", purge: "หนี ORT ในอุโมงค์ท่อ" };
+const MODE_NEED = { ffa: "2 คนขึ้นไป", duo: "4 หรือ 6 คน", trio: "6 คน", mercury: "1–7 คน", purge: "1–7 คน" };
+const MODE_GEO = { ffa: [2, 30], duo: [26, 4], trio: [48, 30], mercury: [322, -10], purge: [290, 22] };
 const JOURNEY = new Set(["ffa", "duo", "trio"]);
-const ORDER = ["ffa", "duo", "trio", "mercury", "purge", "seraph"];
+const ORDER = ["ffa", "duo", "trio", "mercury", "purge"];
 
 const modeTitle = (m) => MODE_TITLES[m] || m;
 const turnRange = (i, n) => (i === n - 1 ? `เทิร์น ${i * 10 + 1} ขึ้นไป` : `เทิร์น ${i * 10 + 1}–${i * 10 + 10}`);

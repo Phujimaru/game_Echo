@@ -7,7 +7,6 @@ Object.assign(module.exports, {
 });
 
 const CHAR_HOOKS = require("../characters/index");
-const Seraph = require("../seraph");
 const match = require("./match");
 const { engine } = require("./engine");
 const combat = require("./combat");
@@ -19,8 +18,6 @@ const shop = require("./shop");
 const CARD_COLORS = ["red", "blue", "green", "yellow"];
 // รายชื่อการ์ดทั้ง 43 ใบแบบไม่สับ (ลำดับคงที่) — ใช้เป็นแม่แบบแสดงสมุดการ์ด (deckLedger) และเทียบว่าใบไหนถูกจั่วไปแล้ว
 function canonicalDeckCards() {
-  // SE.RA.PH: ถอด King/Queen/Joker ออกทั้งหมด เหลือ 40 ใบ (SERAPH_MOONCELL.md §10)
-  if (Seraph.active()) return Seraph.deckCards(CARD_COLORS);
   const deck = [];
   for (let v = 1; v <= 10; v++) for (const color of CARD_COLORS) deck.push({ value: v, color });
   deck.push({ special: "king" }, { special: "queen" }, { special: "joker" });
@@ -77,7 +74,6 @@ function calculateScore(cards) {
 const YELLOW_CARD_SKILL_BONUS = 2; // ไพ่เหลืองครบ 3 ใบ 1 ชุด = แต้มสกิล +2 (เดิม +1)
 // สีการ์ดครบ 3 ใบ: บลูทำงานทันที (ต้านสถานะผิดปกติ), แดง/เขียว/เหลืองทำงานตอนเปิดไพ่ (ดู applyLockColorTriggers)
 function checkBlueTrigger(p) {
-  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: ไม่มีทริกเกอร์สี (§5)
   const blueCount = p.cards.filter((c) => c.color === "blue").length;
   const shouldHave = Math.floor(blueCount / 3);
   while (p.colorTrigger.blue < shouldHave) {
@@ -105,7 +101,6 @@ function onCardDrawn(p, card) {
 }
 // แดง/เขียว/เหลือง ครบ 3 ใบ: ประเมินครั้งเดียวตอนเปิดไพ่ (lock) จากมือสุดท้ายทั้งหมด
 function applyLockColorTriggers(p) {
-  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: ไม่มีทริกเกอร์สี (§5)
   // ไพ่ฟ้าทำงานตอนจั่วเท่านั้น (กติกากลาง) — ข้อยกเว้นเดียว: มือที่ถูก "นางเงือกน้อยของฉัน" (แอนเดอร์เซน)
   //  เปลี่ยนเป็นสีฟ้าในเทิร์นนี้ ได้ผลตอนเปิดไพ่ (checkBlueTrigger นับชุดที่ให้ผลไปแล้ว จึงไม่ให้ผลซ้ำ)
   if (p.colorTrigger && p.andBlueRound === match.roundNumber) checkBlueTrigger(p);

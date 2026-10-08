@@ -57,7 +57,6 @@ tests/                           node --test (ไม่มี dep เพิ่�
 | `phases/endTurn.js` | `endTurn` |
 | `phases/echoFreeHit.js` | Echo: เฟสโจมตีย่อยของตีฟรีกลางช่วงจั่วไพ่ (`pickFreeHit`, `startFreeHit`, `finishFreeHit`, `runPendingBeforeReveal`, `runPendingOnLock`) |
 | `modes/mercury.js` | Type Mercury (ORT): `mercuryActive`, `isOrt`, `mercuryPick`, โหวตยอมแพ้ |
-| `modes/seraph.js` | Moon Cell: เฟสแมพวันสืบสวน (`SERAPH_PLACE`) + `seraphAdvance` (วัน → คืนวันที่ 7 → จบรอบ) |
 
 **กติกาเวลาแก้โค้ดใน server/**
 - สถานะแมตช์อ่าน/เขียนผ่าน `match.<ชื่อ>` เสมอ (`match.gameState = "SUMMARY"`) — ห้าม destructure ออกมาเก็บ ค่าจะไม่อัปเดต
@@ -187,7 +186,7 @@ endTurn()              :5363  ลดเทิร์นสถานะทั้�
 
 **ใช้ได้ 1 สกิลต่อเทิร์น** (`p.skillUsedRound`) — ยกเว้นตัวที่มีโควตาของตัวเอง (Bard 2 โน้ต/เทิร์น, kai/takumi 5 ครั้ง)
 · **คู่แฝดฮิซากาว่า** สกิลพื้นฐาน (สลับตัว/ชุบแฝด) เป็น **ทางหนี** ที่อะไรก็ปิดกั้นไม่ได้ — `useSkill()` ข้าม `p.locked`
-  (สตั้น/หลับไหล), `noskill` และ `moonCellActive()` ให้เฉพาะ `tier === "basic"` ของตัวละครนี้ (ปุ่มฝั่ง client ปลดล็อกด้วย `isHisakawa`)
+  (สตั้น/หลับไหล) และ `noskill` ให้เฉพาะ `tier === "basic"` ของตัวละครนี้ (ปุ่มฝั่ง client ปลดล็อกด้วย `isHisakawa`)
   · ไม่มีโควตาแยก แต่ "รีเซ็ต" `skillUsedRound` ได้ 2 ทาง — สลับตัว/ชุบแฝด (สกิลพื้นฐาน กดได้แม้ใช้สกิลไปแล้ว
   จำกัดสลับ 1 ครั้ง/เทิร์นด้วย `p.hisakawaSwitchedRound`) และสกิล**ทุกตัว**ที่เหลือซึ่งคืนสิทธิ์ให้อีก 1 ครั้ง
   (ชุบแฝด · สกิลรองทั้งสอง · Miracle Live · Miracle Dance · O-KU-RI-MO-NO-Sunday)
@@ -591,7 +590,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   · แต่ละนัดของ Rapid Shot ผ่าน doAttack จึงคิดเล็บแยกนัด
 - **Rapid Shot นัดที่ 2-3** เปิดจากหัว `endTurn` (`continueRapid`) แพทเทิร์นเดียวกับคาเยนน์ — พลาดเอง 25% อยู่ใน `johnny.tryAttackDodge`
 - **Lesson Five + Chumimi ไม่สนการลดดาเมจ**: `fireLesson` เปิดธง `p.johnny.pierce` เฉพาะช่วง `dealMixed` แล้ว
-  `combat.adjustIncomingDamage` ใช้ `johnny.pierceFloor` (ฮุคตัวละคร/SE.RA.PH/เย็นชื่นใจยังทำงาน แต่ลดต่ำกว่าค่าเดิมไม่ได้)
+  `combat.adjustIncomingDamage` ใช้ `johnny.pierceFloor` (ฮุคตัวละคร/เย็นชื่นใจยังทำงาน แต่ลดต่ำกว่าค่าเดิมไม่ได้)
   · ยังกันได้: ชุด Mark 42 (ดูดก่อนถึงด่าน) · โล่ (`shield`) · ผนึก/กันพวกเดียวกัน · Slow Dancer ฝั่งตรงข้าม (`warded`)
   · สตั้น 1 ทันทีแบบ Barrett ของ Recruit (`applyDebuff` + `locked = true` = เปิดไพ่ให้ เสียช่วงจั่วที่เหลือ + ชนะก็ตีไม่ได้ · หมดที่ endTurn)
   · วีดีโอ `johnnyLesson` คิวไว้ทุกครั้ง เล่นท้าย useSkill (`pausePlayingForCutscene`) หลังดาเมจลงแล้ว
@@ -656,7 +655,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
   แล้วยิงดาเมจ 4 แบบ **ไอเทม** (`t._itemDamage = true` รอบ `dealMixed` แบบกระสุน Nursedessei — ฮุคหลบ/ลดดาเมจสกิลที่ยกเว้นไอเทมไม่ทำงาน
   เช่นทักต์ อิปโป Kim ไททัน ดิโอ · ลดเกราะก่อน · ไม่บวกเปราะบาง) · คลิป `sliverBeam` ครั้งแรกต่อเกม แล้วเป็นเสียง `sliver_shot` + skillFlash ปกติ
   · ตีปกติก็ใช้เสียง `sliver_shot` (`attackSoundOf`)
-- **ซุ่มโจมตี (ซ่อนตัว)** — เปิดเฉพาะ ffa/duo/trio (SE.RA.PH / Purge / Type Mercury = อยู่บนสนามตลอด) · เงื่อนไข ffa: ผู้รอด (รวมตัวเอง) ≥ 3 ·
+- **ซุ่มโจมตี (ซ่อนตัว)** — เปิดเฉพาะ ffa/duo/trio (Purge / Type Mercury = อยู่บนสนามตลอด) · เงื่อนไข ffa: ผู้รอด (รวมตัวเอง) ≥ 3 ·
   ทีม: เพื่อนร่วมทีมรอด ≥ 2 (duo ไม่มีทางเข้า) · `onRoundStart` (ก่อนลูปแจกไพ่ของ `dealRound`) ซ่อน + สุ่มร่างที่สิง (`p.sliver.hostId`) ใหม่ทุกเทิร์น
   - **`combat.alivePlayers()` ไม่นับคนที่ซ่อนอยู่** (`sliver_bullet.offField`) — จุดเดียวที่ทำให้โจมตีปกติ/สกิลหมู่/สุ่มเป้า/การนับคนในสนามของ
     ทุกตัวละครข้ามเขาโดยไม่ขึ้นบันทึก · ระบบที่ต้องนับเขาใช้ **`combat.livingPlayers()`**: `checkAllLocked` (รอ "เตรียมพร้อม") ·
@@ -864,7 +863,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 
 ## 8. คัตซีน / แปลงร่าง
 
-- **เสียงฝั่ง client:** `audioPolicy.js` กำหนดลำดับคัตซีน/เสียงพากย์ → เพลงสกิล → เพลงสนาม ทั้งเกมปกติและ Moon Cell
+- **เสียงฝั่ง client:** `audioPolicy.js` กำหนดลำดับคัตซีน/เสียงพากย์ → เพลงสกิล → เพลงสนาม ของทุกโหมด
   คัตซีนที่ถูกซ่อนจากผู้ชมไม่หยุดเพลงของผู้ชมคนนั้น · โหมดประหยัดเล่นเพลงต่อได้เมื่อข้ามวิดีโอ
   `playCutsceneVideo()` พักเพลงด้วย `suspendMusic()` จนกว่าจะออกจากคลิป และคืนเสียงหลัง autoplay บังคับปิดเสียงเมื่อผู้เล่นคลิก/กดแป้นพิมพ์
   เสียงพากย์ประกาศร่างต้องหยุดเมื่อออกจากฉาก · เสียงจบเทิร์นติดตามจาก PLAYING ผ่านคัตซีนถึง SUMMARY และเสียงโจมตีนับตาม `attack.id`
@@ -894,12 +893,6 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 ---
 
 ## 9. เศรษฐกิจ + ร้านค้า
-
-- **Moon Cell (`seraph`)**: วันที่ 1–6 เดินแมพ (ไม่มีจั่วไพ่) แล้วดวลวันที่ 7 → คืนวันที่ 7 → รอบใหม่ — กติกาเต็มใน [SERAPH_MOONCELL.md](SERAPH_MOONCELL.md)
-  `draw.dealRound()` ของวันเดินแมพไม่แจกไพ่ เข้าเฟส `SERAPH_PLACE` ทันที · เหรียญมาจากของในแมพ (`Seraph.pickup` → `addGold`) + จบรอบ +5
-  สถานที่ประจำวัน (ห้องพัก/โบสถ์/ห้องสมุด) วันละ 1 แห่ง · สวนสาธารณะ/ร้านค้าแวะได้ไม่จำกัดจนกด `seraphReady`
-  `Seraph.canShop()` บล็อกคนพร้อมแล้ว/ตกรอบ/นอกเฟสแมพ และ `buyShopItem()` ตรวจเฟสเกมซ้ำ
-  Overload Force ปิดทั้งโหมด รวมวันดวล (กันทั้งจุดทอยและ `triggerOverloadForce()`)
 
 - **เหรียญ**: จบเทิร์น +1 ทุกคน · ชนะจั่ว +1 · การ์ด King +10 · เพดาน `goldCapOf(p)` = 30 (โคโตเนะ 45 จากสกิลติดตัว)
   - **ทุกการได้รับเหรียญต้องผ่าน `addGold(p, n)`** (`server/shop.js`, เปิดให้ hook ผ่าน `engine.addGold`) — เป็นจุดเดียวที่
@@ -973,7 +966,7 @@ qtePending() / sweepQte()                กันสรุปรอบ + กว
 - `gameMode = "mercury"` · เล่นได้ 1-7 คน (`validGameMode`) · ห้องรอคนเดียวกดพร้อมก็เข้าหน้าเลือกรูปแบบสนามได้
 - **ปิดในโหมดนี้**: ยูนะทั้งหมด (สุ่มเอฟเฟกต์สนาม `rollWindow` + เพลง Longing ชุบคนตายคนแรก) และ Overload Force
   (กันที่จุดทอยใน `resolveRound` และหัว `triggerOverloadForce()`) — ท่าไม้ตายของเอจิที่บังคับเปิดสนามยูนะยังใช้ได้ตามปกติ
-- หน้าโหวตแบ่ง 2 ชั้นด้วย `group` ใน `modeOptionsFor()`: `normal` (ffa/duo/trio) · `special` (seraph/mercury)
+- หน้าโหวตแบ่ง 2 ชั้นด้วย `group` ใน `modeOptionsFor()`: `normal` (ffa/duo/trio) · `special` (mercury/purge)
   โหมดใน `SUSPENDED_MODES` ยังโผล่เป็นปุ่มเทา (`suspended: true`) และ `voteGameMode` ปฏิเสธ
 - **ORT = ผู้เล่นปลอม id `ORT_ID` ("__ort__") ที่นั่ง 8** สร้างใน `startMatch()` ผ่าน `createOrt()` ซึ่งใช้
   `newPlayerRecord()` ตัวเดียวกับ handler `join` (ฟิลด์ครบทุกตัวที่ฮุคอื่นคาดหวัง) · ลบทิ้งที่ `startMatch`/`backToLobby`

@@ -10,7 +10,6 @@ const {
   SPELLBURDEN_MAX, statusAmtOf, SOFT_DEBUFF_STEP, tickCurseOnSkill, numbFizzles,
 } = require("../characters/_universal_status");
 const Journey = require("../characters/_journey");
-const Seraph = require("../seraph");
 const { io } = require("./app");
 const {
   BARD_CRIMSON_IMG, BARD_DIM_NOTES_PER_TURN, BARD_JADE_IMG, BARD_NOTES_PER_TURN, BARD_NOTE_COST,
@@ -112,15 +111,6 @@ function useSkillCore(id, tier, targets, item) {
   if (purge.benched(p) || (Array.isArray(targets) && targets.some((t) => purge.benched(match.players[t])))) return;
   // ORT สกิลติดตัว 1: ช่องสกิลนี้ "ข้อมูลสูญหาย" ในเทิร์นนี้ — กดไม่ได้
   if (CHAR_HOOKS.ort.skillErased(engine, p, tier)) return;
-  // ---------- SE.RA.PH (SERAPH_MOONCELL.md §5 + §3) ----------
-  //  วันที่ 1-6: ไม่มีสกิลเลย · วันที่ 7: ต้องปลดล็อก tier นั้นด้วยระดับทักษะก่อน
-  if (Seraph.active()) {
-    if (Seraph.noCombat()) return;
-    if (!Seraph.tierUnlocked(p, tier)) return;
-    if (p.scSpectator) return; // ผู้ชมกดอะไรไม่ได้
-    // และเล็งผู้ชม/คนที่ตกรอบไม่ได้ (สกิลหมู่/สุ่มเป้ากันไว้ที่ combat.alivePlayers แล้ว)
-    if (Array.isArray(targets) && targets.some((tid) => { const t = match.players[tid]; return t && (t.scSpectator || t.scEliminated); })) return;
-  }
   // ผู้วิงวอน (patch 3.4): คนที่ติด "ลูกแกะน้อยรู้แจ้ง" เล็งผู้วิงวอนด้วยสกิลไม่ได้เลย
   //  กันที่ปากทางจุดเดียว จึงครอบคลุมทุกท่าของทุกตัวละครที่ส่ง targets มา โดยไม่ต้องแก้ prepareXTarget ทีละตัว
   if (Array.isArray(targets) && targets.some((tid) => CHAR_HOOKS.the_supplicant.targetBlocked(p, match.players[tid]))) return;
@@ -316,9 +306,6 @@ function useSkillCore(id, tier, targets, item) {
     ignisImpactTarget = CHAR_HOOKS.ignis.prepareImpactTarget(engine, p, targets);
     if (!ignisImpactTarget) return;
   }
-  // SE.RA.PH: ราคาสกิลมาจาก "ระดับทักษะ" ไม่ใช่ค่าของตัวละคร — 2 / 4 / 6 ตายตัว (§3)
-  //  ต้องคิดสูตรเดียวกันเป๊ะกับ showCost() ใน publicState ไม่งั้นราคาบนปุ่มไม่ตรงกับที่หักจริง
-  if (Seraph.active()) cost = Seraph.costOf(tier);
   // การเดินทาง (ป่าไม้ต้องสาป): ทุกสกิลแพงขึ้น +1 — สกิลราคา 0 ยังฟรี · ต้องตรงกับ showCost() ใน buildStateFor
   const journeyTax = Journey.skillTax(engine, cost);
   // กระแสเวท / ภาระเวท (สถานะพื้นฐาน patch 2.0.8): ใช้พลังงานลดลง/เพิ่มขึ้นตามจำนวนที่ระบุ

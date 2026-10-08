@@ -5,7 +5,6 @@ Object.assign(module.exports, {
 });
 
 const CHAR_HOOKS = require("../../characters/index");
-const Seraph = require("../../seraph");
 const {
   DOOM_TIE_ATTACK_CHANCE, GOLD_WIN_BONUS, OVERLOAD_FORCE_CHANCE, SUMMARY_TIME, TRANSFORMS,
 } = require("../constants");
@@ -163,10 +162,9 @@ function resolveRound() {
   //  (อยู่หลัง ANATA/ท่าที่บังคับจั่ว ORT จึงเห็นแต้มสุดท้ายของทุกคนก่อนตัดสิน)
   { const boss = CHAR_HOOKS.ort.finalDraw(engine); if (boss) cardDeck.applyLockColorTriggers(boss); }
 
-  // SE.RA.PH: วันที่ 1-6 = ทุกคน · วันที่ 7 = เฉพาะคู่ที่กำลังดวล (คนอื่นเป็นผู้ชม)
   // Purge: เฉพาะคนในจุดปะทะ (คนอื่นเป็นผู้ชม)
   // นักบินปริศนา: ซ่อนตัวอยู่ (alivePlayers ไม่นับอยู่แล้ว) หรือปรากฏตัวหลังกดเตรียมพร้อม = ไม่ร่วมตัดสินรอบ
-  const combatants = (Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers())
+  const combatants = (purge.purgeActive() ? purge.combatants() : combat.alivePlayers())
     .filter((p) => !CHAR_HOOKS.sliver_bullet.sitsOutRound(p));
   match.roundWinnerId = null;
 
@@ -183,9 +181,8 @@ function resolveRound() {
   if (best >= 0) {
     const tied = combatants.filter((p) => val(p) === best);
     // สนาม Overload ต้องสุ่มก่อน Rip and Tear ของ DoomGuy เสมอ และเกิดได้เฉพาะตอนแต้มสูงสุดเสมอกันจริง
-    // SE.RA.PH: Overload Force ทำงานเฉพาะวันที่ 7 และห้ามเรียกบอสยูกิทุกกรณี (§7 + §12)
     // Purge: ไม่มี Overload Force (การย้อนเทิร์นไม่ย้อนตำแหน่งในท่อ)
-    if (!Seraph.active() && !mercury.mercuryActive() && !purge.purgeActive() && !match.overloadForceActive && !CHAR_HOOKS.muimi.blocksOverloadForce(engine) && tied.length >= 2 && Math.random() < OVERLOAD_FORCE_CHANCE) {
+    if (!mercury.mercuryActive() && !purge.purgeActive() && !match.overloadForceActive && !CHAR_HOOKS.muimi.blocksOverloadForce(engine) && tied.length >= 2 && Math.random() < OVERLOAD_FORCE_CHANCE) {
       overload.triggerOverloadForce();
       return;
     }
@@ -205,23 +202,19 @@ function resolveRound() {
     match.roundTiedWin = tied.length > 1; // เสมอแต้มกัน -> ยังได้แต้มสกิล/ท่าไม้ตายทำงานปกติ แต่ไม่มีเทิร์นโจมตี
     w.isWinner = true;
     w.result = "win";
-    // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัว — ผลเฉพาะตัวละครตอนชนะ/แพ้ปิดทั้งหมด (§5, §14 ข้อ 1)
-    const charTicks = !Seraph.noCombat();
-    if (charTicks) {
-      // เท็นโนจิ โคทาโร่: ชนะในเทิร์นที่เขียนใหม่ -> หนี้เลือดถูกลบ · และอาร์มโควตาโจมตีของกรงเล็บ
-      // เทเปา (characters/tepeu.js): รีเซ็ตเคาน์เตอร์แพ้ติดกัน + สมองอันชาญฉลาด
-      CHAR_HOOKS.tepeu.onRoundWin(engine, w, combatants);
-      // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): การชนะการจั่ว = ความเครียด +1
-      CHAR_HOOKS.conner.onRoundWin(engine, w);
-      // ไบรอัน (สกิลติดตัว น้ำมันรถ): ชนะการจั่วได้น้ำมัน +2 (ได้แม้อยู่ในร่างรถ)
-      CHAR_HOOKS.brian.onRoundWin(engine, w);
-    }
+    // เท็นโนจิ โคทาโร่: ชนะในเทิร์นที่เขียนใหม่ -> หนี้เลือดถูกลบ · และอาร์มโควตาโจมตีของกรงเล็บ
+    // เทเปา (characters/tepeu.js): รีเซ็ตเคาน์เตอร์แพ้ติดกัน + สมองอันชาญฉลาด
+    CHAR_HOOKS.tepeu.onRoundWin(engine, w, combatants);
+    // คอนเนอร์ RK800 (สกิลติดตัว 1 สืบสวน): การชนะการจั่ว = ความเครียด +1
+    CHAR_HOOKS.conner.onRoundWin(engine, w);
+    // ไบรอัน (สกิลติดตัว น้ำมันรถ): ชนะการจั่วได้น้ำมัน +2 (ได้แม้อยู่ในร่างรถ)
+    CHAR_HOOKS.brian.onRoundWin(engine, w);
     // ระบบเหรียญ (patch 2.2 full): ชนะการจั่วได้เหรียญเพิ่ม +1 (เพดาน 30)
     shop.addGold(w, GOLD_WIN_BONUS);
     // Purge: ผู้ชนะการปะทะ (ไม่เสมอ) — คนอื่นในจุดนั้นถอยหลัง
     purge.onFightResult(w);
     // patch 2.1.3.5: ชนะจั่วการ์ดไม่ได้แต้มสกิลอีกต่อไป
-    if (charTicks) combat.firePassive(w, "win");
+    combat.firePassive(w, "win");
     if (tied.length > 1) {
       if (match.doomTieAttack) match.lastLog.push(`เสมอที่ ${best} แต้ม — ${w.name} สกิลติดตัว Rip and Tear ทำงาน (โอกาส ${Math.round(DOOM_TIE_ATTACK_CHANCE * 100)}%) ได้เป็นผู้ชนะและยังได้โจมตี!`);
       else match.lastLog.push(`เสมอที่ ${best} แต้ม — สุ่มผู้ชนะได้ ${w.name} (เสมอ ไม่มีเทิร์นโจมตี)`);
@@ -234,16 +227,7 @@ function resolveRound() {
   //  ทำให้ worst = -1 ทันทีที่มีใครไพ่แตกแม้แต่คนเดียว ลูปนั้นจึงเหลือแต่คนไพ่แตก และเงื่อนไข
   //  !bustedOf(l) ที่คร่อมไว้ก็เป็นเท็จเสมอ = ไบเลธไม่เคยถูกมาร์กเลยทุกเทิร์นที่มีคนไพ่แตก
   //  (ผลคือ "ตีตอบ" แทบไม่ทำงานจริงในเกม) -> คิดจากกลุ่ม "ไพ่ไม่แตก" แยกออกมาต่างหาก
-  // SE.RA.PH วันที่ 1-6: **ไม่มีใครเสียเลือด/เกราะ และไม่มีใครได้แต้มสกิล** (§5 + §14 ข้อ 3)
-  //  วันธรรมดาคือการแข่งแต้มล้วนเพื่อชิงรางวัล ไม่ใช่การต่อสู้ — ยังปักธง isLoser ไว้ให้ UI โชว์อันดับได้
-  if (Seraph.noCombat()) {
-    if (best !== worst) {
-      for (const l of combatants.filter((p) => val(p) === worst && p.id !== match.roundWinnerId)) {
-        l.isLoser = true;
-        l.result = "lose";
-      }
-    }
-  } else if (best !== worst) {
+  if (best !== worst) {
     for (const l of combatants.filter((p) => val(p) === worst && p.id !== match.roundWinnerId)) {
       l.isLoser = true;
       l.result = "lose";
@@ -304,19 +288,17 @@ function resolveRound() {
     }
   }
   for (const p of combatants) if (!p.result) p.result = "safe";
-  if (!Seraph.noCombat()) { // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัว (§5)
-    // Bamboo-Hatted Kim: ท่าไม้ตาย 1 — แพ้ = To Claim Their Bones แล้วได้ Yield My Flesh (อ่าน isLoser ที่เพิ่งตัดสิน)
-    CHAR_HOOKS.kim.onRoundResult(engine);
-    // มุยมิ: นับแพ้/ไพ่แตกต่อเนื่องหลังผลของทุกคนถูกกำหนดครบแล้ว
-    CHAR_HOOKS.muimi.onAfterRoundScores(engine, combatants);
-    CHAR_HOOKS.hisakawa_sister.onAfterRoundScores(engine, combatants, match.roundWinnerId, val);
+  // Bamboo-Hatted Kim: ท่าไม้ตาย 1 — แพ้ = To Claim Their Bones แล้วได้ Yield My Flesh (อ่าน isLoser ที่เพิ่งตัดสิน)
+  CHAR_HOOKS.kim.onRoundResult(engine);
+  // มุยมิ: นับแพ้/ไพ่แตกต่อเนื่องหลังผลของทุกคนถูกกำหนดครบแล้ว
+  CHAR_HOOKS.muimi.onAfterRoundScores(engine, combatants);
+  CHAR_HOOKS.hisakawa_sister.onAfterRoundScores(engine, combatants, match.roundWinnerId, val);
 
-    // เทเปา (characters/tepeu.js): มีเทเปายังอยู่ในสนาม -> ใครแพ้ติดกันเกิน 3 เทิร์น เส้นชีวิตลดลง 1 หน่วย
-    CHAR_HOOKS.tepeu.onRoundLoseStreak(engine, combatants);
+  // เทเปา (characters/tepeu.js): มีเทเปายังอยู่ในสนาม -> ใครแพ้ติดกันเกิน 3 เทิร์น เส้นชีวิตลดลง 1 หน่วย
+  CHAR_HOOKS.tepeu.onRoundLoseStreak(engine, combatants);
 
-    // สกิลติดตัว เนตรมารแห่งความมรณะ (ชิกิ, characters/shiki.js): เปิดไพ่แล้วแต้มเท่ากับผู้เล่นอื่น -> ติดเส้นชีวิตถาวร
-    CHAR_HOOKS.shiki.onScoreTiePassive(engine, combatants);
-  }
+  // สกิลติดตัว เนตรมารแห่งความมรณะ (ชิกิ, characters/shiki.js): เปิดไพ่แล้วแต้มเท่ากับผู้เล่นอื่น -> ติดเส้นชีวิตถาวร
+  CHAR_HOOKS.shiki.onScoreTiePassive(engine, combatants);
 
   // สกิลติดตัว หิวอะโปรดิวเซอร์ (เทมาริ patch 1.7.6): เป้าหมาย ANATA WAAAAAAAA แพ้หรือไพ่แตก
   // -> โดนขิงจนช้ำ รับความเสียหายตามโบนัส Song for you เท่านั้น (ไม่นับพลังโจมตีปกติ — สูงสุด 2)

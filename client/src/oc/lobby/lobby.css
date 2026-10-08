@@ -222,19 +222,6 @@
   background: #9fd6ff;
 }
 
-/* Moon Cell — ตัดมุมทแยง ขอบม่วงสองชั้น + จันทร์เสี้ยว */
-.ocl-modetag[data-mode="seraph"] {
-  --shape: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
-  --edge: var(--oc-echo-glow);
-  padding: 10px 18px 10px 36px; font: 400 12px/1 var(--oc-f-logo); letter-spacing: 0.08em;
-}
-.ocl-modetag[data-mode="seraph"] .ocl-mt-frame::after { box-shadow: inset 0 0 0 3px var(--oc-snow), inset 0 0 0 4px color-mix(in srgb, var(--oc-echo-glow) 70%, transparent); }
-.ocl-modetag[data-mode="seraph"]::before {
-  left: 13px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%;
-  box-shadow: inset 4px -2px 0 0 var(--orn);
-}
-.ocl-modetag[data-mode="seraph"]::after { left: 26px; top: 8px; width: 3px; height: 3px; background: var(--orn2); transform: rotate(45deg); }
-
 /* สถานะ (อยู่หลังกรอบประจำโหมดเพื่อทับค่า) */
 .ocl-modetag.focus {
   --edge: var(--oc-echo); --k: 1.1; --bw: 2px; z-index: 3;

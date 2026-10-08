@@ -15,7 +15,7 @@ const match = {
   // ---------- สถานะเกมส่วนกลาง ----------
   players: {},
   gameState: "LOBBY", // LOBBY | TEAM_MODE | TEAM_SETUP | PLAYING | CUTSCENE | SUMMARY | ATTACK | TRANSITION | GAMEOVER
-  gameMode: "ffa", // ffa | duo | trio | seraph | mercury | purge | pending
+  gameMode: "ffa", // ffa | duo | trio | mercury | purge | pending
   teamSize: 1,
   teamCount: 0,
   winningTeamId: null,

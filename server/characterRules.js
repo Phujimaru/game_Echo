@@ -14,7 +14,6 @@ const CHAR_HOOKS = require("../characters/index");
 const { resistActive, numbFizzles, accurateActive } = require("../characters/_universal_status");
 const { netramanaActive } = require("../characters/_universal_status");
 const Mark42 = require("../characters/_mark42");
-const Seraph = require("../seraph");
 const { io } = require("./app");
 const {
   ATTACKFX_TIME, DOOM_WEAPONS, DOOM_WEAPON_IDS, MIYAKO_KILL_REDUCE, OGURI_CHARGE_BASE_CAP,
@@ -59,9 +58,6 @@ function maybeWakeKotone(t) {
 // สกิลติดตัวถูก "อันนี้ของนายรึเปล่า" หรือ MOON*CELL (คิชินามิ ฮาคุโนะ) ปิดใช้งานอยู่ไหม
 function passiveSealed(p) {
   if (!p) return false;
-  // SE.RA.PH วันที่ 1-6: ปิดสกิลติดตัวของทุกคน — ปิดที่นี่จุดเดียวจึงครอบคลุมทุก trigger
-  //  ที่ผ่าน passiveSealed (§14 ข้อ 1) ส่วน firePassive มีด่านของตัวเองด้านล่าง
-  if (Seraph.noCombat()) return true;
   return ((p.statuses && p.statuses.nanayaSeal) || 0) > 0;
 }
 // ความสามารถสังหารทันทีถูก "หนูจะทำให้พี่ตาสว่างเอง" ปิดใช้งานอยู่ไหม (อาริมะ มิยาโกะ)
@@ -330,7 +326,7 @@ function strikerRepairDone(id, pairs) {
 // สกิลพิเศษ "เตรียมตัว" — ไม่กินโควตาสกิลของเทิร์น แต่ยังเป็น "การกดสกิล" (ด่านเดียวกับ useSkill ที่เกี่ยวข้อง)
 function recruitPrep(id, kind) {
   const p = match.players[id];
-  if (!p || !p.alive || match.gameState !== "PLAYING" || p.locked || Seraph.active()) return;
+  if (!p || !p.alive || match.gameState !== "PLAYING" || p.locked) return;
   if ((p.statuses.noskill || 0) > 0 || (p.statuses.phenexTaunt || 0) > 0) return;
   if (CHAR_HOOKS.conner.skillBlocked(engine, p) || CHAR_HOOKS.brian.skillBlocked(engine, p, "basic") || CHAR_HOOKS.daisuke.skillBlocked(engine, p, "basic") || CHAR_HOOKS.dio.skillBlocked(engine, p, "basic")) return;
   if (!CHAR_HOOKS.recruit.canPrep(engine, p, kind)) return;

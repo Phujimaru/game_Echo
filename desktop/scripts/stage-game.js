@@ -1,5 +1,5 @@
 // เตรียมโค้ดเกมที่จะพกไปใน exe → desktop/build/game (electron-builder คัดลอกไปเป็น resources/game)
-//  - server.js + server/ + characters/ + characters.js + seraph.js
+//  - server.js + server/ + characters/ + characters.js
 //  - หน้าเกม: build client ใหม่แบบไม่ copy ไฟล์สื่อ (client/public ~1.1GB อยู่บน R2 + แคชในเครื่องผู้เล่นแทน)
 //  - node_modules เฉพาะ dependency ที่ server ใช้ตอนรัน (npm ci --omit=dev จาก lock file ของ repo)
 const { execFileSync, execSync } = require("child_process");
@@ -24,7 +24,7 @@ step("ล้างโฟลเดอร์เดิม", () => {
 });
 
 step("คัดลอกโค้ด server", () => {
-  for (const f of ["server.js", "characters.js", "seraph.js", "package.json", "package-lock.json"]) {
+  for (const f of ["server.js", "characters.js", "package.json", "package-lock.json"]) {
     fs.copyFileSync(path.join(repo, f), path.join(out, f));
   }
   for (const d of ["server", "characters"]) {

@@ -6,7 +6,6 @@ Object.assign(module.exports, {
 });
 
 const CHAR_HOOKS = require("../characters/index");
-const Seraph = require("../seraph");
 const { ORT_ID, OVERLOAD_FORCE_CHANCE, OVERLOAD_FORCE_CUTSCENE_SECONDS } = require("./constants");
 const match = require("./match");
 const combat = require("./combat");
@@ -176,7 +175,7 @@ function beginOverloadForceDraw() {
 }
 
 function triggerOverloadForce() {
-  if (Seraph.active() || mercury.mercuryActive()) return; // Type Mercury: ไม่มี Overload Force ในโหมด Raid
+  if (mercury.mercuryActive()) return; // Type Mercury: ไม่มี Overload Force ในโหมด Raid
   match.overloadForceCount++;
   match.overloadForceActive = true;
   match.overloadForceSeq++;

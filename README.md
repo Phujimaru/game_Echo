@@ -92,7 +92,7 @@ server/                เอนจินเกมแยกตามระบบ
   engine.js            engine object ที่ส่งให้ characters/*.js
   combat.js · skills.js · view.js · shop.js · lobby.js · socket.js · deck.js · timers.js …
   phases/              draw · summary · attack · endTurn (วงจร 1 รอบ)
-  modes/               mercury (Raid Boss ORT) · seraph (SE.RA.PH)
+  modes/               mercury (Raid Boss ORT) · purge
 characters.js          roster ตัวละคร (id/ชื่อ/รูปโปรไฟล์/ชื่อสกิล) + สีตำแหน่ง P1-P6 — ไม่ใช่ที่แก้เอฟเฟกต์สกิล (ดูด้านล่าง)
 characters/             โค้ดเอฟเฟกต์/พาสซีฟจริงของแต่ละตัวละคร แยกไฟล์ต่อคน (server/ require ผ่าน characters/index.js)
   index.js              รวม CHAR_HOOKS — ทุกตัวละครต้องลงทะเบียนที่นี่

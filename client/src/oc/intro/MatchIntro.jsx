@@ -15,7 +15,8 @@
 //    X = L + 2900 → onOutro() — App คืน { area, durationMs } ถ้า server ยังพักเกมรอฉากดิ่ง (โหมดการเดินทาง)
 //      มีฉากดิ่ง: ยาว D = durationMs (≤ 7 วิ) · ส่งต่อที่ชน (0.82D + 0.1 ของช่วงเผย) · onDone ที่ X + D
 //      ไม่มี: การ์ดไหลออก + ม่านขาว · ส่งต่อที่ X+600 · onDone ที่ X+1300 (server พักเกินนี้อย่างน้อย 1 วิ)
-//      Purge ({ warp }): พุ่งเข้าทางช้างเผือก · Moon Cell ({ moon }): กล้องโค้งอ้อมหลังโลก เห็นดวงจันทร์ แล้วซูมเข้า (moonFlight.js)
+//      Purge ({ warp }): พุ่งเข้าทางช้างเผือก · { moon }: กล้องโค้งอ้อมหลังโลก เห็นดวงจันทร์ แล้วซูมเข้า (moonFlight.js)
+//        ฉากดวงจันทร์ยังไม่มีโหมดไหนใช้ (เดิมเป็นของ Moon Cell ที่ถอดไปแล้ว — เก็บไว้ให้โหมดในอนาคต · ดูได้ที่ ?moon)
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import GlobeCanvas from "../../globe/GlobeCanvas";
@@ -123,7 +124,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
   const [dphase, setDphase] = useState(0);        // ช่วงดิ่ง: 0 หมุนเข้า · 1 หัวข้อ · 2 ล็อก · 3 ดิ่ง · 4 ชน/เผย
   const [handed, setHanded] = useState(false);    // ส่งต่อแล้ว — ลูกโลกร่วมปิด ห้าม render GlobeCanvas อีก
   const [warp, setWarp] = useState(null);         // Purge: ปลายฉากพุ่งออกสู่ทางช้างเผือก { D }
-  const [moon, setMoon] = useState(null);         // Moon Cell: ปลายฉากบินอ้อมโลกไปดวงจันทร์ { D }
+  const [moon, setMoon] = useState(null);         // ปลายฉากบินอ้อมโลกไปดวงจันทร์ { D }
 
   const cbRef = useRef({ onOutro, onHandoff, onDone });
   useLayoutEffect(() => { cbRef.current = { onOutro, onHandoff, onDone }; });
@@ -155,7 +156,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
     at(X, () => {
       const spec = cbRef.current.onOutro?.() || null;
       if (spec && spec.moon) {
-        // Moon Cell: การ์ดไหลออก → กล้องโค้งอ้อมหลังโลก → ดวงจันทร์โผล่ → ซูมเข้า → แฟลชขาวส่งต่อ
+        // ดวงจันทร์: การ์ดไหลออก → กล้องโค้งอ้อมหลังโลก → ดวงจันทร์โผล่ → ซูมเข้า → แฟลชขาวส่งต่อ
         const D = Math.max(2400, Number(spec.durationMs) || 5600);
         tlRef.current.out = true;
         tlRef.current.moon = { at: performance.now(), D };
@@ -292,7 +293,7 @@ export default function MatchIntro({ players, area = 1, lowQ = false, onOutro, o
         el.style.zIndex = String(10 + Math.round((depth + 1) * 10));
       });
 
-      // ---------- Moon Cell: บินอ้อมโลกไปดวงจันทร์ ----------
+      // ---------- บินอ้อมโลกไปดวงจันทร์ ----------
       const mv = tlRef.current.moon;
       if (mv) {
         if (!moonCam) moonCam = createMoonFlight(core, { lowQ });

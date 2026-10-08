@@ -12,7 +12,6 @@ const {
 const { NETRAMANA_KILL_CHANCE, netramanaActive } = require("../../characters/_universal_status");
 const Mark42 = require("../../characters/_mark42");
 const Journey = require("../../characters/_journey");
-const Seraph = require("../../seraph");
 const { io } = require("../app");
 const {
   ATTACKFX_TIME, ATTACK_TIME, BARD_CRIMSON_IMG, BARD_JADE_IMG, BAT_SKILL3_IMG, DOOM_WEAPONS,
@@ -31,7 +30,6 @@ const endTurnPhase = require("./endTurn");
 const lobby = require("../lobby");
 const mercury = require("../modes/mercury");
 const purge = require("../modes/purge");
-const seraphMode = require("../modes/seraph");
 const timers = require("../timers");
 const view = require("../view");
 
@@ -49,15 +47,12 @@ function iconFx(target, kind) {
 function attackableTargets(atkId) {
   const attacker = match.players[atkId];
   // ผู้วิงวอน (patch 3.4): คนที่ติด "ลูกแกะน้อยรู้แจ้ง" เล็งผู้วิงวอนไม่ได้เลย — กรองออกจากรายชื่อเป้าหมายตั้งแต่ต้นทาง
-  // SE.RA.PH วันที่ 7: ดวลตัวต่อตัว — เล็งได้เฉพาะคู่ของตัวเองเท่านั้น ผู้ชมแตะไม่ได้
-  const pool = Seraph.active() ? Seraph.combatants(engine) : purge.purgeActive() ? purge.combatants() : combat.alivePlayers();
+  const pool = purge.purgeActive() ? purge.combatants() : combat.alivePlayers();
   return pool.filter((p) => p.id !== atkId && !combat.sameTeam(attacker, p) && !combat.sealActive(p)
     && !CHAR_HOOKS.the_supplicant.targetBlocked(attacker, p));
 }
 
 function afterSummary() {
-  // SE.RA.PH วันที่ 1-6: ไม่มีเฟสโจมตีเลย — ต่อด้วยเฟส "เลือกสถานที่" แทน (§5 ขั้นที่ 3)
-  if (Seraph.noCombat()) { seraphMode.beginSeraphPlacePhase(); return; }
   // คอนเนอร์ RK800 (สกิลติดตัว 2): ระหว่างการไล่ล่า ทุกเทิร์นเหลือแค่ จั่ว -> สรุปแต้ม ไม่มีเฟสโจมตีเลย
   if (CHAR_HOOKS.conner.chaseActive(engine)) { endTurnPhase.endTurn(); return; }
   // ไบรอัน (สกิลรอง หลีกทางไป): พุ่งชนคนที่แต้มสูงสุดที่มากกว่าเรา — วีดีโอก่อน แล้วค่อยลงความเสียหาย
@@ -288,9 +283,6 @@ function doAttack(byId, targetId) {
       || CHAR_HOOKS.the_supplicant.targetBlocked(attacker, target)) { // ลูกแกะน้อยรู้แจ้ง: เล็งผู้วิงวอนไม่ได้
     return;
   }
-  // SE.RA.PH วันที่ 7: ดวลตัวต่อตัว — เล็งได้เฉพาะคู่ของตัวเองเท่านั้น
-  //  ต้องกันที่นี่ด้วย ไม่ใช่แค่กรองรายชื่อใน attackableTargets() เพราะ targetId มาจาก client ตรง ๆ
-  if (Seraph.active() && !Seraph.inCurrentDuel(target)) return;
   if (purge.benched(target) || purge.benched(attacker)) return; // Purge: ผู้ชมโจมตี/ถูกโจมตีไม่ได้
   if (CHAR_HOOKS.princess_shiki.cannotAttack(attacker)) return;       // เจ้าหญิงราก (patch 2.2.7): โจมตีไม่ได้ เว้นแต่ติดชักดาบ
   if (CHAR_HOOKS.producer_lumi.cannotAttack(attacker)) return;                            // โปรดิวเซอร์: ระหว่าง "เตรียมซ้อม" โจมตีปกติไม่ได้

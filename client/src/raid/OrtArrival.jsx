@@ -40,8 +40,8 @@ export default function OrtArrival({ lowQ, onDone }) {
     const timers = [];
     const at = (ms, fn) => timers.push(setTimeout(fn, ms));
     playSfx("change_cutscene");
-    WARN_LINES.forEach((_, i) => at(T.lines + i * 650, () => { setLines(i + 1); playSfx("sc_noti"); }));
-    at(T.open, () => { setPhase("open"); playSfx("sc_glitch"); });
+    WARN_LINES.forEach((_, i) => at(T.lines + i * 650, () => { setLines(i + 1); playSfx("ort_noti"); }));
+    at(T.open, () => { setPhase("open"); playSfx("ort_glitch"); });
     at(T.ort, () => { setPhase("ort"); st.play("intro"); });
     at(T.doom, () => { setPhase("doom"); playSfx("attack"); });
     at(T.fade, () => setPhase("fade"));

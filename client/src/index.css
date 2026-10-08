@@ -14,8 +14,6 @@
   --color-echo-bg: #081a33;
   --color-echo-hp: #d2455b;
   --color-echo-armor: #3d8bd9;
-  /* ทองเดิมของ Avalon — คงไว้ให้โหมด SE.RA.PH (seraph/) ที่ยังใช้ธีมของตัวเอง กระดานปกติใช้ echo-ice แทน */
-  --color-echo-gold: #e8bf5a;
   /* สีเน้นหลักของกระดาน ORDEAL CALL (แทนทอง): ฟ้าน้ำแข็ง */
   --color-echo-ice: #bee3f8;
   --color-echo-cyan: #22d3ee;
@@ -31,12 +29,6 @@
   --color-p-ink: #16121c;
   --color-p-paper: #f4efe4;
   --font-p-display: "Chakra Petch", "Kanit", "Segoe UI", sans-serif;
-
-  /* ---------- ธีม SE.RA.PH Moon Cell (โหมดผจญภัย) — รายละเอียดใน seraph/seraph.css ---------- */
-  --color-sc-cyan: #35e6d4;
-  --color-sc-mint: #7cf59b;
-  --color-sc-red: #ff4d5e;
-  --color-sc-void: #04070c;
 }
 
 html,

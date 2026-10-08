@@ -66,7 +66,7 @@ function takeClockUpResume() {
 }
 function cardPhaseSeconds() {
   // คาซามะ ไดสุเกะ (Clock Up): "เวลาหยุด" = ตั้งเวลายาวมากไว้เป็นตาข่ายกันห้องค้าง
-  //  แล้วให้ฝั่ง client ไม่โชว์เป็นนาฬิกา (แพทเทิร์นเดียวกับ SERAPH_PLACE_SAFETY_SECONDS)
+  //  แล้วให้ฝั่ง client ไม่โชว์เป็นนาฬิกา
   //  ห้าม clearPhaseTimer() ทิ้งเฉยๆ ไม่งั้นไดสุเกะหลุดเน็ตแล้วห้องจะค้างถาวร
   const clockUp = CHAR_HOOKS.daisuke.cardPhaseSeconds(engine);
   // แช่ตั้งแต่ต้นเทิร์น: คลายเมื่อไหร่ได้เวลาเต็มของเฟสจั่วไพ่ (นับตั้งแต่ไรเดอร์เปิดไพ่)

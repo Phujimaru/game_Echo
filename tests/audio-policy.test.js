@@ -4,36 +4,33 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const policy = vm.createContext({});
 vm.runInContext(fs.readFileSync(require.resolve('../client/src/audioPolicy.js'), 'utf8').replace(/^export /gm, ''), policy);
-const moon = { gameState: 'PLAYING', seraph: { day: 7, daysTotal: 7, cycleRound: 2, night: true } };
+const night = { gameState: 'PLAYING', cycle: 'night' };
 
-test('Moon Cell music follows cutscene -> skill -> duel priority, with silent pairing/intro', () => {
-  const skill = { ...moon, skillMusic: 'dummy', skillMusicSeq: 5 };
-  assert.equal(policy.musicForState(moon).name, 'sc_duel_night');
+test('music follows cutscene -> skill -> day/night priority', () => {
+  const skill = { ...night, skillMusic: 'dummy', skillMusicSeq: 5 };
+  assert.equal(policy.musicForState(night).name, 'new_night');
   assert.equal(policy.musicForState(skill).name, 'dummy');
   assert.equal(policy.musicForState(skill).seq, 5);
   const cutscene = { ...skill, gameState: 'CUTSCENE', cutscene: { id: 1, video: 'skill.mp4' } };
   assert.equal(policy.musicForState(cutscene).name, null);
   assert.equal(policy.musicForState(cutscene, { lowQ: true }).name, 'dummy');
-  for (const scene of ['pairing', 'duelIntro']) assert.equal(policy.musicForState(skill, { scene }).name, null);
 });
 
 test('voice announcements and mandatory clips stay silent in low quality; private clips do not silence outsiders', () => {
   for (const cs of [{ announce: true, voice: 'ex_k' }, { kind: 'overloadForce' }]) {
-    assert.equal(policy.musicForState({ ...moon, gameState: 'CUTSCENE', cutscene: cs }, { lowQ: true }).name, null);
+    assert.equal(policy.musicForState({ ...night, gameState: 'CUTSCENE', cutscene: cs }, { lowQ: true }).name, null);
   }
-  assert.equal(policy.musicForState({ ...moon, gameState: 'CUTSCENE', cutscene: null }).name, 'sc_duel_night');
+  assert.equal(policy.musicForState({ ...night, gameState: 'CUTSCENE', cutscene: null }).name, 'new_night');
 });
 
-test('investigation and rest music ignore combat skills; regular game retains normal music', () => {
-  const day = { ...moon, skillMusic: 'shiki', seraph: { ...moon.seraph, day: 6 } };
-  assert.equal(policy.musicForState(day).name, 'sc_day');
-  // เดินแมพ = เพลงวันสืบสวน · เข้าสถานที่ / คืนวันที่ 7 = เพลงพัก
-  assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }).name, 'sc_day');
-  assert.equal(policy.musicForState({ ...day, gameState: 'SERAPH_PLACE' }, { scene: 'place' }).name, 'sc_rest');
-  assert.equal(policy.musicForState({ ...moon, gameState: 'SERAPH_PLACE', seraph: { ...moon.seraph, noCombat: true, duelNight: true } }).name, 'sc_rest');
+test('attack phase music restarts per attack; lobby screens keep lobby music', () => {
+  const atk = policy.musicForState({ ...night, gameState: 'ATTACK' }, { attackSeq: 3 });
+  assert.equal(atk.name, 'battle_phase');
+  assert.equal(atk.seq, 3);
+  assert.equal(policy.musicForState({ ...night, gameState: 'ATTACKING', skillMusic: 'dummy' }).name, 'dummy');
   assert.equal(policy.musicForState({ gameState: 'PLAYING', cycle: 'day' }).name, 'new_morning');
   assert.equal(policy.musicForState(null).name, 'lobby5');
-  assert.equal(policy.musicForState({ ...moon, gameState: 'LOBBY', skillMusic: 'shiki' }).name, 'lobby5');
+  assert.equal(policy.musicForState({ ...night, gameState: 'LOBBY', skillMusic: 'shiki' }).name, 'lobby5');
   assert.equal(policy.musicForState({ gameState: 'TEAM_MODE' }).name, 'lobby5');
   // ฉากเปิดตัวแมตช์ยังเป็นเพลงห้องรอ จนเข้าด่าน
   assert.equal(policy.musicForState({ gameState: 'CUTSCENE', journey: { area: 1, scene: { active: true, seq: 1 } } }, { intro: true }).name, 'lobby5');
@@ -97,19 +94,3 @@ test('Purge: เฟสทอยเต๋านับว่าอยู่ใน�
   for (const ph of ['LOBBY', 'TEAM_MODE', 'GAMEOVER', undefined]) assert.equal(isMatchPhase(ph), false, String(ph));
 });
 
-test('Moon Cell: จบแมตช์เงียบ · เฟสโจมตีวันดวลเล่นเพลงช่วงโจมตีแบบเกมหลัก · คัตซีนวันสืบสวนไม่ตัดเพลง', () => {
-  assert.equal(policy.musicForState({ ...moon, gameState: 'GAMEOVER' }).name, null);
-  assert.equal(policy.musicForState({ ...moon, gameState: 'GAMEOVER', skillMusic: 'kim_awake' }).name, null);
-  assert.equal(policy.musicForState(moon, { scene: 'final' }).name, null);
-  const atk = policy.musicForState({ ...moon, gameState: 'ATTACK' }, { attackSeq: 3 });
-  assert.equal(atk.name, 'battle_phase');
-  assert.equal(atk.seq, 3);
-  assert.equal(policy.musicForState({ ...moon, gameState: 'ATTACKING', skillMusic: 'dummy' }).name, 'dummy');
-  const day3 = { ...moon, gameState: 'CUTSCENE', cutscene: { id: 2, video: 'intro.mp4' }, seraph: { ...moon.seraph, day: 3 } };
-  assert.equal(policy.musicForState(day3).name, 'sc_day');
-});
-
-test('Moon Cell: เฟสเลือกสถานที่นับว่าอยู่ในแมตช์ (เพลงไม่เริ่มใหม่ทุกวัน)', async () => {
-  const { isMatchPhase } = await import('../client/src/audioPolicy.js');
-  assert.equal(isMatchPhase('SERAPH_PLACE'), true);
-});

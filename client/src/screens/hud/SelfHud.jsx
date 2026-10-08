@@ -311,24 +311,20 @@ function ShopIcon() {
     </svg>
   );
 }
-export function HudRight({ extras, bagCount = 0, onBag, showBag = true, gold = 0, showShop = true, onShop, skills }) {
+export function HudRight({ extras, bagCount = 0, onBag, gold = 0, onShop, skills }) {
   return (
     <section className="hud-right-in" aria-label="สกิล">
       <div className="hud-extras">{extras}</div>
       <div className="hud-bag-row">
-        {showBag && (
-          <button type="button" className="hud-bag" onClick={onBag} aria-label="กระเป๋า" title="กระเป๋า">
-            <BagIcon />
-            {bagCount > 0 && <span className="hud-bag-badge">{bagCount}</span>}
-          </button>
-        )}
-        {showShop && (
-          <button type="button" className="hud-shop" onClick={onShop}>
-            <ShopIcon />
-            <span>ร้านค้า</span>
-            <span className="hud-shop-gold"><span className="hud-coin" aria-hidden="true">฿</span>{gold}</span>
-          </button>
-        )}
+        <button type="button" className="hud-bag" onClick={onBag} aria-label="กระเป๋า" title="กระเป๋า">
+          <BagIcon />
+          {bagCount > 0 && <span className="hud-bag-badge">{bagCount}</span>}
+        </button>
+        <button type="button" className="hud-shop" onClick={onShop}>
+          <ShopIcon />
+          <span>ร้านค้า</span>
+          <span className="hud-shop-gold"><span className="hud-coin" aria-hidden="true">฿</span>{gold}</span>
+        </button>
       </div>
       <div className="hud-skills">{skills}</div>
     </section>

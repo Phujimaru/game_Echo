@@ -196,7 +196,7 @@ test('เงื่อนไขซ่อนตัว: ffa 3 คนขึ้นไ
   P = setup([['PIL', 'sliver_bullet', 'A'], ['TEM', 'temari', 'A'], ['E1', 'temari', 'B'], ['E2', 'kai', 'B']], 'duo');
   assert.equal(sb.hidden(P.PIL), false, 'duo ไม่มีวันเข้าเงื่อนไข');
   P = setup(FFA3);
-  for (const mode of ['seraph', 'purge', 'mercury']) {
+  for (const mode of ['purge', 'mercury']) {
     engine.setGameMode(mode);
     assert.equal(sb.conditionHolds(engine, P.PIL), false, mode);
   }

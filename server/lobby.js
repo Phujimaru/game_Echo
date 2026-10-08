@@ -11,7 +11,6 @@ Object.assign(module.exports, {
 const { CHAR_BY_ID, POSITION_COLORS } = require("../characters");
 const CHAR_HOOKS = require("../characters/index");
 const Journey = require("../characters/_journey");
-const Seraph = require("../seraph");
 const {
   JOURNEY_START_SECONDS, MAX_PLAYERS, MERCURY_ARRIVAL_SECONDS, ORT_ID, RESERVATION_TTL_MS,
   TEAM_IDS,
@@ -83,7 +82,6 @@ function validGameMode(mode, count = Object.keys(match.players).length) {
   // สไตรเกอร์ ยูเรก้า: คู่หูนับเป็นทีมเต็ม 1 ทีมในโหมดทีม (duo = 2 ช่อง · trio = 3 ช่อง)
   if (mode === "duo" || mode === "trio") count += pair.teamHeadcount(mode === "duo" ? 2 : 3) - Object.keys(match.players).length;
   if (mode === "ffa") return count >= 1; // 1 คน = เล่นทดสอบคนเดียว (ปุ่ม "เล่นคนเดียว" ในห้องรอ)
-  if (mode === "seraph") return count >= 2; // SE.RA.PH: รับผู้เล่นทุกจำนวน (ตั้งแต่ 2 คนขึ้นไป)
   if (mode === "duo") return count >= 4 && count % 2 === 0;
   if (mode === "trio") return count === 6;
   if (mode === "mercury") return count >= 1 && count <= MAX_PLAYERS; // Raid Boss ORT: เล่นได้ 1-7 คน
@@ -91,7 +89,7 @@ function validGameMode(mode, count = Object.keys(match.players).length) {
   return false;
 }
 // โหมดที่ "พักใช้งาน" — โค้ดยังอยู่ครบ แต่ไม่โผล่ในหน้าโหวตโหมด และโหวตเข้าไม่ได้
-const SUSPENDED_MODES = new Set(); // โหมดที่พักใช้งานชั่วคราว (ตอนนี้ไม่มี — Moon Cell เปิดใหม่ 5.1.28)
+const SUSPENDED_MODES = new Set(); // โหมดที่พักใช้งานชั่วคราว (ตอนนี้ไม่มี)
 // group: "normal" = สงครามทั่วไป · "special" = สงครามพิเศษ (หน้าโหวตแยกเป็น 2 ชั้น)
 //  โหมดที่พักใช้งานยังโผล่ในหมวดของมัน แต่เป็นปุ่มสีเทาพร้อมป้าย "พักใช้งาน" (suspended) และโหวตไม่ได้
 function modeOptionsFor(count = Object.keys(match.players).length) {
@@ -99,7 +97,6 @@ function modeOptionsFor(count = Object.keys(match.players).length) {
     { mode: "ffa", label: "Free For All", size: 1, group: "normal" },
     { mode: "duo", label: "Duo", size: 2, group: "normal" },
     { mode: "trio", label: "Trio", size: 3, group: "normal" },
-    { mode: "seraph", label: "Moon Cell", size: 1, group: "special" },
     { mode: "mercury", label: "Type Mercury", size: 1, group: "special" },
     { mode: "purge", label: "Purge", size: 1, group: "special" },
   ].map((opt) => {
@@ -153,8 +150,7 @@ function startTeamSetup(mode) {
   const count = Object.keys(match.players).length;
   if (!validGameMode(mode, count)) return;
   resetModeVotes();
-  if (mode === "ffa" || mode === "seraph" || mode === "mercury" || mode === "purge") {
-    // SE.RA.PH เป็นโหมดเดี่ยวเหมือน ffa — ไม่ผ่านหน้าเลือกทีม
+  if (mode === "ffa" || mode === "mercury" || mode === "purge") {
     // Type Mercury: ทุกคนอยู่ฝั่งเดียวกันโดยอัตโนมัติ (sameTeam) — ไม่ต้องเลือกทีม
     match.gameMode = mode;
     match.teamSize = 1;
@@ -280,9 +276,6 @@ function startMatch() {
   }
   match.winningTeamId = null;
   match.echoFreeHit = null; // Echo: เฟสย่อยตีฟรีที่ค้างจากแมตช์ก่อน (ถ้ามี)
-  // SE.RA.PH: ปิดโหมดก่อน resetCombat — maxHpOf/maxArmorOf อ่าน Seraph.active() ถ้ายังค้างเปิดจากแมตช์ก่อน
-  //  ทุกคนจะเริ่มแมตช์ใหม่ด้วยเลือด/เกราะของ Moon Cell (3/0) แทนค่าของตัวละคร
-  Seraph.reset();
   for (const p of Object.values(match.players)) combat.resetCombat(p);
   match.roundNumber = 0;
   match.cycleShift = 0;
@@ -296,24 +289,16 @@ function startMatch() {
   match.kaiOverhaulSlots = []; // ไค ชิซากิ: ล้าง tracker Overhaul ทุกครั้งที่เริ่มแมตช์ใหม่
   // อาริมะ มิยาโกะ (characters/miyako.js): เจอ โทโนะ ชิกิ หรือ นานายะ ชิกิ ในเกมเดียวกัน -> เล่นวีดีโอ arima_shiki.mp4 ก่อนเริ่มเทิร์นแรก
   match.cutsceneQueue = [];
-  // SE.RA.PH: ตั้งค่าเริ่มต้นของโหมด (วัน 1 รอบ 1) + บังคับสเตตัสทุกตัวละครให้เท่ากันหมด
-  if (match.gameMode === "seraph") {
-    Seraph.startMatch(engine);
-    for (const m of Seraph.takeLog()) match.lastLog.push(m);
-  }
-  // วีดีโอเปิดตัวตัวละคร — SE.RA.PH ไม่มี: ตัวละครเป็นความลับจนถึงวันดวล (คลิปบอกทุกคนว่าใครอยู่ในแมตช์)
-  //  และหน้าจอวันที่ 1-6 ของโหมดนี้ไม่มีที่เล่นคลิป (ผู้เล่นจะเห็นกระดานค้างเฉย ๆ เพลงเงียบตามความยาวคลิป)
-  const intros = match.gameMode !== "seraph";
   // คอนเนอร์ RK800: วีดีโอเปิดตัวเล่น 1 ครั้งตอนเริ่มเกม (ก่อนฉากคู่ปรับของมิยาโกะถ้ามีทั้งคู่)
-  const connerIntro = intros && CHAR_HOOKS.conner.maybeQueueIntro(engine);
-  const miyakoIntro = intros && CHAR_HOOKS.miyako.maybeQueueRivalIntro(engine);
+  const connerIntro = CHAR_HOOKS.conner.maybeQueueIntro(engine);
+  const miyakoIntro = CHAR_HOOKS.miyako.maybeQueueRivalIntro(engine);
   // คาซามะ ไดสุเกะ: วีดีโอเปิดตัวเล่นครั้งเดียวก่อนเทิร์นแรก (ไม่มีคำบรรยาย)
-  const daisukeIntro = intros && CHAR_HOOKS.daisuke.maybeQueueIntro(engine);
-  const yagurumaIntro = intros && CHAR_HOOKS.yaguruma.maybeQueueIntro(engine);
-  const kagamiIntro = intros && CHAR_HOOKS.kagami.maybeQueueIntro(engine);
-  const tsurugiIntro = intros && CHAR_HOOKS.tsurugi.maybeQueueIntro(engine);
+  const daisukeIntro = CHAR_HOOKS.daisuke.maybeQueueIntro(engine);
+  const yagurumaIntro = CHAR_HOOKS.yaguruma.maybeQueueIntro(engine);
+  const kagamiIntro = CHAR_HOOKS.kagami.maybeQueueIntro(engine);
+  const tsurugiIntro = CHAR_HOOKS.tsurugi.maybeQueueIntro(engine);
   // สไตรเกอร์ ยูเรก้า: วีดีโอเปิดตัว "วัตถุอันตราย" หลังฉากเปิดตัวผู้เล่น
-  const strikerIntro = intros && CHAR_HOOKS.striker.maybeQueueIntro(engine);
+  const strikerIntro = CHAR_HOOKS.striker.maybeQueueIntro(engine);
   // Type Mercury: ไม่มีฉากเปิดตัวผู้เล่น — ใช้ฉากเปิดตัว ORT (OrtArrival ฝั่ง client) แทน
   //  server พักเกมไว้ในเฟส CUTSCENE (ไม่มีคลิป) ให้ฉากเล่นจบก่อน แล้วค่อยเล่นวีดีโอเปิดตัวตัวละครที่คิวไว้ (ถ้ามี)
   if (mercury.mercuryActive()) {
@@ -323,18 +308,6 @@ function startMatch() {
     match.cutsceneInfo = null;
     match.gameState = "CUTSCENE";
     timers.startPhaseTimer(MERCURY_ARRIVAL_SECONDS, () => { match.ortArrivalActive = false; cutscene.runCutsceneQueue(draw.dealRound); });
-    view.broadcastState();
-    return;
-  }
-  // Moon Cell: ฉากเปิดตัวผู้เล่น (ตัวละครคนอื่นเป็น ???) แล้วบินอ้อมโลกไปดวงจันทร์ — พักรวมทั้งสองฉาก แล้วค่อยเข้าวันที่ 1
-  if (Seraph.active()) {
-    Seraph.setIntro(true);
-    match.cutsceneInfo = null;
-    match.gameState = "CUTSCENE";
-    timers.startPhaseTimer(gameIntroHoldSeconds() + Seraph.INTRO_SECONDS, () => {
-      Seraph.setIntro(false);
-      draw.dealRound();
-    });
     view.broadcastState();
     return;
   }
@@ -415,7 +388,6 @@ function backToLobby() {
   match.lastLog = [];
   match.cutsceneQueue = [];
   match.cutsceneInfo = null;
-  Seraph.reset(); // ต้องก่อน resetCombat (เหตุผลเดียวกับใน startMatch) · state.seraph ในห้องรอจะได้เป็น null
   for (const p of Object.values(match.players)) {
     p.cards = []; p.locked = false; p.busted = false; p.result = null;
     combat.resetRoundDisplay(p);

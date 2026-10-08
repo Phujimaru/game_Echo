@@ -4,12 +4,10 @@ import { socket } from "./socket";
 import { playMusic, playSfx, stopMusic, resetMusicPositions, prewarmSfx, installClickSound, DOOM_WEAPON_SOUNDS } from "./audio";
 import { musicForState, createPhaseSoundTracker, purgeMusic, isMatchPhase } from "./audioPolicy";
 import { WARP_MS } from "./purge/warpGalaxy";
-import { MOON_MS } from "./oc/intro/moonFlight";
 import Setup from "./screens/Setup";
 import CharacterSelect from "./screens/CharacterSelect";
 import Lobby from "./screens/Lobby";
 import Game from "./screens/Game";
-import SeraphGame from "./seraph/SeraphGame";
 import VolumeControl from "./components/VolumeControl";
 import TransitionCurtain from "./components/TransitionCurtain";
 import OrtArrival from "./raid/OrtArrival";
@@ -45,7 +43,7 @@ export default function App() {
 
   // เสียงที่ดังบ่อยที่สุดในเกม: โหลดไว้ตั้งแต่เปิดหน้า ไม่ให้ไปสะดุดกลางแมตช์
   useEffect(() => installClickSound(), []); // เสียงคลิกทุกการกดทั้งเกม
-  useEffect(() => { prewarmSfx(["action_button", "change_cutscene", "trun_change", "buy_something", "sc_noti", "sc_noti2", "sc_glitch"]); }, []);
+  useEffect(() => { prewarmSfx(["action_button", "change_cutscene", "trun_change", "buy_something", "ort_noti", "ort_glitch"]); }, []);
   const curtainRef = useRef(null); // ม่านเปลี่ยนฉาก — ควบคุมจังหวะปิด/เปิดจอตอนสลับหน้า
   // กันดับเบิ้ลคลิก/กดรัวบนปุ่มนำทาง (ถัดไป/ยืนยัน/ย้อนกลับ) ไม่ให้ยิงคำสั่งเปลี่ยนฉากซ้อนกัน
   const navLockRef = useRef(false);
@@ -65,7 +63,6 @@ export default function App() {
   const pendingJourneyRef = useRef(null);  // ฉาก start ที่รอช่วงเปิดตัวผู้เล่นจบก่อน
   const journeyStateRef = useRef(null);    // ก้อน journey ล่าสุด (startPendingJourney อ่านว่าช่วงพักยังไม่หมด)
   const purgeSceneRef = useRef(null);      // Purge: ฉากเปิดของโหมดยังพักเกมรออยู่ไหม (ปลายฉากลูกโลกเป็นเส้นพุ่งออกสู่ทางช้างเผือก)
-  const seraphIntroRef = useRef(false);   // Moon Cell: server ยังพักเกมรอฉากเปิด (ปลายฉากลูกโลกบินไปดวงจันทร์)
   const prevGameStateRef = useRef(null);
   const screenKeyRef = useRef("setup"); // หน้าปัจจุบัน (navigate ใช้ตัดสินว่าต้องมีม่านไหม)
   const [roster, setRoster] = useState([]);
@@ -114,14 +111,11 @@ export default function App() {
     // (ต่างจากตอนกดยืนยันตัวละครที่ต้องรอ server ตอบแบบไม่รู้เวลาแน่นอน) ถ้าใช้ holdCover ที่นี่จะเจอบั๊กใหม่:
     // ม่านจะปล่อยเปิดทันทีตั้งแต่เฟรมแรก (เพราะ screenKey เปลี่ยนพร้อมกันในเรนเดอร์เดียวกันอยู่แล้ว)
     const onState = (s) => {
-      // SERAPH_PLACE ต้องนับเป็น "อยู่ในแมตช์" ด้วย ไม่งั้นทุกครั้งที่เข้าเฟสเลือกสถานที่
+      // PURGE_ROLL ต้องนับเป็น "อยู่ในแมตช์" ด้วย ไม่งั้นทุกเทิร์นทอยเต๋า
       // ระบบจะคิดว่าออกจากแมตช์แล้วกลับเข้ามาใหม่ (เด้งฉากเปิดตัว + รีเซ็ตเพลงทั้งหมด)
-      const matchStates = new Set(["PLAYING", "SERAPH_PLACE", "PURGE_ROLL", "CUTSCENE", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "GAMEOVER"]);
+      const matchStates = new Set(["PLAYING", "PURGE_ROLL", "CUTSCENE", "SUMMARY", "ATTACK", "ATTACKING", "TRANSITION", "GAMEOVER"]);
       const wasInMatch = matchStates.has(prevGameStateRef.current);
       const nowInMatch = matchStates.has(s.gameState);
-      // SE.RA.PH: **ห้ามเล่นฉากเปิดตัวผู้เล่นเด็ดขาด** — GameIntro เผยหน้า+ชื่อตัวละครของทุกคน
-      //  ซึ่งทำลายแก่นของโหมด (ตัวตนต้องถูกซ่อนจนกว่าจะลงดวล) โหมดนี้มีฉากเปิดของตัวเอง
-      //  คือ "บูตระบบ SE.RA.PH" ที่โชว์ทุกคนเป็นเงาดำ ??? แทน (seraph/scenes.jsx)
       //  Type Mercury: ไม่มีฉากเปิดตัวผู้เล่น — เล่นฉากเปิดตัว ORT (ม่านเตือนภัย + "หายนะกำลังมาเยือน") แทน
       //  ฉากเปิดตัว ORT: เล่นเมื่อ server กำลังพักเกมรอฉากนี้จริง (ortArrival.active) — ทั้งตอนเริ่ม Raid และตอน ORT
       //  บุกเทิร์น 60 ของโหมดปกติ (ซึ่งเกิดกลางแมตช์) · รีคอนเนกต์หลังช่วงพักจะไม่เล่นซ้ำ เพราะ active เป็น false แล้ว
@@ -135,7 +129,6 @@ export default function App() {
       // การเดินทาง: ช่วงพักรอฉากลูกโลกเริ่มใหม่ -> start รอช่วงเปิดตัวผู้เล่นจบก่อน · advance เล่นทันที
       journeyStateRef.current = s.journey || null;
       purgeSceneRef.current = s.purge?.scene || null;
-      seraphIntroRef.current = !!s.seraph?.intro;
       const jScene = s.journey?.scene;
       if (jScene?.active && jScene.seq !== journeySeqRef.current) {
         journeySeqRef.current = jScene.seq;
@@ -151,8 +144,7 @@ export default function App() {
       } else if (!wasInMatch && nowInMatch && s.mercury) {
         // เข้ากลาง Raid (รีคอนเนกต์) — ไม่มีฉากเปิดตัวผู้เล่นด้วย
         curtainRef.current?.skip("game");
-      } else if (!wasInMatch && nowInMatch && (!s.seraph || s.seraph.intro)) {
-        // Moon Cell: ฉากเปิดแมตช์เล่นเฉพาะตอน server พักรอฉากนี้ (เริ่มแมตช์) — การ์ดของคนอื่นเป็น ??? (server ซ่อนตัวละครไว้แล้ว)
+      } else if (!wasInMatch && nowInMatch) {
         curtainRef.current?.skip("gameintro");
         ghostScreen(".ocl"); // หน้าเลือกโหมด/จัดทีมจางหายแทนการหายวับ (ลูกโลกอยู่ต่อในฉากเปิดแมตช์)
         setIntro({ key: Date.now(), players: s.players, area: s.journey?.scene?.area || 1 });
@@ -267,8 +259,6 @@ export default function App() {
   // ---------- เพลงพื้นหลัง + เสียงเปลี่ยนเทิร์น ----------
   const soundTracker = useRef(createPhaseSoundTracker());
   const prevInMatch = useRef(false);
-  // SE.RA.PH: ฉากซ้อนทับที่ SeraphGame กำลังเล่น (pairing/duelIntro/final เงียบ) — App คุมเพลงที่เดียวทุกโหมด
-  const [seraphScene, setSeraphScene] = useState(null);
   const prevCycle = useRef(null); // ช่วงเวลาเดิม (day/night) — เปลี่ยนเมื่อไหร่ เพลงประจำช่วงต้องเริ่มใหม่จากต้น
   const cycleSeq = useRef(0);     // seq เพลงกลางวัน/กลางคืน: +1 ทุกครั้งที่สลับช่วงเวลา -> เริ่มเพลงใหม่
   const attackSeq = useRef(0);    // seq เพลงช่วงโจมตี: +1 ทุกครั้งที่เข้าช่วงโจมตี -> เริ่มเพลงใหม่เสมอ
@@ -309,13 +299,12 @@ export default function App() {
     if (inAttackPhase && !prevAttackPhase.current) attackSeq.current++;
     prevAttackPhase.current = inAttackPhase;
 
-    // เพลงพื้นหลัง: ที่เดียวสำหรับทุกโหมด รวม SE.RA.PH (เดิม SeraphGame คุมเองแยก = กติกาไม่ตรงกัน เพลงค้าง/ซ้อน)
+    // เพลงพื้นหลัง: ที่เดียวสำหรับทุกโหมด
     // โหมดประหยัด (patch 2.0.6): ข้ามวีดีโอคัตซีน — ระหว่างรอคนอื่นดูวีดีโอ เพลงเล่นต่อตามปกติ
     // 5.1: เข้าห้องแล้ว (ตั้งแต่หน้าเลือกลำดับ) เปลี่ยนเป็นเพลงห้องรอ lobby5 ทันที — main5 อยู่แค่ใน launcher · ฉากเปิดตัว + ซูมเข้าโลก ยังเป็น lobby5 (intro)
     {
       const track = musicForState(stage === "connected" ? state : null, {
         lowQ, cycleSeq: cycleSeq.current, attackSeq: attackSeq.current, intro: introOn,
-        scene: state?.seraph ? seraphScene : null,
       });
       if (track.name) playMusic(track.name, track.seq);
       else stopMusic();
@@ -335,7 +324,7 @@ export default function App() {
       if (state?.attack?.byVoice) playSfx(state.attack.byVoice); // เสียงพากย์ตอนตี (โทโนะ ชิกิ)
       if (state?.attack?.targetVoice) playSfx(state.attack.targetVoice); // เสียงร้องตอนโดนตี (โทโนะ ชิกิ) — เล่นพร้อมการ์ด ไม่ทับคลิป
     }
-  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, !!(state && state.seraph), journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn, purgeTrackNow, purgeSceneNow, seraphScene, state?.seraph?.day, state?.seraph?.cycleRound]);
+  }, [stage, phase, cycle, skillMusic, skillMusicSeq, lowQ, mandatoryCutscene, state?.cutscene?.id, state?.attack?.id, state?.roundNumber, journeyNow?.scene?.active, journeyNow?.scene?.seq, introOn, purgeTrackNow, purgeSceneNow]);
 
   const goCharacter = (n, pos, col) => {
     setName(n);
@@ -390,8 +379,6 @@ export default function App() {
     // Purge: ปลายฉากเปิดตัว = เส้นพุ่งออกจากโลก กล้องตามไปสู่ทางช้างเผือก แล้วฉากท่อรับช่วงต่อ
     const pg = purgeSceneRef.current;
     if (pg?.active && pg.kind === "intro") return { warp: true, durationMs: WARP_MS };
-    // Moon Cell: กล้องโค้งอ้อมหลังโลก เห็นดวงจันทร์ แล้วซูมเข้า (server พักเกมรอ Seraph.INTRO_SECONDS)
-    if (seraphIntroRef.current) return { moon: true, durationMs: MOON_MS };
     const pending = pendingJourneyRef.current;
     pendingJourneyRef.current = null;
     const live = journeyStateRef.current?.scene;
@@ -471,10 +458,6 @@ export default function App() {
     //  กระดาน mount ตอนส่งต่อ (handoffIntro) ใต้แฟลชขาวของจังหวะชน
     screen = null;
     screenKey = "gameintro";
-  } else if (state.seraph) {
-    // SE.RA.PH Moon Cell: มีฉาก/HUD ของตัวเอง (วันที่ 5 ส่งต่อให้ <Game> ข้างในอีกที)
-    screen = <SeraphGame state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} pairRole={pairRole} onSceneChange={setSeraphScene} />;
-    screenKey = "game";
   } else {
     screen = <Game state={state} lowQ={lowQ} skillConfirmOn={skillConfirmOn} roster={roster} pairRole={pairRole} />;
     screenKey = "game";

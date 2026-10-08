@@ -124,10 +124,10 @@
 }
 @keyframes ocx-warp-flash { 0%, 86% { opacity: 0; } 97%, 100% { opacity: 1; } }
 
-/* ---------- Moon Cell: บินอ้อมโลกไปดวงจันทร์ (MatchIntro โหมด moon · moonFlight.js) ---------- */
+/* ---------- บินอ้อมโลกไปดวงจันทร์ (MatchIntro โหมด moon · moonFlight.js) ---------- */
 .ocx.is-moon .ocx-title { opacity: 0; transition: opacity 0.5s; }
-/* ฟ้าหลังโลกเข้มขึ้นเป็นอวกาศฟ้าอ่อน ให้ดวงจันทร์ขาวเด่น */
-.ocx.is-moon .ocd-bg { transition: background 1.6s ease; background: radial-gradient(120% 90% at 60% 40%, #dbe9f7 0%, #a9c6e6 55%, #6f97c9 100%); }
+/* ห้ามทาสีทึบที่ .ocd-bg ในโหมดนี้ — เกมจริงใช้ลูกโลกร่วมที่วาดอยู่ "ใต้" ฉากนี้ (.ocx .ocd-bg ต้องโปร่งใส)
+   พื้นทึบจะบังทั้งโลกและดวงจันทร์ (พรีวิวไม่เจอเพราะใช้ลูกโลกของตัวเองที่อยู่เหนือ .ocd-bg) */
 .ocx-moon-tag {
   position: absolute; left: 0; right: 0; top: 18%; z-index: 30; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0;

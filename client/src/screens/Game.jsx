@@ -674,9 +674,7 @@ function ArenaBackground({ area, night, lowQ, spec }) {
 // ---------- ฉากหลังกลางวัน/กลางคืน (patch 1.7) ----------
 //  กลางวัน = background_morning.jpg | กลางคืน = background_night.jpg
 //  เปลี่ยนช่วงเวลาแบบ crossfade ช้าๆ (ไม่ตัดปุ๊บปั๊บ) — ซ้อนทั้ง 2 ภาพแล้วเฟดสลับกัน
-function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, seraph, journey, arena, hidden }) {
-  // SE.RA.PH บนจอแคบ (ไม่มีสนาม 2.5D): ไม่วาดฉากหลังของเกมปกติ
-  if (seraph && !arena) return null;
+function GameBackground({ cycle, round, bardBg, shikiBg, hisakawaBg, overloadForce, lowQ, journey, arena, hidden }) {
   // hidden: สนามราชินีของ Echo บังทั้งจอ — ซ่อนแบบยังค้าง mount (ถอดออกแล้ว mount ใหม่ = สนาม 2.5D เล่นฉากพุ่งลงซ้ำ)
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden" style={hidden ? { visibility: "hidden" } : undefined}>
@@ -2458,7 +2456,7 @@ function EchoBossBar({ p, phase, targetable, onAttack, onInspect }) {
   );
 }
 
-function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null, cardCount = null }) {
+function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, hostRef, alwaysScore = false, enterDelay = null, possessedBy = null }) {
   const summary = phase === "SUMMARY";
   const twin = p.hisakawa;
   // นักบินปริศนา (เห็นเฉพาะเพื่อนร่วมทีม): ซ่อนตัวสิงร่างอยู่ = การ์ดจางลง + ป้ายบอกว่าสิงใคร
@@ -2555,10 +2553,6 @@ function OtherPlayer({ p, phase, slot, targetable, onAttack, picked, onInspect, 
         <div className={`score-pop text-2xl font-black ${p.isWinner ? "text-echo-ice" : p.busted ? "text-echo-hp" : p.connorScanned && !summary ? "text-echo-cyan" : "text-white"}`}>
           {p.busted ? "แตก!" : `${p.score} แต้ม`}{p.connorScanned && !summary ? " 🧠" : ""}
         </div>
-      )}
-      {/* SE.RA.PH Matrix ระดับ 1: จำนวนไพ่ในมือของคู่ต่อสู้ (server ส่งมาเฉพาะคนที่มีสิทธิ์เห็น) */}
-      {cardCount != null && !summary && (
-        <span className="text-xs font-bold text-white/85" title="ไพ่ในมือ">🂠 {cardCount} ใบ</span>
       )}
     </div>
   );
@@ -4192,9 +4186,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // Purge: ระหว่างปะทะ (สนามประลองของภูมิภาคที่ช่องนั้น) ที่นั่งมีเฉพาะคู่ปะทะ — คนอื่นเป็นผู้ชม
   const purgeFight = state.purge?.fight && !state.purge.scene?.active ? state.purge.fight : null;
   const purgeArena = purgeFight ? { area: Math.min(5, Math.floor((state.purge.board?.nodes?.find((n) => n.id === purgeFight.node)?.prog ?? 0) / 30) + 1), night: state.cycle === "night" } : null;
-  // Moon Cell วันดวล: สนาม 2.5D ของโหมดเอง (สนาม 8 · journey/arena/areas/area8.js) — จอคอมเท่านั้น
-  const seraphArena = state.seraph && vp.w >= 768 ? { area: 8, night: !!state.seraph.night } : null;
-  const arenaJourney = state.journey || purgeArena || seraphArena;
+  const arenaJourney = state.journey || purgeArena;
   const seatOthers = purgeFight ? others.filter((p) => purgeFight.ids.includes(p.id))
     : (raid || invader) ? others.filter((p) => !p.isBoss) : others;
   const slots = raid ? raidSlots(seatOthers.length)
@@ -4226,8 +4218,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   const iAmAttacker = phase === "ATTACK" && state.attackerId === state.youId && pairPilot;
   const attacker = state.players.find((p) => p.id === state.attackerId);
   // นักบินปริศนา (sliver_bullet) ที่ยังซ่อนตัว/กดเตรียมพร้อมแล้วไม่ได้ลงแข่งรอบนี้ (sitOut) — ไม่นับในฉากสรุปผล
-  // SE.RA.PH: ผู้ชมวันดวลไม่ได้ลงแข่ง (แต้ม 0 ของตัวเองไม่นับเป็นผู้แพ้/ผู้ชนะ)
-  const rankedTiers = rankTiers(state.players.filter((p) => !sliverHiddenOf(p) && !p.sliver_bullet?.sitOut && !p.scSpectator));
+  const rankedTiers = rankTiers(state.players.filter((p) => !sliverHiddenOf(p) && !p.sliver_bullet?.sitOut));
   const summaryWinners = rankedTiers[0]?.players || [];
   const summaryLosers = rankedTiers.slice(1).flatMap((t) => t.players);
   const done = me && (me.locked || !me.alive);
@@ -4276,13 +4267,12 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   }, [phase, state.roundNumber, muteScenes, pushScene]);
   // ร้านค้ามายา (patch 2.2 full): เด้งหน้าร้านค้าอัตโนมัติครั้งเดียวทุกครั้งที่มีสินค้าชุดใหม่ (รอบร้านค้าเปลี่ยน)
   useEffect(() => {
-    if (state.seraph) return; // SE.RA.PH: ร้านเปิดเฉพาะช่วงเลือกสถานที่ (หน้าของโหมดเอง) — วันดวลห้ามเด้งป้ายร้านค้า
     const seq = state.shop?.[0]?.id?.split("_")[1];
     if (seq && shopAutoShown.current !== seq) {
       shopAutoShown.current = seq;
       pushScene("shop"); // ไม่ต้องหน่วง 2.7 วิเองแล้ว คิวจัดลำดับให้ต่อท้ายฉากต้นเทิร์นเอง
     }
-  }, [state.shop, state.seraph, pushScene]);
+  }, [state.shop, pushScene]);
   // ผู้เล่นที่กำลังเปิดดูสถานะ (ข้อมูลสดจาก state ทุกครั้งที่ re-render)
   const statusView = statusViewId ? state.players.find((x) => x.id === statusViewId) : null;
   // กลางวัน/กลางคืน (patch 1.7): สลับทุก 3 เทิร์น — โอเบรอนสลับร่าง/ท่าไม้ตายตามช่วงเวลา
@@ -4376,9 +4366,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
   // โอเบรอน (ฤดูร้อน) / อาร์โทเรีย: server ส่งล็อก/คูลดาวน์รายช่องมาเป็นก้อนกลาง (skillLocks)
   const giftLocks = me?.skillLocks || {};
   const giftCd = (t) => (giftLocks[t] && giftLocks[t].cd) || 0;
-  // SE.RA.PH วันดวล: ช่องที่ระดับทักษะยังไม่ปลดล็อก (server ปัดทิ้งเงียบ ๆ) + ผู้ชมกดสกิลไม่ได้
-  const scLocked = (t) => !!state.seraph && (!!state.seraph.spectating || state.seraph.unlocked?.[t] === false);
-  const giftLocked = (t) => scLocked(t) || !!(giftLocks[t] && (giftLocks[t].locked || giftLocks[t].cd > 0));
+  const giftLocked = (t) => !!(giftLocks[t] && (giftLocks[t].locked || giftLocks[t].cd > 0));
   // free = ช่องนี้ไม่กินโควตา 1 สกิล/เทิร์น (ไททัน ของว่าง · ทักต์ บรรเลงเสียงสวรรค์) — skillUsed แล้วยังกดได้
   const giftFree = (t) => !!(giftLocks[t] && giftLocks[t].free);
   // อาซาฮินะ ทักต์: มิวสิคคาร์ทในพันธะที่สลับโหมดได้ (มีบทเพลง · ยังไม่สลับเทิร์นนี้) / ที่รับบทเพลงได้ (ยังไม่มีบทเพลง)
@@ -5128,7 +5116,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
     const revealed = phase === "SUMMARY" || phase === "ATTACK" || phase === "ATTACKING";
     return (
       <div className="fixed inset-0 overflow-hidden flex flex-col">
-        <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} />
+        <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} />
         {state.fullForce && <div className="full-force-speed" />}
         {frozenByClockUp && (
           <div className="clockup-freeze"><span>⏱️ CLOCK UP — เวลาหยุดนิ่ง</span></div>
@@ -5582,7 +5570,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* Purge: ฉากอุโมงค์ท่อแทนฉากหลังทั้งหมด (ระหว่างฉากเปิด/จบเทิร์น ซ่อน UI กระดานไว้ — purge-scene-on) */}
       {purgeOn && <PurgeStage purge={state.purge} players={state.players} youId={state.youId} night={state.cycle === "night"} hidden={!!purgeFight} gameState={state.gameState} />}
       {/* Type Mercury: ไม่ใช้ฉากหลังกลางวัน/กลางคืน (ระบบกลางวัน/กลางคืนยังทำงานตามปกติ) — ORT เป็นฉากหลังแทน */}
-      {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} seraph={!!state.seraph} journey={arenaJourney} arena={arenaBg} hidden={echoCover} />}
+      {!raid && (!purgeOn || purgeFight) && <GameBackground cycle={state.cycle} round={state.roundNumber} bardBg={state.bardBg} shikiBg={state.shikiBg} hisakawaBg={state.hisakawaBg} overloadForce={state.overloadForce} lowQ={lowQ} journey={arenaJourney} arena={arenaBg} hidden={echoCover} />}
       {/* Echo "นี่มันเกมของฉัน": สนามราชินี (หลังกรอบกระดาน) + ฉากเปิดตัว/กำปั้น (หน้าทุกอย่าง) — mount ตลอดแมตช์ที่มี Echo */}
       {echoInMatch && <EchoQueenLayer state={state} lowQ={lowQ} seatCenter={echoSeatCenter} onCover={setEchoCover} />}
       {/* Type Mercury: ORT เป็นฉากหลังเต็มจอ อยู่หลังทุกอย่างบนกระดาน (ที่นั่ง/แผงเรา/ปุ่ม ทับอยู่ด้านหน้า) */}
@@ -5692,8 +5680,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
       {/* ผู้เล่นคนอื่น (โหมด Raid: เพื่อนร่วมทีมเรียงแถวใต้ ORT และเห็นแต้มกันตลอด) */}
       {cardOthers.map((p, i) => (
         <OtherPlayer
-          alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId) || (!!state.seraph && (p.scMatrixLevel || 0) >= 3)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด · SE.RA.PH Matrix ระดับ 3
-          cardCount={state.seraph && !p.scSpectator ? p.cardCount : null}
+          alwaysScore={raid || (targetChain.teamModeActive && !!p.teamId && p.teamId === me?.teamId)} // เพื่อนร่วมทีม (duo/trio/Raid) เห็นแต้มกันตลอด
           // สนาม 2.5D: key ผูกภูมิภาค → เข้าภูมิภาคใหม่แล้วการ์ดหล่นลงที่นั่งซ้ำหลังฉากพุ่งลง
           key={arenaSlots ? `${p.id}-l${arenaLandSeq}` : p.id}
           enterDelay={arenaSlots && !lowQ && arenaSeatDelay0 != null ? arenaSeatDelay0 + i * 0.09 : null}
@@ -6086,10 +6073,7 @@ function GameBoard({ state, lowQ, skillConfirmOn = true, muteScenes = false, ros
               }
               bagCount={me.inventory?.length || 0}
               onBag={() => { clickSound(); setBagOpen(true); }}
-              showBag={!state.seraph?.spectating} // SE.RA.PH: ผู้ชมใช้ไอเทมไม่ได้
               gold={me.gold ?? 0}
-              // SE.RA.PH: วันดวลซื้อของไม่ได้ — ซ่อนปุ่มร้านค้าทิ้งไปเลย (server กันซ้ำอีกชั้นที่ buyShopItem)
-              showShop={!state.seraph}
               onShop={() => { clickSound(); setShopOpen(true); }}
               skills={
                 <>

@@ -59,7 +59,7 @@ module.exports = {
     engine.log(`🌑 ${p.name} ถึงจะมองไม่เห็น แต่ฉันยังอยู่ — บังตากระดานทั้งหมด ${TAKUMI_BLACKOUT_TURNS} เทิร์น (หรือจนกว่าจะมีคนไพ่แตก)`);
   },
 
-  // บังตากระดานกำลังทำงานอยู่ไหม (มีใครติด takumiBlackout อยู่บ้างไหม) — แบบเดียวกับ moonCellActive()
+  // บังตากระดานกำลังทำงานอยู่ไหม (มีใครติด takumiBlackout อยู่บ้างไหม)
   isBlackoutActive(engine) {
     return engine.takumiBlackoutActive();
   },

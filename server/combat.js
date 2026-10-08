@@ -8,7 +8,7 @@ Object.assign(module.exports, {
   resolveDamageAftermath, healOverflow, loseHp, applyOverloadOverdrawPenalty, loseArmor,
   damageSoft, mageslayerMarkSteal, tryYunaLongingForTwin, dealDirect, dealArmorOnly, dealMixed,
   addSkill, applyEffect, firePassive, skillByStatus, shikiCancelUltimate, voidUltimateOnBust,
-  resetRoundDisplay, resetCombat, resetCycleCombat,
+  resetRoundDisplay, resetCombat,
 });
 
 const { CHAR_BY_ID } = require("../characters");
@@ -19,7 +19,6 @@ const {
 } = require("../characters/_universal_status");
 const YunaMod = require("../characters/yuna");
 const Mark42 = require("../characters/_mark42");
-const Seraph = require("../seraph");
 const { io } = require("./app");
 const {
   BARD_MAX_SKILL, DOOM_STARTING_WEAPON, HIKARU_MONSTER_ARMOR_BONUS, MAX_ARMOR, MAX_HP, MAX_SKILL,
@@ -40,8 +39,6 @@ const view = require("./view");
 // เลือดจริงสูงสุดของผู้เล่น — Locacaca fruit (ซาโตรุ patch 2.0.8.2) ลด Max HP ได้ (ต่ำสุด 1)
 function maxHpOf(p) {
   if (mercury.isOrt(p)) return CHAR_HOOKS.ort.maxHp(); // ORT: เลือดต่อ 1 หลอด (จำนวนหลอดอยู่ที่ p.ortBars)
-  // SE.RA.PH: ค่าพลังเดิมของทุกตัวละครถูกละทิ้ง — ใช้ความจุที่อัปที่โบสถ์เท่านั้น (§14 ข้อ 4)
-  if (Seraph.active() && p) return Seraph.maxHp(p);
   if (p && p.characterId === "escanor") {
     const escanorHp = CHAR_HOOKS.escanor.maxHp(p);
     if (escanorHp != null) return Math.max(1, escanorHp - ((p.maxHpPenalty) || 0));
@@ -129,7 +126,6 @@ function healArmor(p, amount) {
 // พลังงานสูงสุดของผู้เล่น (Bard = 9)
 function maxSkillOf(p) {
   if (mercury.isOrt(p)) return 0; // ORT ไม่มีแต้มสกิล
-  if (Seraph.active() && p) return Seraph.maxSkill(p); // SE.RA.PH: ความจุแต้มสกิลเริ่ม 4 เพิ่มได้ถึง 8 ที่โบสถ์
   if (p && p.characterId === "striker") return CHAR_HOOKS.striker.maxSkill(); // สไตรเกอร์ ยูเรก้า: แต้มสกิลสูงสุด 16
   return (p && p.characterId === "bard") ? BARD_MAX_SKILL : MAX_SKILL;
 }
@@ -219,10 +215,7 @@ function applySpellburden(p, turns) {
 //  ต่อสู้ + เอฟเฟกต์สกิล
 // ============================================================
 // ผู้เล่น "บนสนาม" ที่ยังรอด — นักบินปริศนาที่ซ่อนตัวอยู่ไม่นับ (โจมตี/สกิลหมู่/สุ่มเป้า/นับคนในสนามข้ามเขาเอง)
-//  SE.RA.PH: คนที่นั่งดูวันดวล + คนที่ตกรอบแล้วก็ไม่อยู่บนสนาม — ไม่งั้นโดนสกิลหมู่/สุ่มเป้า/บัฟของคู่ดวล
-//  และเพลงสกิลค้างของคนดูจะแย่งเพลงดวล (view.activeSkillMusic)
-function alivePlayers() { return Object.values(match.players).filter((p) => p.alive && !CHAR_HOOKS.sliver_bullet.offField(p) && !offSeraphField(p)); }
-function offSeraphField(p) { return Seraph.active() && (p.scSpectator || p.scEliminated); }
+function alivePlayers() { return Object.values(match.players).filter((p) => p.alive && !CHAR_HOOKS.sliver_bullet.offField(p)); }
 // ผู้เล่นที่ยังรอดทั้งหมด รวมคนที่อยู่นอกสนาม (นักบินปริศนาที่ซ่อนตัว) — ใช้กับระบบที่ต้องนับทุกคน
 //  (รอเปิดไพ่ · แต้มสกิล/เหรียญจบเทิร์น)
 function livingPlayers() { return Object.values(match.players).filter((p) => p.alive); }
@@ -254,7 +247,6 @@ const DEBUFF_KEYS = ["discord", "sleep", "stun", "nodraw", "noskill",
 // เกราะสูงสุดของผู้เล่น: ปกติ 2 — ระหว่าง Lie Like Vortigern (โอเบรอน) เป้าหมายได้เพดานเกราะ +1
 function maxArmorOf(p) {
   if (mercury.isOrt(p)) return CHAR_HOOKS.ort.maxArmor();
-  if (Seraph.active() && p) return Seraph.maxArmor(p); // SE.RA.PH: ความจุจากโบสถ์เท่านั้น
   // แบทแมน: ระหว่างอยู่บนรถแบทโมบิล เพดานเกราะ = พลังชีวิตของรถ (7)
   const batCarArmor = CHAR_HOOKS.bat_ben.maxArmor(p);
   if (batCarArmor != null) return batCarArmor;
@@ -370,8 +362,7 @@ function instantDeath(p, force) {
   // ยูนะ (เพลง Longing): คนแรกที่ตายระหว่างเทิร์น 1-10 -> ทำเครื่องหมายไว้ก่อน (ครั้งเดียวต่อเกม)
   //  ยังไม่ฟื้นคืนชีพทันที — ต้องรอให้ฉากโจมตี(ถ้ามี)จบก่อน แล้วค่อยฟื้น+ขึ้นวีดีโอ (ดู endTurn() จุดที่ตั้งค่า yunaLongingPendingId)
   //  Type Mercury: ยูนะไม่ทำงานในโหมด Raid (ตายแล้วเลือกตัวใหม่แทน)
-  //  SE.RA.PH: ยูนะปิดทั้งโหมด — วันดวลแรกตรงกับเทิร์น 7 ผู้แพ้ดวลจะถูกชุบกลับมาแทนที่จะตกรอบ
-  if (!mercury.mercuryActive() && !Seraph.active() && !match.yunaLongingUsed && match.roundNumber >= 1 && match.roundNumber <= 10) {
+  if (!mercury.mercuryActive() && !match.yunaLongingUsed && match.roundNumber >= 1 && match.roundNumber <= 10) {
     match.yunaLongingUsed = true;
     match.yunaLongingPendingId = p.id;
   }
@@ -520,12 +511,6 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   if (n > 0 && Mark42.absorb(engine, p, n)) return 0;
   // จอห์นนี่ Lesson Five + Chumimi: ดาเมจสกิลก้อนนี้ไม่สนการลดดาเมจทุกชนิด — ฮุคยังทำงาน (ผลข้างเคียง) แต่ลดต่ำกว่าค่าเดิมไม่ได้
   const pierceFloor = CHAR_HOOKS.johnny.pierceFloor(engine, n, isNormalAttack);
-  // SE.RA.PH Matrix ระดับ 2: ลง 2 แต้มบนใคร = รับความเสียหายจากคนนั้นน้อยลง 1 หน่วย (§6)
-  //  ต้นตอของดาเมจอ่านจาก effectSourceId (จุดเดียวกับที่ friendly-fire/ตราล่าเวทใช้)
-  if (Seraph.active() && match.effectSourceId && match.effectSourceId !== p.id) {
-    const cut = Seraph.damageReduction(p, match.effectSourceId);
-    if (cut > 0 && n > 0) n = Math.max(0, n - cut);
-  }
   // เย็นชื่นใจ (escanorCool, WineBarrel ของเอสคานอร์): สถานะ Universal — ไวน์ถูกขโมยไปใช้ได้
   //  ตรรกะจริงอยู่ characters/_universal_status.js (coolReduction)
   if (n > 0) n = Math.max(0, n - coolReduction(p, isNormalAttack));
@@ -537,7 +522,7 @@ function adjustIncomingDamage(p, n, isNormalAttack, kind) {
   return final;
 }
 function tryYunaLongingForTwin(p) {
-  if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || Seraph.active() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
+  if (!p || p.characterId !== "hisakawa_sister" || mercury.mercuryActive() || match.yunaLongingUsed || match.roundNumber < 1 || match.roundNumber > 10) return false;
   if (!CHAR_HOOKS.hisakawa_sister.anyTwinDead(p)) return false;
   match.yunaLongingUsed = true;
   return YunaMod.reviveWithLonging(engine, p);
@@ -593,7 +578,6 @@ function dealMixed(p, n, isNormalAttack) { // เกราะก่อนแล�
 //  ที่ [ดูดซับเวท] (ผู้สังหารเมจ) ต้องตอบสนอง ไม่ใส่ให้แต้มพื้นฐานจบเทิร์น/ค่าชดเชยการแพ้/การโอนแต้มระหว่างผู้เล่น
 function addSkill(p, n, src) {
   if (mercury.isOrt(p)) return;
-  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: แต้มสกิลคงที่ 0 (SERAPH_MOONCELL.md §5) — ปิดทุกช่องทางที่จุดเดียว
   // ชะงัก (โอกูริ Rework): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง ระหว่างติดสถานะนี้
   if (((p.statuses && p.statuses.stagger) || 0) > 0) return;
   if (((p.statuses && p.statuses.manaSeal) || 0) > 0) return; // ผนึกพลังงาน (Universal): ฟื้นฟูแต้มสกิลไม่ได้ทุกช่องทาง
@@ -626,7 +610,6 @@ function applyOne(p, e) {
   }
 }
 function firePassive(p, trigger) {
-  if (Seraph.noCombat()) return; // SE.RA.PH วันที่ 1-6: ไม่มีสกิลติดตัวทำงานเลย
   const ch = CHAR_BY_ID[p.characterId];
   if (ch && ch.passive && ch.passive.trigger === trigger) applyEffect(p, ch.passive.effect);
 }
@@ -710,7 +693,6 @@ function resetRoundDisplay(p) {
   p.wasAttacked = false; p.didAttackRound = false; p.isWinner = false; p.isLoser = false;
 }
 function resetCombat(p) {
-  Seraph.resetFields(p); // SE.RA.PH: ล้างฟิลด์ของโหมด (GAME_SYSTEM.md gotcha #11)
   p.ready = false; // ห้องรอ: ต้องกดพร้อมใหม่ทุกครั้งที่กลับมาห้องรอ/เริ่มแมตช์ใหม่
   p.skillPoints = 0; p.alive = true; p.shield = 0;
   p.statuses = {}; p.seen = {}; p.transformAt = 0;
@@ -873,21 +855,6 @@ function resetCombat(p) {
   p.hp = maxHpOf(p);
   p.armor = maxArmorOf(p);
   if (p.characterId === "hisakawa_sister") CHAR_HOOKS.hisakawa_sister.init(p);
-}
-
-// SE.RA.PH จบรอบ: ล้างของจากวันดวลทั้งหมด (สถานะ/ร่าง/คูลดาวน์/ท่าไม้ตายที่ค้าง/ตัวนับเฉพาะตัวละคร)
-//  ไม่งั้นของพวกนี้ทำงานต่อในวันที่ 1-6 ของรอบใหม่ (ตีฟรีของ Echo, เลือดไหล, เพลงร่างของ Kim ฯลฯ)
-//  เก็บไว้เฉพาะที่ SERAPH_MOONCELL.md §8 บอกให้คงอยู่: ฟิลด์ sc* ของโหมด · เงิน · ไอเทม (รวมชุด Mark 42)
-//  + วีดีโอที่เล่นไปแล้ว (ครั้งเดียวต่อแมตช์) · เลือด/เกราะเต็มตามความจุของโหมด
-const CYCLE_KEEP = ["gold", "inventory", "mark42", "mark42Owned", "mark42BuyLock", "cutsceneShown"];
-function resetCycleCombat(p) {
-  const keep = {};
-  for (const k of Object.keys(p)) if (/^sc[A-Z]/.test(k) || CYCLE_KEEP.includes(k)) keep[k] = p[k];
-  resetCombat(p);
-  Object.assign(p, keep);
-  // resetCombat คิดเลือด/เกราะตอนที่ฟิลด์ sc* ยังถูกล้างอยู่ (ความจุจากโบสถ์หาย) -> คิดใหม่หลังคืนค่า
-  p.hp = maxHpOf(p);
-  p.armor = maxArmorOf(p);
 }
 
 Object.assign(module.exports, { TEMARI_ANATA_DRAWS, DEBUFF_KEYS });

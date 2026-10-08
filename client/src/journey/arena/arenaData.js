@@ -30,13 +30,6 @@ export function seatAngles(n) {
   return out;
 }
 
-/* สนาม 8 (Moon Cell วันดวล): คู่ต่อสู้นั่งมุมไกลด้านขวา (การ์ดอยู่ขวาบน ไม่บังกลางสนาม) · ผู้ชมเห็นคู่ดวลซ้าย-ขวา */
-function seraphSeatAngles(n) {
-  if (n <= 0) return [];
-  if (n === 1) return [322];
-  return Array.from({ length: n }, (_, i) => 218 + (i * 104) / (n - 1));
-}
-
 /* กล้องตามขนาดจอ — 5.1.9: กล้องก้ม 30° (ผู้ใช้ขอ: 55° ดูแบนเหมือน 2D) · เห็นเส้นขอบฟ้า ~16% จากบนจอ
    วงที่นั่งกว้างขึ้น (R 590) เพราะมุมต่ำบีบวงในแนวตั้ง การ์ดใบติดกันจะได้ไม่ทับกัน */
 export function arenaCamera(W, H) {
@@ -96,7 +89,7 @@ export function arenaLayout(W, H, area, nOthers) {
   };
   const center = proj(c, 0, chainLift(lift, AH.center));
   return {
-    others: stackCards(W, H, (area === 8 ? seraphSeatAngles(nOthers) : seatAngles(nOthers)).map(at), center),
+    others: stackCards(W, H, seatAngles(nOthers).map(at), center),
     me: at(90),
     center,
   };

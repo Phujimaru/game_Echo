@@ -9,7 +9,6 @@ Object.assign(module.exports, {
 const { CHARACTERS, CHAR_BY_ID } = require("../../characters");
 const CHAR_HOOKS = require("../../characters/index");
 const Journey = require("../../characters/_journey");
-const Seraph = require("../../seraph");
 const { io } = require("../app");
 const {
   JOURNEY_ADVANCE_SECONDS, MERCURY_SURRENDER_SECONDS, ORT_ID, ORT_POSITION, TRANSITION_TIME,
@@ -157,7 +156,7 @@ function normalGameOver() {
 // ORT อยู่ในสนามโหมดปกติ: มีคนตายกลางเฟสจั่วไพ่ (สวนกลับ/สกิล/ไอเทม) จนเหลือคนเดียว -> จบทันที ไม่ต้องรอจบเทิร์น
 //  เรียกเฉพาะจุดที่ปลอดภัย (ท้ายการกระทำในเฟส PLAYING) — ระหว่างฉากโจมตี/คัตซีนปล่อยให้ endTurn ตัดสินตามปกติ
 function checkOrtEarlyWin() {
-  if (!match.players[ORT_ID] || mercuryActive() || Seraph.active() || match.gameState !== "PLAYING") return false;
+  if (!match.players[ORT_ID] || mercuryActive() || match.gameState !== "PLAYING") return false;
   if (CHAR_HOOKS.shido.rewindPending(engine)) return false; // ชิโดกำลังจะย้อนเวลา — ทุกคนจะกลับมา
   return normalGameOver();
 }

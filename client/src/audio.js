@@ -214,15 +214,9 @@ const FILES = {
   cayenne_theme: "/characters/cayenne/cayenne_theme.m4a", // เพลงประจำร่างเกพาร์ด (ขึ้นหลังวีดีโอแปลงร่าง)
   cayenne_gun: "/characters/cayenne/gun_sound.mp3",       // เสียงโจมตีปกติในร่างเกพาร์ด
   daichi_theme: "/characters/daichi/daichi_theme.mp3",    // ไดจิ โอโซระ: เพลงระหว่าง unite
-  // ---------- SE.RA.PH Moon Cell (โหมดผจญภัย) — ดู SERAPH_SCENES.md §6 ----------
-  //  แต่ละเพลงจำตำแหน่งของตัวเอง · วันดวลวันที่ 7 ใช้ seq ของรอบเพื่อเริ่มจากต้น
-  sc_day: "/mooncell/theme/day1-4.mp3",
-  sc_rest: "/mooncell/theme/rest_time.mp3",
-  sc_duel_day: "/mooncell/day5theme/day_mooncell.mp3",
-  sc_duel_night: "/mooncell/day5theme/night_mooncell.mp3",
-  sc_glitch: "/mooncell/sond_effect/cut_glit.mp3",
-  sc_noti: "/mooncell/sond_effect/noti.mp3",
-  sc_noti2: "/mooncell/sond_effect/noti2.mp3",
+  // ฉากเปิดตัว ORT (Type Mercury): เสียงแจ้งเตือนทีละบรรทัด + เสียงกลิตช์ตอนม่านเปิด
+  ort_glitch: "/effect_sound/ort_glitch.mp3",
+  ort_noti: "/effect_sound/ort_noti.mp3",
   action_button: "/effect_sound/click.mp3",
   trun_change: "/effect_sound/trun_change.wav",
   attack: "/effect_sound/attack.wav",
@@ -254,9 +248,7 @@ const MUSIC_SEQUENCES = {
 //  แต่ละหลักสูตรเป็นกลุ่มของตัวเอง — "สลับหลักสูตร" จึงไม่ใช่การต่อเพลง แต่เป็นการเปิดเพลงใหม่
 //  ซึ่ง server จะขยับ seq (transformAt) ให้ทุกครั้งที่กด -> เพลงของหลักสูตรใหม่เริ่มจากต้นเสมอ
 const MUSIC_POSITION_GROUPS = {
-  // SE.RA.PH: **ห้ามจับ sc_day กับ sc_rest เป็นกลุ่มเดียวกัน** — กลุ่มตำแหน่งมีไว้สำหรับ
-  //  "เพลงเดียวกันคนละเวอร์ชัน" (กลางวัน/กลางคืนของหลักสูตรไบเลธ) เท่านั้น
-  //  สองเพลงนี้เป็นคนละเพลงกันและยาวไม่เท่ากัน: ถ้าอยู่กลุ่มเดียวกัน ตอนสลับจะ carry ตำแหน่งข้ามมา
+  // ห้ามจับเพลงต่างเพลงที่ยาวไม่เท่ากันเป็นกลุ่มเดียวกัน — ตอนสลับจะ carry ตำแหน่งข้ามมา
   //  แล้วเพลงใหม่ที่ยังไม่โหลด metadata จะมี duration = NaN -> seek เลยจุดจบเพลง = เงียบสนิท
 };
 
@@ -447,11 +439,6 @@ const LOUDNESS_GAIN = {
   "/characters/yuna/Delete.mp3": 0.56,
   "/characters/yuna/Longing.mp3": 0.62,
   "/item/guts_key/shockwave_boost.mp4": 0.92,
-  "/mooncell/day5theme/day_mooncell.mp3": 0.79,
-  "/mooncell/day5theme/night_mooncell.mp3": 0.74,
-  "/mooncell/sond_effect/noti2.mp3": 0.75,
-  "/mooncell/theme/day1-4.mp3": 0.5,
-  "/mooncell/theme/rest_time.mp3": 0.51,
   "/overload_force/overload_force_connect.m4a": 0.67,
   "/overload_force/overload_force_theme.mp3": 0.53,
   "/theme_song/FULL FORCE.mp3": 0.44,

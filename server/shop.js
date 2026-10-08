@@ -9,7 +9,6 @@ Object.assign(module.exports, {
 const CHAR_HOOKS = require("../characters/index");
 const Mark42 = require("../characters/_mark42");
 const Journey = require("../characters/_journey");
-const Seraph = require("../seraph");
 const {
   BARD_FORTUNE_MAX, BLACK_SPARKLENCE_NURSE_COOLDOWN, GOLD_MAX, GUTS_AMMO, GUTS_AMMO_IDS,
   GUTS_CHAA_TURNS, GUTS_GUN_PRICE, GUTS_NURSE_DMG, SHOP_AMMO_WEIGHTS, SHOP_ARMOR_AMOUNT,
@@ -37,12 +36,6 @@ function goldCapOf(p) {
 //  ต้องเรียกผ่านตัวนี้เสมอ ไม่งั้นกระปุกออมสินของโคโตเนะจะไม่ทำงาน (สกิลติดตัวผูกกับจังหวะได้รับเหรียญ)
 //  โคโตเนะ: กระปุกออมสิน "แบ่ง" เหรียญที่เพิ่งได้ไปเก็บ (หักออกจากกระเป๋า) จึงคืนยอดสุทธิ ไม่ใช่ยอดก่อนแบ่ง
 function addGold(p, n) {
-  // SE.RA.PH วันที่ 1-6: สกิลติดตัวทุกตัวปิดหมด — กระปุกออมสินของโคโตเนะถูกเรียกตรงจากที่นี่
-  //  (ไม่ผ่าน firePassive/passiveSealed) จึงต้องมีด่านของตัวเอง ไม่งั้นมันทำงานทั้งที่ควรปิด
-  if (Seraph.noCombat() && p && p.characterId === "kotone") {
-    p.gold = Math.max(0, Math.min(goldCapOf(p), (p.gold || 0) + n));
-    return p.gold;
-  }
   if (!p || !(n > 0) || mercury.isOrt(p)) return 0; // ORT ไม่มีเหรียญ
   const cap = goldCapOf(p);
   const before = p.gold || 0;
@@ -131,7 +124,7 @@ function openShop() {
 //    sold = ครบเพดานแล้ว (client ใช้ sold ตัดสินว่ากดซื้อได้ไหม) · stock/stockMax ส่งไปโชว์ "เหลือ x/3"
 //  · คลื่นวงวนน้ำ กลางวัน: ช่องที่ยังไม่มีใครซื้อและราคาต่ำกว่า 5 ถูกสุ่มใหม่เป็นของราคา 5 ขึ้นไป
 function refreshShopForJourney() {
-  // ทุกโหมด (รวม SE.RA.PH) ใช้ตัวนับ bought ตัดสิน sold — ผลของภูมิภาคทำงานเฉพาะโหมดที่มีการเดินทาง (Journey.is/shopStock)
+  // ทุกโหมดใช้ตัวนับ bought ตัดสิน sold — ผลของภูมิภาคทำงานเฉพาะโหมดที่มีการเดินทาง (Journey.is/shopStock)
   if (!match.shopItems.length) return;
   if (Journey.is(engine, 4, "day")) {
     for (let i = 0; i < match.shopItems.length; i++) {
@@ -188,14 +181,11 @@ function hasGutsWeapon(p) {
 function asleep(p) { return !!p && ((p.statuses && p.statuses.sleep) || 0) > 0; }
 
 function buyShopItem(id, itemId) {
-  // SE.RA.PH: ซื้อของได้เฉพาะ "วันสืบสวน" (วันที่ 1-6) ที่ร้านสะดวกซื้อเท่านั้น
-  //  วันดวลไม่มีการซื้อขาย — กันที่นี่ด้วย ไม่ใช่แค่ซ่อนปุ่มฝั่ง client
   const p = match.players[id];
   if (!p || !p.alive) return;
   if (asleep(p)) return; // หลับไหล: ซื้อของไม่ได้
   if (CHAR_HOOKS.daisuke.actionBlocked(engine, p)) return; // Clock Up: คนอื่นซื้อของไม่ได้
   if (CHAR_HOOKS.dio.actionBlocked(engine, p)) return; // ดิโอ: THE WORLD / นอกวง Last stand ซื้อของไม่ได้
-  if (Seraph.active() && (match.gameState !== "SERAPH_PLACE" || !Seraph.canShop(p))) return;
   const item = match.shopItems.find((it) => it.id === itemId);
   if (!item || item.sold) return;
   if ((p.gold || 0) < item.price) return;
@@ -236,12 +226,6 @@ function useInventoryItemCore(id, uid, opts = {}) {
   const p = match.players[id];
   if (!p || !p.alive) return;
   if (purge.benched(p) || (opts && opts.targetId && purge.benched(match.players[opts.targetId]))) return; // Purge: ผู้ชมใช้ไอเทมไม่ได้ และใช้ใส่ผู้ชมไม่ได้
-  // SE.RA.PH: วันที่ 1-6 ไม่มีไอเทม (รวมปืน GUTS) · วันดวล ผู้ชม/คนตกรอบใช้ไม่ได้ และใช้ใส่พวกเขาไม่ได้ (§5, §7)
-  if (Seraph.noCombat()) return;
-  if (Seraph.active()) {
-    const t = opts && opts.targetId ? match.players[opts.targetId] : null;
-    if (p.scSpectator || p.scEliminated || (t && (t.scSpectator || t.scEliminated))) return;
-  }
   if (asleep(p)) return; // หลับไหล: ใช้ไอเทมไม่ได้เลย (ยาโชคลาภ/ต้านสถานะ/แต้มสกิล/เกราะ เดิมไม่เช็ค p.locked จึงรั่ว)
   if (CHAR_HOOKS.conner.skillBlocked(engine, p)) return; // คอนเนอร์: ระหว่างการไล่ล่า ทุกคนใช้ไอเทมไม่ได้ (รวมคอนเนอร์กับเป้าหมาย)
   if (CHAR_HOOKS.brian.itemBlocked(engine)) return;      // ไบรอัน: ระหว่างการแข่ง ทุกคนใช้ไอเทมไม่ได้

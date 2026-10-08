@@ -7,7 +7,6 @@ Object.assign(module.exports, {
 const crypto = require("crypto");
 const { CHARACTERS, CHAR_BY_ID, publicRoster } = require("../characters");
 const CHAR_HOOKS = require("../characters/index");
-const Seraph = require("../seraph");
 const { io } = require("./app");
 const {
   DOOM_STARTING_WEAPON, MAX_ARMOR, MAX_HP, MAX_PLAYERS, OGURI_ENERGY_START, ORT_ID,
@@ -415,25 +414,6 @@ io.on('connection', (socket) => {
     draw.checkAllLocked();
   }, 4);
   onPlayerEvent(socket, 'attack', (id, { targetId } = {}) => attack.doAttack(id, targetId), 6);
-  // SE.RA.PH: เข้าสถานที่ในแมพ (picks = ลำดับการอัปเกรดที่โบสถ์/ห้องสมุด · targets = เป้าหมายที่ลง Matrix ที่สวนสาธารณะ)
-  onPlayerEvent(socket, 'seraphPlace', (id, { key, picks, targets } = {}) => {
-    if (match.gameState !== 'SERAPH_PLACE') return;
-    combat.withEffectSource(match.players[id], () => Seraph.choosePlace(engine, id, key, { picks, targets }));
-  }, 8);
-  // SE.RA.PH: เดินในแมพ — ส่งต่อตำแหน่งแบบเบาให้ทุกคน (ไม่ broadcast state ทั้งก้อน ซึ่งหนักและถี่เกิน)
-  onPlayerEvent(socket, 'seraphMove', (id, { x, f } = {}) => {
-    if (match.gameState !== 'SERAPH_PLACE') return;
-    const p = match.players[id];
-    if (Seraph.move(engine, id, Number(x), Number(f))) io.emit('seraphPos', { id, x: p.scX, f: p.scFace });
-  }, 30);
-  // SE.RA.PH: เก็บชิ้นส่วน Matrix / เหรียญในแมพ (ใครถึงก่อนได้ก่อน)
-  onPlayerEvent(socket, 'seraphPickup', (id, { pid } = {}) => {
-    if (match.gameState !== 'SERAPH_PLACE') return;
-    if (Seraph.pickup(engine, id, String(pid || ''))) view.broadcastState();
-  }, 10);
-  onPlayerEvent(socket, 'seraphReady', (id) => {
-    if (match.gameState === 'SERAPH_PLACE') Seraph.readyPlace(engine, id);
-  }, 4);
   onPlayerEvent(socket, 'nanayaToggleEye', (id) => draw.nanayaToggleEye(id), 4);
   // Echo (นี่มันเกมของฉัน): เลือกเป้าตีฟรีช่วงจั่วไพ่ -> ตีทันที (โจมตีปกติ — doAttack ห่อ effectSource เอง)
   onPlayerEvent(socket, 'echoFreeHit', (id, { targetId } = {}) => echoFreeHit.pickFreeHit(id, targetId), 4);
